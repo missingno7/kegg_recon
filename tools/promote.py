@@ -110,10 +110,7 @@ def main(argv):
     frozen_dir = ROOT / "build" / "promote" / f"{func}-{stamp}"
     frozen_dir.mkdir(parents=True, exist_ok=True)
     frozen = frozen_dir / f"{func}{cand.suffix}"
-    frozen.write_bytes(cand.read_bytes().replace(b"
-
-", b"
-"))  # canonical LF (git stores LF)
+    frozen.write_bytes(cand.read_bytes().replace(bytes([13, 10]), bytes([10])))  # canonical LF (git stores LF)
     p, res = run_check(frozen, func, entry, frozen_dir / "result.json")
     print(p.stdout.strip())
     if res is None:
