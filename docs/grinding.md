@@ -1,7 +1,8 @@
 # Matching loop (workers)
 
 ```
-python tools/show.py f_1b7e                 # annotated original disassembly, callers, fixup targets
+python tools/context.py f_1b7e              # packet: disassembly, proven declarations, callers
+python tools/harvest.py build/workers/NAME  # check every candidate in a dir at once
 # write C into build/workers/NAME/f_1b7e.c
 python tools/check.py build/workers/NAME/f_1b7e.c f_1b7e      # compile (pinned wcc386, profile game-c) + strict compare
 python tools/promote.py build/workers/NAME/f_1b7e.c f_1b7e --verify-only
