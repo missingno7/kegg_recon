@@ -233,7 +233,7 @@ def main(argv):
         e = next(f for f in man["functions"] if f.get("name") == func)
         known = {k: v for k, v in man.get("symbols", {}).items()}
         for f in man["functions"]:
-            known[f["name"]] = f"1:{int(f['start'], 16):x}"
+            known[f["name"]] = f"{f.get('object', 1)}:{int(f['start'], 16):x}"
         for k, v in res["bindings"].items():
             if k.startswith(("seg:", "grp:")):
                 continue

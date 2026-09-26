@@ -2218,7 +2218,7 @@ def layout_locals(L):
         options.append(opts)
     chosen, order, inner = None, None, []
     for nested in (False, True):
-        for combo in itertools.islice(itertools.product(*options), 512):
+        for combo in itertools.islice(itertools.product(*options), 128):
             if any(x > y for x, y in zip(combo, combo[1:])):
                 continue
             P = unsort([(k, z, s_.get("temp", False)) for k, (s_, z) in enumerate(zip(slots, combo))], nested,
@@ -2264,6 +2264,23 @@ def layout_locals(L):
     L.decl_locals = decl
 
 
+def multiset_permutations(items):
+    """Distinct permutations of a sorted list, in lexicographic order."""
+    a = list(items)
+    while True:
+        yield tuple(a)
+        i = len(a) - 2
+        while i >= 0 and a[i] >= a[i + 1]:
+            i -= 1
+        if i < 0:
+            return
+        j = len(a) - 1
+        while a[j] <= a[i]:
+            j -= 1
+        a[i], a[j] = a[j], a[i]
+        a[i + 1:] = reversed(a[i + 1:])
+
+
 def shell_order(sizes):
     """Watcom's frame sort: a shell sort by size (gaps n//2, then (g+1)//2 down to 1) over
     [parameters, autos in declaration order, temps]; returns original indices in sorted order.
@@ -2290,12 +2307,8 @@ def unsort(final, nested=False, params=(), budget=4000):
     temps = [x for x in final if x[2]]
     autos = [x for x in final if not x[2]]
     np_, nt = len(params), len(temps)
-    seen = set()
     count = 0
-    for pat in itertools.permutations(sorted(x[1] for x in autos)):
-        if pat in seen:
-            continue
-        seen.add(pat)
+    for pat in multiset_permutations(sorted(x[1] for x in autos)):
         count += 1
         if count > budget:
             return None
