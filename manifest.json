@@ -2336,8 +2336,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_c685.c",
-   "src_sha256": "54a2e26f5cfc369b1ac3970338a47a6e9bcea9c922684fd7c7603cfcaf0c7083"
+   "src": "src/t10.c",
+   "src_sha256": "e16f502cf4de39d4532f9b3c91a5d3ef4daae7b439829fc0704abaf512e54194",
+   "unit": "T10"
   },
   {
    "name": "f_c826",
@@ -2346,8 +2347,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_c826.c",
-   "src_sha256": "3ca18ca5ac6f83521fa27e979bcb4cf218db1be02fb7f69dc3a0116f72295a32"
+   "src": "src/t10.c",
+   "src_sha256": "e16f502cf4de39d4532f9b3c91a5d3ef4daae7b439829fc0704abaf512e54194",
+   "unit": "T10"
   },
   {
    "name": "f_c886",
@@ -4870,7 +4872,9 @@
   "strcpy": "1:13bb6",
   "strlen": "1:13f5d",
   "strtoul": "1:13d21",
-  "g_T07_bss": "3:e1c4"
+  "g_T07_bss": "3:e1c4",
+  "f_ddb9": "1:ddb9",
+  "f_de21": "1:de21"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -5748,6 +5752,18 @@
    "src_sha256": "5a0370f5100614a50d7048ce50f1d1bb3121ab4b7c03c0f8245a6001eda1f1b5",
    "data": [],
    "note": "-ot TU; own _BSS 0xe1c4+16 modelled as one 4-int struct (BSS order is not definition order; individual names/order unproven)"
+  },
+  {
+   "id": "T10",
+   "src": "src/t10.c",
+   "start": "0xc685",
+   "end": "0xc886",
+   "profile": "game-c",
+   "src_sha256": "e16f502cf4de39d4532f9b3c91a5d3ef4daae7b439829fc0704abaf512e54194",
+   "data": [
+    "CONST@3:123c+0x9"
+   ],
+   "note": "CONST 'mhwanh' 0x123c verified; BSS 0xe2a4+8; lower boundary unproven (f_c621 may belong)"
   },
   {
    "id": "T11",

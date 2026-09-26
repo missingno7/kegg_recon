@@ -134,7 +134,16 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
                 f.update({"status": "matching", "src": dest_rel, "unit": uid, "profile": profile, "src_sha256": sha})
                 for k in ("draft", "mismatch", "note"):
                     f.pop(k, None)
-        units = [u for u in man.setdefault("units", []) if u["id"] != uid]
+        overl = lambda u: int(u["start"], 16) < e0 and s0 < int(u["end"], 16)
+        superseded = [u for u in man.setdefault("units", []) if u["id"] != uid and overl(u)]
+        for u in superseded:  # a new unit covering an older one replaces it; members outside the new range revert
+            us, ue = int(u["start"], 16), int(u["end"], 16)
+            if us < s0 or ue > e0:
+                raise SystemExit(f"unit {uid} partially overlaps unit {u['id']} ({u['start']}..{u['end']}); "
+                                 f"promote a unit that covers it completely")
+            old.add(u["src"])
+            print(f"superseding unit {u['id']}")
+        units = [u for u in man["units"] if u["id"] != uid and not overl(u)]
         units.append({"id": uid, "src": dest_rel, "start": start, "end": end, "profile": profile,
                       "src_sha256": sha, "data": [f"{d['seg']}@{d['base']}+{d['size']:#x}" for d in res.get("data", [])],
                       **({"place": list(places)} if places else {}),
