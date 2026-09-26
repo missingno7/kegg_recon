@@ -2,6 +2,7 @@
 
     python tools/promote.py CAND.c FUNC [--verify-only]          # must be EXACT; writes src/FUNC.c + manifest
     python tools/promote.py CAND.c FUNC --draft "short note"     # not exact: keep best draft + mismatch summary
+    python tools/promote.py --batch DIR                           # every DIR/f_HEX.c that is EXACT, one validation
 
 FUNC must be a manifest function (its start/end are the authority for the extent).  The candidate is
 frozen (copied) and freshly compiled; nothing previously tested is trusted.  Extra gates:
@@ -74,8 +75,26 @@ class Lock:
         LOCK.unlink(missing_ok=True)
 
 
+def batch(d: Path):
+    man = load_manifest()
+    todo = {f["name"]: f for f in man["functions"] if f.get("status") != "matching"}
+    done = []
+    for c in sorted(Path(d).glob("f_*.c")):
+        if c.stem in todo:
+            rc = main([None, str(c), c.stem, "--no-validate"])
+            if rc == 0:
+                done.append(c.stem)
+    v = subprocess.run([sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet"], capture_output=True, text=True)
+    print(v.stdout.strip())
+    print(f"batch: promoted {len(done)}: {' '.join(done)}")
+    return v.returncode
+
+
 def main(argv):
     args = argv[1:]
+    if args and args[0] == "--batch":
+        return batch(Path(args[1]))
+    no_validate = "--no-validate" in args
     verify_only = "--verify-only" in args
     draft = None
     if "--draft" in args:
@@ -149,8 +168,9 @@ def main(argv):
             e.pop(k, None)
         man["symbols"] = dict(sorted(man.get("symbols", {}).items()))
         save_manifest(man)
-        v = subprocess.run([sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet"], capture_output=True, text=True)
-        if v.returncode != 0:
+        v = None if no_validate else subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet"], capture_output=True, text=True)
+        if v is not None and v.returncode != 0:
             MAN.write_text(backup)
             if old_src is None:
                 dest.unlink()
