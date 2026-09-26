@@ -15,7 +15,8 @@ import struct
 import sys
 from pathlib import Path
 
-import capstone
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent.parent / 'build' / 'pylib'))
+import capstone  # noqa: E402  (vendored: pip install --no-user --target build/pylib capstone==5.0.7)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import le as lemod  # noqa: E402

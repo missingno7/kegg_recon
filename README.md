@@ -25,6 +25,8 @@ Historical installs live outside git under `C:/tools` (override `KEGG_TOOLS`), s
 python tools/dosrun.py wcc386 -3s -od -s foo.c      # pinned tool, clean environment
 ```
 
+Setup: `python -m pip install --no-user --target build/pylib capstone==5.0.7` (tools import capstone from there).
+
 ## Tools
 
 - `tools/le.py` — LE reader (header, objects, pages, fixups). `python tools/le.py assets/KE.EXE`
