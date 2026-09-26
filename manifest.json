@@ -303,7 +303,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_1bc2.c",
-   "src_sha256": "a797312c7808ae5a6c7a2f7947326e4006367570496f92f8b9b3e57a71c0687a"
+   "src_sha256": "24d89283b73fe4453db38ebb9d8613aedf299ce205930108528ec5e2b531e5c2"
   },
   {
    "name": "f_1d80",
@@ -321,7 +321,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_1e87.c",
-   "src_sha256": "565b872c502c802668b975db177520d02dc088acf2cb6c6468dbb9012bf82b5c"
+   "src_sha256": "bb7fa3460b297367fbdcb39746402039a96f84586e28368605006553ae8fb619"
   },
   {
    "name": "f_20f4",
@@ -707,7 +707,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_4291.c",
-   "src_sha256": "b0c03833811e9c16f318ed68a1a178b7c62b7f3bc037ff54619e4f2df421d8a2"
+   "src_sha256": "4f6e6003fd4e297be177fcdf713eee134a0b9403b634f6ac56dbc3cd6da0f4af"
   },
   {
    "name": "f_42e1",
@@ -1181,7 +1181,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_69cd.c",
-   "src_sha256": "7d848afef299db8453403984d33ee5a3f80b61632a2fb13955eca0e7b8c5b6f7"
+   "src_sha256": "4382918eb68e566d21a81515bc2bde1d128c4a2eb8fb30b41df176886636b40e"
   },
   {
    "name": "f_6a1d",
@@ -1315,7 +1315,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_788d.c",
-   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
+   "src_sha256": "e5f0e0077125b1c7392fd0b58ee59f08f6012a5710264ccbfd692c159032de7a"
   },
   {
    "name": "f_78dd",
@@ -1361,7 +1361,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_7e12.c",
-   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
+   "src_sha256": "e5f0e0077125b1c7392fd0b58ee59f08f6012a5710264ccbfd692c159032de7a"
   },
   {
    "name": "f_7e62",
@@ -1483,7 +1483,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_8f7e.c",
-   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
+   "src_sha256": "e5f0e0077125b1c7392fd0b58ee59f08f6012a5710264ccbfd692c159032de7a"
   },
   {
    "name": "f_8fce",
@@ -1811,7 +1811,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_b4a7.c",
-   "src_sha256": "f2f40612f8a9439fb037c5f28622b09163edb95a0f3b4d1bd34b1f5eb7ae0eeb"
+   "src_sha256": "d57865b09973a40c3e1c56fdbcc85993c10bc919453c40a079453542cc1ba67e"
   },
   {
    "name": "f_b541",
@@ -1939,7 +1939,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_bf24.c",
-   "src_sha256": "af06fae9855565b0ab943df5bd12482386f852931d10400399b167f098620f95"
+   "src_sha256": "625df23d937d220feff37bac40123176a1ef82c02bc5ef90745ce294465893a8"
   },
   {
    "name": "f_bf98",
@@ -2322,7 +2322,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_ddb9.c",
-   "src_sha256": "ac3a833ff85e23694e6872ed2b236234c01827ec25cefca20db68a08368b37ca"
+   "src_sha256": "7ef823d8d8a1df746c53b0d52ad8be90a3c328a64fb1a9bd4af2731f18e46973"
   },
   {
    "name": "f_de21",
@@ -2380,7 +2380,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_dfc3.c",
-   "src_sha256": "906f7aa2507369233408d2f7f9b32532dd45b46060f1d9bf490a1082e36a845d"
+   "src_sha256": "ef6689b34bd8b940980d286de63ee04f22b3ee666b4252590afa8b40196665ad"
   },
   {
    "name": "f_e028",
@@ -2436,7 +2436,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_e6b3.c",
-   "src_sha256": "7bc168c23571e064757c5c8456b3cb80d22b21f031046ce09f882be1aeae80a9"
+   "src_sha256": "fc0ec6093cb2d1e0f80e5970239a3f1e51c713173910b6c74b5f0ce7f232c8cd"
   },
   {
    "name": "f_e813",
@@ -2504,7 +2504,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_e9b3.c",
-   "src_sha256": "78ae3dc15d37fbfa26103bc675da3f74fc1db01e2927bfaade60ae8d6c510a7d"
+   "src_sha256": "d556966adca9a24e0fed7efbba56cfa8bf065158ca7bcd10d00e59112e3e1616"
   },
   {
    "name": "f_e9dd",
@@ -2644,7 +2644,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_ee65.c",
-   "src_sha256": "d387468411f240e740611ca1286f3808dcf9f24cd86c9f878a46e7207766cbfc"
+   "src_sha256": "9c7a5e5c990801da7e428de9d48bd9ac0d1f5260b8d9752001f6cafdd8ac3e23"
   },
   {
    "name": "f_eeac",
@@ -2674,7 +2674,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_eff1.c",
-   "src_sha256": "11d49ffb26b6efe496c549e70be008cb980a3deb6f5b968cc6d06cde4069db3f"
+   "src_sha256": "5a0d3517cec48d2f537c984ba87ddd626011d733c74efbc57ae4ba62dba74f95"
   },
   {
    "name": "f_f0f6",
@@ -2782,7 +2782,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_f7e4.c",
-   "src_sha256": "0554804734ae76dfa3b4e00c3d22207a0e0c8c9e4786760d7e875cb9d7308c0a"
+   "src_sha256": "ecafb2f05f2a7a624004114116b32901b67e7ae4ad7051d65cb13f46eb325520"
   },
   {
    "name": "f_f82d",
@@ -2832,7 +2832,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_fa42.c",
-   "src_sha256": "1ef63824617b77b9a3ee4641536e4ff9e4c2bd653d6767d898845ced3b525b33"
+   "src_sha256": "c462b61e38e42479462edc2ec6934a8f05526355fdcb8d61d9365bc680fed832"
   },
   {
    "name": "f_fb17",
@@ -3512,7 +3512,6 @@
   "_enable": "1:13fa1",
   "_rotl": "1:145fe",
   "atexit": "1:14197",
-  "close": "1:14609",
   "exit": "1:1515a",
   "f_112fa": "1:112fa",
   "f_1133f": "1:1133f",
@@ -3539,23 +3538,10 @@
   "f_13a0a": "1:13a0a",
   "f_13a29": "1:13a29",
   "f_13a48": "1:13a48",
-  "f_13bb6": "1:13bb6",
-  "f_13e11": "1:13e11",
-  "f_13e60": "1:13e60",
-  "f_13f0e": "1:13f0e",
-  "f_13f5d": "1:13f5d",
-  "f_13f9f": "1:13f9f",
-  "f_13fa1": "1:13fa1",
-  "f_14197": "1:14197",
-  "f_14771": "1:14771",
-  "f_1477c": "1:1477c",
-  "f_14793": "1:14793",
-  "f_1515a": "1:1515a",
   "f_9f64": "1:9f64",
   "fclose": "1:14c13",
   "fopen": "1:14996",
   "fread": "1:14d96",
-  "free": "1:14197",
   "fseek": "1:14a8c",
   "ftell": "1:14bdf",
   "fwrite": "1:14f47",
@@ -4010,12 +3996,19 @@
   "inp": "1:13fad",
   "int386": "1:145d0",
   "int386x": "1:145ad",
-  "memmove": "1:13f76",
+  "itoa": "1:13e11",
+  "kbhit": "1:1477c",
+  "ltoa": "1:13f0e",
+  "malloc": "1:14609",
+  "memcpy": "1:13f76",
   "memset": "1:14120",
   "outp": "1:13fa3",
   "outpw": "1:14771",
   "printf": "1:15136",
-  "sel:grp:DGROUP": "obj3"
+  "sel:grp:DGROUP": "obj3",
+  "strcat": "1:13e60",
+  "strcpy": "1:13bb6",
+  "strlen": "1:13f5d"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -4670,6 +4663,174 @@
     "STACK"
    ],
    "init_end": "0x886F"
+  },
+  "publics": {
+   "_DoINTR_": "1:15747",
+   "_Full_at_exit_rtn": "1:14160",
+   "__CHK": "1:1a7a0",
+   "__CHP": "1:140e8",
+   "__CMain": "1:155f7",
+   "__CommonInit": "1:1a2e7",
+   "__EnterWVIDEO": "1:1bc93",
+   "__ExpandDGROUP": "1:160be",
+   "__FPE_exception_": "1:151df",
+   "__FiniRtns": "1:1569b",
+   "__FreeDPMIBlocks": "1:15ce6",
+   "__GETDS": "1:145a4",
+   "__GRO": "1:1a7b0",
+   "__IOMode": "1:1a549",
+   "__InitFiles": "1:1a5b5",
+   "__InitRtns": "1:15650",
+   "__LastFree": "1:15ed2",
+   "__MemAllocator": "1:15af2",
+   "__MemFree": "1:15b9a",
+   "__MkTmpFile": "1:14c76",
+   "__ReAllocDPMIBlock": "1:15d44",
+   "__STK": "1:1a7b3",
+   "__STKOVERFLOW": "1:1a7d1",
+   "__STOSB": "1:154f0",
+   "__STOSD": "1:15527",
+   "__SetIOMode": "1:1a59f",
+   "__Slash_C": "1:1b2b1",
+   "___begtext": "1:3",
+   "__allocfp": "1:164fc",
+   "__brk": "1:1a3c4",
+   "__ccmdline": "1:1b934",
+   "__cenvarg": "1:1b7d5",
+   "__chk8087": "1:154af",
+   "__chktty": "1:165f4",
+   "__close": "1:16769",
+   "__do_exit_with_msg__": "1:1456c",
+   "__doclose": "1:14cef",
+   "__doserror_": "1:1bcbe",
+   "__dospawn": "1:1b9a1",
+   "__exit": "1:14569",
+   "__exit_with_msg": "1:1b6ba",
+   "__fatal_runtime_error": "1:1b6c7",
+   "__filbuf": "1:168e2",
+   "__fill_buffer": "1:16911",
+   "__fini_387_emulator": "1:14115",
+   "__flush": "1:16628",
+   "__flushall": "1:1a745",
+   "__fprtf": "1:16c88",
+   "__freefp": "1:1659f",
+   "__full_io_exit": "1:1a62a",
+   "__get_doserrno_ptr": "1:16e84",
+   "__get_errno_ptr": "1:16e7e",
+   "__hook387": "1:1a0b2",
+   "__init_387_emulator": "1:14110",
+   "__init_8087": "1:15476",
+   "__init_80x87": "1:1a1da",
+   "__int386x_": "1:156ea",
+   "__int7": "1:17274",
+   "__int7_X32VM": "1:17228",
+   "__int7_pl3": "1:17204",
+   "__ioalloc": "1:167ac",
+   "__nmemneed": "1:1628f",
+   "__null_int23_exit": "1:15159",
+   "__open_flags": "1:147ae",
+   "__prtf": "1:1a7dd",
+   "__purgefp": "1:165d6",
+   "__qread": "1:1682c",
+   "__qwrite": "1:1a69f",
+   "__set_EDOM": "1:151ad",
+   "__set_EINVAL": "1:151bc",
+   "__set_ERANGE": "1:151b8",
+   "__set_binary": "1:16490",
+   "__set_doserrno": "1:151d8",
+   "__set_errno": "1:151cc",
+   "__set_errno_dos": "1:1a4d9",
+   "__setenvp": "1:1a201",
+   "__shutdown_stream": "1:14c40",
+   "__sys_fini_387_emulator": "1:1538f",
+   "__sys_init_387_emulator": "1:1520a",
+   "__unhook387": "1:1a183",
+   "_cstart_": "1:142d8",
+   "_disable": "1:13f9f",
+   "_dos_findclose": "1:1b773",
+   "_dos_findfirst": "1:1b726",
+   "_dos_findnext": "1:1b753",
+   "_dos_setvect": "1:1b685",
+   "_dosret0": "1:1a4a2",
+   "_dosretax": "1:1a4bc",
+   "_enable": "1:13fa1",
+   "_exit": "1:15174",
+   "_fpreset": "1:154a5",
+   "_fsopen": "1:14967",
+   "_heapenable": "1:1a2f2",
+   "_itoa": "1:13e46",
+   "_lseek": "1:166ec",
+   "_ltoa": "1:13f43",
+   "_makepath": "1:1bb85",
+   "_nfree": "1:14713",
+   "_nmalloc": "1:14617",
+   "_rotl": "1:145fe",
+   "_splitpath": "1:13ff4",
+   "_splitpath2": "1:1bac9",
+   "_stricmp": "1:14092",
+   "_tolower": "1:151ea",
+   "_toupper": "1:1b705",
+   "abs": "1:14105",
+   "atexit": "1:14197",
+   "exit": "1:1515a",
+   "fclose": "1:14c13",
+   "fcloseall": "1:1a639",
+   "fgetc": "1:16857",
+   "flushall": "1:1a73a",
+   "fopen": "1:14996",
+   "fputc": "1:16b9a",
+   "fread": "1:14d96",
+   "free": "1:14705",
+   "freopen": "1:14a10",
+   "fseek": "1:14a8c",
+   "ftell": "1:14bdf",
+   "fwrite": "1:14f47",
+   "getch": "1:14793",
+   "getche": "1:1a77c",
+   "getenv": "1:1427c",
+   "getpid": "1:16763",
+   "inp": "1:13fad",
+   "int386": "1:145d0",
+   "int386x": "1:145ad",
+   "isatty": "1:1a486",
+   "itoa": "1:13e11",
+   "kbhit": "1:1477c",
+   "lseek": "1:16706",
+   "ltoa": "1:13f0e",
+   "malloc": "1:14609",
+   "memcpy": "1:13f76",
+   "memset": "1:14120",
+   "open": "1:16292",
+   "outp": "1:13fa3",
+   "outpw": "1:14771",
+   "printf": "1:15136",
+   "remove": "1:1679e",
+   "sbrk": "1:1a302",
+   "segread": "1:15ac8",
+   "sopen": "1:162b4",
+   "spawnl": "1:1bc72",
+   "spawnlp": "1:13b9c",
+   "spawnve": "1:1b32c",
+   "spawnvp": "1:1518a",
+   "spawnvpe": "1:16d1f",
+   "stackavail": "1:1a2de",
+   "strcat": "1:13e60",
+   "strchr": "1:14142",
+   "strcmp": "1:141d0",
+   "strcmpi": "1:14092",
+   "strcpy": "1:13bb6",
+   "stricmp": "1:140a7",
+   "strlen": "1:13f5d",
+   "strnicmp": "1:15594",
+   "strtol": "1:13d3d",
+   "strtoul": "1:13d21",
+   "tell": "1:16751",
+   "tolower": "1:151f8",
+   "toupper": "1:1b713",
+   "ultoa": "1:13ebe",
+   "unlink": "1:1a718",
+   "utoa": "1:13dbf",
+   "write": "1:169cc"
   }
  }
 }

@@ -12,7 +12,7 @@ void f_dfc3(void) {
         int386(0x10, &regs, &regs);
         g_e382 = regs.h.al;
         if (g_75c8 == 0) {
-            free((void *)f_e028);
+            atexit(f_e028);
             g_75c8 = -1;
         }
         g_75ca = -1;

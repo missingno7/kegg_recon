@@ -18,7 +18,7 @@ extern unsigned char g_e48d;
 extern unsigned char g_e48e;
 extern unsigned char g_e48f;
 extern void f_130b7(int, int, int, int, int, int, int, int);
-extern int f_13bb6(int, int);
+extern int strcpy(int, int);
 extern void f_9d40(unsigned char);
 extern void f_b1df(int, int, int);
 void f_1e87(void)
@@ -81,7 +81,7 @@ L_2083:;
     if (g_e48e == 0x1c) goto L_20a7;
     if (g_e48e != 1) goto L_1eca;
 L_20a7:;
-    f_13bb6((int)((g_dedc * 0x19) + g_37f4), (int)g_6984);
+    strcpy((int)((g_dedc * 0x19) + g_37f4), (int)g_6984);
     g_dedc = 0xffffffff;
 L_20ce:;
     g_7b16 = g_7b18;

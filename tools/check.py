@@ -127,7 +127,29 @@ def known_symbols(man):
             out[f["name"]] = f"1:{int(f['start'], 16):x}"
     for k, v in man.get("symbols", {}).items():
         out[k] = v
+    for k, v in man.get("runtime", {}).get("publics", {}).items():
+        out[k] = v  # library publics: proven addresses, override anything recorded from candidates
     return out
+
+
+def runtime_gate(res, man):
+    """A binding into the runtime library region must name a library public at exactly that address."""
+    rt = man.get("runtime", {})
+    pubs = rt.get("publics", {})
+    if not pubs:
+        return
+    by_addr = {}
+    for k, v in pubs.items():
+        by_addr.setdefault(v, set()).add(k)
+    lo = min(int(x["start"], 16) for x in rt["members"])
+    hi = max(int(x["end"], 16) for x in rt["members"])
+    for k, v in res["bindings"].items():
+        if not v.startswith("1:") or k.startswith(("seg:", "grp:", "sel:")):
+            continue
+        a = int(v[2:], 16)
+        if lo <= a < hi and k not in by_addr.get(v, ()):
+            names = sorted(by_addr.get(v, ())) or ["(no library entry point here)"]
+            res["problems"].append(f"{k} binds to runtime address {v}; the library entry there is {', '.join(names)}")
 
 
 def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
@@ -318,6 +340,7 @@ NAME_RX = re.compile(r"^([fga])_([0-9a-f]+)$")
 
 
 def check_bindings(res, man, own_names):
+    runtime_gate(res, man)
     known = known_symbols(man)
     new = {}
     for k, v in res["bindings"].items():

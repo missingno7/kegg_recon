@@ -13,6 +13,7 @@ NEG = [  # (file, func, start, end)
     ("wrong_symbol.c", "f_7032", "0x7032", "0x704d"),
     ("wrong_call.c", "f_2250", "0x2250", "0x228e"),
     ("wrong_string.c", "f_ca6a", "0xca6a", "0xcac2"),
+    ("wrong_libname.c", "f_ddb9", "0xddb9", "0xde21"),  # close() where the original calls malloc
     ("wrong_irq_vec.asm", "a_0", "0x0", "0x69", "--profile", "game-asm", "--object", "2"),
     ("wrong_irq_call.asm", "a_0", "0x0", "0x69", "--profile", "game-asm", "--object", "2"),
 ]

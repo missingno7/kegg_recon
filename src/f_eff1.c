@@ -1,14 +1,14 @@
 extern int g_7b2a, g_7b2e;
 extern short g_e3fc, g_e3fe, g_e418, g_e41a;
 extern int inp(int);
-extern void f_13f9f(void), f_13fa1(void);
+extern void _disable(void), _enable(void);
 void f_eff1(void) {
     unsigned char key;
     unsigned char mask;
     int count;
     mask = 0x0f;
     count = 0;
-    f_13f9f();
+    _disable();
     do {
         key = (unsigned char)(inp(0x201) & 0x0f);
         if (key != mask) {
@@ -29,5 +29,5 @@ void f_eff1(void) {
         }
     } while (mask != 0);
 loop_exit:
-    f_13fa1();
+    _enable();
 }

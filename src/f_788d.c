@@ -6,7 +6,7 @@ extern char *g_9478, *g_dd6c, *g_ddb4;
 extern char g_df78[];
 extern void f_7551(void), f_7bf4(void), f_85a4(void);
 extern void f_100fa(int, int, int, int), f_10502(int, int), f_10137(void);
-void *memmove(void *, const void *, size_t);
+void *memcpy(void *, const void *, size_t);
 
 void f_704d(void) { g_dd84 = 0; }
 
@@ -27,7 +27,7 @@ void f_788d(void)
 {
     --g_9488;
     if (g_9480 != g_9488)
-        memmove(g_9478, g_9478 + 0x24, (g_9488 - g_9480) * 0x24);
+        memcpy(g_9478, g_9478 + 0x24, (g_9488 - g_9480) * 0x24);
     --g_9480;
 }
 
@@ -37,7 +37,7 @@ void f_7e12(void)
 {
     --g_dd84;
     if (g_dd88 != g_dd84)
-        memmove(g_dd6c, g_dd6c + 0x20, (g_dd84 - g_dd88) * 0x20);
+        memcpy(g_dd6c, g_dd6c + 0x20, (g_dd84 - g_dd88) * 0x20);
     --g_dd88;
 }
 
@@ -47,7 +47,7 @@ void f_8f7e(void)
 {
     --g_dda8;
     if (g_ddac != g_dda8)
-        memmove(g_ddb4, g_ddb4 + 0x12, (g_dda8 - g_ddac) * 0x12);
+        memcpy(g_ddb4, g_ddb4 + 0x12, (g_dda8 - g_ddac) * 0x12);
     --g_ddac;
 }
 

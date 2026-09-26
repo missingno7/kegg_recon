@@ -56,12 +56,33 @@ def promote(t):
 
 LIB_HEADERS = {"getenv": "stdlib.h", "exit": "stdlib.h", "atexit": "stdlib.h", "memmove": "string.h",
                "printf": "stdio.h", "inp": "conio.h", "outp": "conio.h", "int386": "i86.h",
-               "_disable": "i86.h", "_enable": "i86.h", "_rotl": "stdlib.h"}
+               "_disable": "i86.h", "_enable": "i86.h", "_rotl": "stdlib.h", "fopen": "stdio.h",
+               "fclose": "stdio.h", "fread": "stdio.h", "fwrite": "stdio.h", "fseek": "stdio.h",
+               "ftell": "stdio.h", "free": "stdlib.h", "getch": "conio.h", "outpw": "conio.h",
+               "int386x": "i86.h", "memset": "string.h", "close": "io.h", "memcpy": "string.h",
+               "strcpy": "string.h", "strcat": "string.h", "strlen": "string.h", "strchr": "string.h",
+               "strcmp": "string.h", "_stricmp": "string.h", "strcmpi": "string.h", "strtoul": "stdlib.h",
+               "itoa": "stdlib.h", "ltoa": "stdlib.h", "abs": "stdlib.h", "malloc": "stdlib.h",
+               "_splitpath": "stdlib.h", "kbhit": "conio.h", "spawnlp": "process.h"}
 # library prototypes (ret, params, varargs); "p" = pointer, "cp" = char pointer
 LIB_SIGS = {"getenv": ("p", ["cp"], False), "exit": (None, ["i"], False), "atexit": ("i", ["p"], False),
             "memmove": ("p", ["p", "p", "u"], False), "printf": ("i", ["cp"], True),
             "inp": ("i", ["u"], False), "outp": ("i", ["u", "i"], False), "int386": ("i", ["i", "p", "p"], False),
-            "_disable": (None, [], False), "_enable": (None, [], False), "_rotl": ("u", ["u", "u"], False)}
+            "_disable": (None, [], False), "_enable": (None, [], False), "_rotl": ("u", ["u", "u"], False),
+            "fopen": ("p", ["cp", "cp"], False), "fclose": ("i", ["p"], False),
+            "fread": ("u", ["p", "u", "u", "p"], False), "fwrite": ("u", ["p", "u", "u", "p"], False),
+            "fseek": ("i", ["p", "i", "i"], False), "ftell": ("i", ["p"], False), "free": (None, ["p"], False),
+            "getch": ("i", [], False), "outpw": ("u", ["u", "u"], False),
+            "int386x": ("i", ["i", "p", "p", "p"], False), "memset": ("p", ["p", "i", "u"], False),
+            "close": ("i", ["i"], False), "memcpy": ("p", ["p", "p", "u"], False),
+            "strcpy": ("p", ["cp", "cp"], False), "strcat": ("p", ["cp", "cp"], False),
+            "strlen": ("u", ["cp"], False), "strchr": ("p", ["cp", "i"], False),
+            "strcmp": ("i", ["cp", "cp"], False), "_stricmp": ("i", ["cp", "cp"], False),
+            "strcmpi": ("i", ["cp", "cp"], False), "strtoul": ("u", ["cp", "p", "i"], False),
+            "itoa": ("p", ["i", "cp", "i"], False), "ltoa": ("p", ["i", "cp", "i"], False),
+            "abs": ("i", ["i"], False), "malloc": ("p", ["u"], False), "kbhit": ("i", [], False),
+            "_splitpath": (None, ["cp", "cp", "cp", "cp", "cp"], False),
+            "spawnlp": ("i", ["i", "cp", "cp"], True)}
 JREL = {"je": "==", "jne": "!=", "jl": "<", "jle": "<=", "jg": ">", "jge": ">=",
         "jb": "<", "jbe": "<=", "ja": ">", "jae": ">=", "js": "<", "jns": ">="}
 JUNS = {"jb", "jbe", "ja", "jae"}
@@ -159,7 +180,12 @@ class Program:
             if not re.fullmatch(r"[0-9]+:[0-9a-f]+", str(v)):
                 continue
             obj, off = v.split(":")
-            self.symname[(int(obj), int(off, 16))] = k
+            key = (int(obj), int(off, 16))
+            if key not in self.symname or re.match(r"[fg]_[0-9a-f]+$", self.symname[key]):
+                self.symname[key] = k       # a library name beats an address alias
+        for k, v in sorted(self.man.get("runtime", {}).get("publics", {}).items(), reverse=True):
+            if re.fullmatch(r"1:[0-9a-f]+", str(v)):
+                self.symname[(1, int(v[2:], 16))] = k      # runtime library publics (proven)
         self.globals = {}
         self.sigs = defaultdict(lambda: {"calls": [], "params": {}, "ret": None})
         self.decls = self.load_decls()
@@ -396,8 +422,11 @@ class Ins:
                 self.ops.append(("i", o.imm, o.size))
             elif o.type == x86.X86_OP_MEM:
                 m = o.mem
-                self.ops.append(("m", ci.reg_name(m.base) if m.base else None,
-                                 ci.reg_name(m.index) if m.index else None, m.scale, m.disp, o.size))
+                base = ci.reg_name(m.base) if m.base else None
+                index = ci.reg_name(m.index) if m.index else None
+                if index == "ebp" and m.scale == 1:
+                    base, index = index, base
+                self.ops.append(("m", base, index, m.scale, m.disp, o.size))
 
 
 class Lift:
@@ -407,8 +436,22 @@ class Lift:
         self.prog, self.fn, self.name = prog, fn, fn["name"]
         self.start, self.end = int(fn["start"], 16), int(fn["end"], 16)
         code = prog.code
-        ins = [Ins(ci, prog.fix) for ci in prog.md.disasm(code[self.start:self.end], self.start)]
-        self.switches = {}
+        # jump tables: runs of 4-spaced code fixups pointing into the function; decode around them
+        sites = [a for a in range(self.start, self.end) if a in prog.fix and prog.fix[a].get("obj") == 1
+                 and self.start <= prog.fix[a]["off"] < self.end]
+        self.tables, run = {}, []
+        for a in sites + [None]:
+            if run and a == run[-1] + 4:
+                run.append(a)
+                continue
+            if len(run) >= 2:
+                self.tables[run[0]] = [prog.fix[x]["off"] for x in run]
+            run = [a] if a is not None else []
+        ins, pos = [], self.start
+        for t in sorted(self.tables) + [self.end]:
+            ins += [Ins(ci, prog.fix) for ci in prog.md.disasm(code[pos:t], pos)]
+            pos = t + 4 * len(self.tables[t]) if t in self.tables else t
+        self.switches, self.switch_tmps = {}, set()
         self.find_switches(ins)
         self.ins = ins
         self.args, self.locals = {}, {}
@@ -422,22 +465,29 @@ class Lift:
 
     # structure of the function -------------------------------------------------------------
     def find_switches(self, ins):
-        spans = []
+        """`cmp [tmp],max; ja dflt; mov eax,[tmp]; shl eax,2; jmp cs:[eax+table]` (the switch value
+        was stored in a compiler temp slot `tmp` first; a `dec`/`sub` normalises the lowest case)."""
         for n, i in enumerate(ins):
-            if i.mn == "jmp" and i.ops and i.ops[0][0] == "m" and i.dfix and i.dfix.get("obj") == 1:
-                table = i.dfix["off"]
-                cmp = next((x for x in reversed(ins[max(0, n - 6):n]) if x.mn == "cmp" and x.ops[1][0] == "i"), None)
-                if not cmp:
-                    continue
-                count = cmp.ops[1][1] + 1
-                ents = [self.prog.fix.get(table + 4 * k) for k in range(count)]
-                if not all(e and e.get("obj") == 1 for e in ents):
-                    continue
-                dflt = next((x.ops[0][1] for x in reversed(ins[max(0, n - 6):n]) if x.mn == "ja"), None)
-                self.switches[i.addr] = ([e["off"] for e in ents], dflt)
-                spans.append((table, table + 4 * count))
-        if spans:
-            ins[:] = [i for i in ins if not any(a <= i.addr < b for a, b in spans)]
+            if not (i.mn == "jmp" and i.ops and i.ops[0][0] == "m" and i.dfix and i.dfix.get("off") in self.tables):
+                continue
+            cases = self.tables[i.dfix["off"]]
+            win = ins[max(0, n - 6):n]
+            dflt = next((x.ops[0][1] for x in reversed(win) if x.mn == "ja"), None)
+            cmp = next((x for x in reversed(win) if x.mn == "cmp"), None)
+            tmp = None
+            if cmp and cmp.ops[0][0] == "m" and cmp.ops[0][1] == "ebp":
+                tmp = -cmp.ops[0][4]
+            skip = {x.addr for x in win[win.index(cmp):]} if cmp in win else set()
+            # the compiler's own `jmp` over the table and the alignment filler before it
+            t0 = i.dfix["off"]
+            before = [x for x in ins if x.addr < t0]
+            while before and (before[-1].mn == "nop" or before[-1].text in ("eax, eax", "eax, [eax]")):
+                skip.add(before.pop().addr)
+            if before and before[-1].mn == "jmp" and before[-1].ops[0][0] == "i" and                     before[-1].ops[0][1] == t0 + 4 * len(cases):
+                skip.add(before[-1].addr)
+            self.switches[i.addr] = {"cases": cases, "default": dflt, "tmp": tmp, "skip": skip}
+            if tmp:
+                self.switch_tmps.add(tmp)
 
     def frame_parts(self):
         ins = self.ins
@@ -543,7 +593,10 @@ class Lift:
         terms = []
         if base:
             if base == "ebp":
-                terms.append(E("addr", var=self.local(-disp)) if disp < 0 else E("addr", var=self.arg((disp - 0x14) // 4)))
+                v = self.local(-disp) if disp < 0 else self.arg((disp - 0x14) // 4)
+                if index:
+                    v.addr = True       # indexed: an array
+                terms.append(E("addr", var=v))
                 disp = 0
             else:
                 terms.append(self.reg(base))
@@ -577,8 +630,11 @@ class Lift:
         if op[0] == "i":
             if ins.ifix:
                 t = ins.ifix
+                far = self.regs.get("eax") is not None and self.regs["eax"].op == "cs"
                 if t.get("obj") == 1:
-                    return E("fn", name=self.prog.fname(t["off"]))
+                    return E("fn", name=self.prog.fname(t["off"]), x="far" if far else None)
+                if t.get("obj") == 2:
+                    return E("fn", name=f"o2_{t['off']:x}", x="far" if far else None)
                 g = self.prog.gvar(t["off"], t.get("obj"))
                 g.array = True
                 return E("addr", var=g)
@@ -616,32 +672,23 @@ class Lift:
             mark(a)
         elif plain(b) and b.seq < a.seq:
             mark(b)
-        elif plain(b) and a.op == "m" and b.op == "m":
+        elif plain(b) and a.op == b.op:
             mark(a)
         elif b.op not in ("v", "m", "k", "ext") and b.seq < a.seq:
             mark(a)
 
-    def live_values(self):
-        return any(e is not None and e.op not in ("raw",) and id(e) not in self.consumed
+    def live_values(self, exclude=()):
+        return any(e is not None and e.op not in ("raw", "cs") and id(e) not in self.consumed and id(e) not in exclude
                    for e in self.regs.values())
 
     # statements -------------------------------------------------------------------------------
     def emit(self, st, uses=()):
-        while self.pre_pending:
-            loc, op = self.pre_pending.pop(0)
-            self.stmts.append(("incdec", loc, op))
         used = set()
         for u in uses:
             if isinstance(u, E):
                 used |= {id(n) for n in u.walk()}
         self.consumed |= used
-        for r, e in list(self.regs.items()):
-            if e is not None and e.op == "post" and id(e) not in used and id(e) not in self.consumed:
-                self.consumed.add(id(e))
-                self.stmts.append(("expr", e))
-                if e.a.var:
-                    e.a.var.volatile = True
-                self.regs[r] = None
+        # calls that ran earlier and whose value is not used here become statements first
         keep = []
         live = set()
         for r, e in self.regs.items():
@@ -655,6 +702,20 @@ class Lift:
                 continue
             self.stmts.append(("expr", c))
         self.pending = keep
+        if self.bf_pending:
+            loc, k, uns = self.bf_pending
+            self.bf_pending = None
+            self.stmts.append(("opset", loc, "&", K(k, loc.w), uns))
+        while self.pre_pending:
+            loc, op = self.pre_pending.pop(0)
+            self.stmts.append(("incdec", loc, op))
+        for r, e in list(self.regs.items()):
+            if e is not None and e.op == "post" and id(e) not in used and id(e) not in self.consumed:
+                self.consumed.add(id(e))
+                self.stmts.append(("expr", e))
+                if e.a.var:
+                    e.a.var.volatile = True
+                self.regs[r] = None
         if st:
             self.stmts.append(st)
 
@@ -666,6 +727,10 @@ class Lift:
 
     def store(self, dst, val, ins):
         loc = self.mem_loc(dst, ins)
+        if loc.op == "v" and loc.var.kind == "l" and loc.var.key in self.switch_tmps:
+            self.switch_val[loc.var.key] = val     # the switch expression's compiler temp
+            del self.locals[loc.var.key]
+            return
         if loc.op == "v" and loc.var.kind == "l" and self.spill and loc.var.key == self.spill[0]:
             self.emit(("ret", val), [val])
             self.retval = True
@@ -684,6 +749,9 @@ class Lift:
         self.regs, self.pending, self.pushes = {}, [], []
         self.flags = None
         self.consumed = set()
+        self.bf_pending = None
+        self.switch_val = {}
+        self.copy = None
         self.local_ptr = set()
         self.pre_pending = []
         self.last_load = None
@@ -693,9 +761,9 @@ class Lift:
             if i.mn.startswith("j") and i.ops and i.ops[0][0] == "i":
                 targets.add(i.ops[0][1])
         for sw in self.switches.values():
-            targets.update(sw[0])
-            if sw[1]:
-                targets.add(sw[1])
+            targets.update(sw["cases"])
+            if sw["default"]:
+                targets.add(sw["default"])
         self.targets = targets
         n = 0
         self.body = body
@@ -721,7 +789,14 @@ class Lift:
 
     def step(self, i, nxt):
         mn, ops = i.mn, i.ops
+        if any(i.addr in sw["skip"] for sw in self.switches.values()):
+            if i.mn.startswith("j") and i.mn != "jmp":
+                self.targets.discard(i.ops[0][1]) if False else None
+            return 1
         if mn == "nop":
+            return 1
+        if mn == "mov" and ops[1][0] == "r" and ops[1][1] == "cs":
+            self.regs[ops[0][1]] = E("cs")      # segment half of a far function address
             return 1
         if mn in ("mov", "movsx", "movzx"):
             dst, src = ops
@@ -780,6 +855,12 @@ class Lift:
                 loc = self.mem_loc(ops[0], i)
                 if loc.op == "v":
                     loc.var.volatile = True     # Watcom narrows `x & 2` to a byte test unless volatile
+            high = {"ah": "eax", "bh": "ebx", "ch": "ecx", "dh": "edx"}.get(ops[0][1]) if ops[0][0] == "r" else None
+            if mn == "test" and high and ops[1][0] == "i" and self.regs.get(high) is not None:
+                # `test ah, 1` on a full-width value: `x & 0x100`
+                full = self.regs[high]
+                self.flags = ("test", full, K((ops[1][1] & 0xFF) << 8, full.w), False)
+                return 1
             a = self.read(ops[0], i, "cmp")
             b = self.read(ops[1], i, "cmp", w=a.w if ops[1][0] == "i" else None)
             if ops[1][0] == "i" and ops[0][0] in ("r", "m"):
@@ -804,10 +885,33 @@ class Lift:
         if mn == "jmp":
             self.jump(i)
             return 1
+        if mn == "sbb" and ops[0][0] == "r" and ops[1][0] == "r":
+            # `mov edx,x; sar edx,31; shl edx,k; sbb eax,edx; sar eax,k`: signed x / 2**k
+            a, b = self.reg(ops[0][1]), self.reg(ops[1][1])
+            if b.op == "<<" and b.b.op == "k" and b.a.op == ">>" and b.a.b.op == "k" and b.a.b.v == 31                     and b.a.a.key() == a.key():
+                self.setreg(ops[0][1], E("sbbdiv", a, v=b.b.v))
+                return 1
         if mn in ARITH or mn in ("inc", "dec", "neg", "not"):
             return self.arith(i, nxt)
         if mn == "cdq":
             self.regs["edx"] = E(">>", self.reg("eax"), K(31))
+            return 1
+        if mn in ("movsb", "movsw", "movsd", "rep movsb", "rep movsw", "rep movsd"):
+            unit = {"b": 1, "w": 2, "d": 4}[mn[-1]]
+            if self.copy is None:
+                self.copy = [self.regs.get("edi") or self.raw("edi"), self.regs.get("esi") or self.raw("esi"), 0]
+            cnt = 1
+            if mn.startswith("rep"):
+                c = self.regs.get("ecx")
+                cnt = c.v if c is not None and c.op == "k" else 0
+            self.copy[2] += unit * cnt
+            if not (nxt and nxt.mn.lstrip("rep ").startswith("movs")):
+                d, s_, n = self.copy
+                self.copy = None
+                self.emit(("copy", d, s_, n), [d, s_])
+                self.regs.pop("esi", None)
+                self.regs.pop("edi", None)
+                self.regs.pop("ecx", None)
             return 1
         if mn in ("idiv", "div"):
             s = self.read(ops[0], i, "arith")
@@ -847,6 +951,8 @@ class Lift:
 
     def lea(self, src, i):
         _, base, index, scale, disp, size = src
+        if base == "ebp" and index is not None:
+            return self.address(src, i)
         if base == "ebp" and index is None:
             if disp < 0:
                 v = self.local(-disp)
@@ -922,6 +1028,18 @@ class Lift:
             if src[0] == "r" and src[1] == dst[1] and mn in ("xor", "sub"):
                 self.setreg(dst[1], K(0, dst[2]))
                 return 1
+            high = {"ah": "eax", "bh": "ebx", "ch": "ecx", "dh": "edx"}.get(dst[1])
+            if high and mn in ("or", "xor", "and") and src[0] == "i" and self.regs.get(high) is not None \
+                    and self.regs[high].w >= 2:
+                # `and ah, 0efh` on a full-width value: a mask on its second byte
+                full = self.regs[high]
+                k = (src[1] & 0xFF) << 8
+                if mn == "and":
+                    k |= ((1 << (8 * full.w)) - 1) ^ 0xFF00
+                e = E(op, full, K(k), w=full.w)
+                self.regs[high] = e
+                self.flags = ("res", e, None, False)
+                return 1
             a = self.reg(dst[1])
             full = self.regs.get(SUBREG[dst[1]][0]) if dst[1] in SUBREG else None
             if src[0] == "r" and src[1] == dst[1] and mn == "add":
@@ -952,16 +1070,24 @@ class Lift:
                     a = self.narrow(a, dst[2])
                 if mn == "add" and dst[1] != "eax" and dst[2] == 4:
                     self.pointer_sum(a, b, src)
+                elif mn == "add" and dst[2] == 4 and src[0] == "r":
+                    # `shl eax,4; mov edx,[p]; add eax,edx`: an int operand would be a memory operand
+                    plain = b.op == "v" and b.w == 4 and not b.x and b.var.kind == "g"
+                    if plain and a.op not in ("v", "m", "k") and b.seq > max(n.seq for n in a.walk())                             and not any(n.op == "call" for n in a.walk()):
+                        self.local_ptr.add(b.var)
+                        b.var.psum += 1
                 if op in ("+", "*", "&", "|", "^") and src[0] == "r" and commute(a, b):
                     a, b = b, a
                 e = E(op, a, b, uns=uns, w=dst[2])
                 if mn in ("sar", "shr"):
                     self.mark_sign(a, mn == "sar")
-            e = simplify(e)
+            e = bitfield_read(simplify(e))
             self.setreg(dst[1], e)
             self.flags = ("res", e, None, False)
             return 1
         loc = self.mem_loc(dst, i)
+        if mn == "or" and src[0] == "r" and self.bf_pending and self.bitfield_store(loc, self.reg(src[1])):
+            return 1
         if loc.var:
             loc.var.note(loc.w, "rmw")
             if mn in ("sar", "shr"):
@@ -975,9 +1101,49 @@ class Lift:
             hi = (b.v & 0xFFFF0000) >> 16
             if (mn == "and" and hi == 0xFFFF) or (mn != "and" and hi == 0):
                 loc.var.note(4, "rmwn")   # Watcom would narrow this for a plain int: volatile/short
+        if mn == "and" and b.op == "k" and self.live_values({id(n) for n in loc.walk()}) and not self.bf_pending:
+            # possibly the clearing half of a bitfield store (`and byte [m],~mask; or [m],val`)
+            self.bf_pending = (loc, b.v, uns)
+            return 1
         self.emit(("opset", loc, op, b, uns), [loc, b])
         self.flags = ("res", loc, None, False)
         return 1
+
+    def bitfield_store(self, loc, val):
+        """`and byte [m],~(mask<<o)` (deferred) then `or [m],(v & mask) << o`: m->field = v."""
+        cl, k, _ = self.bf_pending
+        u = loc.w
+        delta = 0
+        if cl.op == "m" and loc.op == "m":
+            lc = [t for t in leaves(cl.a) if t.op != "k"]
+            ll = [t for t in leaves(loc.a) if t.op != "k"]
+            if sorted(map(id, lc)) != sorted(map(id, ll)) and not same_place(E("m", cl.a, w=u), loc):
+                if [t.key() for t in lc] != [t.key() for t in ll]:
+                    return False
+            delta = sum(t.v for t in leaves(cl.a) if t.op == "k") - sum(t.v for t in leaves(loc.a) if t.op == "k")
+        elif not (cl.op == loc.op == "v" and cl.var is loc.var):
+            return False
+        cleared = ((~k) & ((1 << (8 * cl.w)) - 1)) << (8 * delta)
+        if cleared == 0 or delta < 0 or cleared >> (8 * u):
+            return False
+        o = (cleared & -cleared).bit_length() - 1
+        w = bin(cleared).count("1")
+        if cleared != ((1 << w) - 1) << o:
+            return False
+        v = val
+        if o:
+            if v.op == "<<" and v.b.op == "k" and v.b.v == o:
+                v = v.a
+            elif o == 1 and v.op == "*" and v.b.op == "k" and v.b.v == 2:
+                v = v.a
+            else:
+                return False
+        if v.op == "&" and v.b.op == "k" and v.b.v & ((1 << (8 * u)) - 1) == (1 << w) - 1:
+            v = v.a
+        self.bf_pending = None
+        self.emit(("bfset", loc, o, w, v), [loc, v])
+        self.flags = None
+        return True
 
     def post_incdec(self, loc, op):
         """`mov eax,[x]; inc [x]` with eax used later: the expression `x++`."""
@@ -1078,16 +1244,20 @@ class Lift:
 
     def jump(self, i):
         if i.addr in self.switches:
-            cases, dflt = self.switches[i.addr]
-            sel = self.regs.get(i.ops[0][2] and i.ops[0][2]) if False else None
-            m = i.ops[0]
-            idx = self.reg(m[2]) if m[2] else self.reg(m[1])
-            if idx.op == "*" and idx.b.op == "k" and idx.b.v == 4:
-                idx = idx.a
-            elif idx.op == "<<" and idx.b.op == "k" and idx.b.v == 2:
-                idx = idx.a
-            self.emit(("switch", idx, cases, dflt), [idx])
+            sw = self.switches[i.addr]
+            val = self.switch_val.get(sw["tmp"])
+            if val is None:
+                m = i.ops[0]
+                val = self.reg(m[2]) if m[2] else self.reg(m[1])
+                if val.op in ("*", "<<") and val.b.op == "k" and val.b.v in (4, 2):
+                    val = val.a
+            base = 0
+            if val.op in ("-", "+") and val.b.op == "k":
+                base = val.b.v if val.op == "-" else -val.b.v
+                val = val.a
+            self.emit(("switch", val, sw["cases"], sw["default"], base), [val])
             self.flush()
+            self.regs = {}
             return
         if i.ops[0][0] != "i":
             self.unknown.append(f"{i.addr:x}: jmp {i.text}")
@@ -1122,6 +1292,23 @@ def commute(dst, src):
     return False
 
 
+def bitfield_read(e):
+    """Watcom's unsigned bitfield extraction: `shl r,32-o-w; shr r,32-w` on a dword, or a byte-wide
+    `shr al,o` of a loaded byte (C would promote before shifting)."""
+    if e.op == ">>" and e.b.op == "k" and e.a.op == "<<" and e.a.b.op == "k" and e.w == 4:
+        ld, k1, k2 = e.a.a, e.a.b.v, e.b.v
+        if ld.op in ("v", "m") and ld.w == 4 and not ld.x and k2 >= k1:
+            return E("bf", ld, v=(k2 - k1, 32 - k2), w=4, uns=e.uns)
+    if e.op == ">>" and e.b.op == "k" and e.w == 1 and e.a.op in ("v", "m") and e.a.w == 1 and not e.a.x:
+        return E("bf", e.a, v=(e.b.v, 8 - e.b.v), w=1, uns=e.uns)
+    if e.op == "&" and e.b.op == "k" and e.a.op == "bf" and e.a.w == 1:
+        o, w = e.a.v
+        m = e.b.v & 0xFF
+        if m and m & (m + 1) == 0 and m.bit_length() < w:
+            return E("bf", e.a.a, v=(o, m.bit_length()), w=1, uns=e.a.uns)
+    return e
+
+
 def leaves(e):
     if e.op == "+":
         return leaves(e.a) + leaves(e.b)
@@ -1141,6 +1328,8 @@ def same_place(x, y):
 
 
 def simplify(e):
+    if e.op == ">>" and e.a.op == "sbbdiv" and e.b.op == "k" and e.b.v == e.a.v:
+        return E("/", e.a.a, K(1 << e.a.v))
     # (x - (x >> 31)) >> 1  ==  x / 2  (signed division by two)
     if e.op == ">>" and not e.uns and e.b.op == "k" and e.b.v == 1 and e.a.op == "-":
         x, s = e.a.a, e.a.b
@@ -1156,6 +1345,10 @@ class Render:
         self.structured = structured
         self.used_globals, self.used_funcs, self.includes = {}, {}, set()
         self.tcache = {}
+        self.bitfields = {}
+        self.switches = []
+        self.structs = set()
+        self.far = set()
 
     def prepare(self):
         """Per-file prototypes: this function's call sites decide narrow/wide parameters (the
@@ -1208,7 +1401,7 @@ class Render:
         if op == "m":
             return self.mem_type(e)
         if op in ("addr", "fn"):
-            return "p"
+            return "i" if e.x == "far" else "p"
         if op == "call":
             if e.a.op == "fn":
                 sig = self.protos.get(e.a.name) or self.prog.sigs.get(e.a.name)
@@ -1222,9 +1415,11 @@ class Render:
             return promote(self.ty(e.a))
         if op in ("pre", "preop", "post"):
             return self.lv_type(e.a)
+        if op == "bf":
+            return "i"
         if op == "cmp":
             return "i"
-        if op == "raw":
+        if op in ("raw", "cs"):
             return "i"
         ta, tb = promote(self.ty(e.a)), promote(self.ty(e.b))
         if op in ("+", "-"):
@@ -1311,6 +1506,19 @@ class Render:
             return f"*({tn} *){base}"
         return f"*({tn} *)({base} + {off})"
 
+    def bitfield(self, loc, o, w, unit, signed):
+        name = f"BF{unit}{'s' if signed else ''}_{o}_{w}"
+        base = {1: "signed char" if signed else "unsigned char", 4: "int" if signed else "unsigned"}[unit]
+        pad = f"{base} :{o}; " if o else ""
+        self.bitfields[name] = f"typedef struct {{ {pad}{base} f:{w}; }} {name};"
+        if loc.op == "m":
+            return f"(({name} *){self.ptr_text(loc.a)})->f"
+        return f"(({name} *)&{self.vname(loc.var)})->f"
+
+    def ptr_text(self, a):
+        base, off = self.split_addr(a)
+        return base if off is None else f"({base} + {off})"
+
     def split_addr(self, a):
         """Render an address expression as (byte-pointer base, integer offset or None)."""
         terms = []
@@ -1347,6 +1555,8 @@ class Render:
         if not rest:
             return bs, None
         s = self.sum_text(rest)
+        if len(rest) > 1 and base.op != "addr" and any(t.op != "k" and t.seq < base.seq for t in rest):
+            s = f"({s})"        # the index was evaluated before the pointer: p[i + c]
         return (f"({bs})" if " " in bs and not bs.startswith("(") else bs), s
 
     def sum_text(self, terms):
@@ -1401,6 +1611,9 @@ class Render:
             return f"&{self.vname(v)}"
         if op == "fn":
             self.use_func(e.name)
+            if e.x == "far":
+                self.far.add(e.name)
+                return f"(int){e.name}"
             return e.name
         if op == "call":
             return self.call(e)
@@ -1416,6 +1629,10 @@ class Render:
             return f"~{self.paren(e.a, self.expr(e.a))}"
         if op == "raw":
             return f"/*{e.name}*/0"
+        if op == "cs":
+            return "/*cs*/0"
+        if op == "bf":
+            return self.bitfield(e.a, e.v[0], e.v[1], e.a.w, not e.uns)
         if op == "pre":
             return f"{e.name}{self.lvalue(e.a)}"
         if op == "post":
@@ -1484,7 +1701,15 @@ class Render:
             pa, pb = promote(ta), promote(tb) if b.op != "k" else promote(ta)
             c_uns = "u" in (pa, pb) or "p" in (pa, pb) or (self.nuns(a) and (self.nuns(b) or b.op == "k"))
             if e.uns and not c_uns:
-                sa = f"({TNAME[tcode(TW[ta], False)] if ta in ('s', 'sc') else 'unsigned'}){sa}"
+                narrow = ("s", "sc", "c", "us")
+                if ta in narrow and (b.op == "k" or tb in narrow):
+                    # a narrow unsigned compare: make the signed narrow operands unsigned
+                    if ta in ("s", "sc"):
+                        sa = f"({TNAME[tcode(TW[ta], False)]}){sa}"
+                    if b.op != "k" and tb in ("s", "sc"):
+                        sb = f"({TNAME[tcode(TW[tb], False)]}){sb}"
+                else:
+                    sa = f"(unsigned){sa}"
             elif not e.uns and c_uns:
                 if ta in ("c", "us") and b.op == "k":
                     sa = f"({TNAME[tcode(TW[ta], True)]}){sa}"
@@ -1563,6 +1788,18 @@ class Render:
             return f"{self.lvalue(loc)} {op}= {s};"
         if k == "incdec":
             return f"{st[2]}{self.lvalue(st[1])};"
+        if k == "bfset":
+            _, loc, o, w, v = st
+            f = self.bitfield(loc, o, w, loc.w, False)
+            if v.op in ("+", "-") and v.a.op == "bf" and v.a.v == (o, w) and v.b.op == "k" and                     (v.a.a.key() == loc.key() or (loc.op == "m" and same_place(v.a.a, loc))):
+                if v.b.v == 1:
+                    return f"{f}{v.op}{v.op};"
+                return f"{f} {v.op}= {self.expr(v.b)};"
+            return f"{f} = {self.expr(v)};"
+        if k == "copy":
+            n = st[3]
+            self.structs.add(n)
+            return f"*(S{n} *){self.ptr_text(st[1])} = *(S{n} *){self.ptr_text(st[2])};"
         if k == "expr":
             return f"{self.expr(st[1])};"
         if k == "ret":
@@ -1582,17 +1819,29 @@ class Render:
         if k == "goto":
             return f"goto L_{st[1]:x};"
         if k == "label":
-            return f"L_{st[1]:x}:;"
+            lines = []
+            for sw in list(self.switches):
+                if st[1] == sw["end"]:
+                    lines.append("}")
+                    self.switches.remove(sw)
+                    continue
+                for v in sw["at"].get(st[1], []):
+                    lines.append(f"case {v}:")
+                if st[1] == sw["default"]:
+                    lines.append("default:")
+            return "\n".join(lines + [f"L_{st[1]:x}:;"])
         if k == "asm":
             return f"/* unsupported: {st[1]} */"
         if k == "switch":
-            lines = [f"switch ({self.expr(st[1])}) {{"]
-            for n, t in enumerate(st[2]):
-                lines.append(f"case {n}: goto L_{t:x};")
-            if st[3] is not None:
-                lines.append(f"default: goto L_{st[3]:x};")
-            lines.append("}")
-            return "\n".join(lines)
+            # case labels are placed at their code (a table entry must point at the case body)
+            _, val, cases, dflt, base = st
+            end = dflt if dflt is not None and dflt >= max(cases) else None
+            at = defaultdict(list)
+            for n, t in enumerate(cases):
+                if t != end:
+                    at[t].append(n + base)
+            self.switches.append({"at": at, "end": end, "default": None if end else dflt})
+            return f"switch ({self.expr(val)}) {{"
         return f"/* ? {k} */"
 
     # whole function ----------------------------------------------------------------------------
@@ -1633,11 +1882,18 @@ class Render:
         out = ["/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */"]
         for inc in sorted(self.includes):
             out.append(f"#include <{inc}>")
+        for n in sorted(self.bitfields):
+            out.append(self.bitfields[n])
+        for n in sorted(self.structs):
+            out.append(f"typedef struct {{ unsigned char b[{n}]; }} S{n};")
         for name in sorted(self.used_globals):
             v = self.used_globals[name]
             out.append(global_decl(v))
         for name in sorted(self.used_funcs):
             if name == L.name or name in LIB_HEADERS:
+                continue
+            if name in self.far:
+                out.append(f"extern void __far {name}(void);")
                 continue
             out.append(func_decl(self.protos.get(name) or self.prog.sigs.get(name), name))
         ret = TNAME[L.ret_type] if L.ret_type else "void"
@@ -1747,6 +2003,10 @@ def layout_locals(L):
             u += 4
             continue
         v = L.locals.get(u)
+        if u in L.switch_tmps:
+            info.append({"off": u, "var": None, "temp": True, "range": (4, 4), "switch": True})
+            u += 4
+            continue
         if u == spill_off:
             w = L.spill[1]
             rng = (1, 1) if w == 1 or L.ret_type == "c" else (2, 2) if L.ret_type == "s" or w == 2 else (2, 4)
@@ -1789,6 +2049,8 @@ def layout_locals(L):
     decl = []
     for s in info:
         v = s["var"]
+        if s.get("switch"):
+            continue
         if s.get("temp"):
             w = L.spill[1]
             if not getattr(L, "ret_narrow", False):

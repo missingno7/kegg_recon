@@ -1,11 +1,11 @@
 #include <conio.h>
 extern void f_e813(void);
-extern void f_13f9f(void);
-extern void f_13fa1(void);
+extern void _disable(void);
+extern void _enable(void);
 void f_e6b3(unsigned char *p) {
     volatile int i;
     f_e813();
-    f_13f9f();
+    _disable();
     if (p[0] & 1) {
         for (i = 0; i <= 0x18; i++)
             outpw(0x3d4, ((unsigned int)p[i + 4] << 8) | i);
@@ -28,6 +28,6 @@ void f_e6b3(unsigned char *p) {
         outp(0x3c2, p[0x30]);
         outp(0x3da, p[0x31]);
     }
-    f_13fa1();
+    _enable();
     f_e813();
 }

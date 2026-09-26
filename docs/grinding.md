@@ -9,6 +9,9 @@ python tools/promote.py build/workers/NAME/f_1b7e.c f_1b7e --verify-only
 ```
 
 Conventions
+- Calls into the runtime library (obj1 >= 0x13B9C) must use the real Watcom clib name at that address
+  (manifest.json runtime.publics; check.py rejects any other name there, e.g. close() where the original
+  calls malloc). Include the proper header; do not invent prototypes for library functions.
 - Name unknown functions `f_<obj1 offset hex>` and globals `g_<obj3 offset hex>` (lower-case hex, no
   leading zeros). The verifier checks that such names bind to exactly that address, so the names are
   self-verifying. Semantic renames happen later, centrally.

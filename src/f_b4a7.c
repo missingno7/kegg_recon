@@ -1,19 +1,19 @@
 /* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
-extern int f_13bb6(int, int);
-extern int f_13f0e(int, int, int);
-extern int f_13f5d(int);
+extern int strcpy(int, int);
+extern int ltoa(int, int, int);
+extern int strlen(int);
 extern void f_b1df(int, int, int);
 void f_b4a7(volatile int a0, volatile int a1, volatile int a2, volatile int a3, int a4)
 {
     int v_4;
     volatile int v_8;
     unsigned char v_28[32];
-    f_13f0e(a2, (int)((v_28 + a4) + 1), a3);
-    v_8 = a4 - f_13f5d((int)((v_28 + a4) + 1));
+    ltoa(a2, (int)((v_28 + a4) + 1), a3);
+    v_8 = a4 - strlen((int)((v_28 + a4) + 1));
     if (v_8 >= 0) goto L_b4f0;
     v_8 = 0;
 L_b4f0:;
-    f_13bb6((int)(v_28 + v_8), (int)((v_28 + a4) + 1));
+    strcpy((int)(v_28 + v_8), (int)((v_28 + a4) + 1));
     v_4 = (int)v_28;
 L_b50d:;
     if (v_8 > 0) goto L_b51d;
