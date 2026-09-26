@@ -5,6 +5,11 @@
     python tools/tu.py scan [--range A B] [--window N]         # merge probes over the matched runs
     python tools/tu.py evidence                                # data-layout anchors for TU boundaries
     python tools/tu.py verify build/workers/tu/proposal.json   # build every proposed TU -> build/tus.json
+    python tools/tu.py build --range 0x105a7 0x108a9 --literals --defs build/workers/tu/defs/file.c
+
+--defs FILE: the TU's own data definitions (C lines, definition order, prototypes they need included);
+they replace the extern declarations of those symbols, so check.py verifies the TU's _DATA block at the
+address its code binds it to (contents, and pointer fixups inside it).
 
 build: concatenates the functions' canonical sources (manifest `src`) in address order.  Top-level
 declarations are merged and de-duplicated per symbol; declarations of one symbol with different
@@ -270,6 +275,10 @@ def norm_param(toks, typedefs):
     specs, dcl = split_specs(toks, typedefs)
     n = _Norm(typedefs, True)
     d = n.decl(dcl).replace("$", "").strip()
+    # top-level qualifiers of a parameter are not part of the function type (C89 6.5.4.3)
+    d = re.sub(r"(\*)(\s+(const|volatile))+\s*$", r"\1", d)
+    if not re.search(r"[*\[(]", d):
+        specs = [s for s in specs if s.text not in ("const", "volatile")]
     return (canon_specs(specs) + (" " + d if d else "")).strip()
 
 
@@ -461,8 +470,14 @@ class TU:
                     if 4 <= a < CONST_END:
                         lit_syms[name] = c_literal(a)
         self.lit_map = lit_syms
+        defined = set()
+        for line in self.defs:   # symbols the TU defines itself: their definition is the declaration
+            m = re.match(r"[^=;(\[]*?\b(\w+)\s*(\[[^\]]*\]\s*)*(=|;)", line)
+            if m and not line.lstrip().startswith("#"):
+                defined.add(m.group(1))
+        self.defined = defined
         for name, vs in self.symdecls.items():
-            if name in lit_syms:
+            if name in lit_syms or name in defined:
                 continue
             if len(vs) > 1:
                 self.conflicts[name] = [{"type": v["type"], "text": v["text"], "users": v["users"]} for v in vs]
@@ -827,41 +842,91 @@ def evidence(args):
 
 
 # ------------------------------------------------------------------------------------- verify
+def segments(run, literals, tag, defs=()):
+    """Greedy maximal EXACT windows of one matched run; returns (builds, failed merges at the splits).
+    defs are used only for the whole run."""
+    whole = build(run, literals=literals, quiet=True, tag=tag, defs=defs)
+    if whole["verdict"] == "EXACT" or len(run) == 1:
+        return [whole], []
+    out, fails, i = [], [], 0
+    while i < len(run):
+        j = i + 1
+        last = build(run[i:j], literals=literals, quiet=True, tag=tag)
+        while j < len(run):
+            r = build(run[i:j + 1], literals=literals, quiet=True, tag=tag)
+            if r["verdict"] != "EXACT":
+                fails.append({"merge": [run[i]["name"], run[j]["name"]], "verdict": r["verdict"],
+                              "problems": r.get("problems", [])[:4],
+                              "conflicts": {k: [f"{v['type']} ({','.join(v['users'])})" for v in vs]
+                                            for k, vs in (r.get("conflicts") or {}).items()}})
+                break
+            last, j = r, j + 1
+        out.append(last)
+        i = j
+    return out, fails
+
+
 def verify(args):
+    """Build every proposed TU (matched runs inside it) and write build/tus.json.
+
+    proposal entry: {id, range:[a,b] | functions:[...], evidence:[...], grouping, data:{...},
+                     defs: path (the TU's own data definitions), probes:[{range|functions, expect, why}]}"""
     prop = json.loads(Path(args.proposal).read_text())
     man = manifest()
-    by = {f["name"]: f for f in functions(man)}
+    fs = functions(man)
+    by = {f["name"]: f for f in fs}
     out = []
     for tu in prop:
-        members = [by[n] for n in tu["functions"]]
-        members.sort(key=lambda f: int(f["start"], 16))
-        ent = {"id": tu["id"], "functions": [f["name"] for f in members],
-               "range": [members[0]["start"], members[-1]["end"]],
+        if "range" in tu:
+            a, b = (int(x, 16) for x in tu["range"])
+            members = [f for f in fs if a <= int(f["start"], 16) < b and f.get("kind", "c").startswith("c")]
+        else:
+            members = sorted((by[n] for n in tu["functions"]), key=lambda f: int(f["start"], 16))
+        defs = (ROOT / tu["defs"]).read_text().splitlines() if tu.get("defs") else ()
+        ent = {"id": tu["id"], "name": tu.get("name"), "functions": [f["name"] for f in members],
+               "range": tu.get("range") or [members[0]["start"], members[-1]["end"]],
                "profile": sorted({f.get("profile") for f in members}),
-               "evidence": tu.get("evidence", []), "data": tu.get("data", {}),
-               "grouping": tu.get("grouping", "HYPOTHESIS"), "builds": []}
+               "grouping": tu.get("grouping", "HYPOTHESIS"), "evidence": tu.get("evidence", []),
+               "data": tu.get("data", {}), "defs": tu.get("defs"), "builds": [], "probes": []}
         runs = matched_runs(members)
         unmatched = [f["name"] for f in members if f.get("status") != "matching"]
+        ent["splits"] = []
         for run in runs:
-            r = build(run, literals=tu.get("literals", True), tag=f"{tu['id']}_{run[0]['name']}")
-            ent["builds"].append({k: r.get(k) for k in ("functions", "range", "verdict", "source", "conflicts",
-                                                          "resolved", "literals", "data", "problems")})
+            segs, fails = segments(run, tu.get("literals", True), f"{tu['id']}_{run[0]['name']}", defs)
+            ent["splits"] += fails
+            for r in segs:
+                ent["builds"].append({k: r.get(k) for k in ("functions", "range", "verdict", "source", "conflicts",
+                                                              "resolved", "literals", "data", "problems")})
+        for pr in tu.get("probes", []):
+            if "range" in pr:
+                a, b = (int(x, 16) for x in pr["range"])
+                pm = [f for f in fs if a <= int(f["start"], 16) < b and f.get("kind", "c").startswith("c")]
+            else:
+                pm = [by[n] for n in pr["functions"]]
+            r = build(pm, literals=True, quiet=True, tag=f"{tu['id']}_probe{len(ent['probes'])}")
+            ent["probes"].append({"functions": [f["name"] for f in pm], "verdict": r["verdict"],
+                                  "expect": pr.get("expect"), "why": pr.get("why"),
+                                  "confirmed": (r["verdict"] == pr.get("expect")) if pr.get("expect") else None,
+                                  "problems": r.get("problems", [])[:4]})
         verdicts = [b["verdict"] for b in ent["builds"]]
-        confl = any(b.get("conflicts") for b in ent["builds"])
+        typed = [f for f in ent["splits"] if f["conflicts"] or f["verdict"] == "COMPILE-ERROR"] +                 [b for b in ent["builds"] if b["verdict"] != "EXACT" and b.get("conflicts")]
         if not unmatched and len(runs) == 1 and verdicts == ["EXACT"]:
-            ent["status"] = "conflict" if any(v.startswith("renamed") for b in ent["builds"]
-                                               for v in (b.get("resolved") or {}).values()) else "exact"
-        elif any(v != "EXACT" for v in verdicts):
-            ent["status"] = "conflict"
+            ent["status"] = "exact"
+        elif typed:
+            ent["status"] = "conflict"      # merging needs a type decision / source change
         else:
-            ent["status"] = "partial"
-        ent["type_conflicts"] = confl
+            ent["status"] = "partial"       # unmatched members (or data placement needing them)
+        ent["data_verified"] = sorted({d["seg"] + "@" + d.get("base", "?") for bl in ent["builds"]
+                                       for d in (bl.get("data") or []) if d.get("diff_bytes") == 0})
         ent["unmatched"] = unmatched
+        ent["type_conflicts"] = {k: v for bl in ent["builds"] for k, v in (bl.get("conflicts") or {}).items()}
         if len(ent["profile"]) == 1:
             ent["profile"] = ent["profile"][0]
         out.append(ent)
-        print(f"{ent['id']:8s} {ent['status']:8s} {ent['range'][0]}..{ent['range'][1]} "
-              f"{len(members)} fn, {len(unmatched)} unmatched, builds {verdicts}")
+        print(f"{ent['id']:5s} {ent['status']:8s} {ent['range'][0]}..{ent['range'][1]} {len(members):3d} fn "
+              f"{len(unmatched):2d} unmatched  builds {' '.join(v[0] for v in verdicts)}  data {ent['data_verified']}"
+              + "".join(f"  probe:{p['verdict']}{'(ok)' if p['confirmed'] else '(?)' if p['confirmed'] is None else '(UNEXPECTED)'}"
+                        for p in ent["probes"]), flush=True)
     dst = Path(args.out) if args.out else ROOT / "build" / "tus.json"
     dst.write_text(json.dumps(out, indent=1))
     print("json:", dst)
