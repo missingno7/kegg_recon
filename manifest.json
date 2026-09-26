@@ -1905,8 +1905,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c-ot",
-   "src": "src/f_a0e0.c",
-   "src_sha256": "d525cc20fbf2556af4b9f9204bb88a1d00e0f77665e76d6ef24827d3f5ae3145"
+   "src": "src/t07.c",
+   "src_sha256": "5a0370f5100614a50d7048ce50f1d1bb3121ab4b7c03c0f8245a6001eda1f1b5",
+   "unit": "T07"
   },
   {
    "name": "a_a284",
@@ -4868,7 +4869,8 @@
   "strcmp": "1:141d0",
   "strcpy": "1:13bb6",
   "strlen": "1:13f5d",
-  "strtoul": "1:13d21"
+  "strtoul": "1:13d21",
+  "g_T07_bss": "3:e1c4"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -5736,6 +5738,16 @@
     "_DATA@3:5c7c+0x554"
    ],
    "note": "own _DATA 0x5c7c..0x61d0 verified (tables, pointer tables)"
+  },
+  {
+   "id": "T07",
+   "src": "src/t07.c",
+   "start": "0xa0e0",
+   "end": "0xa284",
+   "profile": "game-c-ot",
+   "src_sha256": "5a0370f5100614a50d7048ce50f1d1bb3121ab4b7c03c0f8245a6001eda1f1b5",
+   "data": [],
+   "note": "-ot TU; own _BSS 0xe1c4+16 modelled as one 4-int struct (BSS order is not definition order; individual names/order unproven)"
   },
   {
    "id": "T11",
