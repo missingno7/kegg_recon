@@ -1,0 +1,8 @@
+# KE.EXE container settings (proven by build/workers/wlink probes; see docs/evidence.md link-*)
+# The object/library list and the stack size are still to be reconstructed.
+system dos4g
+option quiet, map
+option stub=wstub.exe            # 10.0 GA BINB/wstub.exe (WLINK re-lays the header -> 10648-byte stub)
+option heapsize=20000            # LE+0xA8 = 20000 (default is 0)
+# option stack=?                 # ESP = end of DGROUP (0xF610); STACK size vs BSS still unknown
+name ke.exe

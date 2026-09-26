@@ -33,3 +33,13 @@ entries short and give the command/evidence that decides them.
 | tc-ot-cluster | functions in obj1 ~0x9960..0xA8BC are 4-aligned with 90/8BC0/8D4000 fillers: reproduced by `-3s -ot -od -s` (order matters: `-od -ot` optimises) | STRONG (shape reproduced; no EXACT yet) | probe p4.c; f_9ca4 differs only in stack-slot order |
 | tc-host | NT-loader and DOS/4GW (DOSBox-X) runs of the same bound compiler/assembler give identical segment data and FIXUPPs (only THEADR/COMENT source-path metadata differs) | PROVEN | 30 C objects x 3 flag sets + WASM (build/workers/dosbox/REPORT.md); `python tools/validate.py --host dosbox` re-proves every match on DOSBox-X |
 | tc-msdos-player | MS-DOS Player cannot run DOS/4GW-hosted Watcom tools | PROVEN | silent failure, no output (see tools/dosrun.py docstring) |
+
+## Linker (WLINK 10.0)
+
+| id | claim | level | evidence |
+|---|---|---|---|
+| link-stub | WLINK with `option stub=` 10.0 GA `wstub.exe` produces KE's stub byte-exactly: header +32 bytes, `e_lfanew` = align_up(MZ size + 32, 8) = 0x2998 | PROVEN | build/workers/wlink (stub-ga link, sha256 3d127845...) |
+| link-header | module_flags 0x200, page 4096, zero checksums, resident name `ke` (from `name ke.exe`), empty entry table, auto-data = DGROUP object: WLINK `system dos4g` defaults; LE+0xA8 = 20000 requires `option heapsize=20000` | PROVEN | controlled links |
+| link-objects | 3 objects = USE32 CODE (BEGTEXT first) / USE16 CODE / DGROUP(+BSS+STACK); bases 0x10000 then next 64 KiB boundary; file pages padded to 4096, BSS/STACK virtual only | PROVEN | controlled links reproduce KE's bases and page map |
+| link-fixups | one record per site (no source lists); 32-bit target flag exactly for targets >= 0x10000; page-crossing fixup recorded on the next page with negative offset (KE has 6); per-page record order follows contribution order, not sorted | PROVEN | fixup stress links |
+| link-stack | KE's `option stack` value | OPEN | ESP = DGROUP end; needs the BSS end |
