@@ -1531,8 +1531,10 @@
    "start": "0x7bf4",
    "end": "0x7e12",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7bf4.c",
+   "src_sha256": "6d4ba50a418c89e1351cf13d3de203346161eb12f564640ebca96aee6a4e48a6"
   },
   {
    "name": "f_7e12",
@@ -1959,8 +1961,10 @@
    "start": "0xa810",
    "end": "0xa8ba",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_a810.c",
+   "src_sha256": "f2ea2e7a57a0c2022ec794bf2a0142249ef98e2ae09b154ffc029ef230ccf4d1"
   },
   {
    "name": "f_a8bc",
