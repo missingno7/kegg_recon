@@ -2549,7 +2549,7 @@ class Structurer:
                         inner = [x for x in body]
                         nb = self.jumps_flat(inner, lend)
                         nc = self.jumps_flat(inner, lstep)
-                        if self.refs[lend] == 1 + nb and self.refs[lstep] == 2 + nc and c.op == "cmp":
+                        if self.refs[lend] == 1 + nb and self.refs[lstep] == 1 + nc and c.op == "cmp":
                             b = self.loop_body(inner, lend, lstep)
                             if b is not None:
                                 return ("for", c, list(seq[i + 4:j]), b), k + 1
