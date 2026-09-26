@@ -58,7 +58,7 @@ def load_decls():
     decls = {}
     for src in sorted((ROOT / "src").glob("*.c")):
         for stmt in top_level_decls(src.read_text(errors="replace")):
-            for name in set(re.findall(r"([A-Za-z_]\w*)", stmt)):
+            for name in set(re.findall(r"\b([A-Za-z_]\w*)\b", stmt)):
                 decls.setdefault(name, set()).add(stmt)
     return decls
 

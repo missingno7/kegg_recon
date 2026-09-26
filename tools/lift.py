@@ -215,6 +215,7 @@ class Program:
                     own[d["name"]] = d
         out = {n: json.loads(c.most_common(1)[0][0]) for n, c in seen.items()}
         out.update(own)
+        self.own_defs = own
         return out
 
     def fname(self, addr):
@@ -2345,14 +2346,19 @@ def resolve_function(L):
     for c in L.prog.sigs[L.name]["calls"] if L.name in L.prog.sigs else []:
         for k, f in enumerate(c):
             forms[k][f] += 1
+    own = L.prog.own_defs.get(L.name)
+    own = own["params"] if own and own.get("kind") == "func" else None
     for k, v in L.args.items():
         ws = v.widths()
-        if forms[k]["wide"]:
-            size = 4
-        elif forms[k]["narrow16"]:
+        if own and k < len(own) and own[k] and own[k] != "p":
+            v.type = own[k]         # the function's own proven definition
+            continue
+        if forms[k]["narrow16"] and not forms[k]["wide"]:
             size = 2
-        elif forms[k]["narrow"]:
+        elif forms[k]["narrow"] and not forms[k]["wide"]:
             size = 1 if 1 in ws else 2
+        elif forms[k]["wide"] and not (ws - {4}) and not forms[k]["narrow"]:
+            size = 4
         elif 1 in ws and 4 not in ws:
             size = 1
         elif 2 in ws and 1 not in ws and not (v.widths("arith", "rmw", "push", "cmp") & {4}) and not v.ptr:

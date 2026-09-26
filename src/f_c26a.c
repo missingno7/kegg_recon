@@ -14,7 +14,7 @@ extern void *f_ddb9(int);
 extern void f_de21(void *);
 extern int f_11df8();
 
-void f_c26a(volatile int a, volatile int b)
+void f_c26a(int a, int b)
 {
     f_c20d(f_dd53(a, b));
 }

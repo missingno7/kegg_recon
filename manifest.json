@@ -617,7 +617,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_3918.c",
-   "src_sha256": "312e62b2fd3d618574f031d7e08ea85f3cc171d194adb94fbd7bfc430840c52a"
+   "src_sha256": "5ac5b44144052e57b051e36d8238bb2fad721caa8dd4358c61eab851bca40cbf"
   },
   {
    "name": "f_3ac0",
@@ -1799,7 +1799,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_a966.c",
-   "src_sha256": "9339712190f6a0c65034d266535ba06574400a638469edfc39eea8daa2d6c378"
+   "src_sha256": "6aedee200e5cc143197f7c00a4aee923158ec3818f74c57920b5a877c03f8fce"
   },
   {
    "name": "f_acdd",
@@ -2069,7 +2069,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_c26a.c",
-   "src_sha256": "d7a755a9b6ae457cb09bbbc5c73e48c7d25b3cc3d825004054842f96b1c8b40b"
+   "src_sha256": "73d9ccad03b23555dc7ffa21f9dbf8595e2bd97f68433acfc029141d80083c3a"
   },
   {
    "name": "f_c294",
@@ -2147,7 +2147,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/f_c826.c",
-   "src_sha256": "b1f30e8c02aff50e6efd5bb8117809441a90c8a6f98df49e19e35094ddb330f4"
+   "src_sha256": "3ca18ca5ac6f83521fa27e979bcb4cf218db1be02fb7f69dc3a0116f72295a32"
   },
   {
    "name": "f_c886",

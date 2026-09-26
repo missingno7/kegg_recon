@@ -16,7 +16,7 @@ void f_3ba4(int, int);
 void f_7e62(int, int, int, int, int, int, int);
 void f_42e1(unsigned char, unsigned char, int, int);
 
-void f_3918(int a, int b, volatile int c, volatile int d)
+void f_3918(int a, int b, int c, int d)
 {
     unsigned char saved_7b16;
     int x;

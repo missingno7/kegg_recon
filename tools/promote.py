@@ -189,7 +189,7 @@ def main(argv):
     if res and res["verdict"] == "EXACT" and b"volatile" in frozen.read_bytes():
         # -d2 makes volatile stand-ins unnecessary: keep the cleaner source when it is still EXACT
         plain = frozen_dir / ("plain_" + frozen.name)
-        plain.write_bytes(re.sub(rb"volatile\s+", b"", frozen.read_bytes()))
+        plain.write_bytes(re.sub(rb"\bvolatile\s+", b"", frozen.read_bytes()))
         p2, res2 = run_check(plain, func, entry, frozen_dir / "result_plain.json")
         if res2 and res2["verdict"] == "EXACT":
             plain.replace(frozen)

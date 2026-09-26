@@ -14,10 +14,10 @@ extern void *f_ddb9(int);
 extern void f_de21(void *);
 extern int f_11df8(int, int, int, void *);
 
-int f_c826(volatile int a, volatile int b, volatile int c)
+int f_c826(int a, int b, int c)
 {
     int result;
-    void * volatile p;
+    void * p;
     p = f_ddb9(0x6400);
     if (!p) {
         return 0x909;

@@ -1,10 +1,10 @@
 /* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
 extern unsigned char f_13324(int, int);
 extern void f_133f6(int, int, int);
-void f_a966(volatile int a0, int a1, int a2, int a3, int a4)
+void f_a966(int a0, int a1, int a2, int a3, int a4)
 {
-    volatile int v_4;
-    volatile int v_8;
+    int v_4;
+    int v_8;
     if ((a0 & 1) != 1) goto L_aa23;
     v_4 = a1;
 L_a987:;
