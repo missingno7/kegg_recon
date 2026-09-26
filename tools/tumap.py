@@ -231,12 +231,17 @@ def main(argv=None):
     for off in (0x982C, 0x9F64, 0xA284):
         if off < min(0x112FA, len(code1)):
             fill = max((n for n in (1, 2, 3) if code1[off - n:off] == bytes(n)), default=0)
+            known_asm = any(code1[off:].startswith(needle) for needle in asm_sigs.values())
             local = {"start": off, "tag": "prompted-aligned-asm-candidate",
                      "fill_bytes": fill, "entry_bytes": code1[off:off + 8].hex(),
-                     "evidence": ("task-listed address; dword aligned with preceding zero fill"
-                                  if off % 4 == 0 and fill and code1[off] != 0
-                                  else "task-listed address; local alignment/prologue bytes remain ambiguous"),
-                     "confidence": "STRONG" if off % 4 == 0 and fill and code1[off] != 0
+                     "pre_bytes": code1[max(0, off - 4):off].hex(),
+                     "known_asm_prologue": known_asm,
+                     "evidence": ("task-listed address; aligned known hand-asm prologue"
+                                  if off % 4 == 0 and known_asm else
+                                  "task-listed address; dword aligned with preceding zero fill"
+                                  if off % 4 == 0 and fill and code1[off] != 0 else
+                                  "task-listed address; local alignment/prologue bytes remain ambiguous"),
+                     "confidence": "STRONG" if off % 4 == 0 and (known_asm or (fill and code1[off] != 0))
                                   else "HYPOTHESIS"}
             old = next((m for m in asm_markers if m["start"] == off), None)
             if old:
@@ -335,6 +340,7 @@ def main(argv=None):
         hard_cuts = {x for x in hard_cuts
                      if not block["start"] < x < block["end"] or x in (block["start"], block["end"])}
     hard_cuts = sorted(hard_cuts)
+    code_gap_candidates = []
 
     def funcs_in(a, b):
         return [f for f in funcs if a <= f["start"] < b]
@@ -362,6 +368,11 @@ def main(argv=None):
                     "code": [start, end], "kind": kind,
                     "data": data, "functions": names,
                     "evidence": list(evidence), "confidence": confidence,
+                    "grouping_confidence": ("HYPOTHESIS" if object_no == 1 and kind in ("c", "c-ot")
+                                            and len(fs) > 32 else confidence),
+                    "grouping_limitation": ("large C function cohort has no internal object boundary evidence"
+                                            if object_no == 1 and kind in ("c", "c-ot") and len(fs) > 32
+                                            else None),
                     "data_ranges_are": "referenced extents only; inferred ownership is unresolved"})
 
     # Link order known from code order; preserve identified game C and asm
@@ -377,6 +388,24 @@ def main(argv=None):
                     tus[-1]["functions"] = [f"asm_{a:05X}"]
                 continue
             fs = funcs_in(a, b)
+            raw_gap = code1[a:b]
+            def only_linker_fill(blob):
+                p = 0
+                while p < len(blob):
+                    if blob[p] in (0x00, 0x90):
+                        p += 1
+                    elif blob[p:p + 2] == b"\x8b\xc0":
+                        p += 2
+                    elif blob[p:p + 3] == b"\x8d\x40\x00":
+                        p += 3
+                    else:
+                        return False
+                return bool(blob)
+            if not fs and only_linker_fill(raw_gap):
+                code_gap_candidates.append({"object": 1, "code": [a, b],
+                    "reason": "fill bytes between proposed object contributions",
+                    "bytes": raw_gap.hex(), "confidence": "STRONG"})
+                continue
             profiles = {f["profile"] for f in fs}
             kind = "c-ot" if any("ot" in p.lower() for p in profiles) else "c"
             ev = ["manifest C function extents", "code/link order"]
@@ -442,6 +471,23 @@ def main(argv=None):
     tus.sort(key=lambda t: (link_phase(t), t["code"][0], t["code"][1]))
     for i, tu in enumerate(tus, 1):
         tu["id"] = f"tu{i:03d}"
+    by_object = defaultdict(list)
+    for tu in tus:
+        by_object[tu["object"]].append(tu)
+    for obj_no, obj_tus in by_object.items():
+        obj_tus.sort(key=lambda t: t["code"][0])
+        for i, tu in enumerate(obj_tus):
+            if i + 1 < len(obj_tus) and tu["code"][1] == obj_tus[i + 1]["code"][0]:
+                end_conf = obj_tus[i + 1]["confidence"]
+                end_evidence = obj_tus[i + 1]["evidence"]
+            elif tu["code"][1] == objs[obj_no]["vsize"]:
+                end_conf, end_evidence = "PROVEN", ["object virtual-size boundary"]
+            else:
+                end_conf, end_evidence = "HYPOTHESIS", ["unmapped code gap or next object class"]
+            tu["boundary_confidence"] = {
+                "start": {"level": tu["confidence"], "evidence": tu["evidence"]},
+                "end": {"level": end_conf, "evidence": end_evidence},
+            }
 
     # Infer owners from address-use cohorts. A target used only by one proposed
     # TU is an ownership anchor; shared targets are attached only when their
@@ -561,13 +607,29 @@ def main(argv=None):
             owner_tu[name] = tu["id"]
     conflicts = ownership_conflicts
     unassigned = []
+    for tu in tus:
+        if tu.get("grouping_limitation"):
+            conflicts.append({"type": "unresolved-internal-TU-boundaries", "tu": tu["id"],
+                "object": tu["object"], "code": tu["code"], "function_count": len(tu["functions"]),
+                "evidence": tu["grouping_limitation"], "confidence": "HYPOTHESIS"})
+    unassigned.extend(code_gap_candidates)
+    for marker in asm_markers:
+        if (marker.get("tag") == "prompted-aligned-asm-candidate"
+                and marker.get("confidence") == "STRONG" and not marker.get("fill_bytes")):
+            conflicts.append({"type": "asm-entry-without-expected-zero-fill",
+                "offset": hx(marker["start"]), "entry_bytes": marker.get("entry_bytes"),
+                "pre_bytes": marker.get("pre_bytes"),
+                "evidence": "aligned known asm prologue matches, but immediate zero-fill padding was not observed",
+                "confidence": "HYPOTHESIS"})
     for obj_no, size in ((1, objs[1]["vsize"]), (2, objs[2]["vsize"])):
         intervals = sorted((t["code"][0], t["code"][1]) for t in tus if t["object"] == obj_no)
         cursor = 0
         for start, end in intervals:
             if start > cursor:
-                unassigned.append({"object": obj_no, "code": [cursor, start],
-                                   "reason": "no TU boundary inferred for this code gap"})
+                if not any(u.get("object") == obj_no and u.get("code") == [cursor, start]
+                           for u in unassigned):
+                    unassigned.append({"object": obj_no, "code": [cursor, start],
+                                       "reason": "no TU boundary inferred for this code gap"})
             elif start < cursor:
                 conflicts.append({"type": "overlapping-code-TU-ranges", "object": obj_no,
                                   "overlap": [start, min(cursor, end)], "confidence": "STRONG"})
@@ -702,10 +764,14 @@ def main(argv=None):
              "bss_end": candidate_stack_start if touches_candidate_top else None,
              "stack_start": candidate_stack_start if touches_candidate_top else None,
              "option_stack": candidate_stack_size if touches_candidate_top else None,
+             "wlink_default_stack_probe": {"bytes": 0x1000,
+                 "evidence": "build/workers/wlink/REPORT.md: controlled WLINK map measured a 4 KiB default",
+                 "limitation": "does not prove KE used the default"},
+             "confidence": "HYPOTHESIS" if touches_candidate_top else "UNRESOLVED",
              "status": (("STRONG_CANDIDATE: decoded memory access ends at the 4 KiB stack suffix"
                          if decoded_top_access else
-                         "HYPOTHESIS: highest BSS target plus 8 bytes reaches a 4 KiB stack suffix; "
-                         "operand width and unreferenced BSS tail still need proof")
+                         "HYPOTHESIS: 4 KiB suffix matches measured WLINK default and highest address target; "
+                         "fixups materialize 0xE608 as an address, so BSS extent is unproven")
                         if touches_candidate_top else
                         "UNRESOLVED: LE object size and fixup targets do not distinguish BSS from STACK")}
 
@@ -780,12 +846,14 @@ def main(argv=None):
                     "bss_start": hx(init_end),
                     "bss_end_and_stack_start": hx(candidate_stack_start) if touches_candidate_top else "unresolved",
                     "option_stack_candidate": hx(candidate_stack_size) if touches_candidate_top else None,
-                    "weakest_boundaries": [t["id"] for t in tus if t["confidence"] == "HYPOTHESIS"]},
+                    "weakest_boundaries": [t["id"] for t in tus
+                        if t["confidence"] == "HYPOTHESIS" or t.get("grouping_confidence") == "HYPOTHESIS"]},
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(f"TU map: {len(tus)} proposed contributions; {len(funcs)} C functions; "
           f"{len(matching)} matching functions checked")
+    print("TU kinds=" + ", ".join(f"{k}:{v}" for k, v in result["summary"]["tu_kind_counts"].items()))
     print(f"obj3: CONST 0x00004..{hx(const_end)}, _DATA {hx(const_end)}..{hx(init_end)}, "
           f"_BSS {hx(init_end)}..{hx(obj3_size)}")
     print(f"string pool: {len(pool_strings)} strings, {len(refd_pool)} referenced; "
@@ -803,6 +871,9 @@ def main(argv=None):
         for t in tus[:32]))
     if len(tus) > 32:
         print(f"... {len(tus)-32} further contributions in JSON")
+    print("C candidates=" + ", ".join(
+        f"{t['id']}[{hx(t['code'][0])},{hx(t['code'][1])})/{len(t['functions'])}f"
+        for t in tus if t["object"] == 1 and t["kind"] in ("c", "c-ot")))
     print(f"alignment candidates={len(alignment_markers)}, asm object cuts={len(asm_object_starts)}")
     print(f"constant-pool cuts={len(cuts)}, internal asm spans={len(internal_asm_blocks)}")
     print(f"matching bindings in defining-TU blocks="
@@ -811,11 +882,14 @@ def main(argv=None):
           f"unresolved={len(validation['unresolved_data_references'])}")
     print("runtime first data references=" + ", ".join(
         f"{k}:{hx(v)}" for k, v in runtime_first.items()))
-    print(f"weak TU boundaries={sum(1 for t in tus if t['confidence']=='HYPOTHESIS')}; "
+    weak_boundary_count = sum(1 for t in tus if t["confidence"] == "HYPOTHESIS"
+                              or t.get("grouping_confidence") == "HYPOTHESIS")
+    print(f"weak TU boundaries={weak_boundary_count}; "
           f"nonmonotone/shared conflicts={len(conflicts)}; unassigned ranges={len(unassigned)}")
     print(f"BSS/STACK boundary: {hx(candidate_stack_start) if touches_candidate_top else 'unresolved'}; "
           f"highest BSS fixup target="
-          f"{hx(highest_bss_ref) if highest_bss_ref is not None else 'none'}")
+          f"{hx(highest_bss_ref) if highest_bss_ref is not None else 'none'}; "
+          f"{stack['confidence']}")
     print(f"conflicts={len(conflicts)}, unassigned={len(unassigned)}; wrote {args.output.relative_to(ROOT)}")
 
 

@@ -93,6 +93,7 @@ class Var:
         self.type = None          # resolved type code
         self.decl = None          # proven declaration (globals)
         self.volatile = False
+        self.psum = 0             # pointer-arithmetic evidence (see Lift.pointer_sum)
 
     def note(self, w, how):
         self.acc[(w, how)] += 1
@@ -104,10 +105,13 @@ class Var:
 class E:
     """Expression node.  op: k const, v var load, m memory load, & address, fn function,
     call, trunc, un ops (neg, ~), binary ops (+ - * / % & | ^ << >>), cmp."""
-    __slots__ = ("op", "a", "b", "v", "w", "x", "var", "uns", "args", "ptr", "rel", "name", "typ")
+    __slots__ = ("op", "a", "b", "v", "w", "x", "var", "uns", "args", "ptr", "rel", "name", "typ", "seq", "flip")
+    counter = 0
 
     def __init__(self, op, a=None, b=None, **kw):
         self.op, self.a, self.b = op, a, b
+        E.counter += 1
+        self.seq, self.flip = E.counter, False
         self.v = kw.get("v")
         self.w = kw.get("w", 4)          # width of the value as held in the register
         self.x = kw.get("x")             # extension of a narrow load: 's' / 'z' / None
@@ -152,6 +156,8 @@ class Program:
         self.byaddr = {int(f["start"], 16): f["name"] for f in self.man["functions"]}
         self.symname = {}
         for k, v in self.man.get("symbols", {}).items():
+            if not re.fullmatch(r"[0-9]+:[0-9a-f]+", str(v)):
+                continue
             obj, off = v.split(":")
             self.symname[(int(obj), int(off, 16))] = k
         self.globals = {}
@@ -275,6 +281,11 @@ def signedness(v, default):
 
 def resolve_global(v):
     d = v.decl
+    if v.widths("rmwn") and not v.array:
+        v.volatile = True
+    if v.psum and not v.array and (not d or d.get("volatile") or d["type"] == "p") and not v.widths("sx", "zx"):
+        v.type, v.volatile = "p", False     # pointer arithmetic elsewhere (a proven plain int wins)
+        return
     if d and d["type"] not in ("p", "arr") and not v.array:
         v.type = d["type"]
         return
@@ -297,6 +308,8 @@ def resolve_global(v):
 
 
 def resolve_local(v, size):
+    if size == 4 and v.widths("rmwn"):
+        v.volatile = True
     if size == 4 and v.ptr and not v.sign[True]:
         v.type = "p"
         return
@@ -495,6 +508,12 @@ class Lift:
         return n
 
     def setreg(self, r, e):
+        old = self.regs.get(SUBREG[r][0] if r in SUBREG else r)
+        if old is not None and old.op == "post" and id(old) not in self.consumed and                 not any(n is old for n in e.walk()):
+            self.consumed.add(id(old))          # `mov eax,[i]; inc [i]` then eax reused: `i++;`
+            self.stmts.append(("expr", old))
+            if old.a.var:
+                old.a.var.volatile = True
         if r in SUBREG:
             self.regs[SUBREG[r][0]] = e
         else:
@@ -567,10 +586,50 @@ class Lift:
         e = self.mem_loc(op, ins)
         if e.var:
             e.var.note(e.w, how)
+        for n, (loc, op) in enumerate(self.pre_pending):
+            if loc.op == e.op and ((e.op == "v" and loc.var is e.var) or (e.op == "m" and same_place(loc, e))):
+                del self.pre_pending[n]
+                return E("pre", loc, w=e.w, name=op)
         return e
+
+    def pointer_sum(self, a, b, src):
+        """`add edx, X` with edx a plain int load (int sums are built in eax): pointer arithmetic.
+        Probes: `ptr + int` -> `mov edx,[p]; add edx,[i]`; `ptr + expr` -> expr in eax first, then
+        `mov edx,[p]; add edx,eax`; `int + ptr` -> `mov eax,[p]; mov edx,[i]; add edx,eax`."""
+        plain = lambda e: e.op in ("v", "m") and e.w == 4 and not e.x and (e.op == "m" or e.var.kind == "g")
+
+        def mark(e):
+            if e.op == "m":
+                e.ptr = True
+            else:
+                self.local_ptr.add(e.var)
+                e.var.psum += 1
+        if not plain(a):
+            return
+        if src[0] == "i":
+            # `mov edx,[p]; mov eax,[q]; add edx,imm`: the constant is added after another load
+            if a.op == "v" and any(e is not None and e is not a and e.seq > a.seq and e.op in ("v", "m")
+                                   for e in self.regs.values()):
+                mark(a)
+            return
+        if src[0] == "m":
+            mark(a)
+        elif plain(b) and b.seq < a.seq:
+            mark(b)
+        elif plain(b) and a.op == "m" and b.op == "m":
+            mark(a)
+        elif b.op not in ("v", "m", "k", "ext") and b.seq < a.seq:
+            mark(a)
+
+    def live_values(self):
+        return any(e is not None and e.op not in ("raw",) and id(e) not in self.consumed
+                   for e in self.regs.values())
 
     # statements -------------------------------------------------------------------------------
     def emit(self, st, uses=()):
+        while self.pre_pending:
+            loc, op = self.pre_pending.pop(0)
+            self.stmts.append(("incdec", loc, op))
         used = set()
         for u in uses:
             if isinstance(u, E):
@@ -625,6 +684,8 @@ class Lift:
         self.regs, self.pending, self.pushes = {}, [], []
         self.flags = None
         self.consumed = set()
+        self.local_ptr = set()
+        self.pre_pending = []
         self.last_load = None
         self.retval = False
         targets = set()
@@ -715,7 +776,7 @@ class Lift:
         if mn in ("add", "sub") and ops[0][0] == "r" and ops[0][1] == "esp":
             return 1
         if mn in ("cmp", "test"):
-            if mn == "test" and ops[0][0] == "m" and ops[0][5] == 4 and ops[1][0] == "i" and 0 <= ops[1][1] < 0x100:
+            if mn == "test" and ops[0][0] == "m" and ops[0][5] > 1 and ops[1][0] == "i" and 0 <= ops[1][1] < 0x100:
                 loc = self.mem_loc(ops[0], i)
                 if loc.op == "v":
                     loc.var.volatile = True     # Watcom narrows `x & 2` to a byte test unless volatile
@@ -840,6 +901,9 @@ class Lift:
                 loc.var.note(loc.w, "rmw")
             if mn in ("inc", "dec") and self.post_incdec(loc, "++" if mn == "inc" else "--"):
                 pass
+            elif mn in ("inc", "dec") and self.live_values():
+                # `mov eax,[a]; sub eax,20h; inc [b]; cmp eax,[b]`: ++b inside the expression
+                self.pre_pending.append((loc, "++" if mn == "inc" else "--"))
             elif mn in ("inc", "dec"):
                 self.emit(("incdec", loc, "++" if mn == "inc" else "--"), [loc])
             else:
@@ -874,10 +938,22 @@ class Lift:
                 return 1
             else:
                 b = self.read(src, i, "arith")
-                if src[0] == "r" and src[2] < 4:
+                if mn in ("shl", "sal", "sar", "shr") and src[0] == "r" and src[1] == "cl" and                         (self.regs.get("ecx") is not None) and self.regs["ecx"].w == 4:
+                    b = self.regs["ecx"]
+                elif src[0] == "r" and src[2] < 4:
                     b = self.narrow(b, src[2])
+                if mn in ("shl", "sal", "sar", "shr") and b.op in ("v", "m") and b.w == 1 and not b.x:
+                    # `mov cl, byte [x]`: Watcom narrows the load of an int shift count
+                    if b.var:
+                        b.var.acc[(1, "mov")] -= 1
+                        b.var.note(4, "mov")
+                    b = E(b.op, b.a, w=4, var=b.var)
                 if dst[2] < 4:
                     a = self.narrow(a, dst[2])
+                if mn == "add" and dst[1] != "eax" and dst[2] == 4:
+                    self.pointer_sum(a, b, src)
+                if op in ("+", "*", "&", "|", "^") and src[0] == "r" and commute(a, b):
+                    a, b = b, a
                 e = E(op, a, b, uns=uns, w=dst[2])
                 if mn in ("sar", "shr"):
                     self.mark_sign(a, mn == "sar")
@@ -895,6 +971,10 @@ class Lift:
             b = self.narrow(b, src[2])
         if b.op == "k" and loc.w < 4:
             b = K(b.v & ((1 << (8 * loc.w)) - 1), loc.w)
+        if b.op == "k" and loc.w == 4 and loc.var and mn in ("and", "or", "xor"):
+            hi = (b.v & 0xFFFF0000) >> 16
+            if (mn == "and" and hi == 0xFFFF) or (mn != "and" and hi == 0):
+                loc.var.note(4, "rmwn")   # Watcom would narrow this for a plain int: volatile/short
         self.emit(("opset", loc, op, b, uns), [loc, b])
         self.flags = ("res", loc, None, False)
         return 1
@@ -1023,6 +1103,23 @@ class Lift:
             return
         self.stmts.append(("goto", target))
         self.regs = {}
+
+
+def commute(dst, src):
+    """Source order of a register-register commutative op (`op dst, src`); True = src is the left
+    operand.  Watcom puts the left operand in dst except (probes) when the right operand is an
+    array element loaded after the left one, or when two converted loads are combined (the first
+    loaded is the left)."""
+    simple = lambda e: e.op in ("v", "m")
+    calls = lambda e: [n.seq for n in e.walk() if n.op == "call"]
+    if calls(dst) and calls(src):
+        return min(calls(src)) < min(calls(dst))     # calls run in source order
+    indexed = dst.op == "m" and any(n.op in ("*", "<<") for n in dst.a.walk())
+    if indexed and simple(src) and src.seq < dst.seq:
+        return True
+    if simple(dst) and simple(src) and dst.x and src.x and src.seq < dst.seq:
+        return True
+    return False
 
 
 def leaves(e):
@@ -1311,7 +1408,8 @@ class Render:
             return f"({TNAME[tcode(e.w, False)]}){self.paren(e.a, self.expr(e.a))}"
         if op == "ext":
             t = tcode(2 if e.w == 2 or e.b == "16" else e.typ, e.x == "s")
-            return f"({TNAME[t]}){self.paren(e.a, self.expr(e.a))}"
+            inner = e.a.a if e.a.op == "trunc" and e.a.w == TW[t] else e.a
+            return f"({TNAME[t]}){self.paren(inner, self.expr(inner))}"
         if op == "neg":
             return f"-{self.paren(e.a, self.expr(e.a))}"
         if op == "~":
@@ -1337,7 +1435,7 @@ class Render:
         a, b = self.paren(e.a, a), self.paren(e.b, b)
         ca, cb = promote(ta), promote(tb)
         if op in (">>", "/", "%"):
-            if e.uns and ca == "i" and (op == ">>" or cb == "i"):
+            if e.uns and ca == "i" and (op == ">>" or cb == "i") and not (op == ">>" and self.nuns(e.a)):
                 a, ca = f"(unsigned){a}", "u"
             elif not e.uns:
                 if ca in ("u", "p"):
@@ -1363,7 +1461,7 @@ class Render:
         """Expression Watcom types as a narrow unsigned value (compared at byte/word width)."""
         if e.op == "k":
             return 0 <= e.v <= 0xFFFF
-        if e.op in ("v", "m"):
+        if e.op in ("v", "m", "pre", "post"):
             return self.ty(e) in ("c", "us")
         if e.op in ("&", "|", "^"):
             return self.nuns(e.a) and self.nuns(e.b)
@@ -1386,7 +1484,7 @@ class Render:
             pa, pb = promote(ta), promote(tb) if b.op != "k" else promote(ta)
             c_uns = "u" in (pa, pb) or "p" in (pa, pb) or (self.nuns(a) and (self.nuns(b) or b.op == "k"))
             if e.uns and not c_uns:
-                sa = f"(unsigned){sa}"
+                sa = f"({TNAME[tcode(TW[ta], False)] if ta in ('s', 'sc') else 'unsigned'}){sa}"
             elif not e.uns and c_uns:
                 if ta in ("c", "us") and b.op == "k":
                     sa = f"({TNAME[tcode(TW[ta], True)]}){sa}"
@@ -1499,6 +1597,18 @@ class Render:
 
     # whole function ----------------------------------------------------------------------------
     def source(self):
+        L = self.L
+        saved = {v: (v.type, v.volatile) for v in L.local_ptr}
+        for v in L.local_ptr:       # pointer arithmetic seen in this function: a pointer here
+            if v.type in ("i", "u"):
+                v.type, v.volatile = "p", False
+        try:
+            return self._source()
+        finally:
+            for v, (t, vol) in saved.items():
+                v.type, v.volatile = t, vol
+
+    def _source(self):
         L = self.L
         self.prepare()
         body = []
