@@ -1,10 +1,10 @@
 # Matching loop (workers)
 
 ```
-.\kpy.cmd tools/show.py f_1b7e                 # annotated original disassembly, callers, fixup targets
+python tools/show.py f_1b7e                 # annotated original disassembly, callers, fixup targets
 # write C into build/workers/NAME/f_1b7e.c
-.\kpy.cmd tools/check.py build/workers/NAME/f_1b7e.c f_1b7e      # compile (pinned wcc386, profile game-c) + strict compare
-.\kpy.cmd tools/promote.py build/workers/NAME/f_1b7e.c f_1b7e --verify-only
+python tools/check.py build/workers/NAME/f_1b7e.c f_1b7e      # compile (pinned wcc386, profile game-c) + strict compare
+python tools/promote.py build/workers/NAME/f_1b7e.c f_1b7e --verify-only
 ```
 
 Conventions
@@ -21,7 +21,7 @@ Conventions
   aligned instruction islands (`[replace] orig: ... cand: ...`). JSON detail in `build/check/FUNC/result.json`
   or `--json PATH`.
 - Only EXACT counts. Record the best non-exact candidate with
-  `.\kpy.cmd tools/promote.py CAND FUNC --draft "what remains"` only when asked; otherwise report it.
+  `python tools/promote.py CAND FUNC --draft "what remains"` only when asked; otherwise report it.
 
 Report (<=20 lines): functions attempted with verdicts; for non-exact ones the exact remaining mismatch
 and what you tried; candidate paths; any global clue (compiler behaviour, type of a global, TU flags).

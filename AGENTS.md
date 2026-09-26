@@ -2,8 +2,8 @@
 
 Goal: source that, built with the historical Watcom toolchain, reproduces `assets/KE.EXE` exactly.
 Read README.md and docs/evidence.md first.
-Run Python tools as `.\kpy.cmd tools/X.py ...` (PyPy; `python` is a Store alias that hangs in sandboxes).
-Do not pip install anything (no network); capstone is vendored in build/pylib.
+Run tools as `python tools/X.py ...`. Do not pip install anything (no network); capstone is vendored in
+build/pylib. Inside Codex sandboxes `python` is C:msys64mingw64binpython.exe (3.10); tools support it.
 
 - `assets/` holds the immutable originals. `manifest.json` is the only status file. The verifier decides
   what is true; nobody edits expected bytes or weakens a check to fit a candidate. If a check looks wrong,

@@ -136,10 +136,11 @@ def compile_candidate(src: Path, profile: str, outdir: Path):
     if obj.exists():
         obj.unlink()
     tool = prof.get("tool", "wcc386")
+    win = lambda p: str(p).replace("/", "\\")  # Watcom reads '/' as an option prefix
     if tool == "wasm":
-        args = [*prof["flags"], f"-fo={obj}", src.name]
+        args = [*prof["flags"], f"-fo={win(obj)}", src.name]
     else:
-        args = [*prof["flags"], f"-fo={obj}", f"-i={ROOT / 'include'}", src.name]
+        args = [*prof["flags"], f"-fo={win(obj)}", f"-i={win(ROOT / 'include')}", src.name]
     r = dosrun.run(tool, args, install=prof["install"], cwd=src.parent)
     (outdir / (src.stem + ".log")).write_text(r.out)
     if r.rc != 0 or not obj.exists():
