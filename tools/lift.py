@@ -1,25 +1,34 @@
-"""Deterministic first-draft lifter for Watcom C 10.0 `wcc386 -3s -od` functions of KE.EXE.
+"""Deterministic first-draft lifter for the Watcom C 10.0 functions of KE.EXE (`wcc386 -3s -d2 -s`).
 
     python tools/lift.py f_7032 f_2e4a --out DIR        # DIR/f_7032.c, DIR/f_2e4a.c
     python tools/lift.py --all --out DIR                # every non-matching C function
     python tools/lift.py --range 0x7000 0x8000 --out DIR
     python tools/lift.py --controls --out DIR           # every matching function (regression set)
-    python tools/lift.py f_7032 --goto --out DIR        # skip control-flow structuring
+    python tools/lift.py --all --refine --out DIR       # also check each draft, search operand orders
+    python tools/lift.py f_7032 --goto --out DIR        # flat goto form (no structuring)
+    python tools/harvest.py DIR                         # verdicts (tools/check.py is the authority)
 
-How it works (all facts below are proven by probes or EXACT matches, see docs/compiler-notes.md):
-  * `-od` compiles each statement in isolation and does no jump optimisation, so `if (c) goto L;` and
-    `goto L;` compile to exactly one cmp/jcc resp. jmp.  The lifter symbolically executes the body,
-    emits one C statement per store / call / branch, and writes control flow as gotos.  A structuring
-    pass then folds the fixed -od layouts (if/else, while, for, do-while) into structured statements
-    (identical code under -od).
-  * Types: proven declarations in src/ first, then evidence gathered over the whole executable
-    (access widths, movsx/movzx, signed/unsigned jumps, sar/shr, idiv/div, pointer use, how callers
-    push arguments).  Memory is addressed generically as `*(T *)(base + offset)` with byte-sized
-    base pointers, which Watcom compiles like the original field/array accesses.
-  * Locals: every scalar auto takes a 4-byte slot; Watcom sorts autos (then temps such as the return
-    spill) stably by size and assigns slots from [ebp-4] down.  The lifter declares locals in slot
-    order and picks short/int and the return type so that this sort reproduces the original frame.
-tools/check.py is the only authority for an EXACT match.
+How it works (facts proven by probes under build/workers/lift/p/ or by EXACT matches; see also
+docs/compiler-notes.md):
+  * The code is unoptimised: each statement compiles in isolation and jumps are never threaded, so
+    `if (c) goto L;` / `goto L;` compile to exactly one jcc / jmp.  `Lift` symbolically executes the
+    body (registers hold expression trees) and emits one C statement per store, call, branch or
+    read-modify-write, recognising the compiler's idioms: pre/post increments inside expressions,
+    assignments inside conditions, struct copies (movs), bitfield reads/stores, switch jump tables
+    and compare trees, far function addresses, `x / 2**k`.  `Structurer` then folds the fixed
+    layouts into if/else, nested ifs, while, for and do-while (identical code).
+  * Types: the function's own proven definition and the declarations in src/, then evidence from the
+    whole executable: access widths, movsx/movzx, signed/unsigned jumps, sar/shr, idiv/div, pointer
+    bases, pointer-arithmetic register order, how callers push arguments (prototypes are chosen per
+    output file, as the original TUs disagreed), library names from manifest runtime.publics.
+    Memory is addressed as `*(T *)(base + offset)` with byte pointers; Watcom compiles that like the
+    original field/array accesses.
+  * Frame: every scalar auto takes a 4-byte slot.  Watcom shell-sorts [parameters, autos in
+    declaration order, return temp] by size and assigns slots from [ebp-4] down (autos of nested
+    blocks come after the temp).  `layout_locals` picks sizes (short/int, narrow return) and a
+    declaration order that reproduces the original slots.
+  * --refine: operand order of commutative operations is not always recoverable from the code; for
+    a draft that is not EXACT, swaps are tried one at a time and kept when the check score improves.
 """
 from __future__ import annotations
 
@@ -393,10 +402,6 @@ def resolve_sig(prog, name, sig):
         sig["void"] = lift.ret_type is None
     else:
         sig["ret"], sig["void"] = "i", False
-
-
-def make_sig_view(prog, name):
-    return prog.sigs[name]
 
 
 # ---------------------------------------------------------------------------------------------
@@ -950,7 +955,6 @@ class Lift:
                     e = self.read(src, i, w=dst[2])
                 else:
                     e = self.extend(self.reg(src[1]), "s" if mn == "movsx" else "z", dst[2])
-                    e = self.retyped(e, src[2], "s" if mn == "movsx" else "z")
                 if dst[1] in ("ah", "bh", "ch", "dh"):
                     self.regs[dst[1]] = e
                 else:
@@ -1085,9 +1089,6 @@ class Lift:
         n = E("ext", e, w=4, x=x)
         n.typ = e.w
         return n
-
-    def retyped(self, e, w, x):
-        return e
 
     def lea(self, src, i):
         _, base, index, scale, disp, size = src
@@ -2224,8 +2225,8 @@ def param_sizes(L):
 
 
 def layout_locals(L):
-    """Choose local types/declaration order so that Watcom's stable size sort reproduces the
-    original slot offsets.  Slots are listed shallow ([ebp-4]) to deep."""
+    """Choose local types/declaration order so that Watcom's frame sort reproduces the original
+    slot offsets.  Slots are listed shallow ([ebp-4]) to deep; aggregates are recognised first."""
     offs = sorted(o for o in L.locals if o not in L.switch_tmps)
     spill_off = L.spill[0] if L.spill else None
     if spill_off is not None and spill_off not in L.locals:
@@ -2308,10 +2309,10 @@ def layout_locals(L):
         u += 4
     if L.frame and L.frame > deepest and not info:
         pass
-    # Watcom orders the frame with a selection sort by size (swap-based, so not stable) over
-    # the autos in declaration order followed by the return temp; slots are then assigned from
-    # [ebp-4] down (probes: build/workers/lift/p/ao.c, c.c, d.c).  Pick sizes (short vs int,
-    # narrow return) and a declaration order whose sort reproduces the original slot order.
+    # Watcom orders the frame with a shell sort by size over [params, autos in declaration order,
+    # return temp] and assigns slots from [ebp-4] down (probes build/workers/lift/p/a[opq].c, c.c,
+    # d.c; model check build/workers/lift/sorts.py).  Pick sizes (short vs int, narrow return) and
+    # a declaration order whose sort reproduces the original slot order.
     slots = [s for s in info if not s.get("switch")]
     options = []
     for s_ in slots:

@@ -104,3 +104,9 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
   while the original has `mov edx,[g1]; add edx,[g2]; mov eax,[ptr]` at 0x584, 0x55a0, 0x6ad0 (EDX direct
   only happens here when `ptr` is a local/param, or for `charptr + mem` with an indexed/indirect int operand:
   `(int)(p + a[i])` -> `mov edx,[p]; add edx,[a+eax]`). `+=`/`-=` forms match (`sum2g*.c`, `ctx2.c`, `brute.py`).
+
+## Frame layout rule (lifter agent, fitted to 16 probes, reproduces 297/309 matched functions)
+- Watcom shell-sorts the list [parameters, autos in declaration order, return temp] by size (gap sequence n//2,
+  then (g+1)//2) and assigns slots in the sorted order. So parameter types and the return type move the locals:
+  wrong slot order usually means a wrong prototype, a wrong narrow/wide local or return type, or a missing
+  nested-block auto. `tools/lift.py` inverts this rule; use it to get a consistent declaration set.
