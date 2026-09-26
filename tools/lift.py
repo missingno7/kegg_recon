@@ -1212,6 +1212,10 @@ class Lift:
                         b.var.psum += 1
                     elif plain and a.op == "call" and b.seq > a.seq:
                         self.local_int.add(b.var)     # `call f; mov edx,[g]; add eax,edx`: int g
+                    aplain = a.op == "v" and a.w == 4 and not a.x and a.var.kind == "g"
+                    if aplain and b.op not in ("v", "m", "k") and a.seq > max(n.seq for n in b.walk())                             and not any(n.op == "call" for n in b.walk()):
+                        self.local_ptr.add(a.var)     # `shl edx,3; mov eax,[p]; add eax,edx`: p + i*8
+                        a.var.psum += 1
                 elif mn == "add" and dst[2] == 4 and src[0] == "m" and dst[1] == "eax" and b.op == "v" and                         b.var.kind == "g" and not b.x:
                     self.local_int.add(b.var)         # `add eax,[g]`: g is an int here
                     if a.op == "v" and a.var.kind == "g" and a.w == 4 and not a.x:
@@ -1367,6 +1371,18 @@ class Lift:
             self.stmts.pop()
             c.a = E("asg", last[1], last[2], w=c.a.w)
 
+    def fuse_bf(self, c):
+        """`<v in dl>; mov dh,dl; and dh,m; <store field>; and dl,m; test dl,dl`: if (--p->f == 0)."""
+        if not self.stmts or c.op != "cmp" or self.stmts[-1][0] != "bfset":
+            return
+        _, loc, o, w, v = self.stmts[-1]
+        x = c.a
+        if x.op == "trunc":
+            x = x.a
+        if x.op == "&" and x.b.op == "k" and x.b.v & ((1 << w) - 1) == (1 << w) - 1 and x.a is v:
+            self.stmts.pop()
+            c.a = E("bfasg", (loc, o, w, v), w=c.a.w)
+
     def fuse_pre(self, c):
         """`dec [eax+4]; cmp [eax+4],0` with the address register reused: `if (--p[1] == 0)`."""
         if not self.stmts or c.op != "cmp" or c.a.op != "m":
@@ -1392,6 +1408,7 @@ class Lift:
         c = self.cond(i.mn)
         self.fuse_pre(c)
         self.fuse_asg(c)
+        self.fuse_bf(c)
         self.emit(("if", c, target), [c])
         self.flush()
         self.flags = None
@@ -1443,6 +1460,12 @@ def commute(dst, src):
         return min(calls(src)) < min(calls(dst))     # calls run in source order
     indexed = dst.op == "m" and any(n.op in ("*", "<<") for n in dst.a.walk())
     if indexed and simple(src) and src.seq < dst.seq:
+        return True
+    plain_g = src.op == "v" and src.var.kind == "g" and src.w == 4 and not src.x
+    if dst.op == "m" and plain_g and src.seq < dst.seq and dst.w == 4 and not dst.x:
+        src.var.psum += 1       # `charptr + p->f`: mov edx,[ptr]; mov eax,[eax+f]; add eax,edx
+        src.ptr = True
+        return True
         return True
     if simple(dst) and simple(src) and dst.x and src.x and src.seq < dst.seq:
         return True
@@ -1572,6 +1595,8 @@ class Render:
             return promote(self.ty(e.a))
         if op in ("pre", "preop", "post", "asg"):
             return self.lv_type(e.a)
+        if op == "bfasg":
+            return "i"
         if op == "bf":
             return "i"
         if op == "cmp":
@@ -1800,6 +1825,9 @@ class Render:
             return f"{e.name}{self.lvalue(e.a)}"
         if op == "asg":
             return f"({self.lvalue(e.a)} = {self.expr(e.b)})"
+        if op == "bfasg":
+            loc, o, w, v = e.a
+            return self.bf_assign(loc, o, w, v, as_expr=True)
         if op == "post":
             if e.a.op == "v" and e.a.var.stride and e.a.var.type == "p":
                 self.structs.add(e.a.var.stride)
@@ -1976,13 +2004,20 @@ class Render:
         if k == "incdec":
             return f"{st[2]}{self.lvalue(st[1])};"
         if k == "bfset":
-            _, loc, o, w, v = st
-            f = self.bitfield(loc, o, w, loc.w, False)
-            if v.op in ("+", "-") and v.a.op == "bf" and v.a.v == (o, w) and v.b.op == "k" and                     (v.a.a.key() == loc.key() or (loc.op == "m" and same_place(v.a.a, loc))):
-                if v.b.v == 1:
-                    return f"{f}{v.op}{v.op};"
-                return f"{f} {v.op}= {self.expr(v.b)};"
-            return f"{f} = {self.expr(v)};"
+            return self.bf_assign(st[1], st[2], st[3], st[4]) + ";"
+        return self.stmt_rest(st)
+
+    def bf_assign(self, loc, o, w, v, as_expr=False):
+        f = self.bitfield(loc, o, w, loc.w, False)
+        if v.op in ("+", "-") and v.a.op == "bf" and v.a.v == (o, w) and v.b.op == "k" and \
+                (v.a.a.key() == loc.key() or (loc.op == "m" and same_place(v.a.a, loc))):
+            if v.b.v == 1:
+                return f"{v.op}{v.op}{f}" if as_expr else f"{f}{v.op}{v.op}"
+            return f"({f} {v.op}= {self.expr(v.b)})" if as_expr else f"{f} {v.op}= {self.expr(v.b)}"
+        return f"({f} = {self.expr(v)})" if as_expr else f"{f} = {self.expr(v)}"
+
+    def stmt_rest(self, st):
+        k = st[0]
         if k == "copy":
             n = st[3]
             self.structs.add(n)
@@ -2179,11 +2214,13 @@ def param_sizes(L):
 def layout_locals(L):
     """Choose local types/declaration order so that Watcom's stable size sort reproduces the
     original slot offsets.  Slots are listed shallow ([ebp-4]) to deep."""
-    offs = sorted(L.locals)
+    offs = sorted(o for o in L.locals if o not in L.switch_tmps)
     spill_off = L.spill[0] if L.spill else None
     if spill_off is not None and spill_off not in L.locals:
         offs = sorted(set(offs) | {spill_off})
-    deepest = max([L.frame] + offs) if offs or L.frame else 0
+    # switch temps are allocated below everything else
+    frame = L.frame - 4 * sum(1 for t in L.switch_tmps if t > max(offs, default=0))
+    deepest = max([frame] + offs) if offs or frame else 0
     # aggregates (structs/arrays): address-taken locals, word stores (scalar shorts are stored
     # as dwords) and odd offsets.  Scalars sort before them, so an aggregate extends up to the
     # contiguous run of accessed scalar slots at the top of the frame.
@@ -2195,7 +2232,7 @@ def layout_locals(L):
             top += 4
         if spill_off and L.spill[1] == 4 and L.ret_type == "i":
             top = spill_off     # an int return temp sorts after every scalar auto
-        deep = max([o for o in offs if o > top] + [L.frame])
+        deep = max([o for o in offs if o > top] + [frame])
         deep = (deep + 3) // 4 * 4
         # aggregates start at address-taken bases; the deepest one ends at the frame bottom
         starts = sorted({o for o in agg_off if o > top and L.locals[o].addr and o % 4 == 0} | {deep})
