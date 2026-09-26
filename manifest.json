@@ -2676,6 +2676,24 @@
    "kind": "c",
    "status": "identified",
    "profile": "game-c"
+  },
+  {
+   "name": "f_13a95",
+   "start": "0x13a95",
+   "end": "0x13b72",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c",
+   "note": "C TU linked after the asm modules"
+  },
+  {
+   "name": "f_13b72",
+   "start": "0x13b72",
+   "end": "0x13b9c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c",
+   "note": "C TU linked after the asm modules"
   }
  ],
  "symbols": {
