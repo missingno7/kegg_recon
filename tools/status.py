@@ -24,8 +24,25 @@ def main():
         print(f"{kind:12} {st:11} {n:4} functions {b:7} bytes")
     match = sum(v[1] for (k, s), v in by.items() if s == "matching")
     nmatch = sum(v[0] for (k, s), v in by.items() if s == "matching")
+    data_status(m)
     print(f"matching: {nmatch}/{tot_fn} functions, {match}/{tot_b} bytes of inventoried game code "
           f"({100 * match / max(1, tot_b):.1f}%); code object is {code} bytes (runtime library + asm tracked separately)")
+
+
+def data_status(m):
+    seen = set()
+    by = {}
+    for u in m.get("units", []):
+        for d in u.get("data", []):
+            seg, rest = d.split("@")
+            base, size = rest.split("+")
+            key = (seg, base)
+            if key not in seen:
+                seen.add(key)
+                by[seg] = by.get(seg, 0) + int(size, 16)
+    init = int(m.get("runtime", {}).get("data_layout", {}).get("init_end", "0x886f"), 16)
+    print(f"units: {len(m.get('units', []))}; verified initialised data: " +
+          ", ".join(f"{k} {v} bytes" for k, v in sorted(by.items())) + f" (obj3 initialised size {init})")
 
 
 if __name__ == "__main__":
