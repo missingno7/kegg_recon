@@ -1996,8 +1996,9 @@ class Render:
         if k == "while":
             return "\n".join([f"while ({self.expr(st[1])}) {{"] + self.block(st[2]) + ["}"])
         if k == "for":
+            init = self.stmt(st[4]).rstrip(";") if len(st) > 4 else ""
             step = ", ".join(self.stmt(x).rstrip(";") for x in st[2])
-            return "\n".join([f"for (; {self.expr(st[1])}; {step}) {{"] + self.block(st[3]) + ["}"])
+            return "\n".join([f"for ({init}; {self.expr(st[1])}; {step}) {{"] + self.block(st[3]) + ["}"])
         if k == "dowhile":
             return "\n".join(["do {"] + self.block(st[1]) + [f"}} while ({self.expr(st[2])});"])
         if k == "label":
@@ -2446,6 +2447,7 @@ class Structurer:
 
     def __init__(self, stmts):
         self.stmts = stmts
+        self.end = None
         self.refs = Counter()
         for st in stmts:
             if st[0] == "if" and st[2] is not None:
@@ -2528,6 +2530,9 @@ class Structurer:
                 i += 1
             else:
                 node, i = r
+                if node[0] == "for" and out and out[-1][0] == "set" and out[-1][1].op == "v" and \
+                        any(x.op == "v" and x.var is out[-1][1].var for x in node[1].walk()):
+                    node = node + (out.pop(),)      # for (i = 0; ...)
                 out.append(node)
         return out
 
@@ -2537,6 +2542,12 @@ class Structurer:
         if st[0] == "label":
             top = st[1]
             # for: Ltop: if (c) goto Lbody; goto Lend; Lstep: step; goto Ltop; Lbody: body; goto Lstep; Lend:
+            if i + 3 < n and seq[i + 1][0] == "if" and seq[i + 2] == ("ret", None) and seq[i + 3][0] == "label"                     and seq[-1] == ("goto", seq[i + 3][1]):
+                # the same with the loop exit at the function end (`jmp epilogue` = return)
+                seq = seq + [("label", "END")]
+                n = len(seq)
+                self.refs["END"] = 1
+                seq[i + 2] = ("goto", "END")
             if i + 3 < n and seq[i + 1][0] == "if" and seq[i + 2][0] == "goto" and seq[i + 3][0] == "label":
                 lbody, lend, lstep = seq[i + 1][2], seq[i + 2][1], seq[i + 3][1]
                 j = self.find(seq, "goto", top, i + 4)
@@ -2587,14 +2598,30 @@ class Structurer:
                     if b is not None:
                         return ("dowhile", b, seq[j][1]), (j + 1 if lend is None else j + 2)
             return None
+        if st[0] == "if" and st[2] is not None and st[1].op == "cmp" and st[2] == self.end:
+            # `if (c) goto END` where END is the end of the enclosing if-block: a nested if
+            c = negate(st[1])
+            if c is not None:
+                return ("ifthen", c, self.seq(seq[i + 1:])), len(seq)
         if st[0] == "if" and st[2] is not None and st[1].op == "cmp":
             lab = st[2]
             j = self.find(seq, "label", lab, i + 1)
-            if j is None or self.refs[lab] != 1:
+            if j is None:
                 return None
             c = negate(st[1])
             if c is None:
                 return None
+            if self.refs[lab] != 1:
+                # several `if (x) goto L` inside the block: nested ifs (-od emits direct jumps for
+                # `if (A) { if (B) {...} }`, a trampoline only for `&&`)
+                if self.refs[lab] != self.nested_refs(seq[i:j], lab):
+                    return None
+                saved, self.end = self.end, lab
+                inner = self.seq(seq[i + 1:j])
+                self.end = saved
+                if self.nested_refs(inner, lab):
+                    return None
+                return ("ifthen", c, inner), j + 1
             # if/else: if (c) goto Lelse; S1; goto Lend; Lelse: S2; Lend:
             if j - 1 > i and seq[j - 1][0] == "goto":
                 lend = seq[j - 1][1]

@@ -2448,8 +2448,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_dce0.c",
-   "src_sha256": "15b95e750d8646d4f2cb9e76145a7a9e78ab96c5d7f253ac285ff17a26676139"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_dd01",
@@ -2458,8 +2459,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_dd01.c",
-   "src_sha256": "4a6160d1ed13701097ab35e3e6f8f6da92a3cfc62e347f5a354472358e7cf16e"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_dd53",
@@ -2468,8 +2470,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_dd53.c",
-   "src_sha256": "258b8bf9696e07ff5a37499190768afe71ecbcbc7da687c6e9b6126d754a9fba"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_ddb9",
@@ -2478,8 +2481,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ddb9.c",
-   "src_sha256": "40956989dd0d53cc9f91fb72e10df6e934bdbc8d27c2161c1993dc84668e298e"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_de21",
@@ -2488,8 +2492,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_de21.c",
-   "src_sha256": "a4d81ee79cb40ef8cbcdd086db7014247fbfdd6985ab42df01911f70c66a0c6f"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_de3e",
@@ -2498,8 +2503,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_de3e.c",
-   "src_sha256": "4dc064fee4c4cf688859b76bda483fda3301b488e27647a66df083f512cf4ea3"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_dea6",
@@ -2508,8 +2514,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_dea6.c",
-   "src_sha256": "5bf760a478276a53ceb3d58c227c20481475971479abc31955d9d97336f29f19"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_df49",
@@ -2518,8 +2525,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_df49.c",
-   "src_sha256": "69211db67bffcbde752654cf1797e9ac68f8d37b4116adf94f4fed754b0ee104"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_df7f",
@@ -2528,8 +2536,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_df7f.c",
-   "src_sha256": "41f1c7ff5358582cb4cb6946606bd61ce6389c0385aa8dfc5dc4ccae5623adbb"
+   "src": "src/t13.c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "unit": "T13"
   },
   {
    "name": "f_dfc3",
@@ -5283,6 +5292,18 @@
     "CONST@3:1248+0x7"
    ],
    "note": "own CONST 'WINDIR' verified"
+  },
+  {
+   "id": "T13",
+   "src": "src/t13.c",
+   "start": "0xdce0",
+   "end": "0xdfc3",
+   "profile": "game-c",
+   "src_sha256": "ad27abcbfb1f8164a09202c45a98a763776f0bdbc37f1eeaf0bdcea7e94e3007",
+   "data": [
+    "_DATA@3:75b0+0x18"
+   ],
+   "note": "own _DATA 0x75b0+24 verified"
   },
   {
    "id": "T15",
