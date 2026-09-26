@@ -18,7 +18,7 @@ Conventions
 - A candidate file is self-contained C: declare the externs/prototypes it needs. Types matter: they select
   instructions (`movsx` from `short`, `movzx` from `unsigned char`, pointer scaling, signed/unsigned
   compares and shifts). Prototypes matter for argument pushing.
-- Default profile `game-c` = `wcc386 -3s -od -s` (Watcom 10.0 GA). Some regions use other flags (e.g. functions
+- Default profile `game-c` = `wcc386 -3s -d2 -s` (Watcom 10.0 GA). Some regions use other flags (e.g. functions
   4-aligned with `90`/`8bc0`/`8d4000` fillers = `-ot -od`); a profile is a TU property — report it, don't
   hack around it.
 - `check.py` output: `EXACT`, or `DIFF` with problems (size, fixup sites, binding conflicts, byte diffs) and

@@ -43,8 +43,8 @@ in every probe, `-hw` format; `-hc` changes code and is excluded). PROVEN by:
 - the original never contains `push dword ptr [ebp+x]` (0 sites) but has 94 `mov eax,[ebp+x]; push eax`;
   plain `-od` always emits the former for int/pointer params and locals, `-d2` the latter (probe `pushp.c`).
   Globals are still pushed directly (`push dword ptr [g]`) under both.
-- all 226 C functions EXACT today are still EXACT with `-3s -d2 -s`; the 73 of them that use `volatile` hacks stay
-  EXACT under `-d2` with every `volatile` deleted (33 of those fail under `-od`). Copies: `build/workers/idioms/nov/`.
+- all 242 C functions EXACT today are still EXACT with `-3s -d2 -s`; the 80 of them that use `volatile` hacks stay
+  EXACT under `-d2` with every `volatile` deleted (37 of those fail under `-od`). Copies: `build/workers/idioms/nov/`.
 - `-d2` puts `$$SYMBOLS`/`$$TYPES` segments in the object (WLINK drops them unless `debug` is given), which
   `check.py` currently reports as unplaceable data. `build/workers/idioms/hv.py "-3s -d2 -s" FILES` compiles
   with `-d2` and runs `check.py --obj`, treating only those debug-segment problems as ignorable (`EXACT*`).
@@ -65,6 +65,8 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
   (loop increments `L2: mov eax,[ebp-8]; inc [ebp-8]`). `++i` has no dead load; globals never get one (`postinc.c`).
 - `*p++ = e;` -> `mov edx,[p]; inc [p]; <e in al>; mov [edx],al`. Split `p++; *p = e;` gives a dead load and DL
   (`postincstore.c`).
+- `if (p[k]++ == c)` on a byte -> `mov dl,[eax+k]; mov eax,[p]; inc byte ptr [eax+k]; cmp dl,c` (old value in DL;
+  f_bc91). Pre-increment in a condition `if (++p[k] > c)` -> `inc byte ptr [eax]; cmp byte ptr [eax],c` (f_6e2e).
 - `if ((*p = e) < 0)` (assignment as condition) -> store, reload `mov eax,[p]; mov eax,[eax]; test eax,eax`.
   A plain `if (*p < 0)` gives `cmp dword ptr [eax],0` (`asgcond.c`, `ltzero.c`).
 - Shift count that is an `int` in memory: `x << s->i` -> `mov ecx,[s]; mov cl,[ecx+off]` (no movzx) and the
@@ -72,8 +74,9 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
 - Pointer arithmetic vs int arithmetic (register order tells the type):
   `int + const` -> `mov edx,[g]; add edx,c; mov eax,[p]; mov [eax+f],edx` (add before loading the destination
   base); `ptr + const` (or any non-plain-dword left operand: movsx/movzx, shift, mul, div result) ->
-  `mov edx,[g]; mov eax,[p]; add edx,c` (add after). `charptr + int_expr` ->
-  `mov edx,[ptr]; mov eax,<int>; add eax,edx`; `charptr + int_global` -> `mov eax,[ptr]; mov edx,[int]; add edx,eax`
+  `mov edx,[g]; mov eax,[p]; add edx,c` (add after). `local = charptr + tbl[i].f` ->
+  `<i in eax>; mov edx,[ptr]; mov eax,[eax+tbl]; add eax,edx` (f_592c); `charptr + int_global` ->
+  `mov eax,[ptr]; mov edx,[int]; add edx,eax` (f_c685 `pic->pixels = pic->buf + pic->size`, 0x5531)
   (`sumorder.c`, `sumorder2.c`, `ptradd.c`, `sum2g5.c`). So a global added this way is a (byte) pointer.
 - 1-D array with manual row index: `t[i*4 + k]` (k != 0) -> `shl eax,2; shl eax,2; mov eax,[eax+t+4k]`;
   `t[i*4]`, `t2d[i][k]`, `s[i].f` -> single `shl eax,4` (`arr1d.c`, `arr2d.c`).
@@ -81,12 +84,23 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
   consecutive `if (A) break; if (B) break;` give direct `jcc exit` (`andand.c`, `oror.c`).
 - Several `return expr;` share one spill slot: `mov [ebp-N],eax; jmp L; ...; mov [ebp-N],eax; L: mov eax,[ebp-N]`;
   an unused first local shifts that slot (f_d36c: `int unused;` -> spill at `[ebp-8]`).
+- Return spill at `[ebp-4]` *before* the autos (and two int autos in reverse declaration order) means a narrow
+  return type: f_b680 is `short f_b680(...)` with `int xend; int yend;` (spill -4, yend -8, xend -0xc). With an
+  `int` return the spill comes after the autos. `return local;` never reuses the local's slot (extra spill).
 - Flag tests `if (g & m)` on a global/struct field -> `test byte ptr [g+k], m>>8k` when m fits one byte;
   on a param/local -> `test dword ptr [ebp+x], m`; `(g & m) == m` -> `mov; and; cmp` (`testb.c`).
+- Bitfields. Store `s->f = v` (unsigned int container): `<v in edx>; and edx,(1<<w)-1; and byte ptr [eax+byte],~mask;
+  shl edx,pos; or dword ptr [eax+base],edx` (f_7e62 `unsigned b0:1, anim:4, f5:1, ...; p->anim = flags >> 4;`,
+  f_6a1d `unsigned type:2`). Read of an `unsigned char` bitfield: `mov al,[eax]; shr al,pos` / `and al,m; movzx eax,al`;
+  `if (s->hi)` -> `test byte ptr [eax],mask` (f_3918 `struct { unsigned char lo:2, hi:6; unsigned char flag; }`;
+  `bitf.c`). Byte-width `shr al`/`and al` on a loaded byte means a bitfield, not `(x >> n) & m`.
+- Sums of calls: write the natural left-associative `f(a)+f(b)+f(c)+...` in call order; partial sums rotate through
+  ESI/EBX across the calls (`movzx esi,al; ...; add ebx,esi`) — f_a966, no reordering tricks needed.
 - Structs are packed (`-zp1` default): `struct {int a; unsigned char b; int c;}` puts `c` at +5 (`testb.c`).
 - `enum` objects take the smallest integer type (byte if values fit): `movzx eax,byte ptr` when passed (`p2.c`).
 - Address constants as arguments (`&g`, arrays, string literals, function names) -> `mov eax,offset; push eax`;
   an integer literal gives `push imm` (`p3.c`).
 - Unexplained: `ptr->f = g1 + g2` (two int globals) gives `mov eax,g1; add eax,g2; mov edx,eax` in every probe,
   while the original has `mov edx,[g1]; add edx,[g2]; mov eax,[ptr]` at 0x584, 0x55a0, 0x6ad0 (EDX direct
-  only happens here when `ptr` is a local/param). `+=`/`-=` forms match (`sum2g*.c`, `brute.py`).
+  only happens here when `ptr` is a local/param, or for `charptr + mem` with an indexed/indirect int operand:
+  `(int)(p + a[i])` -> `mov edx,[p]; add edx,[a+eax]`). `+=`/`-=` forms match (`sum2g*.c`, `ctx2.c`, `brute.py`).

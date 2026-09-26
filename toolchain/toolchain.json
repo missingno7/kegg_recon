@@ -269,11 +269,11 @@
    "tool": "wcc386",
    "flags": [
     "-3s",
-    "-od",
+    "-d2",
     "-s"
    ],
-   "status": "hypothesis",
-   "evidence": "docs/evidence.md#compiler-profile"
+   "status": "strong",
+   "evidence": "docs/evidence.md#tc-d2"
   },
   "game-c-ot": {
    "install": "wc100",
@@ -281,11 +281,11 @@
    "flags": [
     "-3s",
     "-ot",
-    "-od",
+    "-d2",
     "-s"
    ],
    "status": "hypothesis",
-   "evidence": "functions 4-aligned with 90/8bc0/8d4000 fillers, /od frames (obj1 ~0x9960-0xa8bc)"
+   "evidence": "docs/evidence.md#tc-ot-cluster"
   },
   "game-asm-masm510a": {
    "install": "asm_masm510a",

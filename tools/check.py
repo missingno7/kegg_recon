@@ -66,7 +66,7 @@ def check_data(mod, si, res):
     binds, probs = res["bindings"], res["problems"]
     out = []
     for di, seg in enumerate(mod.segments):
-        if not seg or di == si or seg.size == 0 or seg.cls.upper() in ("CODE", "BSS") or seg.frame is not None:
+        if not seg or di == si or seg.size == 0 or seg.cls.upper() in ("CODE", "BSS", "DEBSYM", "DEBTYP")                 or seg.frame is not None:  # debug segments ($$SYMBOLS/$$TYPES) are dropped by WLINK without `debug`
             continue
         bases = set()
         if f"seg:{seg.name}" in binds:

@@ -24,6 +24,7 @@ tools/check.py is the only authority for an EXACT match.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import re
 import sys
@@ -430,6 +431,22 @@ class Ins:
                 self.ops.append(("m", base, index, m.scale, m.disp, o.size))
 
 
+class StmtList(list):
+    """Statement list that remembers the instruction address each statement was emitted at."""
+
+    def __init__(self, owner):
+        super().__init__()
+        self.owner, self.addr = owner, []
+
+    def append(self, x):
+        super().append(x)
+        self.addr.append(self.owner.cur)
+
+    def pop(self, k=-1):
+        self.addr.pop(k)
+        return super().pop(k)
+
+
 class Lift:
     """Symbolic execution of one function into a flat goto program."""
 
@@ -456,7 +473,8 @@ class Lift:
         self.find_switches(ins)
         self.ins = ins
         self.args, self.locals = {}, {}
-        self.stmts = []
+        self.stmts = StmtList(self)
+        self.cur = self.start
         self.unknown = []
         self.nparams = 0
         self.ret_type = None
@@ -489,6 +507,82 @@ class Lift:
             self.switches[i.addr] = {"cases": cases, "default": dflt, "tmp": tmp, "skip": skip}
             if tmp:
                 self.switch_tmps.add(tmp)
+
+    def find_tree_switches(self, body):
+        """Small/sparse switch: `mov [tmp],r; cmp [tmp],k; jcc ...` - a decision tree of compares
+        on a compiler temp that nothing else touches (Watcom's code for a switch without a table)."""
+        self.trees = {}
+        idx = {x.addr: n for n, x in enumerate(body)}
+        refs = Counter()
+        for x in body:
+            for o in x.ops:
+                if o[0] == "m" and o[1] == "ebp" and o[2] is None and o[4] < 0:
+                    refs[-o[4]] += 1
+        for n, st in enumerate(body[:-2]):
+            c = body[n + 1]
+            if not (st.mn == "mov" and st.ops[0][0] == "m" and st.ops[0][1] == "ebp" and st.ops[0][2] is None
+                    and st.ops[0][4] < 0 and st.ops[1][0] == "r" and c.mn == "cmp" and c.ops[0] == st.ops[0]
+                    and c.ops[1][0] == "i"):
+                continue
+            tmp = st.ops[0]
+            nodes, todo, inner, jmps = {}, [n + 1], set(), {}
+            ok = True
+            while todo and ok:
+                k = todo.pop()
+                if k in nodes or k in jmps:
+                    continue
+                x = body[k]
+                if x.mn == "cmp" and x.ops[0] == tmp and x.ops[1][0] == "i" and k + 1 < len(body) and \
+                        body[k + 1].mn in JREL:
+                    j = body[k + 1]
+                    nodes[k] = (x.ops[1][1], j.mn, j.ops[0][1], body[k + 2].addr if k + 2 < len(body) else None)
+                    inner.add(x.addr)
+                    for t in (j.ops[0][1], nodes[k][3]):
+                        if t in idx and ((body[idx[t]].mn == "cmp" and body[idx[t]].ops[0] == tmp) or
+                                         (body[idx[t]].mn == "jmp" and t == nodes[k][3])):
+                            todo.append(idx[t])
+                elif x.mn == "jmp" and x.ops[0][0] == "i" and k > n + 1:
+                    jmps[k] = x.ops[0][1]
+                    inner.add(x.addr)
+                else:
+                    ok = False
+            if not ok or len(nodes) < 1 or refs[-tmp[4]] != len(nodes) + 1:
+                continue
+
+            def leaf(a):
+                k = idx.get(a)
+                if k in jmps:
+                    return jmps[k]
+                return None if k in nodes else a
+
+            def run(v):
+                k = n + 1
+                for _ in range(64):
+                    kk, jm, t, fall = nodes[k]
+                    w = tmp[5]
+                    uv, uk = v & ((1 << 8 * w) - 1), kk & ((1 << 8 * w) - 1)
+                    sv = uv - (1 << 8 * w) if uv >> (8 * w - 1) else uv
+                    sk = uk - (1 << 8 * w) if uk >> (8 * w - 1) else uk
+                    a, b = (uv, uk) if jm in JUNS else (sv, sk)
+                    rel = JREL[jm]
+                    taken = {"==": a == b, "!=": a != b, "<": a < b, "<=": a <= b, ">": a > b, ">=": a >= b}[rel]
+                    nxt = t if taken else fall
+                    lf = leaf(nxt)
+                    if lf is not None:
+                        return lf
+                    k = idx[nxt]
+                return None
+            ks = sorted({s32(x[0]) for x in nodes.values()})
+            dflt = run(max(ks) + 1)
+            at = defaultdict(list)
+            for v in ks:
+                t = run(v)
+                if t is not None and t != dflt:
+                    at[t].append(v)
+            if not at or dflt is None or run(min(ks) - 1) != dflt:
+                continue
+            inner |= {body[k + 1].addr for k in nodes}
+            self.trees[st.addr] = {"tmp": -tmp[4], "at": dict(at), "default": dflt, "inner": inner}
 
     def frame_parts(self):
         ins = self.ins
@@ -649,6 +743,8 @@ class Lift:
         for n, (loc, op) in enumerate(self.pre_pending):
             if loc.op == e.op and ((e.op == "v" and loc.var is e.var) or (e.op == "m" and same_place(loc, e))):
                 del self.pre_pending[n]
+                if isinstance(op, E):
+                    return op
                 return E("pre", loc, w=e.w, name=op)
         return e
 
@@ -712,7 +808,10 @@ class Lift:
             self.stmts.append(("opset", loc, "&", K(k, loc.w), uns))
         while self.pre_pending:
             loc, op = self.pre_pending.pop(0)
-            self.stmts.append(("incdec", loc, op))
+            if isinstance(op, E):
+                self.stmts.append(("set", loc, op.b))
+            else:
+                self.stmts.append(("incdec", loc, op))
         for r, e in list(self.regs.items()):
             if e is not None and e.op == "post" and id(e) not in used and id(e) not in self.consumed:
                 self.consumed.add(id(e))
@@ -744,8 +843,16 @@ class Lift:
             loc.var.note(loc.w, how)
             if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 2 and not val.x and val.op != "k":
                 loc.var.note(2, "nval")
-            if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 4 and not val.x and val.op in ("v", "m", "call"):
+            if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 4 and not val.x and val.op in ("v", "m"):
                 loc.var.note(4, "wval")
+        mine = {id(n) for n in loc.walk()} | {id(n) for n in val.walk()}
+        nx = self.body[self.pos + 1] if self.pos + 1 < len(self.body) else None
+        embedded = nx is not None and nx.mn in ("cmp", "add", "sub", "and", "or", "xor", "imul") and             len(nx.ops) == 2 and nx.ops[1] == dst and nx.ops[0][0] == "r" and             self.regs.get(nx.ops[0][1]) is not None and id(self.regs[nx.ops[0][1]]) not in mine | self.consumed
+        if loc.op == "v" and embedded and not self.pending:
+            # `edx = a + b; ebx = c + d; mov [v], ebx; cmp edx, [v]`: an assignment inside the
+            # expression; it becomes `(v = c + d)` where v is read next
+            self.pre_pending.append((loc, E("asg", loc, val, w=val.w)))
+            return
         self.emit(("set", loc, val), [loc, val])
 
     def run(self):
@@ -768,12 +875,17 @@ class Lift:
             targets.update(sw["cases"])
             if sw["default"]:
                 targets.add(sw["default"])
+        self.find_tree_switches(body)
+        for tree in self.trees.values():
+            targets -= tree["inner"]
+            targets |= set(tree["at"]) | {tree["default"]}
         self.targets = targets
         n = 0
         self.body = body
         while n < len(body):
             self.pos = n
             i = body[n]
+            self.cur = i.addr
             if i.addr in targets:
                 self.flush()
                 self.stmts.append(("label", i.addr))
@@ -793,6 +905,19 @@ class Lift:
 
     def step(self, i, nxt):
         mn, ops = i.mn, i.ops
+        if i.addr in self.trees:
+            tree = self.trees[i.addr]
+            val = self.read(ops[1], i)
+            if ops[1][0] == "r" and ops[1][2] < 4:
+                val = self.narrow(val, ops[1][2])
+            self.emit(("switch", val, tree["at"], tree["default"]), [val])
+            self.flush()
+            self.regs = {}
+            self.switch_tmps.add(tree["tmp"])
+            self.locals.pop(tree["tmp"], None)
+            return 1
+        if any(i.addr in t["inner"] for t in self.trees.values()):
+            return 1
         if any(i.addr in sw["skip"] for sw in self.switches.values()):
             if i.mn.startswith("j") and i.mn != "jmp":
                 self.targets.discard(i.ops[0][1]) if False else None
@@ -1262,7 +1387,10 @@ class Lift:
             if val.op in ("-", "+") and val.b.op == "k":
                 base = val.b.v if val.op == "-" else -val.b.v
                 val = val.a
-            self.emit(("switch", val, sw["cases"], sw["default"], base), [val])
+            at = defaultdict(list)
+            for n, t in enumerate(sw["cases"]):
+                at[t].append(n + base)
+            self.emit(("switch", val, dict(at), sw["default"]), [val])
             self.flush()
             self.regs = {}
             return
@@ -1420,7 +1548,7 @@ class Render:
             return "i"
         if op in ("neg", "~"):
             return promote(self.ty(e.a))
-        if op in ("pre", "preop", "post"):
+        if op in ("pre", "preop", "post", "asg"):
             return self.lv_type(e.a)
         if op == "bf":
             return "i"
@@ -1644,6 +1772,8 @@ class Render:
             return self.bitfield(e.a, e.v[0], e.v[1], e.a.w, not e.uns)
         if op == "pre":
             return f"{e.name}{self.lvalue(e.a)}"
+        if op == "asg":
+            return f"({self.lvalue(e.a)} = {self.expr(e.b)})"
         if op == "post":
             if e.a.op == "v" and e.a.var.stride and e.a.var.type == "p":
                 self.structs.add(e.a.var.stride)
@@ -1657,11 +1787,12 @@ class Render:
 
     def binary(self, e):
         op = e.op
-        a = self.expr(e.a)
-        ta = self.ty(e.a)
-        b = self.expr(e.b, promote(ta) if e.b.op == "k" else None)
-        tb = self.ty(e.b)
-        a, b = self.paren(e.a, a), self.paren(e.b, b)
+        ea, eb = (e.b, e.a) if e.flip else (e.a, e.b)     # --refine may swap commutative operands
+        a = self.expr(ea)
+        ta = self.ty(ea)
+        b = self.expr(eb, promote(ta) if eb.op == "k" else None)
+        tb = self.ty(eb)
+        a, b = self.paren(ea, a), self.paren(eb, b)
         ca, cb = promote(ta), promote(tb)
         if op in (">>", "/", "%"):
             if e.uns and ca == "i" and (op == ">>" or cb == "i") and not (op == ">>" and self.nuns(e.a)):
@@ -1861,12 +1992,9 @@ class Render:
             return f"/* unsupported: {st[1]} */"
         if k == "switch":
             # case labels are placed at their code (a table entry must point at the case body)
-            _, val, cases, dflt, base = st
-            end = dflt if dflt is not None and dflt >= max(cases) else None
-            at = defaultdict(list)
-            for n, t in enumerate(cases):
-                if t != end:
-                    at[t].append(n + base)
+            _, val, at, dflt = st
+            end = dflt if dflt is not None and dflt >= max(at) else None
+            at = {t: v for t, v in at.items() if t != end}
             self.switches.append({"at": at, "end": end, "default": None if end else dflt})
             return f"switch ({self.expr(val)}) {{"
         return f"/* ? {k} */"
@@ -1898,6 +2026,7 @@ class Render:
             elif st[0] == "switch":
                 used_labels.update(st[2])
                 if st[3] is not None:
+                    used_labels.add(st[3])
                     used_labels.add(st[3])
         for st in stmts:
             if st[0] == "label" and st[1] not in used_labels:
@@ -2065,40 +2194,84 @@ def layout_locals(L):
         u += 4
     if L.frame and L.frame > deepest and not info:
         pass
-    # greedy from the deepest slot: key(shallow) must sort before key(deep)
-    limit = (99, True)
-    for s in reversed(info):
-        lo, hi = s["range"]
-        pref = s.get("pref", hi)
-        best = None
-        for size in sorted({pref, hi, lo, 2, 4} & set(range(lo, hi + 1)) or {pref}, key=lambda z: (z != pref, -z)):
-            key = (size, s.get("temp", False))
-            if size < limit[0] or (size == limit[0] and (not key[1] or limit[1])):
-                best = size
-                break
-        if best is None:
-            best = pref
-        s["size"] = best
-        limit = (best, s.get("temp", False))
-    decl = []
-    for s in info:
-        v = s["var"]
-        if s.get("switch"):
+    # Watcom orders the frame with a selection sort by size (swap-based, so not stable) over
+    # the autos in declaration order followed by the return temp; slots are then assigned from
+    # [ebp-4] down (probes: build/workers/lift/p/ao.c, c.c, d.c).  Pick sizes (short vs int,
+    # narrow return) and a declaration order whose sort reproduces the original slot order.
+    slots = [s for s in info if not s.get("switch")]
+    options = []
+    for s_ in slots:
+        lo, hi = s_["range"]
+        pref = s_.get("pref", hi)
+        opts = sorted({z for z in (1, 2, 4) if lo <= z <= hi} | ({lo} if s_.get("agg") else set()),
+                      key=lambda z: (z != pref, -z)) or [pref]
+        options.append(opts)
+    chosen, order = None, None
+    for combo in itertools.islice(itertools.product(*options), 512):
+        if any(x > y for x, y in zip(combo, combo[1:])):
             continue
-        if s.get("temp"):
-            w = L.spill[1]
-            if not getattr(L, "ret_narrow", False):
-                L.ret_type = "c" if w == 1 else ("s" if s["size"] == 2 else "i")
+        P = unsort([(k, z, s_.get("temp", False)) for k, (s_, z) in enumerate(zip(slots, combo))])
+        if P is not None:
+            chosen, order = combo, P
+            break
+    if chosen is None:
+        chosen = [o[0] for o in options]
+        order = [k for k, s_ in enumerate(slots) if not s_.get("temp")]
+    for s_, z in zip(slots, chosen):
+        s_["size"] = z
+    decl = []
+    for k in order:
+        s_ = slots[k]
+        v = s_["var"]
+        if s_.get("temp"):
             continue
         if v is None:
-            v = Var("l", f"unused_{s['off']:x}", s["off"])
+            v = Var("l", f"unused_{s_['off']:x}", s_["off"])
             v.type = "i"
             decl.append(v)
             continue
-        if not s.get("agg"):
-            resolve_local(v, s["size"])
+        if not s_.get("agg"):
+            resolve_local(v, s_["size"])
         decl.append(v)
+    for s_ in slots:
+        if s_.get("temp"):
+            w = L.spill[1]
+            if not getattr(L, "ret_narrow", False):
+                L.ret_type = "c" if w == 1 else ("s" if s_["size"] == 2 else "i")
     L.decl_locals = decl
+
+
+def unsort(final, budget=20000):
+    """Invert Watcom's frame sort.  `final` lists (id, size, is_temp) by slot (shallow first).
+    Returns the ids of the autos in a declaration order whose selection sort (first minimum of the
+    rest swapped into place), with the temps appended, yields `final`; None if impossible."""
+    n = len(final)
+    temps = [x[0] for x in final if x[2]]
+    count = [0]
+
+    def dfs(i, A):
+        count[0] += 1
+        if count[0] > budget:
+            return None
+        if i < 0:
+            ids = [x[0] for x in A]
+            if ids[len(ids) - len(temps):] == temps or not temps and True:
+                if not temps or ids[len(ids) - len(temps):] == temps:
+                    return [x for x in ids if x not in temps]
+            return None
+        for j in range(i, n):
+            B = list(A)
+            B[i], B[j] = B[j], B[i]
+            m = min(x[1] for x in B[i:])
+            if B[j][1] != m or any(B[k][1] == m for k in range(i, j)):
+                continue
+            r = dfs(i - 1, B)
+            if r is not None:
+                return r
+        return None
+    if n == 0:
+        return []
+    return dfs(n - 2, list(final))
 
 
 def resolve_function(L):
@@ -2169,6 +2342,8 @@ def main():
     ap.add_argument("--controls", action="store_true", help="all matching functions")
     ap.add_argument("--range", nargs=2, metavar=("START", "END"), help="non-matching functions in [start,end)")
     ap.add_argument("--goto", action="store_true", help="no structuring (flat goto form)")
+    ap.add_argument("--refine", action="store_true", help="check drafts and search commutative operand orders")
+    ap.add_argument("-j", "--jobs", type=int, default=8)
     a = ap.parse_args()
     prog = Program()
     fns = [f for f in prog.man["functions"] if f.get("kind", "c") == "c"]
@@ -2189,7 +2364,70 @@ def main():
     res = lift_program(prog, list(dict.fromkeys(selected)), not a.goto)
     for n, (text, L) in res.items():
         (a.out / f"{n}.c").write_text(text)
-        print(f"{n} {L.fn['start']}..{L.fn['end']} unsupported={len(L.unknown)}")
+        if not a.refine:
+            print(f"{n} {L.fn['start']}..{L.fn['end']} unsupported={len(L.unknown)}")
+    if a.refine:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(a.jobs) as ex:
+            for line in ex.map(lambda item: refine(item[1][1], a.out, not a.goto), res.items()):
+                print(line)
+
+
+# ---------------------------------------------------------------------------------------------
+# --refine: operand order of commutative operations is the one thing -od code does not reveal
+# reliably (Watcom picks evaluation order and result register by its own cost rules).  For a
+# draft that is not EXACT, try swapping the operands of commutative nodes emitted at or after the
+# first differing instruction, one at a time, keeping swaps that improve the tools/check.py score.
+COMMUTATIVE = {"+", "*", "&", "|", "^"}
+
+
+def run_check(path, fn, tag):
+    import subprocess
+    js = ROOT / "build" / "lift-refine" / f"{fn['name']}.{tag}.json"
+    js.parent.mkdir(parents=True, exist_ok=True)
+    p = subprocess.run([sys.executable, str(ROOT / "tools" / "check.py"), str(path), fn["name"], "--at", fn["start"],
+                        "--end", fn["end"], "--profile", fn.get("profile", "game-c"), "--json", str(js)],
+                       capture_output=True, text=True)
+    line = (p.stdout.strip().splitlines() or ["FAIL"])[0]
+    if not js.exists() or not line.startswith(("EXACT", "DIFF")):
+        return False, (-1, 0), None
+    d = json.loads(js.read_text())
+    diff = d.get("diff") or {}
+    first = diff.get("first_diff_insn")
+    score = (diff.get("equal_insns") or 0, -len(d.get("problems") or []))
+    return line.startswith("EXACT"), score, int(first, 16) if first else None
+
+
+def refine(L, outdir, structured, limit=40):
+    path = outdir / f"{L.name}.c"
+    exact, best, first = run_check(path, L.fn, "base")
+    if exact:
+        return f"{L.name} EXACT"
+    tried = 0
+    points = []
+    for st, addr in zip(L.stmts, L.stmts.addr):
+        if first is not None and addr < first - 0x40:
+            continue
+        for x in st[1:]:
+            if isinstance(x, E):
+                points += [n for n in x.walk() if n.op in COMMUTATIVE and n.a.op != "k" and n.b.op != "k"]
+    seen = set()
+    for n in points:
+        if id(n) in seen or tried >= limit:
+            continue
+        seen.add(id(n))
+        tried += 1
+        n.flip = not n.flip
+        path.write_text(Render(L, structured).source())
+        exact, score, _ = run_check(path, L.fn, "try")
+        if exact:
+            return f"{L.name} EXACT after refine ({tried} tries)"
+        if score > best:
+            best = score
+        else:
+            n.flip = not n.flip
+    path.write_text(Render(L, structured).source())
+    return f"{L.name} DIFF (best {best[0]} equal insns, {tried} tries)"
 
 
 if __name__ == "__main__":

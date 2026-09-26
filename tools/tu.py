@@ -338,8 +338,9 @@ def c_literal(addr):
 
 # ------------------------------------------------------------------------------------ synthesis
 class TU:
-    def __init__(self, funcs, literals=False, choices=None, rename=None):
+    def __init__(self, funcs, literals=False, choices=None, rename=None, defs=()):
         self.funcs = funcs                      # manifest entries, address order
+        self.defs = list(defs)                  # the TU's own data definitions (C text, definition order)
         self.literals = literals
         self.choices = choices or {}            # symbol -> chosen variant index
         self.rename = rename or set()           # typedef/tag names to rename per function
@@ -428,7 +429,7 @@ class TU:
 
     def _tag_key(self, toks):
         if toks[0].text == "typedef":
-            specs, rest = split_specs(toks[1:], self.typedefs | {"__none__"})
+            specs, rest = split_specs(toks[1:], set())
             names = [norm_decl([], p, set())[0] for p in split_commas(rest)] if rest else []
             return "typedef " + ",".join(n for n in names if n)
         return f"{toks[0].text} {toks[1].text}"
@@ -442,8 +443,8 @@ class TU:
         for key, vs in self.typedef_items.items():
             if len(vs) > 1:
                 self.conflicts.setdefault(key, [{"type": v["text"], "users": v["users"]} for v in vs])
-            if len(vs) > 1 and key in self.rename:
-                name = key.split(" ", 1)[1]
+            name = key.split(" ", 1)[1]
+            if len(vs) > 1 and key in self.rename and re.fullmatch(r"\w+", name):
                 for k, v in enumerate(vs):
                     new = f"{name}__{k}"
                     for u in v["users"]:
@@ -469,6 +470,9 @@ class TU:
                 continue
             v = vs[self.choices.get(name, self._default_choice(vs))]
             out.append(v["text"])
+        if self.defs:
+            out.append("")
+            out += self.defs
         for f, body in self.bodies:
             text = body.text
             for (u, name), new in renamed.items():
@@ -499,14 +503,15 @@ def run_check(path: Path, profile, start, end, tag):
                        capture_output=True, text=True)
     if not js.exists():
         err = (r.stdout + r.stderr).strip().splitlines()
-        return {"verdict": "COMPILE-ERROR", "problems": [l for l in err if "rror" in l or "arning" in l][:12]
-                or err[-6:]}
+        errs = [l for l in err if "Error!" in l]
+        return {"verdict": "COMPILE-ERROR", "problems": (errs or err[-6:])[:12], "score": 10 ** 6 + len(errs)}
     res = json.loads(js.read_text())
     return {"verdict": res["verdict"], "problems": res["problems"], "data": res.get("data", []),
-            "new_bindings": res.get("new_bindings", {}), "diff": res.get("diff")}
+            "new_bindings": res.get("new_bindings", {}), "diff": res.get("diff"),
+            "score": 0 if res["verdict"] == "EXACT" else len(res["problems"]) + res.get("byte_diffs", 0)}
 
 
-def build(funcs, out: Path | None = None, literals=False, resolve=True, tag=None, quiet=False):
+def build(funcs, out: Path | None = None, literals=False, resolve=True, tag=None, quiet=False, defs=()):
     """Synthesise + verify one TU; resolve declaration conflicts by trying every variant."""
     profs = {f.get("profile") for f in funcs}
     if len(profs) != 1:
@@ -519,33 +524,82 @@ def build(funcs, out: Path | None = None, literals=False, resolve=True, tag=None
     tag = tag or f"tu_{start:x}_{end:x}"
     out = out or WORK / "src" / f"{tag}.c"
     out.parent.mkdir(parents=True, exist_ok=True)
-    tu = TU(funcs, literals=literals)
+    tu = TU(funcs, literals=literals, defs=defs)
     out.write_text(tu.render())
     res = run_check(out, profile, start, end, tag)
     resolved = {}
     if res["verdict"] != "EXACT" and tu.conflicts and resolve:
-        # try each variant of each conflicting symbol (one conflict at a time, greedy)
-        choices, rename = {}, set()
-        for sym, vs in tu.conflicts.items():
-            best = None
-            for k in range(len(vs)):
-                t2 = TU(funcs, literals=literals, choices={**choices, sym: k}, rename=rename)
-                out.write_text(t2.render())
-                r2 = run_check(out, profile, start, end, tag)
-                if r2["verdict"] == "EXACT" or (best is None and r2["verdict"] != "COMPILE-ERROR"):
-                    best = (k, r2)
+        # Try variant combinations of the conflicting symbols (all of them when <= 64, else one symbol
+        # at a time).  The first EXACT combination wins; otherwise the first one that compiles is kept
+        # and the TU is reported with its unresolved type questions.
+        syms = list(tu.conflicts)
+        sizes = [len(tu.conflicts[s]) for s in syms]
+        total = 1
+        for n in sizes:
+            total *= n
+        tried = []
+
+        def attempt(choices, rename=frozenset()):
+            t2 = TU(funcs, literals=literals, choices=choices, rename=set(rename), defs=defs)
+            out.write_text(t2.render())
+            r2 = run_check(out, profile, start, end, tag)
+            tried.append((dict(choices), set(rename), r2["verdict"]))
+            return r2
+
+        import itertools
+        best = None
+        if total <= 64:
+            for combo in itertools.product(*[range(n) for n in sizes]):
+                ch = dict(zip(syms, combo))
+                r2 = attempt(ch)
                 if r2["verdict"] == "EXACT":
+                    best = (ch, set())
                     break
-            if best is None and (sym.startswith("typedef ") or sym.split(" ")[0] in ("struct", "union", "enum")):
-                rename.add(sym)
-                resolved[sym] = "renamed per function (unresolved type question)"
-                continue
-            if best is not None:
-                choices[sym] = best[0]
-                resolved[sym] = vs[best[0]]["type"]
-        tu = TU(funcs, literals=literals, choices=choices, rename=rename)
+                if best is None or r2["score"] < best[2]:
+                    best = (ch, set(), r2["score"])
+        else:  # hill-climb: change one symbol at a time while the score (errors / problems) drops
+            cur = {s: TU._default_choice(tu.symdecls[s]) if s in tu.symdecls else 0 for s in syms}
+            cs = attempt(cur)["score"]
+            # starting points: every function's own view of all conflicting symbols
+            for u in [f["name"] for f in funcs]:
+                view = dict(cur)
+                for s in syms:
+                    for k, v in enumerate(tu.conflicts[s]):
+                        if u in v["users"]:
+                            view[s] = k
+                if view != cur:
+                    sc = attempt(view)["score"]
+                    if sc < cs:
+                        cur, cs = view, sc
+            for _ in range(3):
+                improved = False
+                for s, n in zip(syms, sizes):
+                    for k in range(n):
+                        if k == cur[s] or cs == 0:
+                            continue
+                        sc = attempt({**cur, s: k})["score"]
+                        if sc < cs:
+                            cur, cs, improved = {**cur, s: k}, sc, True
+                if cs == 0 or not improved:
+                    break
+            best = (cur, set(), cs)
+        best = best[:2]
+        tags = {s for s in syms if s.startswith("typedef ") or s.split(" ")[0] in ("struct", "union", "enum")}
+        if (best is None or tried[-1][2] != "EXACT") and tags:
+            base = best[0] if best else {}
+            if attempt(base, tags)["verdict"] != "COMPILE-ERROR":
+                best = (base, tags)
+        if best is None:
+            best = ({}, set())
+        for s in syms:
+            if s in best[1]:
+                resolved[s] = "renamed per function (unresolved type question)"
+            elif s in best[0]:
+                resolved[s] = tu.conflicts[s][best[0][s]]["type"]
+        tu = TU(funcs, literals=literals, choices=best[0], rename=best[1], defs=defs)
         out.write_text(tu.render())
         res = run_check(out, profile, start, end, tag)
+        res["attempts"] = len(tried) + 1
     res.update({"tag": tag, "source": str(out.relative_to(ROOT)).replace("\\", "/"), "profile": profile,
                 "range": [hex(start), hex(end)], "functions": [f["name"] for f in funcs],
                 "conflicts": {k: [{"type": v["type"], "users": v["users"]} for v in vs]
@@ -604,7 +658,7 @@ def scan(args):
             r = build(run, literals=args.literals, quiet=True, tag=f"scan_{run[0]['name']}")
             ent["segments"].append({"functions": ent["run"], "verdict": r["verdict"]})
             report.append(ent)
-            print(f"run {run[0]['name']} (1): {r['verdict']}")
+            print(f"run {run[0]['name']} (1): {r['verdict']}", flush=True)
             continue
         for a, b in zip(run, run[1:]):
             r = build([a, b], literals=args.literals, quiet=True, tag=f"pair_{a['name']}")
@@ -628,7 +682,7 @@ def scan(args):
             i = j
         print(f"run {run[0]['name']}..{run[-1]['name']} ({len(run)}): "
               + " / ".join(f"{s['functions'][0]}..{s['functions'][-1]}[{len(s['functions'])}] {s['verdict']}"
-                           for s in ent["segments"]))
+                           for s in ent["segments"]), flush=True)
         report.append(ent)
     out = Path(args.out) if args.out else WORK / "scan.json"
     out.write_text(json.dumps(report, indent=1))
@@ -822,6 +876,7 @@ def main(argv):
     b.add_argument("--out")
     b.add_argument("--literals", action="store_true")
     b.add_argument("--no-resolve", action="store_true")
+    b.add_argument("--defs", help="file with the TU's own data definitions (C, definition order)")
     s = sub.add_parser("scan")
     s.add_argument("--range", nargs=2)
     s.add_argument("--window", type=int)
@@ -837,7 +892,8 @@ def main(argv):
         fs = select(a)
         if not fs:
             raise SystemExit("no functions selected")
-        r = build(fs, Path(a.out) if a.out else None, a.literals, not a.no_resolve)
+        defs = Path(a.defs).read_text().splitlines() if a.defs else ()
+        r = build(fs, Path(a.out) if a.out else None, a.literals, not a.no_resolve, defs=defs)
         return 0 if r["verdict"] == "EXACT" else 1
     if a.cmd == "scan":
         scan(a)
