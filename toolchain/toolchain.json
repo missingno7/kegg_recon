@@ -142,6 +142,92 @@
    },
    "tree_sha256": "e2f24d5ac5b768a761b8f76aa5758f3e46480a09751ea38b5a17b7fb3219722f",
    "tree_files": 1223
+  },
+  "asm_masm510a": {
+   "product": "Microsoft Macro Assembler 5.10A (DOS executable; C:/tools/masm-5.10a/files)",
+   "status": "candidate",
+   "dir": "masm-5.10a/files",
+   "hosts": {
+    "masm": {
+     "msdos": "MASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "MASM.EXE": "245b608e0ba51a815ec9501e657e534b4a39ed793824b5eff7267e6e5be20391"
+   }
+  },
+  "asm_tasm201": {
+   "product": "Borland Turbo Assembler 2.01 (DOS executable; extracted TASM.ZIP core)",
+   "status": "candidate",
+   "dir": "tasm-2.01/files/disk01/expanded/TASM",
+   "hosts": {
+    "tasm": {
+     "msdos": "TASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "TASM.EXE": "48dd9b48dd83a0041ea4b820379146b10de5f44b3e2633778a35d062f2e1814c"
+   }
+  },
+  "asm_masm500": {
+   "product": "Microsoft Macro Assembler 5.00",
+   "status": "candidate",
+   "dir": "masm-5.00/files",
+   "hosts": {
+    "masm": {
+     "msdos": "MASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "MASM.EXE": "085e0758fa776182da1281e0d75bac8a651e38a40191b5d865ba7a2b443e84b7"
+   }
+  },
+  "asm_masm510": {
+   "product": "Microsoft Macro Assembler 5.10",
+   "status": "candidate",
+   "dir": "masm-5.10/files",
+   "hosts": {
+    "masm": {
+     "msdos": "MASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "MASM.EXE": "233120302473749eafe9a54a30f8bda0127140c44346e5bcc047d113828a741e"
+   }
+  },
+  "asm_tasm101": {
+   "product": "Borland Turbo Assembler 1.01",
+   "status": "candidate",
+   "dir": "tasm-1.01/files/disk01",
+   "hosts": {
+    "tasm": {
+     "msdos": "TASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "TASM.EXE": "c58db9e628469769f8ddd69a9288d333d5875558c51925d7e8218a66c205a549"
+   }
+  },
+  "asm_masm600": {
+   "product": "Microsoft Macro Assembler 6.00 DOS ML.EXE",
+   "status": "candidate",
+   "dir": "masm-6.00/files",
+   "hosts": {
+    "ml": {
+     "msdos": "D2/ML.EXE",
+     "nt": "ML.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "ML.EXE": "4e4af054d8265e604ad44948348469b7f507befd8fc28bc4eae7d886af5c5f5d",
+    "D2/ML.EXE": "711ac49652a85e5a3cd83ee522abf9aed38f8e5059e4f267b420cb17ff88147b"
+   }
   }
  },
  "pending": {
@@ -172,6 +258,77 @@
    ],
    "status": "hypothesis",
    "evidence": "functions 4-aligned with 90/8bc0/8d4000 fillers, /od frames (obj1 ~0x9960-0xa8bc)"
+  },
+  "game-asm-masm510a": {
+   "install": "asm_masm510a",
+   "tool": "masm",
+   "flags": [
+    "/ML"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-tasm201": {
+   "install": "asm_tasm201",
+   "tool": "tasm",
+   "flags": [
+    "/m2",
+    "/ml"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm": {
+   "install": "asm_masm510a",
+   "tool": "masm",
+   "flags": [
+    "/ML"
+   ],
+   "host": "msdos",
+   "status": "candidate",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-masm500": {
+   "install": "asm_masm500",
+   "tool": "masm",
+   "flags": [
+    "/ML"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-masm510": {
+   "install": "asm_masm510",
+   "tool": "masm",
+   "flags": [
+    "/ML"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-masm600": {
+   "install": "asm_masm600",
+   "tool": "ml",
+   "flags": [
+    "/Cp"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-tasm101": {
+   "install": "asm_tasm101",
+   "tool": "tasm",
+   "flags": [
+    "/ml"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
   }
  }
 }

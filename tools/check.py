@@ -136,6 +136,30 @@ def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
     if obj.exists():
         obj.unlink()
     tool = prof.get("tool", "wcc386")
+    if tool in ("masm", "ml", "tasm"):
+        # MASM/TASM are real-mode DOS tools and use positional source/object
+        # arguments rather than Watcom's -fo switch.  Compile an isolated,
+        # short-named copy so DOS path parsing does not depend on the caller's
+        # directory or a long Windows path.
+        asm_src = outdir / "CAND.ASM"
+        asm_obj = outdir / "CAND.OBJ"
+        shutil.copyfile(src, asm_src)
+        if asm_obj.exists():
+            asm_obj.unlink()
+        if tool == "ml":
+            args = [*prof.get("flags", []), "/c", "/FoCAND.OBJ", "CAND.ASM"]
+        elif tool == "masm":
+            args = [*prof.get("flags", []), "CAND.ASM,CAND.OBJ,NUL,NUL;"]
+        else:
+            args = [*prof.get("flags", []), "CAND.ASM,CAND.OBJ"]
+        asm_host = prof.get("host", "msdos")
+        r = dosrun.run(tool, args, install=prof["install"], host=asm_host, cwd=outdir)
+        (outdir / (src.stem + ".log")).write_text(r.out)
+        if r.rc != 0 or not asm_obj.exists():
+            raise SystemExit(f"ASSEMBLY FAILED rc={r.rc}\n{r.out}")
+        if asm_obj != obj:
+            shutil.copyfile(asm_obj, obj)
+        return obj, r
     win = lambda p: str(p).replace("/", "\\")  # Watcom reads '/' as an option prefix
     if tool == "wasm":
         args = [*prof["flags"], f"-fo={win(obj)}", src.name]

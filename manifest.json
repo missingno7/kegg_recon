@@ -560,16 +560,20 @@
    "start": "0x35e4",
    "end": "0x3702",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_35e4.c",
+   "src_sha256": "9507a08465fe800d613088b3d1f0e7390682d8cc079545592fd9fdf9406fb5d3"
   },
   {
    "name": "f_3702",
    "start": "0x3702",
    "end": "0x3918",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3702.c",
+   "src_sha256": "bdc326e7905e26e7140b6b34f4d1739504acd097c40abee9fb8e50dab765b8aa"
   },
   {
    "name": "f_3918",
@@ -584,8 +588,10 @@
    "start": "0x3ac0",
    "end": "0x3ba4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3ac0.c",
+   "src_sha256": "d573e0446c22b70356b4566d17d6166245e4e5cf0363bf3e9fefb08abb0202bf"
   },
   {
    "name": "f_3ba4",
@@ -1686,8 +1692,10 @@
    "start": "0xae56",
    "end": "0xb03c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ae56.c",
+   "src_sha256": "6ca1efda7c52284ab70f2f513897a9004f77a4dc670e5e66b7b7acd03ee95b26"
   },
   {
    "name": "f_b03c",
@@ -1812,8 +1820,10 @@
    "start": "0xbd24",
    "end": "0xbd8b",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_bd24.c",
+   "src_sha256": "399c87ab1e312bccad72f1e3956a31be6fc90580fb6e5de37b7adae726de865d"
   },
   {
    "name": "f_bd8b",
@@ -2085,8 +2095,10 @@
    "start": "0xd288",
    "end": "0xd2f0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_d288.c",
+   "src_sha256": "67e8cc828ff6040952fbabf2495bd9a7180038b86a5571cee3cd9defe611d3f6"
   },
   {
    "name": "f_d2f0",
@@ -2109,8 +2121,10 @@
    "start": "0xd408",
    "end": "0xd4ba",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_d408.c",
+   "src_sha256": "d46b0995c58cdee985ed23e8aa81e6988ee7ff43ca904a74cd7fb2015beb8fb1"
   },
   {
    "name": "f_d4ba",
@@ -2125,8 +2139,10 @@
    "start": "0xd5d0",
    "end": "0xd656",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_d5d0.c",
+   "src_sha256": "aa14ba8253fb1142d66209d8920fb3331cf709e3456369d353cc163ac7c98282"
   },
   {
    "name": "f_d656",
@@ -2177,8 +2193,10 @@
    "start": "0xdd53",
    "end": "0xddb9",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_dd53.c",
+   "src_sha256": "258b8bf9696e07ff5a37499190768afe71ecbcbc7da687c6e9b6126d754a9fba"
   },
   {
    "name": "f_ddb9",
@@ -2201,48 +2219,60 @@
    "start": "0xde3e",
    "end": "0xdea6",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_de3e.c",
+   "src_sha256": "4dc064fee4c4cf688859b76bda483fda3301b488e27647a66df083f512cf4ea3"
   },
   {
    "name": "f_dea6",
    "start": "0xdea6",
    "end": "0xdf49",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_dea6.c",
+   "src_sha256": "5bf760a478276a53ceb3d58c227c20481475971479abc31955d9d97336f29f19"
   },
   {
    "name": "f_df49",
    "start": "0xdf49",
    "end": "0xdf7f",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_df49.c",
+   "src_sha256": "69211db67bffcbde752654cf1797e9ac68f8d37b4116adf94f4fed754b0ee104"
   },
   {
    "name": "f_df7f",
    "start": "0xdf7f",
    "end": "0xdfc3",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_df7f.c",
+   "src_sha256": "41f1c7ff5358582cb4cb6946606bd61ce6389c0385aa8dfc5dc4ccae5623adbb"
   },
   {
    "name": "f_dfc3",
    "start": "0xdfc3",
    "end": "0xe028",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_dfc3.c",
+   "src_sha256": "906f7aa2507369233408d2f7f9b32532dd45b46060f1d9bf490a1082e36a845d"
   },
   {
    "name": "f_e028",
    "start": "0xe028",
    "end": "0xe095",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e028.c",
+   "src_sha256": "204c410df53f29a787c994fbbc8ca4bfcf653bf9a04d510f6f7031ceb294a1a8"
   },
   {
    "name": "f_e095",
@@ -2341,8 +2371,10 @@
    "start": "0xe983",
    "end": "0xe9b3",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e983.c",
+   "src_sha256": "eec305601cc3a456039b7ce916c0d2c86f9f8be4045e86482dd0cf4e825805a3"
   },
   {
    "name": "f_e9b3",
@@ -2359,24 +2391,30 @@
    "start": "0xe9dd",
    "end": "0xea04",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e9dd.c",
+   "src_sha256": "1e505099d7701f74f90421b277a20b3b52da8bcde1047be048d2d8e4669e7e3d"
   },
   {
    "name": "f_ea04",
    "start": "0xea04",
    "end": "0xea71",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ea04.c",
+   "src_sha256": "1f550d5ba54d07540fd102bcedb1af252442f99ba115f69fea6d7a032401a32e"
   },
   {
    "name": "f_ea71",
    "start": "0xea71",
    "end": "0xea9f",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ea71.c",
+   "src_sha256": "56acc38d6a0305251478a9658e3e53a60daf5e6957369916cd747a8d345fd30d"
   },
   {
    "name": "f_ea9f",
@@ -2391,32 +2429,40 @@
    "start": "0xebcd",
    "end": "0xec44",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ebcd.c",
+   "src_sha256": "b533e15859e26d0aeb4e90baba995947c1c0ba9d497d67eb4da4d91b3f0a4cc0"
   },
   {
    "name": "f_ec44",
    "start": "0xec44",
    "end": "0xec76",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ec44.c",
+   "src_sha256": "d7c2cc4c89b273527176a51d4826e985a2f9ad8df4dbd83fd699c2a41294dfb2"
   },
   {
    "name": "f_ec76",
    "start": "0xec76",
    "end": "0xec9c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ec76.c",
+   "src_sha256": "8e4ce4ae555e2927b723715bf2b7067a91827eea1861ef8272574b0029395cb5"
   },
   {
    "name": "f_ec9c",
    "start": "0xec9c",
    "end": "0xecdf",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ec9c.c",
+   "src_sha256": "1c782628eb6fd618559f4e4b77f43b6e96b30714198f93b19f1c4998fe69a55d"
   },
   {
    "name": "f_ecdf",
@@ -2501,8 +2547,10 @@
    "start": "0xeff1",
    "end": "0xf0f6",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_eff1.c",
+   "src_sha256": "11d49ffb26b6efe496c549e70be008cb980a3deb6f5b968cc6d06cde4069db3f"
   },
   {
    "name": "f_f0f6",
@@ -2519,32 +2567,40 @@
    "start": "0xf253",
    "end": "0xf306",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f253.c",
+   "src_sha256": "e5d3b7ed0c75108bc5a3505bec0905d05a4bdcb1f28a0bfa079a6da91efbf691"
   },
   {
    "name": "f_f306",
    "start": "0xf306",
    "end": "0xf3b9",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f306.c",
+   "src_sha256": "396ead1b36692ccb9a36b8f311555ff910dcd26b967e133da30824c38c24c653"
   },
   {
    "name": "f_f3b9",
    "start": "0xf3b9",
    "end": "0xf46c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f3b9.c",
+   "src_sha256": "9aef03fc4e7f789118814fcbbea2c7ab44bfa6d289103ff2c00811432af9ff5f"
   },
   {
    "name": "f_f46c",
    "start": "0xf46c",
    "end": "0xf59a",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f46c.c",
+   "src_sha256": "dba9c009d38330870f79e14c8fe721382a15a4922d0a84a347a9a20db1c01c96"
   },
   {
    "name": "f_f59a",
@@ -2609,16 +2665,20 @@
    "start": "0xf82d",
    "end": "0xf875",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f82d.c",
+   "src_sha256": "923d17c1d3c84c32d15cd170f863169556b630e7adaee98bc4a6a5aa580c91db"
   },
   {
    "name": "f_f875",
    "start": "0xf875",
    "end": "0xf8bb",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f875.c",
+   "src_sha256": "997df641ce7682826729e3109697fdf2e2ef15218b64f722f95f5db4bd517e16"
   },
   {
    "name": "f_f8bb",
@@ -2812,8 +2872,10 @@
    "start": "0x10137",
    "end": "0x10369",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_10137.c",
+   "src_sha256": "cfa60c1af4033251874cd6b125d46bf7aef1996f152c8369acd7a3f7168c1984"
   },
   {
    "name": "f_10369",
@@ -2880,8 +2942,10 @@
    "start": "0x105c2",
    "end": "0x1065b",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_105c2.c",
+   "src_sha256": "6bba25d39e9f481b4ac89ece27372ee1fae6e22d95150341f75d319d785cb0c7"
   },
   {
    "name": "f_1065b",
@@ -2896,16 +2960,20 @@
    "start": "0x107b6",
    "end": "0x1085a",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_107b6.c",
+   "src_sha256": "b40841e4ec62832587dc98b30c3a9a57bd5d9ce238b2c80933d05683acd6f41d"
   },
   {
    "name": "f_1085a",
    "start": "0x1085a",
    "end": "0x108a9",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_1085a.c",
+   "src_sha256": "3c79533f07b8d9bd9f1da7a304c9fea2057d6fa5e75bbb94e11da60146153141"
   },
   {
    "name": "f_108a9",
@@ -2928,8 +2996,10 @@
    "start": "0x11051",
    "end": "0x11146",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_11051.c",
+   "src_sha256": "712e8dc3d892e9c96a0fa6b1ce4223041546e09f18690a9571a544eff30ba12f"
   },
   {
    "name": "f_11146",
@@ -2991,18 +3061,37 @@
   "f_11377": "1:11377",
   "f_115da": "1:115da",
   "f_12b94": "1:12b94",
+  "f_12cbd": "1:12cbd",
   "f_12f9c": "1:12f9c",
   "f_130b7": "1:130b7",
+  "f_13324": "1:13324",
+  "f_133f6": "1:133f6",
   "f_135e8": "1:135e8",
+  "f_13944": "1:13944",
+  "f_13964": "1:13964",
   "f_139c4": "1:139c4",
   "f_13a0a": "1:13a0a",
   "f_13a29": "1:13a29",
   "f_13a48": "1:13a48",
+  "f_13f9f": "1:13f9f",
+  "f_13fa1": "1:13fa1",
   "f_14197": "1:14197",
   "f_14771": "1:14771",
   "f_1515a": "1:1515a",
+  "fclose": "1:14c13",
+  "fopen": "1:14996",
+  "free": "1:14197",
+  "fseek": "1:14a8c",
+  "ftell": "1:14bdf",
+  "fwrite": "1:14f47",
+  "g_1258": "3:1258",
+  "g_1264": "3:1264",
+  "g_1268": "3:1268",
   "g_2426": "3:2426",
   "g_243f": "3:243f",
+  "g_269c": "3:269c",
+  "g_2fe4": "3:2fe4",
+  "g_37fd": "3:37fd",
   "g_387a": "3:387a",
   "g_389a": "3:389a",
   "g_389e": "3:389e",
@@ -3077,23 +3166,44 @@
   "g_7474": "3:7474",
   "g_7476": "3:7476",
   "g_747c": "3:747c",
+  "g_7486": "3:7486",
+  "g_7490": "3:7490",
+  "g_7492": "3:7492",
+  "g_7498": "3:7498",
+  "g_74ac": "3:74ac",
+  "g_74ae": "3:74ae",
+  "g_74bc": "3:74bc",
+  "g_74be": "3:74be",
+  "g_74c4": "3:74c4",
+  "g_74da": "3:74da",
+  "g_74db": "3:74db",
   "g_74fd": "3:74fd",
   "g_7536": "3:7536",
   "g_754c": "3:754c",
   "g_754d": "3:754d",
+  "g_756f": "3:756f",
   "g_75a8": "3:75a8",
+  "g_75ac": "3:75ac",
   "g_75b0": "3:75b0",
   "g_75b4": "3:75b4",
+  "g_75b8": "3:75b8",
+  "g_75c0": "3:75c0",
+  "g_75c4": "3:75c4",
+  "g_75c8": "3:75c8",
+  "g_75ca": "3:75ca",
   "g_75cc": "3:75cc",
   "g_7b00": "3:7b00",
   "g_7b0c": "3:7b0c",
+  "g_7b10": "3:7b10",
   "g_7b14": "3:7b14",
   "g_7b16": "3:7b16",
   "g_7b18": "3:7b18",
   "g_7b1a": "3:7b1a",
   "g_7b20": "3:7b20",
   "g_7b22": "3:7b22",
+  "g_7b28": "3:7b28",
   "g_7b2a": "3:7b2a",
+  "g_7b2e": "3:7b2e",
   "g_7b34": "3:7b34",
   "g_7b39": "3:7b39",
   "g_7b3b": "3:7b3b",
@@ -3108,9 +3218,17 @@
   "g_7c00": "3:7c00",
   "g_7c06": "3:7c06",
   "g_7c08": "3:7c08",
+  "g_7c14": "3:7c14",
+  "g_7c1c": "3:7c1c",
+  "g_7c20": "3:7c20",
+  "g_7c24": "3:7c24",
+  "g_7c28": "3:7c28",
+  "g_7c2c": "3:7c2c",
   "g_7db4": "3:7db4",
   "g_7db8": "3:7db8",
+  "g_8418": "3:8418",
   "g_8428": "3:8428",
+  "g_8db0": "3:8db0",
   "g_8db8": "3:8db8",
   "g_8ddc": "3:8ddc",
   "g_8e1c": "3:8e1c",
@@ -3198,6 +3316,9 @@
   "g_e2dc": "3:e2dc",
   "g_e2e8": "3:e2e8",
   "g_e2ec": "3:e2ec",
+  "g_e318": "3:e318",
+  "g_e31c": "3:e31c",
+  "g_e320": "3:e320",
   "g_e324": "3:e324",
   "g_e336": "3:e336",
   "g_e346": "3:e346",
@@ -3212,6 +3333,8 @@
   "g_e37a": "3:e37a",
   "g_e37f": "3:e37f",
   "g_e380": "3:e380",
+  "g_e381": "3:e381",
+  "g_e382": "3:e382",
   "g_e383": "3:e383",
   "g_e384": "3:e384",
   "g_e385": "3:e385",
@@ -3248,12 +3371,14 @@
   "g_e42e": "3:e42e",
   "g_e430": "3:e430",
   "g_e44c": "3:e44c",
+  "g_e468": "3:e468",
   "g_e469": "3:e469",
   "g_e46b": "3:e46b",
   "g_e46d": "3:e46d",
   "g_e46e": "3:e46e",
   "g_e46f": "3:e46f",
   "g_e472": "3:e472",
+  "g_e478": "3:e478",
   "g_e48b": "3:e48b",
   "g_e48c": "3:e48c",
   "g_e48d": "3:e48d",
@@ -3262,25 +3387,44 @@
   "g_e490": "3:e490",
   "g_e492": "3:e492",
   "g_e494": "3:e494",
+  "g_e496": "3:e496",
+  "g_e498": "3:e498",
+  "g_e49a": "3:e49a",
+  "g_e49c": "3:e49c",
+  "g_e49e": "3:e49e",
+  "g_e4a0": "3:e4a0",
+  "g_e4a2": "3:e4a2",
+  "g_e4a4": "3:e4a4",
   "g_e4a6": "3:e4a6",
   "g_e4a8": "3:e4a8",
+  "g_e4aa": "3:e4aa",
+  "g_e4ac": "3:e4ac",
   "g_e4ae": "3:e4ae",
   "g_e4b0": "3:e4b0",
+  "g_e4b2": "3:e4b2",
   "g_e4b4": "3:e4b4",
+  "g_e4b6": "3:e4b6",
   "g_e4b8": "3:e4b8",
   "g_e4ba": "3:e4ba",
   "g_e4bc": "3:e4bc",
+  "g_e4be": "3:e4be",
+  "g_e4c0": "3:e4c0",
   "g_e4c2": "3:e4c2",
   "g_e4c4": "3:e4c4",
   "g_e4c6": "3:e4c6",
   "g_e4c8": "3:e4c8",
+  "g_e4cc": "3:e4cc",
   "g_e4d0": "3:e4d0",
+  "g_e4d4": "3:e4d4",
+  "g_e4d8": "3:e4d8",
   "g_e4dc": "3:e4dc",
   "g_e4e0": "3:e4e0",
   "getenv": "1:1427c",
   "inp": "1:13fad",
   "int386": "1:145d0",
+  "int386x": "1:145ad",
   "memmove": "1:13f76",
+  "memset": "1:14120",
   "outp": "1:13fa3",
   "printf": "1:15136"
  },

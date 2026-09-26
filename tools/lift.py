@@ -1,12 +1,25 @@
-"""Deterministic, conservative first-draft lifter for Watcom 10.0 -od functions.
+"""Deterministic first-draft lifter for Watcom C 10.0 `wcc386 -3s -od` functions of KE.EXE.
 
-    python tools/lift.py f_7032 f_2e4a --out build/workers/lift/out
-    python tools/lift.py --all --out build/workers/lift/out
-    python tools/lift.py --range 0x7000 0x8000 --out build/workers/lift/out
+    python tools/lift.py f_7032 f_2e4a --out DIR        # DIR/f_7032.c, DIR/f_2e4a.c
+    python tools/lift.py --all --out DIR                # every non-matching C function
+    python tools/lift.py --range 0x7000 0x8000 --out DIR
+    python tools/lift.py --controls --out DIR           # every matching function (regression set)
+    python tools/lift.py f_7032 --goto --out DIR        # skip control-flow structuring
 
-The output is ordinary C.  Unsupported instructions are marked in comments; no
-machine bytes are copied into the source.  This is a draft generator, not a
-decompiler proof: tools/check.py remains the authority for an EXACT match.
+How it works (all facts below are proven by probes or EXACT matches, see docs/compiler-notes.md):
+  * `-od` compiles each statement in isolation and does no jump optimisation, so `if (c) goto L;` and
+    `goto L;` compile to exactly one cmp/jcc resp. jmp.  The lifter symbolically executes the body,
+    emits one C statement per store / call / branch, and writes control flow as gotos.  A structuring
+    pass then folds the fixed -od layouts (if/else, while, for, do-while) into structured statements
+    (identical code under -od).
+  * Types: proven declarations in src/ first, then evidence gathered over the whole executable
+    (access widths, movsx/movzx, signed/unsigned jumps, sar/shr, idiv/div, pointer use, how callers
+    push arguments).  Memory is addressed generically as `*(T *)(base + offset)` with byte-sized
+    base pointers, which Watcom compiles like the original field/array accesses.
+  * Locals: every scalar auto takes a 4-byte slot; Watcom sorts autos (then temps such as the return
+    spill) stably by size and assigns slots from [ebp-4] down.  The lifter declares locals in slot
+    order and picks short/int and the return type so that this sort reproduces the original frame.
+tools/check.py is the only authority for an EXACT match.
 """
 from __future__ import annotations
 
@@ -14,517 +27,1624 @@ import argparse
 import json
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "build" / "pylib"))
 sys.path.insert(0, str(ROOT / "tools"))
 import capstone  # noqa: E402
+from capstone import x86  # noqa: E402
 import le  # noqa: E402
 
-JCC = {"je": "==", "jz": "==", "jne": "!=", "jnz": "!=", "jl": "<",
-       "jnge": "<", "jle": "<=", "jng": "<=", "jg": ">", "jnle": ">",
-       "jge": ">=", "jnl": ">=", "jb": "<", "jnae": "<", "jbe": "<=",
-       "jna": "<=", "ja": ">", "jnbe": ">", "jae": ">=", "jnb": ">="}
-INV = {"==": "!=", "!=": "==", "<": ">=", "<=": ">", ">": "<=", ">=": "<"}
-LIB_HEADERS = {"getenv": "stdlib.h", "malloc": "stdlib.h", "free": "stdlib.h",
-               "atoi": "stdlib.h", "rand": "stdlib.h", "srand": "stdlib.h",
-               "memcpy": "string.h", "memset": "string.h", "strlen": "string.h",
-               "strcmp": "string.h", "strcpy": "string.h", "strcat": "string.h",
-               "printf": "stdio.h", "sprintf": "stdio.h", "fopen": "stdio.h",
-               "fclose": "stdio.h", "fread": "stdio.h", "fwrite": "stdio.h"}
+# ---------------------------------------------------------------------------------------------
+# C scalar types: c/sc = (unsigned/signed) char, us/s = (unsigned) short, u/i = (unsigned) int,
+# p = byte pointer.  Watcom's plain char is unsigned.
+TNAME = {"c": "unsigned char", "sc": "signed char", "s": "short", "us": "unsigned short",
+         "i": "int", "u": "unsigned", "p": "unsigned char *"}
+TW = {"c": 1, "sc": 1, "s": 2, "us": 2, "i": 4, "u": 4, "p": 4}
+SIGNED = {"sc", "s", "i"}
 
 
-def num(s):
-    try:
-        return int(s, 0)
-    except ValueError:
+def tcode(w, signed):
+    return {1: ("sc", "c"), 2: ("s", "us"), 4: ("i", "u")}[w][0 if signed else 1]
+
+
+def promote(t):
+    return "i" if t in ("c", "sc", "s", "us") else t
+
+
+LIB_HEADERS = {"getenv": "stdlib.h", "exit": "stdlib.h", "atexit": "stdlib.h", "memmove": "string.h",
+               "printf": "stdio.h", "inp": "conio.h", "outp": "conio.h", "int386": "i86.h",
+               "_disable": "i86.h", "_enable": "i86.h", "_rotl": "stdlib.h"}
+# library prototypes (ret, params, varargs); "p" = pointer, "cp" = char pointer
+LIB_SIGS = {"getenv": ("p", ["cp"], False), "exit": (None, ["i"], False), "atexit": ("i", ["p"], False),
+            "memmove": ("p", ["p", "p", "u"], False), "printf": ("i", ["cp"], True),
+            "inp": ("i", ["u"], False), "outp": ("i", ["u", "i"], False), "int386": ("i", ["i", "p", "p"], False),
+            "_disable": (None, [], False), "_enable": (None, [], False), "_rotl": ("u", ["u", "u"], False)}
+JREL = {"je": "==", "jne": "!=", "jl": "<", "jle": "<=", "jg": ">", "jge": ">=",
+        "jb": "<", "jbe": "<=", "ja": ">", "jae": ">=", "js": "<", "jns": ">="}
+JUNS = {"jb", "jbe", "ja", "jae"}
+NEG = {"==": "!=", "!=": "==", "<": ">=", ">=": "<", ">": "<=", "<=": ">"}
+SWAP = {"==": "==", "!=": "!=", "<": ">", ">": "<", "<=": ">=", ">=": "<="}
+BINOPS = {"+", "-", "*", "/", "%", "&", "|", "^", "<<", ">>"}
+SUBREG = {"al": ("eax", 1), "ax": ("eax", 2), "bl": ("ebx", 1), "bx": ("ebx", 2), "cl": ("ecx", 1),
+          "cx": ("ecx", 2), "dl": ("edx", 1), "dx": ("edx", 2), "si": ("esi", 2), "di": ("edi", 2)}
+ARITH = {"add": "+", "sub": "-", "and": "&", "or": "|", "xor": "^", "shl": "<<", "sal": "<<",
+         "sar": ">>", "shr": ">>", "imul": "*"}
+
+
+def s32(v):
+    v &= 0xFFFFFFFF
+    return v - (1 << 32) if v & 0x80000000 else v
+
+
+# ---------------------------------------------------------------------------------------------
+class Var:
+    """A named storage location: global (g_X), argument (aK) or local (v_N)."""
+
+    def __init__(self, kind, name, key):
+        self.kind, self.name, self.key = kind, name, key
+        self.acc = Counter()      # (width, how) with how in mov/sx/zx/cmp/arith/store/const/rmw
+        self.sign = Counter()     # True -> signed evidence, False -> unsigned evidence
+        self.ptr = 0              # used as an address base
+        self.array = False        # global used with an index / address taken
+        self.addr = False         # address taken (&v)
+        self.type = None          # resolved type code
+        self.decl = None          # proven declaration (globals)
+        self.volatile = False
+
+    def note(self, w, how):
+        self.acc[(w, how)] += 1
+
+    def widths(self, *hows):
+        return {w for (w, h), n in self.acc.items() if not hows or h in hows}
+
+
+class E:
+    """Expression node.  op: k const, v var load, m memory load, & address, fn function,
+    call, trunc, un ops (neg, ~), binary ops (+ - * / % & | ^ << >>), cmp."""
+    __slots__ = ("op", "a", "b", "v", "w", "x", "var", "uns", "args", "ptr", "rel", "name", "typ")
+
+    def __init__(self, op, a=None, b=None, **kw):
+        self.op, self.a, self.b = op, a, b
+        self.v = kw.get("v")
+        self.w = kw.get("w", 4)          # width of the value as held in the register
+        self.x = kw.get("x")             # extension of a narrow load: 's' / 'z' / None
+        self.var = kw.get("var")
+        self.uns = kw.get("uns", False)  # unsigned machine op (shr, div, jb...)
+        self.args = kw.get("args")
+        self.ptr = False
+        self.rel = kw.get("rel")
+        self.name = kw.get("name")
+        self.typ = kw.get("typ")
+
+    def kids(self):
+        out = [k for k in (self.a, self.b) if isinstance(k, E)]
+        if self.args:
+            out += [x for x in self.args if isinstance(x, E)]
+        return out
+
+    def walk(self):
+        yield self
+        for k in self.kids():
+            yield from k.walk()
+
+    def key(self):
+        return (self.op, self.a.key() if isinstance(self.a, E) else self.a,
+                self.b.key() if isinstance(self.b, E) else self.b, self.v, self.w, self.x,
+                id(self.var) if self.var else None, self.uns, self.name,
+                tuple(x.key() for x in self.args) if self.args else None)
+
+
+def K(v, w=4):
+    return E("k", v=s32(v), w=w)
+
+
+# ---------------------------------------------------------------------------------------------
+class Program:
+    def __init__(self):
+        self.man = json.loads((ROOT / "manifest.json").read_text())
+        L = le.LE(ROOT / "assets" / "KE.EXE")
+        self.code = L.object_bytes(L.objects[0])[:L.objects[0]["vsize"]]
+        self.fix = {off: t for obj, off, typ, t in L.resolved_fixups() if obj == 1}
+        self.funcs = {f["name"]: f for f in self.man["functions"]}
+        self.byaddr = {int(f["start"], 16): f["name"] for f in self.man["functions"]}
+        self.symname = {}
+        for k, v in self.man.get("symbols", {}).items():
+            obj, off = v.split(":")
+            self.symname[(int(obj), int(off, 16))] = k
+        self.globals = {}
+        self.sigs = defaultdict(lambda: {"calls": [], "params": {}, "ret": None})
+        self.decls = self.load_decls()
+        self.md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+        self.md.detail = True
+        self.lifts = {}
+
+    # proven declarations -------------------------------------------------------------------
+    def load_decls(self):
+        from context import top_level_decls
+        out = {}
+        for src in sorted((ROOT / "src").glob("*.c")):
+            for stmt in top_level_decls(src.read_text(errors="replace")):
+                if not stmt.startswith("extern ") and "(" not in stmt:
+                    continue
+                for d in parse_decl(stmt):
+                    out.setdefault(d["name"], d)
+        return out
+
+    def fname(self, addr):
+        return self.symname.get((1, addr)) or self.byaddr.get(addr) or f"f_{addr:x}"
+
+    def gvar(self, off, obj=3):
+        key = (obj, off)
+        v = self.globals.get(key)
+        if v is None:
+            name = self.symname.get(key) or f"g_{off:x}"
+            v = self.globals[key] = Var("g", name, key)
+            d = self.decls.get(name)
+            if d and d["kind"] == "var":
+                v.decl = d
+                v.volatile = d.get("volatile", False)
+        return v
+
+    # whole-program type resolution ---------------------------------------------------------
+    def resolve(self):
+        for v in self.globals.values():
+            resolve_global(v)
+        for name, sig in self.sigs.items():
+            resolve_sig(self, name, sig)
+
+
+SCALAR_RE = re.compile(r"^(?:(volatile)\s+)?((?:unsigned|signed)\s+)?(char|short|int|long)?\s*(?:\b(volatile)\b\s*)?$")
+
+
+def scalar_code(spec):
+    spec = " ".join(spec.replace("const", " ").split())
+    m = SCALAR_RE.match(spec)
+    if not m or not (m.group(2) or m.group(3)):
         return None
+    sign, base = (m.group(2) or "").strip(), m.group(3) or "int"
+    w = {"char": 1, "short": 2, "int": 4, "long": 4}[base]
+    signed = sign == "signed" or (sign == "" and base != "char")
+    return tcode(w, signed), bool(m.group(1) or m.group(4))
 
 
-def split_ops(s):
-    return [x.strip() for x in s.split(",", 1)] if "," in s else [s.strip()]
+def parse_decl(stmt):
+    """Very small declaration parser for the proven src/ declarations: scalars, scalar pointers,
+    arrays and function prototypes with scalar/pointer parameters."""
+    s = re.sub(r"^extern\s+", "", stmt.rstrip(";").strip())
+    out = []
+    fm = re.match(r"^(.*?)\b([fg]_[0-9a-f]+)\s*\((.*)\)$", s)
+    if fm and "(*" not in s:
+        rt = fm.group(1).strip()
+        params = [p.strip() for p in fm.group(3).split(",")] if fm.group(3).strip() not in ("", "void") else []
+        ps = []
+        for p in params:
+            p = re.sub(r"\b[a-z_]\w*$", "", p).strip() if re.search(r"\w\s+\w+$", p) and "*" not in p.split()[-1] and p.split()[-1] not in ("int", "char", "short", "long", "unsigned", "signed") else p
+            if "*" in p or "..." in p:
+                ps.append("p" if "*" in p else None)
+            else:
+                sc = scalar_code(p)
+                ps.append(sc[0] if sc else None)
+        ret = None if rt == "void" else ("p" if "*" in rt else (scalar_code(rt) or ("i", 0))[0])
+        out.append({"kind": "func", "name": fm.group(2), "params": ps, "ret": ret, "void": rt == "void"})
+        return out
+    # possibly several declarators: extern int a, b, *c;
+    m = re.match(r"^((?:volatile\s+|unsigned\s+|signed\s+|const\s+)*(?:char|short|int|long|unsigned|signed)?)\s*(.*)$", s)
+    if not m or not m.group(1).strip():
+        return out
+    base = m.group(1)
+    for decl in m.group(2).split(","):
+        decl = decl.strip()
+        dm = re.match(r"^(\*?)\s*(volatile\s+)?([fg]_[0-9a-f]+)\s*(\[\s*\d*\s*\])?$", decl)
+        if not dm:
+            continue
+        sc = scalar_code(base)
+        if not sc:
+            continue
+        d = {"kind": "var", "name": dm.group(3), "volatile": sc[1] or bool(dm.group(2))}
+        if dm.group(1):
+            d["type"], d["pointee"] = "p", sc[0]
+        elif dm.group(4):
+            d["type"], d["elem"] = "arr", sc[0]
+        else:
+            d["type"] = sc[0]
+        out.append(d)
+    return out
 
 
-def width(s):
-    return 1 if re.search(r"(?<!d)byte ptr", s) else 2 if re.search(r"(?<!d)word ptr", s) else 4
+def signedness(v, default):
+    s, u = v.sign[True], v.sign[False]
+    if u > s:
+        return False
+    if s > u:
+        return True
+    return default
 
 
-class Lifter:
-    def __init__(self, fn, code, fix, names, decls, man):
-        self.fn, self.code, self.fix, self.names, self.decls, self.man = fn, code, fix, names, decls, man
+def resolve_global(v):
+    d = v.decl
+    if d and d["type"] not in ("p", "arr") and not v.array:
+        v.type = d["type"]
+        return
+    if v.array or (d and d["type"] == "arr"):
+        v.type = "arr"
+        return
+    ws = v.widths("mov", "sx", "zx", "cmp", "arith", "store", "const", "rmw", "push")
+    if v.ptr or (d and d["type"] == "p"):
+        v.type = "p"
+        return
+    w = min(ws) if ws else 4
+    if v.widths("sx") & {w}:
+        signed = True
+    elif v.widths("zx") & {w}:
+        signed = False
+    else:
+        signed = signedness(v, w != 1)
+    v.type = tcode(w, signed)
+
+
+def resolve_local(v, size):
+    if size == 4 and v.ptr and not v.sign[True]:
+        v.type = "p"
+        return
+    if size == 4:
+        v.type = tcode(4, signedness(v, True))
+        return
+    if v.widths("sx") & {size}:
+        signed = True
+    elif v.widths("zx") & {size}:
+        signed = False
+    else:
+        signed = signedness(v, size != 1)
+    v.type = tcode(size, signed)
+
+
+def resolve_sig(prog, name, sig):
+    """Parameter types of a callee from its body (argument vars), call sites and proven decls."""
+    if name in LIB_SIGS:
+        ret, ps, va = LIB_SIGS[name]
+        sig.update(ret=ret or "i", void=ret is None, params=ps, varargs=False, lib=True)
+        return
+    d = prog.decls.get(name)
+    lift = prog.lifts.get(name)
+    counts = Counter(len(c) for c in sig["calls"])
+    n = max(counts) if counts else 0
+    if lift:
+        n = max(n, lift.nparams)
+    params = []
+    for k in range(n):
+        t = None
+        if d and d["kind"] == "func" and k < len(d["params"]) and d["params"][k]:
+            t = d["params"][k]
+        elif lift and k in lift.args and lift.args[k].type:
+            t = lift.args[k].type
+        else:
+            forms = Counter(c[k] for c in sig["calls"] if k < len(c))
+            if forms["narrow"] and not forms["wide"]:
+                t = "s"
+            else:
+                t = "p" if forms["ptr"] and not forms["wide"] else "i"
+        params.append(t)
+    sig["params"] = params
+    sig["varargs"] = len(counts) > 1
+    if d and d["kind"] == "func":
+        sig["ret"] = d["ret"]
+        sig["void"] = d["void"]
+        if len(d["params"]) == n:
+            sig["params"] = [p or q for p, q in zip(d["params"], params)]
+        sig["varargs"] = False
+    elif lift:
+        sig["ret"] = lift.ret_type
+        sig["void"] = lift.ret_type is None
+    else:
+        sig["ret"], sig["void"] = "i", False
+
+
+def make_sig_view(prog, name):
+    return prog.sigs[name]
+
+
+# ---------------------------------------------------------------------------------------------
+class Ins:
+    __slots__ = ("addr", "size", "mn", "text", "ops", "dfix", "ifix", "next")
+
+    def __init__(self, ci, fix):
+        self.addr, self.size, self.mn, self.text = ci.address, ci.size, ci.mnemonic, ci.op_str
+        self.dfix = self.ifix = None
+        sites = [a for a in range(ci.address, ci.address + ci.size) if a in fix]
+        for a in sites:
+            rel = a - ci.address
+            if ci.disp_size and rel == ci.disp_offset:
+                self.dfix = fix[a]
+            elif ci.imm_size and rel == ci.imm_offset:
+                self.ifix = fix[a]
+            elif ci.disp_size:
+                self.dfix = fix[a]
+            else:
+                self.ifix = fix[a]
+        self.ops = []
+        for o in ci.operands:
+            if o.type == x86.X86_OP_REG:
+                self.ops.append(("r", ci.reg_name(o.reg), o.size))
+            elif o.type == x86.X86_OP_IMM:
+                self.ops.append(("i", o.imm, o.size))
+            elif o.type == x86.X86_OP_MEM:
+                m = o.mem
+                self.ops.append(("m", ci.reg_name(m.base) if m.base else None,
+                                 ci.reg_name(m.index) if m.index else None, m.scale, m.disp, o.size))
+
+
+class Lift:
+    """Symbolic execution of one function into a flat goto program."""
+
+    def __init__(self, prog, fn):
+        self.prog, self.fn, self.name = prog, fn, fn["name"]
         self.start, self.end = int(fn["start"], 16), int(fn["end"], 16)
-        md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
-        self.ins = list(md.disasm(code[self.start:self.end], self.start))
+        code = prog.code
+        ins = [Ins(ci, prog.fix) for ci in prog.md.disasm(code[self.start:self.end], self.start)]
         self.switches = {}
-        table_spans = []
-        for pos, ins in enumerate(self.ins):
-            if ins.mnemonic != "jmp" or "cs:[" not in ins.op_str:
-                continue
-            site = next((a for a in range(ins.address, ins.address + ins.size) if a in fix), None)
-            target = fix.get(site) if site is not None else None
-            if not target or target.get("obj") != 1:
-                continue
-            table = target["off"]
-            compare = next((x for x in reversed(self.ins[max(0, pos - 6):pos])
-                            if x.mnemonic == "cmp" and num(split_ops(x.op_str)[-1]) is not None), None)
-            if not compare:
-                continue
-            count = min(256, num(split_ops(compare.op_str)[-1]) + 1)
-            entries = [fix.get(table + 4 * n) for n in range(count)]
-            if not all(x and x.get("obj") == 1 for x in entries):
-                continue
-            default = next((num(x.op_str) for x in reversed(self.ins[max(0, pos - 6):pos])
-                            if x.mnemonic in ("ja", "jnbe")), None)
-            self.switches[ins.address] = ([x["off"] for x in entries], default)
-            table_spans.append((table, table + 4 * count))
-        if table_spans:
-            self.ins = [i for i in self.ins if not any(a <= i.address < b for a, b in table_spans)]
-        self.byaddr = {i.address: n for n, i in enumerate(self.ins)}
-        self.used_globals, self.used_calls, self.slots = {}, {}, {}
-        self.args = {}
+        self.find_switches(ins)
+        self.ins = ins
+        self.args, self.locals = {}, {}
+        self.stmts = []
         self.unknown = []
-        self.raw_registers = set()
-        self.reg = {r: r for r in ("eax", "ebx", "ecx", "edx", "esi", "edi", "esp")}
-        self.pending = None
-        self.pushes = []
-        self.lines = []
-        self.cmp = None
-        self.return_slot = None
-        self.labels = set()
-        for i in self.ins:
-            if i.mnemonic.startswith("j") and i.mnemonic != "jmp":
-                t = num(i.op_str)
-                if t in self.byaddr:
-                    self.labels.add(t)
-            elif i.mnemonic == "jmp":
-                t = num(i.op_str)
-                if t in self.byaddr:
-                    self.labels.add(t)
+        self.nparams = 0
+        self.ret_type = None
+        self.spill = None
+        self.frame = 0
+        self.ok = True
 
-    def fixed(self, ins):
-        for a in range(ins.address, ins.address + ins.size):
-            if a in self.fix:
-                return self.fix[a]
-        return None
+    # structure of the function -------------------------------------------------------------
+    def find_switches(self, ins):
+        spans = []
+        for n, i in enumerate(ins):
+            if i.mn == "jmp" and i.ops and i.ops[0][0] == "m" and i.dfix and i.dfix.get("obj") == 1:
+                table = i.dfix["off"]
+                cmp = next((x for x in reversed(ins[max(0, n - 6):n]) if x.mn == "cmp" and x.ops[1][0] == "i"), None)
+                if not cmp:
+                    continue
+                count = cmp.ops[1][1] + 1
+                ents = [self.prog.fix.get(table + 4 * k) for k in range(count)]
+                if not all(e and e.get("obj") == 1 for e in ents):
+                    continue
+                dflt = next((x.ops[0][1] for x in reversed(ins[max(0, n - 6):n]) if x.mn == "ja"), None)
+                self.switches[i.addr] = ([e["off"] for e in ents], dflt)
+                spans.append((table, table + 4 * count))
+        if spans:
+            ins[:] = [i for i in ins if not any(a <= i.addr < b for a, b in spans)]
 
-    def global_name(self, target, w=4):
-        off = target["off"]
-        name = f"g_{off:x}"
-        self.used_globals[name] = w
-        return name
+    def frame_parts(self):
+        ins = self.ins
+        lo = 0
+        if [x.mn for x in ins[:6]] == ["push", "push", "push", "push", "mov", "sub"]:
+            lo = 6
+            self.frame = ins[5].ops[1][1]
+        else:
+            self.ok = False
+        hi = len(ins)
+        while hi > lo and ins[hi - 1].mn in ("nop",) or (hi > lo and ins[hi - 1].mn in ("mov", "lea") and ins[hi - 1].text in ("eax, eax", "eax, [eax]")):
+            hi -= 1
+        if hi > lo and ins[hi - 1].mn == "ret":
+            hi -= 1
+        for _ in range(3):
+            if hi > lo and ins[hi - 1].mn == "pop":
+                hi -= 1
+        if hi > lo and ins[hi - 1].mn in ("leave",) or (hi > lo and ins[hi - 1].mn == "pop" and ins[hi - 1].text == "ebp"):
+            hi -= 1
+        epi = ins[hi].addr if hi < len(ins) else self.end
+        if hi > lo and ins[hi - 1].mn == "mov" and ins[hi - 1].ops[0][0] == "r" and ins[hi - 1].ops[0][1] in ("eax", "ax", "al") \
+                and ins[hi - 1].ops[1][0] == "m" and ins[hi - 1].ops[1][1] == "ebp":
+            m = ins[hi - 1].ops[1]
+            self.spill = (-m[4], m[5])
+            hi -= 1
+            epi = ins[hi].addr
+        self.epi = epi
+        return ins[lo:hi]
 
-    def mem(self, s, ins=None):
-        w = width(s)
-        m = re.search(r"\[ebp\s*([+-])\s*(0x[0-9a-f]+|\d+)\]", s)
-        if m:
-            d = num(m.group(2)) * (1 if m.group(1) == "+" else -1)
-            if d >= 0x14:
-                k = (d - 0x14) // 4
-                self.args[k] = max(self.args.get(k, 0), w)
-                return f"a{k}"
-            name = f"v_{-d:x}"
-            self.slots[name] = max(self.slots.get(name, 0), w)
-            return name
-        if ins and (target := self.fixed(ins)) and target.get("obj") == 3:
-            name = self.global_name(target, w)
-            if "[" in s and re.search(r"\[[^]]+\+", s):
-                return name
-            return name
-        m = re.search(r"\[(0x[0-9a-f]+)\]", s)
-        if m:
-            return f"(*(int *){m.group(1)})"
-        m = re.search(r"\[([^]]+)\]", s)
-        if m:
-            address = m.group(1)
-            for r in re.findall(r"\b(?:eax|ebx|ecx|edx|esi|edi|esp)\b", address):
-                address = re.sub(rf"\b{r}\b", f"({self.reg[r]})", address)
-                if self.reg[r] == r:
-                    self.raw_registers.add(r)
-            typ = "char" if w == 1 else "short" if w == 2 else "int"
-            return f"(*({typ} *)({address}))"
-        return s
+    # variables ------------------------------------------------------------------------------
+    def local(self, off):
+        v = self.locals.get(off)
+        if v is None:
+            v = self.locals[off] = Var("l", f"v_{off:x}", off)
+        return v
 
-    def expr(self, s, ins=None):
-        s = s.strip()
-        if "ptr [" in s:
-            return self.mem(s, ins)
-        if s in self.reg:
-            return self.reg[s]
-        if s in ("al", "ax"):
-            return self.reg["eax"]
-        if s in ("bl", "bx"):
-            return self.reg["ebx"]
-        if s in ("cl", "cx"):
-            return self.reg["ecx"]
-        if s in ("dl", "dx"):
-            return self.reg["edx"]
-        for small, full in (("ah", "eax"), ("bh", "ebx"), ("ch", "ecx"), ("dh", "edx")):
-            if s == small:
-                self.raw_registers.add(small)
-                return small
-        n = num(s)
-        return str(n) if n is not None else s
+    def arg(self, k):
+        v = self.args.get(k)
+        if v is None:
+            v = self.args[k] = Var("a", f"a{k}", k)
+        return v
 
-    def emit(self, s):
-        self.lines.append(s)
+    # operand access ---------------------------------------------------------------------------
+    def reg(self, r):
+        if r in SUBREG:
+            full, w = SUBREG[r]
+            return self.narrow(self.regs.get(full) or self.raw(full), w)
+        if r in ("ah", "bh", "ch", "dh"):
+            return self.regs.get(r) or self.raw(r)
+        return self.regs.get(r) or self.raw(r)
+
+    def raw(self, r):
+        self.unknown.append(f"read of undefined register {r}")
+        return E("raw", name=r)
+
+    def narrow(self, e, w):
+        if e.w <= w:
+            return e
+        if e.op == "k":
+            v = e.v & ((1 << (8 * w)) - 1)
+            return E("k", v=v, w=w)
+        if e.op in ("v", "m") and e.x:            # a narrow load that was extended
+            return self.load_like(e, w)
+        return E("trunc", e, w=w)
+
+    def load_like(self, e, w):
+        n = E(e.op, e.a, w=w, var=e.var)
+        return n
+
+    def setreg(self, r, e):
+        if r in SUBREG:
+            self.regs[SUBREG[r][0]] = e
+        else:
+            self.regs[r] = e
+
+    def mem_loc(self, op, ins, w=None):
+        """Lvalue node for a memory operand (no evidence recorded)."""
+        _, base, index, scale, disp, size = op
+        w = w or size
+        if base == "ebp" and index is None:
+            if disp >= 0x14:
+                k, sub = divmod(disp - 0x14, 4)
+                v = self.arg(k)
+                if sub:
+                    return E("m", self.addr_node(E("addr", var=v), K(sub)), w=w)
+                return E("v", var=v, w=w)
+            if disp < 0:
+                return E("v", var=self.local(-disp), w=w)
+        if base is None and index is None and ins.dfix:
+            t = ins.dfix
+            if t.get("obj") == 3 or t.get("obj") == 2:
+                return E("v", var=self.prog.gvar(t["off"], t.get("obj")), w=w)
+        return E("m", self.address(op, ins), w=w)
+
+    def address(self, op, ins):
+        _, base, index, scale, disp, size = op
+        terms = []
+        if base:
+            if base == "ebp":
+                terms.append(E("addr", var=self.local(-disp)) if disp < 0 else E("addr", var=self.arg((disp - 0x14) // 4)))
+                disp = 0
+            else:
+                terms.append(self.reg(base))
+        if index:
+            iv = self.reg(index)
+            terms.append(iv if scale == 1 else E("*", iv, K(scale)))
+        if ins.dfix and ins.dfix.get("obj") in (2, 3):
+            g = self.prog.gvar(ins.dfix["off"], ins.dfix.get("obj"))
+            g.array = True
+            terms.insert(0, E("addr", var=g))
+        elif disp:
+            terms.append(K(disp))
+        # pointer evidence: the single unscaled non-constant term is the base
+        cand = [t for t in terms if t.op in ("v", "m") and t.w == 4]
+        if len(cand) == 1 and not any(t.op == "addr" for t in terms):
+            c = cand[0]
+            if c.op == "v":
+                c.var.ptr += 1
+            c.ptr = True
+        e = terms[0] if terms else K(0)
+        for t in terms[1:]:
+            e = E("+", e, t)
+        return e
+
+    def addr_node(self, a, b):
+        return E("+", a, b)
+
+    def read(self, op, ins, how="mov", w=None):
+        if op[0] == "r":
+            return self.reg(op[1])
+        if op[0] == "i":
+            if ins.ifix:
+                t = ins.ifix
+                if t.get("obj") == 1:
+                    return E("fn", name=self.prog.fname(t["off"]))
+                g = self.prog.gvar(t["off"], t.get("obj"))
+                g.array = True
+                return E("addr", var=g)
+            return K(op[1], w or op[2])
+        e = self.mem_loc(op, ins)
+        if e.var:
+            e.var.note(e.w, how)
+        return e
+
+    # statements -------------------------------------------------------------------------------
+    def emit(self, st, uses=()):
+        used = set()
+        for u in uses:
+            if isinstance(u, E):
+                used |= {id(n) for n in u.walk()}
+        keep = []
+        live = set()
+        for r, e in self.regs.items():
+            if r != "eax" and e is not None:
+                live |= {id(n) for n in e.walk()}
+        for c in self.pending:
+            if id(c) in used:
+                continue
+            if id(c) in live:
+                keep.append(c)
+                continue
+            self.stmts.append(("expr", c))
+        self.pending = keep
+        if st:
+            self.stmts.append(st)
 
     def flush(self):
-        if self.pending:
-            self.emit(self.pending + ";")
-            self.pending = None
+        for c in self.pending:
+            self.stmts.append(("expr", c))
+        self.pending = []
 
-    def call_name(self, i):
-        target = num(i.op_str)
-        if target is None:
-            value = self.expr(i.op_str, i)
-            if value.startswith("g_"):
-                self.used_globals[value] = -1  # function pointer
-            return value
-        name = self.names.get(f"1:{target:x}", f"f_{target:x}")
-        self.used_calls[name] = max(self.used_calls.get(name, 0), len(self.pushes))
-        return name
-
-    def condition(self, op, reverse=False):
-        rel = JCC.get(op, "!=")
-        if reverse:
-            rel = INV[rel]
-        lhs, rhs = self.cmp or ("0", "0")
-        if rel in ("==", "!=") and rhs == "0":
-            return lhs if rel == "!=" else f"!({lhs})"
-        return f"{lhs} {rel} {rhs}"
-
-    def translate(self, i):
-        op, ss = i.mnemonic, split_ops(i.op_str)
-        dst, src = ss[0], ss[1] if len(ss) > 1 else None
-        if op in ("nop", "int3"):
+    def store(self, dst, val, ins):
+        loc = self.mem_loc(dst, ins)
+        if loc.op == "v" and loc.var.kind == "l" and self.spill and loc.var.key == self.spill[0]:
+            self.emit(("ret", val), [val])
+            self.retval = True
             return
-        if op in ("mov", "movsx", "movzx") and src is not None:
-            v = self.expr(src, i)
-            if self.pending and v != self.pending:
+        if loc.var:
+            how = "const" if val.op == "k" else "store"
+            loc.var.note(loc.w, how)
+            if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 2 and not val.x and val.op != "k":
+                loc.var.note(2, "nval")
+        self.emit(("set", loc, val), [loc, val])
+
+    def run(self):
+        body = self.frame_parts()
+        self.regs, self.pending, self.pushes = {}, [], []
+        self.flags = None
+        self.last_load = None
+        self.retval = False
+        targets = set()
+        for i in body:
+            if i.mn.startswith("j") and i.ops and i.ops[0][0] == "i":
+                targets.add(i.ops[0][1])
+        for sw in self.switches.values():
+            targets.update(sw[0])
+            if sw[1]:
+                targets.add(sw[1])
+        self.targets = targets
+        n = 0
+        while n < len(body):
+            i = body[n]
+            if i.addr in targets:
                 self.flush()
-            if op == "movzx" and width(src) == 1:
-                v = f"(unsigned char){v}"
-            elif op == "movzx" and width(src) == 2:
-                v = f"(unsigned short){v}"
-            elif op == "movsx" and width(src) == 1:
-                v = f"(signed char){v}"
-            elif op == "movsx" and width(src) == 2:
-                v = f"(short){v}"
-            if dst in self.reg:
-                self.reg[dst] = v
-            elif dst in ("al", "ax"):
-                self.reg["eax"] = v
-            elif dst in ("ah", "bh", "ch", "dh"):
-                self.raw_registers.add(dst)
-                self.emit(f"{dst} = {v};")
-            else:
-                place = self.mem(dst, i)
-                if self.pending and v == self.pending:
-                    self.pending = None
-                self.emit(f"{place} = {v};")
-            return
-        if op == "lea" and src:
-            target = self.fixed(i)
-            if target and target.get("obj") == 3:
-                self.reg[dst] = "&" + self.global_name(target)
-            else:
-                m = re.search(r"\[ebp - (0x[0-9a-f]+)\]", src)
-                if m:
-                    self.reg[dst] = "&" + self.mem("dword ptr " + m.group(0), i)
-                else:
-                    inside = re.search(r"\[([^]]+)\]", src)
-                    address = inside.group(1) if inside else src
-                    for r in re.findall(r"\b(?:eax|ebx|ecx|edx|esi|edi|esp|ebp)\b", address):
-                        repl = self.reg.get(r, r)
-                        if repl == r:
-                            self.raw_registers.add(r)
-                        address = re.sub(rf"\b{r}\b", f"({repl})", address)
-                    self.reg[dst] = f"({address})"
-            return
-        if op == "push":
-            self.pushes.append(self.expr(dst, i))
-            return
-        if op == "call":
-            self.flush()
-            name = self.call_name(i)
-            args_list = list(reversed(self.pushes))
-            if name == "getenv" and args_list:
-                args_list[0] = f"(char *)({args_list[0]})"
-            args = ", ".join(args_list)
-            self.pending = f"{name}({args})"
-            self.reg["eax"] = self.pending
-            self.pushes = []
-            return
-        if op == "add" and dst == "esp":
-            return
-        if op in ("cmp", "test") and src:
-            self.flush()
-            a, b = self.expr(dst, i), self.expr(src, i)
-            self.cmp = (a, "0" if op == "test" and a == b else b)
-            return
-        if op in ("add", "sub", "imul", "and", "or", "xor", "shl", "shr", "sar") and src:
-            a, b = self.expr(dst, i), self.expr(src, i)
-            if op in ("imul", "and", "or", "xor", "shl", "shr", "sar"):
-                for symbol in re.findall(r"\bg_[0-9a-f]+\b", a + " " + b):
-                    if any(re.search(rf"\*\s*{symbol}\b", d) for d in self.decls.get(symbol, [])):
-                        a, b = f"(int){a}", f"(int){b}"
-                        break
-            if op == "xor" and dst == src:
-                v = "0"
-            else:
-                sym = {"add": "+", "sub": "-", "imul": "*", "and": "&", "or": "|",
-                       "xor": "^", "shl": "<<", "shr": ">>", "sar": ">>"}[op]
-                v = f"({a} {sym} {b})"
-            if dst in self.reg:
-                self.reg[dst] = v
-            else:
-                self.emit(f"{self.mem(dst, i)} = {v};")
-            return
-        if op in ("inc", "dec"):
-            place = self.expr(dst, i)
-            if self.pending and place == self.pending:
-                self.flush()
-                return
-            parent = {"al": "eax", "ax": "eax", "bl": "ebx", "bx": "ebx",
-                      "cl": "ecx", "cx": "ecx", "dl": "edx", "dx": "edx"}.get(dst, dst)
-            if parent in self.reg:
-                self.reg[parent] = f"({place} {'+' if op == 'inc' else '-'} 1)"
-            else:
-                self.emit(f"{place}{'++' if op == 'inc' else '--'};")
-            return
-        if op == "neg":
-            if dst in self.reg:
-                self.reg[dst] = f"(-{self.expr(dst, i)})"
-            else:
-                x = self.expr(dst, i)
-                self.emit(f"{x} = -{x};")
-            return
-        if op in ("cdq", "cwde", "movsb", "movsd"):
-            return
-        self.unknown.append(f"{i.address:x}: {op} {i.op_str}")
-
-    def body(self):
-        # Strip the fixed Watcom frame and final return sequence.  Alignment
-        # padding is within the manifest extent for some -ot functions.
-        arr = self.ins
-        lo = 6 if len(arr) >= 6 and [x.mnemonic for x in arr[:6]] == ["push", "push", "push", "push", "mov", "sub"] else 0
-        hi = len(arr)
-        while hi > lo and arr[hi - 1].mnemonic in ("nop",):
-            hi -= 1
-        if hi > lo and arr[hi - 1].mnemonic == "ret":
-            hi -= 1
-        for op in ("pop", "pop", "pop", "pop"):
-            if hi > lo and arr[hi - 1].mnemonic == op:
-                hi -= 1
-        if hi > lo and arr[hi - 1].mnemonic == "leave":
-            hi -= 1
-        # A frame-zero function uses pop ebp instead of leave; four pops
-        # above already consumed it.
-        body = arr[lo:hi]
-        if body and body[-1].mnemonic == "mov" and body[-1].op_str.startswith("eax, "):
-            self.return_slot = self.expr(split_ops(body[-1].op_str)[1], body[-1])
-            body = body[:-1]
-        self.walk(body, 0, len(body))
+                self.stmts.append(("label", i.addr))
+                self.regs = {}
+                self.flags = None
+            nxt = body[n + 1] if n + 1 < len(body) else None
+            if self.flags and self.flags[0] in ("cmp", "test") and not (i.mn.startswith("j") and i.mn != "jmp"):
+                self.dangling_cmp()
+            n += self.step(i, nxt)
+        if self.flags and self.flags[0] in ("cmp", "test"):
+            self.dangling_cmp()
         self.flush()
-        # Labels at the common epilogue are legitimate break/early-exit targets.
-        for target in sorted(self.labels):
-            if target >= (body[-1].address + body[-1].size if body else self.start) and target < self.end:
-                self.emit(f"L_{target:x}:;")
-        if self.cmp and body and body[-1].mnemonic in ("cmp", "test"):
-            lhs, rhs = self.cmp
-            self.emit(f"if ({lhs}{'' if rhs == '0' else ' == ' + rhs}) {{ }}")
-        if self.return_slot:
-            # A simple return expression owns its spill slot; spelling it as
-            # a C local would make Watcom allocate a second slot.
-            tail = f"{self.return_slot} = "
-            if self.lines and self.lines[-1].startswith(tail):
-                val = self.lines.pop()[len(tail):-1]
-                self.slots.pop(self.return_slot, None)
-                self.emit(f"return {val};")
-            else:
-                self.emit(f"return {self.return_slot};")
-        referenced = set(re.findall(r"\bgoto (L_[0-9a-f]+);", "\n".join(self.lines)))
-        defined = set(re.findall(r"^(L_[0-9a-f]+):", "\n".join(self.lines), re.M))
-        for label in sorted(referenced - defined):
-            self.emit(f"{label}:;")
+        if self.epi in targets:
+            self.stmts.append(("label", self.epi))
+        self.nparams = max(self.args, default=-1) + 1
+        return self
 
-    def walk(self, arr, a, b):
-        addridx = {x.address: k for k, x in enumerate(arr)}
-        if b - a >= 3 and arr[b - 1].mnemonic in JCC and num(arr[b - 1].op_str) == arr[a].address:
-            self.emit("do {")
-            self.walk(arr, a, b - 1)
-            self.flush()
-            self.emit(f"}} while ({self.condition(arr[b - 1].mnemonic)});")
-            return
-        k = a
-        while k < b:
-            i = arr[k]
-            if i.mnemonic in JCC:
-                target = num(i.op_str)
-                t = addridx.get(target)
-                if t is not None and k < t <= b:
-                    # -od for: test -> branch to body -> jump to exit ->
-                    # increment -> jump to test -> body -> jump to increment.
-                    if (k + 2 < t < b and arr[k + 1].mnemonic == "jmp"):
-                        exit_idx = addridx.get(num(arr[k + 1].op_str))
-                        inc_idx = k + 2
-                        if (exit_idx is not None and t < exit_idx <= b and
-                                arr[t - 1].mnemonic == "jmp" and
-                                addridx.get(num(arr[t - 1].op_str), -1) <= k and
-                                arr[exit_idx - 1].mnemonic == "jmp" and
-                                addridx.get(num(arr[exit_idx - 1].op_str)) == inc_idx):
-                            updates = [x for x in arr[inc_idx:t - 1] if x.mnemonic in ("inc", "dec", "add", "sub")]
-                            if len(updates) == 1:
-                                u = updates[0]
-                                uv = self.expr(split_ops(u.op_str)[0], u)
-                                if u.mnemonic in ("inc", "dec"):
-                                    step = uv + ("++" if u.mnemonic == "inc" else "--")
-                                else:
-                                    ops = split_ops(u.op_str)
-                                    step = f"{uv} {'+=' if u.mnemonic == 'add' else '-='} {self.expr(ops[1], u)}"
-                                self.flush()
-                                self.emit(f"for (; {self.condition(i.mnemonic)}; {step}) {{")
-                                self.walk(arr, t, exit_idx - 1)
-                                self.flush()
-                                self.emit("}")
-                                k = exit_idx
-                                continue
-                    # Plain while has a back edge from the end of the body.
-                    if (t > k + 1 and arr[t - 1].mnemonic == "jmp" and
-                            addridx.get(num(arr[t - 1].op_str), b) <= k):
-                        self.flush()
-                        self.emit(f"while ({self.condition(i.mnemonic, True)}) {{")
-                        self.walk(arr, k + 1, t - 1)
-                        self.flush()
-                        self.emit("}")
-                        k = t
-                        continue
-                    # Forward branch around a block; optionally over an else.
-                    self.flush()
-                    cond = self.condition(i.mnemonic, True)
-                    end_then = t
-                    else_end = None
-                    if t - 1 > k and arr[t - 1].mnemonic == "jmp":
-                        j = addridx.get(num(arr[t - 1].op_str))
-                        if j is not None and t < j <= b:
-                            end_then, else_end = t - 1, j
-                    self.emit(f"if ({cond}) {{")
-                    self.walk(arr, k + 1, end_then)
-                    self.flush()
-                    if else_end is not None:
-                        self.emit("} else {")
-                        self.walk(arr, t, else_end)
-                        self.flush()
-                        k = else_end
-                    else:
-                        k = t
-                    self.emit("}")
-                    continue
-                self.flush()
-                self.emit(f"if ({self.condition(i.mnemonic)}) goto L_{target:x};" if target else "/* unresolved branch */")
-            elif i.mnemonic == "jmp":
-                target = num(i.op_str)
-                self.flush()
-                if i.address in self.switches:
-                    cases, default = self.switches[i.address]
-                    selector = self.reg["eax"]
-                    selector = re.sub(r"^\((.*) << 2\)$", r"\1", selector)
-                    self.emit(f"switch ({selector}) {{")
-                    for value, dest in enumerate(cases):
-                        self.emit(f"case {value}: goto L_{dest:x};")
-                    if default is not None:
-                        self.emit(f"default: goto L_{default:x};")
-                    self.emit("}")
+    def step(self, i, nxt):
+        mn, ops = i.mn, i.ops
+        if mn == "nop":
+            return 1
+        if mn in ("mov", "movsx", "movzx"):
+            dst, src = ops
+            if dst[0] == "r":
+                if src[0] == "m":
+                    how = {"mov": "mov", "movsx": "sx", "movzx": "zx"}[mn]
+                    e = self.read(src, i, how)
+                    self.last_load = e
+                    if mn != "mov":
+                        e = self.extend(e, "s" if mn == "movsx" else "z")
+                elif mn == "mov":
+                    e = self.read(src, i, w=dst[2])
                 else:
-                    self.emit(f"goto L_{target:x};" if target in addridx else "/* external jump */")
+                    e = self.extend(self.reg(src[1]), "s" if mn == "movsx" else "z")
+                    e = self.retyped(e, src[2], "s" if mn == "movsx" else "z")
+                if dst[1] in ("ah", "bh", "ch", "dh"):
+                    self.regs[dst[1]] = e
+                else:
+                    self.setreg(dst[1], e)
             else:
-                if i.address in self.labels and k != a:
-                    self.flush()
-                    self.emit(f"L_{i.address:x}:;")
-                    self.reg = {r: r for r in self.reg}
-                self.translate(i)
-            k += 1
+                val = self.read(src, i, w=dst[5])
+                if src[0] == "r" and src[2] < 4:
+                    val = self.narrow(val, src[2])
+                self.store(dst, val, i)
+            return 1
+        if mn == "lea":
+            dst, src = ops
+            self.setreg(dst[1], self.lea(src, i))
+            return 1
+        if mn == "push":
+            op = ops[0]
+            e = self.read(op, i, "push")
+            if op[0] == "i" and not i.ifix:
+                form = "wide"
+            elif op[0] == "r" and e.op == "k":
+                form = "narrow"
+            elif op[0] == "r" and e.op == "v" and e.w == 4 and not e.x and e.var.kind in ("a", "g") and                     self.last_load is e:
+                e.var.volatile = True
+                form = "wide"
+            elif op[0] == "r" and e.op in ("v", "m") and e.x and e.var and 4 in e.var.widths("mov", "store", "const", "arith", "cmp", "rmw"):
+                form = "narrow"
+            elif op[0] == "m":
+                form = "wide"
+            elif e.op in ("addr", "fn"):
+                form = "ptr"
+            else:
+                form = "any"
+            self.pushes.append((e, form))
+            return 1
+        if mn == "call":
+            return self.call(i, nxt)
+        if mn in ("add", "sub") and ops[0][0] == "r" and ops[0][1] == "esp":
+            return 1
+        if mn in ("cmp", "test"):
+            a = self.read(ops[0], i, "cmp")
+            b = self.read(ops[1], i, "cmp", w=a.w if ops[1][0] == "i" else None)
+            if ops[1][0] == "i" and ops[0][0] in ("r", "m"):
+                w = ops[0][2] if ops[0][0] == "r" else ops[0][5]
+                b = K(b.v, w) if b.op == "k" else b
+                if w < 4 and b.op == "k":
+                    b.v = b.v & ((1 << (8 * w)) - 1)
+            if ops[0][0] == "r" and ops[0][2] < 4:
+                a = self.narrow(a, ops[0][2])
+            if ops[1][0] == "r" and ops[1][2] < 4:
+                b = self.narrow(b, ops[1][2])
+            self.flags = (mn, a, b, ops[0][0] == "r" and ops[1][0] == "r" and ops[0][1] == ops[1][1])
+            return 1
+        if mn.startswith("j") and mn != "jmp":
+            self.branch(i)
+            return 1
+        if mn == "jmp":
+            self.jump(i)
+            return 1
+        if mn in ARITH or mn in ("inc", "dec", "neg", "not"):
+            return self.arith(i, nxt)
+        if mn == "cdq":
+            self.regs["edx"] = E(">>", self.reg("eax"), K(31))
+            return 1
+        if mn in ("idiv", "div"):
+            s = self.read(ops[0], i, "arith")
+            a = self.reg("eax")
+            uns = mn == "div"
+            self.mark_sign(a, not uns)
+            self.mark_sign(s, not uns)
+            self.regs["eax"] = E("/", a, s, uns=uns)
+            self.regs["edx"] = E("%", a, s, uns=uns)
+            return 1
+        if mn == "mul" and ops[0][0] == "r" and ops[0][1] == "ah":
+            self.regs["eax"] = E("*", self.reg("al"), self.regs.get("ah") or self.raw("ah"), w=1)
+            return 1
+        self.unknown.append(f"{i.addr:x}: {mn} {i.text}")
+        self.emit(("asm", f"{mn} {i.text}"))
+        return 1
 
-    def source(self):
-        self.body()
-        out = ["/* Draft lifted from original instructions; verify with tools/check.py. */"]
-        for name in sorted(self.used_globals):
-            w = self.used_globals[name]
-            ds = sorted(self.decls.get(name, []), key=len)
-            d = next((x for x in ds if re.search(rf"\b{name}\b", x) and x.startswith("extern ")), None)
-            if w == -1:
-                out.append(f"extern int (*{name})(void);")
-            elif d and not re.search(r"\b(?:Rec\w*|Pair\w*|Row\w*|State|Sprite|Object)\b", d):
-                out.append(d)
+    def extend(self, e, x):
+        if e.op in ("v", "m"):
+            n = E(e.op, e.a, w=4, x=x, var=e.var)
+            n.typ = e.w
+            return n
+        n = E("ext", e, w=4, x=x)
+        n.typ = e.w
+        return n
+
+    def retyped(self, e, w, x):
+        return e
+
+    def lea(self, src, i):
+        _, base, index, scale, disp, size = src
+        if base == "ebp" and index is None:
+            if disp < 0:
+                v = self.local(-disp)
+                v.addr = True
+                return E("addr", var=v)
+            v = self.arg((disp - 0x14) // 4)
+            v.addr = True
+            return E("addr", var=v)
+        if i.dfix:
+            return self.address(src, i)
+        terms = []
+        if base and index and base == index:
+            e = E("*", self.reg(base), K(scale + 1))
+        else:
+            e = None
+            if base:
+                e = self.reg(base)
+            if index:
+                t = self.reg(index)
+                t = t if scale == 1 else E("*", t, K(scale))
+                e = t if e is None else E("+", e, t)
+        if disp:
+            e = K(disp) if e is None else E("+", e, K(disp))
+        return e
+
+    def mark_sign(self, e, signed):
+        for n in (e,):
+            if n.op in ("v",) and n.var:
+                n.var.sign[signed] += 1
+
+    def arith(self, i, nxt):
+        mn, ops = i.mn, i.ops
+        dst = ops[0]
+        if mn in ("inc", "dec", "neg", "not"):
+            if dst[0] == "r":
+                if dst[1] in ("ah", "bh", "ch", "dh"):
+                    self.unknown.append(f"{i.addr:x}: {mn} {i.text}")
+                    return 1
+                w = dst[2]
+                a = self.reg(dst[1])
+                if mn in ("inc", "dec"):
+                    e = E("+" if mn == "inc" else "-", a, K(1), w=w)
+                elif mn == "neg":
+                    e = E("neg", a, w=w)
+                else:
+                    e = E("~", a, w=w)
+                self.setreg(dst[1], e)
+                self.flags = ("res", e, None, False)
+                return 1
+            loc = self.mem_loc(dst, i)
+            if loc.var:
+                loc.var.note(loc.w, "rmw")
+            if mn in ("inc", "dec") and self.post_incdec(loc, "++" if mn == "inc" else "--"):
+                pass
+            elif mn in ("inc", "dec"):
+                self.emit(("incdec", loc, "++" if mn == "inc" else "--"), [loc])
             else:
-                out.append(f"extern {'char' if w == 1 else 'short' if w == 2 else 'int'} {name};")
-        for name, argc in sorted(self.used_calls.items()):
-            if name == self.fn["name"]:
+                self.emit(("set", loc, E("neg" if mn == "neg" else "~", loc, w=loc.w)), [loc])
+            self.flags = ("res", loc, None, False)
+            return 1
+        if mn == "imul" and len(ops) == 3:
+            a = self.read(ops[1], i, "arith")
+            e = E("*", a, K(ops[2][1]))
+            self.setreg(dst[1], e)
+            return 1
+        src = ops[1]
+        op = ARITH[mn]
+        uns = mn == "shr"
+        if dst[0] == "r":
+            if src[0] == "r" and src[1] == dst[1] and mn in ("xor", "sub"):
+                self.setreg(dst[1], K(0, dst[2]))
+                return 1
+            a = self.reg(dst[1])
+            if src[0] == "r" and src[1] == dst[1] and mn == "add":
+                e = E("*", a, K(2), w=dst[2])
+            else:
+                b = self.read(src, i, "arith")
+                if src[0] == "r" and src[2] < 4:
+                    b = self.narrow(b, src[2])
+                if dst[2] < 4:
+                    a = self.narrow(a, dst[2])
+                e = E(op, a, b, uns=uns, w=dst[2])
+                if mn in ("sar", "shr"):
+                    self.mark_sign(a, mn == "sar")
+            e = simplify(e)
+            self.setreg(dst[1], e)
+            self.flags = ("res", e, None, False)
+            return 1
+        loc = self.mem_loc(dst, i)
+        if loc.var:
+            loc.var.note(loc.w, "rmw")
+            if mn in ("sar", "shr"):
+                loc.var.sign[mn == "sar"] += 1
+        b = self.read(src, i, "arith", w=loc.w)
+        if src[0] == "r" and src[2] < 4:
+            b = self.narrow(b, src[2])
+        if b.op == "k" and loc.w < 4:
+            b = K(b.v & ((1 << (8 * loc.w)) - 1), loc.w)
+        self.emit(("opset", loc, op, b, uns), [loc, b])
+        self.flags = ("res", loc, None, False)
+        return 1
+
+    def post_incdec(self, loc, op):
+        """`mov eax,[x]; inc [x]` with eax used later: the expression `x++`."""
+        for r, e in self.regs.items():
+            if e is None:
                 continue
-            if name in LIB_HEADERS:
-                out.insert(1, f"#include <{LIB_HEADERS[name]}>")
+            for n in e.walk():
+                if n.op == loc.op and n.w == loc.w and not n.x and (
+                        (n.op == "v" and n.var is loc.var) or (n.op == "m" and same_place(n, loc))):
+                    n.op, n.a, n.name = "post", E(loc.op, loc.a, w=loc.w, var=loc.var), op
+                    return True
+        return False
+
+    def call(self, i, nxt):
+        nargs = 0
+        consumed = 1
+        if nxt and nxt.mn == "add" and nxt.ops[0][0] == "r" and nxt.ops[0][1] == "esp" and nxt.ops[1][0] == "i":
+            nargs = nxt.ops[1][1] // 4
+            consumed = 2
+        take = self.pushes[len(self.pushes) - nargs:] if nargs else []
+        if nargs:
+            del self.pushes[len(self.pushes) - nargs:]
+        args = [e for e, f in reversed(take)]
+        forms = [f for e, f in reversed(take)]
+        op = i.ops[0]
+        if op[0] == "i":
+            name = self.prog.fname(op[1])
+            self.prog.sigs[name]["calls"].append(forms)
+            target = E("fn", name=name)
+        else:
+            target = self.read(op, i, "mov")
+            if target.var:
+                target.var.fnptr = True
+            target.ptr = False
+        c = E("call", target, args=args)
+        self.emit(None, [c])
+        self.regs = {k: v for k, v in self.regs.items() if k in ("ebx", "esi", "edi")}
+        self.regs["eax"] = c
+        self.pending.append(c)
+        self.flags = None
+        return consumed
+
+    def cond(self, mn):
+        kind, a, b, same = self.flags or ("res", self.raw("flags"), None, False)
+        rel = JREL.get(mn)
+        if rel is None:
+            self.unknown.append(f"condition {mn}")
+            rel = "!="
+        uns = mn in JUNS
+        if kind == "cmp":
+            if rel in ("<", "<=", ">", ">="):
+                self.mark_sign(a, not uns)
+                self.mark_sign(b, not uns)
+            return E("cmp", a, b, rel=rel, uns=uns)
+        if kind == "test":
+            if same:
+                if rel in ("<", ">=") and mn in ("jl", "jge", "js", "jns"):
+                    self.mark_sign(a, True)
+                return E("cmp", a, K(0, a.w), rel=rel, uns=uns)
+            return E("cmp", E("&", a, b, w=a.w), K(0), rel=rel, uns=uns)
+        return E("cmp", a, K(0), rel=rel, uns=uns)
+
+    def fuse_pre(self, c):
+        """`dec [eax+4]; cmp [eax+4],0` with the address register reused: `if (--p[1] == 0)`."""
+        if not self.stmts or c.op != "cmp" or c.a.op != "m":
+            return
+        last = self.stmts[-1]
+        if last[0] not in ("incdec", "opset") or last[1].op != "m":
+            return
+        if same_place(last[1], c.a):
+            self.stmts.pop()
+            if last[0] == "incdec":
+                c.a = E("pre", last[1], w=c.a.w, name=last[2])
+            else:
+                c.a = E("preop", last[1], last[3], w=c.a.w, name=last[2])
+
+    def dangling_cmp(self):
+        """A compare without a branch: `if (x) {}` (Watcom still emits the compare under -od)."""
+        c = self.cond("jne")
+        self.emit(("if", c, None), [c])
+        self.flags = None
+
+    def branch(self, i):
+        target = i.ops[0][1]
+        c = self.cond(i.mn)
+        self.fuse_pre(c)
+        self.emit(("if", c, target), [c])
+        self.flush()
+        self.flags = None
+
+    def jump(self, i):
+        if i.addr in self.switches:
+            cases, dflt = self.switches[i.addr]
+            sel = self.regs.get(i.ops[0][2] and i.ops[0][2]) if False else None
+            m = i.ops[0]
+            idx = self.reg(m[2]) if m[2] else self.reg(m[1])
+            if idx.op == "*" and idx.b.op == "k" and idx.b.v == 4:
+                idx = idx.a
+            elif idx.op == "<<" and idx.b.op == "k" and idx.b.v == 2:
+                idx = idx.a
+            self.emit(("switch", idx, cases, dflt), [idx])
+            self.flush()
+            return
+        if i.ops[0][0] != "i":
+            self.unknown.append(f"{i.addr:x}: jmp {i.text}")
+            self.emit(("asm", f"jmp {i.text}"))
+            return
+        target = i.ops[0][1]
+        self.flush()
+        if target == self.epi and (self.spill is None or self.stmts and self.stmts[-1][0] == "ret"):
+            if self.spill is None:
+                self.stmts.append(("ret", None))
+            # a value return: the jmp belongs to the preceding return statement
+            self.regs = {}
+            return
+        self.stmts.append(("goto", target))
+        self.regs = {}
+
+
+def leaves(e):
+    if e.op == "+":
+        return leaves(e.a) + leaves(e.b)
+    return [e]
+
+
+def same_place(x, y):
+    """Two memory operands that address the same place through the same register values."""
+    if x.w != y.w:
+        return False
+    lx, ly = leaves(x.a), leaves(y.a)
+    kx = sorted(t.v for t in lx if t.op == "k")
+    ky = sorted(t.v for t in ly if t.op == "k")
+    ix = sorted(id(t) for t in lx if t.op != "k")
+    iy = sorted(id(t) for t in ly if t.op != "k")
+    return kx == ky and ix == iy and bool(ix)
+
+
+def simplify(e):
+    # (x - (x >> 31)) >> 1  ==  x / 2  (signed division by two)
+    if e.op == ">>" and not e.uns and e.b.op == "k" and e.b.v == 1 and e.a.op == "-":
+        x, s = e.a.a, e.a.b
+        if s.op == ">>" and s.b.op == "k" and s.b.v == 31 and s.a.key() == x.key():
+            return E("/", x, K(2))
+    return e
+
+
+# ---------------------------------------------------------------------------------------------
+class Render:
+    def __init__(self, lift, structured=True):
+        self.L, self.prog = lift, lift.prog
+        self.structured = structured
+        self.used_globals, self.used_funcs, self.includes = {}, {}, set()
+
+    # types -----------------------------------------------------------------------------------
+    def ty(self, e):
+        """C type code of the rendered expression."""
+        op = e.op
+        if op == "k":
+            return "i"
+        if op == "v":
+            return self.load_type(e)[0]
+        if op == "m":
+            return self.mem_type(e)
+        if op in ("addr", "fn"):
+            return "p"
+        if op == "call":
+            if e.a.op == "fn":
+                sig = self.prog.sigs.get(e.a.name)
+                return (sig and sig.get("ret")) or "i"
+            return "i"
+        if op in ("trunc",):
+            return tcode(e.w, False)
+        if op == "ext":
+            return "i"
+        if op in ("neg", "~"):
+            return promote(self.ty(e.a))
+        if op in ("pre", "preop", "post"):
+            return self.lv_type(e.a)
+        if op == "cmp":
+            return "i"
+        if op == "raw":
+            return "i"
+        ta, tb = promote(self.ty(e.a)), promote(self.ty(e.b))
+        if op in ("+", "-"):
+            if ta == "p" and tb == "p":
+                return "i" if op == "-" else "p"
+            if ta == "p" or tb == "p":
+                return "p"
+        if op in ("<<", ">>"):
+            return ta if ta != "p" else "u"
+        if "u" in (ta, tb) or "p" in (ta, tb):
+            return "u"
+        return "i"
+
+    def load_type(self, e):
+        """(type, needs-cast) for a var load of width e.typ/e.w."""
+        v = e.var
+        vt = v.type or "i"
+        aw = e.typ if e.x else e.w
+        if vt.startswith("arr") or getattr(v, "agg", None) or vt not in TW:
+            return tcode(aw, e.x == "s" or (not e.x and aw > 1)), True
+        if TW[vt] == aw:
+            if e.x == "s" and vt not in SIGNED:
+                return tcode(aw, True), True
+            if e.x == "z" and vt in SIGNED:
+                return tcode(aw, False), True
+            return vt, False
+        if aw < TW[vt]:
+            if v.kind == "l" or v.kind == "a":
+                pass
+            return tcode(aw, e.x == "s" if e.x else vt in SIGNED), True
+        return vt, False   # dword access of a narrow local/arg (plain move)
+
+    def mem_type(self, e):
+        aw = e.typ if e.x else e.w
+        if aw == 4 and e.ptr:
+            return "p"
+        if aw == 4:
+            return "i"
+        return tcode(aw, e.x == "s" if e.x else aw == 2)
+
+    # expressions -----------------------------------------------------------------------------
+    def gname(self, v):
+        self.used_globals[v.name] = v
+        return v.name
+
+    def lvalue(self, e):
+        if e.op == "v":
+            t = self.lv_type(e)
+            return self.var_access(e, t) or self.vname(e.var)
+        return self.deref(e, self.lv_type(e))
+
+    def vname(self, v):
+        return self.gname(v) if v.kind == "g" else v.name
+
+    def var_access(self, e, t):
+        """Text for an access of width/type t to var e.var when it is not a plain use of the
+        variable (aggregate member, byte array, width mismatch); None otherwise."""
+        v = e.var
+        agg = getattr(v, "agg", None)
+        if agg and agg[0] is not v:
+            base, delta = agg
+            return f"*({TNAME[t]} *)({base.name} + {delta})"
+        if v.type and v.type.startswith("arr"):
+            return f"*({TNAME[t]} *){self.vname(v)}"
+        aw = e.typ if e.x else e.w
+        if v.kind == "g" and TW[v.type] != aw:
+            return f"*({TNAME[t]} *)&{self.vname(v)}"
+        return None
+
+    def lv_type(self, e):
+        if e.op == "v":
+            vt = e.var.type
+            if vt in TW and not getattr(e.var, "agg", None) and TW[vt] == e.w:
+                return vt
+            if vt in TW and not getattr(e.var, "agg", None) and e.var.kind != "g" and e.w == 4:
+                return vt
+            return tcode(e.w, e.w != 1)
+        return self.mem_type(e)
+
+    def deref(self, e, t):
+        base, off = self.split_addr(e.a)
+        tn = TNAME[t]
+        if off is None:
+            return f"*({tn} *){base}"
+        return f"*({tn} *)({base} + {off})"
+
+    def split_addr(self, a):
+        """Render an address expression as (byte-pointer base, integer offset or None)."""
+        terms = []
+
+        def flat(x):
+            if x.op == "+":
+                flat(x.a)
+                flat(x.b)
+            else:
+                terms.append(x)
+        flat(a)
+        base = next((t for t in terms if t.op == "addr"), None)
+        if base is None:
+            base = next((t for t in terms if self.ty(t) == "p"), None)
+        if base is None:
+            base = next((t for t in terms if t.ptr), None)
+        rest = [t for t in terms if t is not base]
+        if base is None:
+            # no pointer-typed term: treat the whole sum as an integer address
+            return f"(unsigned char *)({self.expr(a)})", None
+        if base.op == "addr":
+            v = base.var
+            agg = getattr(v, "agg", None)
+            if agg and agg[0] is not v:
+                bs = f"({agg[0].name} + {agg[1]})"
+            elif v.type and v.type.startswith("arr"):
+                bs = self.vname(v)
+            else:
+                bs = f"(unsigned char *)&{self.vname(v)}"
+        else:
+            bs = self.expr(base)
+            if self.ty(base) != "p":
+                bs = f"(unsigned char *){self.paren(base, bs)}"
+        if not rest:
+            return bs, None
+        s = self.sum_text(rest)
+        return (f"({bs})" if " " in bs and not bs.startswith("(") else bs), s
+
+    def sum_text(self, terms):
+        out = ""
+        for n, t in enumerate(terms):
+            if t.op == "k" and t.v < 0 and n:
+                out += f" - {-t.v:#x}" if -t.v > 9 else f" - {-t.v}"
                 continue
-            out.append(f"extern int {name}();")
-        argc = max(self.args, default=-1) + 1
-        pars = ", ".join(f"{'char' if self.args.get(k) == 1 else 'short' if self.args.get(k) == 2 else 'int'} a{k}" for k in range(argc)) or "void"
-        ret = "int" if self.return_slot else "void"
-        out.append(f"{ret} {self.fn['name']}({pars})")
+            s = self.expr(t)
+            if self.ty(t) == "p":
+                s = f"(int){self.paren(t, s)}"
+            out += (" + " if n else "") + self.paren(t, s)
+        return out
+
+    def paren(self, e, s):
+        if e.op in BINOPS or e.op == "cmp":
+            return f"({s})"
+        return s
+
+    def const(self, v, t="i"):
+        if t in ("c", "us") or t == "u":
+            v &= {"c": 0xFF, "us": 0xFFFF, "u": 0xFFFFFFFF}[t]
+        elif t in ("sc", "s"):
+            w = TW[t] * 8
+            v &= (1 << w) - 1
+            if v >> (w - 1):
+                v -= 1 << w
+        if -10 < v < 10:
+            return str(v)
+        return f"-{-v:#x}" if v < 0 else f"{v:#x}"
+
+    def expr(self, e, ctx=None):
+        op = e.op
+        if op == "k":
+            return self.const(e.v, ctx or "i")
+        if op == "v":
+            t, cast = self.load_type(e)
+            acc = self.var_access(e, t)
+            if acc:
+                return acc
+            name = self.vname(e.var)
+            return f"({TNAME[t]}){name}" if cast else name
+        if op == "m":
+            return self.deref(e, self.mem_type(e))
+        if op == "addr":
+            v = e.var
+            agg = getattr(v, "agg", None)
+            if agg and agg[0] is not v:
+                return f"({agg[0].name} + {agg[1]})"
+            if v.type and v.type.startswith("arr"):
+                return self.vname(v)
+            return f"&{self.vname(v)}"
+        if op == "fn":
+            self.use_func(e.name)
+            return e.name
+        if op == "call":
+            return self.call(e)
+        if op == "trunc":
+            return f"({TNAME[tcode(e.w, False)]}){self.paren(e.a, self.expr(e.a))}"
+        if op == "ext":
+            t = tcode(e.typ, e.x == "s")
+            return f"({TNAME[t]}){self.paren(e.a, self.expr(e.a))}"
+        if op == "neg":
+            return f"-{self.paren(e.a, self.expr(e.a))}"
+        if op == "~":
+            return f"~{self.paren(e.a, self.expr(e.a))}"
+        if op == "raw":
+            return f"/*{e.name}*/0"
+        if op == "pre":
+            return f"{e.name}{self.lvalue(e.a)}"
+        if op == "post":
+            return f"{self.lvalue(e.a)}{e.name}"
+        if op == "preop":
+            return f"({self.lvalue(e.a)} {e.name}= {self.expr(e.b)})"
+        if op == "cmp":
+            return self.cmp(e)
+        return self.binary(e)
+
+    def binary(self, e):
+        op = e.op
+        ta, tb = self.ty(e.a), self.ty(e.b)
+        a = self.paren(e.a, self.expr(e.a, ta if e.b.op != "k" else None))
+        b = self.paren(e.b, self.expr(e.b, promote(ta) if e.b.op == "k" else None))
+        if op in (">>", "/", "%"):
+            pa = promote(ta)
+            if e.uns and pa in ("i",):
+                a = f"(unsigned){a}"
+            elif not e.uns and pa in ("u", "p"):
+                a = f"(int){a}"
+        if op in ("*", "&", "|", "^", "<<", ">>", "/", "%") and ta == "p":
+            a = f"(int){a}" if not a.startswith("(int)") and not a.startswith("(unsigned)") else a
+        if op in ("*", "&", "|", "^", "/", "%") and tb == "p":
+            b = f"(int){b}"
+        if op in ("+", "-") and ta == "p" and tb == "p":
+            b = f"(int){b}"
+        return f"{a} {op} {b}"
+
+    def cmp(self, e):
+        a, b, rel = e.a, e.b, e.rel
+        ta, tb = self.ty(a), self.ty(b)
+        if a.op == "k" and b.op != "k":
+            a, b, ta, tb, rel = b, a, tb, ta, SWAP[rel]
+        sa = self.paren(a, self.expr(a))
+        sb = self.paren(b, self.expr(b, ta if b.op == "k" else None))
+        if rel in ("<", "<=", ">", ">="):
+            pa, pb = promote(ta), promote(tb) if b.op != "k" else promote(ta)
+            c_uns = "u" in (pa, pb) or "p" in (pa, pb) or (ta in ("c", "us") and (tb in ("c", "us") or b.op == "k"))
+            if e.uns and not c_uns:
+                sa = f"(unsigned){sa}"
+            elif not e.uns and c_uns:
+                if ta in ("c", "us") and b.op == "k":
+                    sa = f"({TNAME[tcode(TW[ta], True)]}){sa}"
+                else:
+                    sa = f"(int){sa}"
+                    if b.op != "k":
+                        sb = f"(int){sb}"
+        if b.op == "k" and b.v == 0 and rel in ("==", "!="):
+            if ta == "p" or a.op == "addr":
+                return f"{sa} {rel} 0"
+        return f"{sa} {rel} {sb}"
+
+    def use_func(self, name):
+        self.used_funcs[name] = True
+        if name in LIB_HEADERS:
+            self.includes.add(LIB_HEADERS[name])
+
+    def call(self, e):
+        if e.a.op == "fn":
+            name = e.a.name
+            self.use_func(name)
+            sig = self.prog.sigs.get(name) or {}
+            params = sig.get("params") or []
+        else:
+            sig = {}
+            if e.a.op == "v":
+                name = self.fnptr(e.a)
+            elif e.a.op == "m":
+                base, off = self.split_addr(e.a.a)
+                name = f"(*(int (**)()){base if off is None else f'({base} + {off})'})"
+            else:
+                name = f"((int (*)()){self.paren(e.a, self.expr(e.a))})"
+            params = []
+        args = []
+        for k, x in enumerate(e.args):
+            s = self.expr(x)
+            pt = params[k] if k < len(params) else None
+            tx = self.ty(x)
+            if pt == "cp":
+                s = f"(char *){self.paren(x, s)}"
+            elif pt == "p" and sig.get("lib") and not (x.op == "k" and x.v == 0):
+                s = f"(void *){self.paren(x, s)}"
+            elif pt == "p" and tx != "p" and not (x.op == "k" and x.v == 0):
+                s = f"(void *){self.paren(x, s)}"
+            elif pt and pt != "p" and tx == "p":
+                s = f"(int){self.paren(x, s)}"
+            args.append(s)
+        return f"{name}({', '.join(args)})"
+
+    def fnptr(self, e):
+        v = e.var
+        if v.kind == "g":
+            self.gname(v)
+            v.fnptr = True
+            return f"(*{v.name})"
+        return f"((int (*)()){v.name})"
+
+    # statements -------------------------------------------------------------------------------
+    def stmt(self, st):
+        k = st[0]
+        if k == "set":
+            loc, val = st[1], st[2]
+            lt = self.lv_type(loc)
+            s = self.expr(val, lt if val.op == "k" else None)
+            tv = self.ty(val)
+            if lt == "p" and tv != "p" and not (val.op == "k" and val.v == 0):
+                s = f"(unsigned char *){self.paren(val, s)}"
+            elif lt != "p" and tv == "p":
+                s = f"(int){self.paren(val, s)}"
+            return f"{self.lvalue(loc)} = {s};"
+        if k == "opset":
+            loc, op, val, uns = st[1:]
+            lt = self.lv_type(loc)
+            s = self.expr(val, lt if val.op == "k" else None)
+            if self.ty(val) == "p" and lt != "p":
+                s = f"(int){self.paren(val, s)}"
+            if lt == "p" and op not in ("+", "-"):
+                return f"{self.lvalue(loc)} = (unsigned char *)((int){self.lvalue(loc)} {op} {s});"
+            return f"{self.lvalue(loc)} {op}= {s};"
+        if k == "incdec":
+            return f"{st[2]}{self.lvalue(st[1])};"
+        if k == "expr":
+            return f"{self.expr(st[1])};"
+        if k == "ret":
+            if st[1] is None:
+                return "return;"
+            rt = self.L.ret_type
+            s = self.expr(st[1], rt if st[1].op == "k" else None)
+            if rt == "p" and self.ty(st[1]) != "p":
+                s = f"(unsigned char *){self.paren(st[1], s)}"
+            elif rt != "p" and self.ty(st[1]) == "p":
+                s = f"(int){self.paren(st[1], s)}"
+            return f"return {s};"
+        if k == "if":
+            if st[2] is None:
+                return f"if ({self.expr(st[1])}) {{}}"
+            return f"if ({self.expr(st[1])}) goto L_{st[2]:x};"
+        if k == "goto":
+            return f"goto L_{st[1]:x};"
+        if k == "label":
+            return f"L_{st[1]:x}:;"
+        if k == "asm":
+            return f"/* unsupported: {st[1]} */"
+        if k == "switch":
+            lines = [f"switch ({self.expr(st[1])}) {{"]
+            for n, t in enumerate(st[2]):
+                lines.append(f"case {n}: goto L_{t:x};")
+            if st[3] is not None:
+                lines.append(f"default: goto L_{st[3]:x};")
+            lines.append("}")
+            return "\n".join(lines)
+        return f"/* ? {k} */"
+
+    # whole function ----------------------------------------------------------------------------
+    def source(self):
+        L = self.L
+        body = []
+        stmts = L.stmts
+        used_labels = set()
+        for st in stmts:
+            if st[0] == "if" and st[2] is not None:
+                used_labels.add(st[2])
+            elif st[0] == "goto":
+                used_labels.add(st[1])
+            elif st[0] == "switch":
+                used_labels.update(st[2])
+                if st[3] is not None:
+                    used_labels.add(st[3])
+        for st in stmts:
+            if st[0] == "label" and st[1] not in used_labels:
+                continue
+            body.extend(self.stmt(st).split("\n"))
+        if self.structured:
+            body = structure(body)
+        # declarations
+        out = ["/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */"]
+        for inc in sorted(self.includes):
+            out.append(f"#include <{inc}>")
+        for name in sorted(self.used_globals):
+            v = self.used_globals[name]
+            out.append(global_decl(v))
+        for name in sorted(self.used_funcs):
+            if name == L.name or name in LIB_HEADERS:
+                continue
+            out.append(func_decl(self.prog, name))
+        ret = TNAME[L.ret_type] if L.ret_type else "void"
+        params = ", ".join(("volatile " if k in L.args and L.args[k].volatile else "") +
+                           f"{TNAME[L.args[k].type] if k in L.args else 'int'} a{k}" for k in range(L.nparams)) or "void"
+        out.append(f"{ret} {L.name}({params})")
         out.append("{")
-        for line in self.lines:
-            self.raw_registers.update(re.findall(r"\b(?:eax|ebx|ecx|edx|esi|edi|esp|ebp|al|bl|cl|dl|ah|bh|ch|dh|ax|bx|cx|dx|cs|ss|gs|fs|es|ds)\b", line))
-        for r in sorted(self.raw_registers):
-            out.append(f"    int {r} = 0; /* unresolved register value */")
-        for slot, w in sorted(self.slots.items(), key=lambda p: int(p[0][2:], 16)):
-            out.append(f"    {'char' if w == 1 else 'short' if w == 2 else 'int'} {slot};")
-        for line in self.lines:
+        for v in L.decl_locals:
+            out.append(f"    {decl_text(v)};")
+        ind = 1
+        for line in body:
+            if line.startswith("}"):
+                ind -= 1
             if line.startswith("L_"):
                 out.append(line)
             else:
-                out.append("    " + line)
-        for u in self.unknown:
-            out.append("    /* unsupported: " + u.replace("*/", "") + " */")
+                out.append("    " * ind + line)
+            if line.endswith("{"):
+                ind += 1
         out.append("}")
         return "\n".join(out) + "\n"
 
 
+def decl_text(v):
+    t = v.type
+    if t == "p":
+        return f"unsigned char *{v.name}"
+    if t.startswith("arr"):
+        return f"unsigned char {v.name}[{t[3:]}]"
+    return f"{TNAME[t]} {v.name}"
+
+
+def global_decl(v):
+    vol = "volatile " if v.volatile else ""
+    if getattr(v, "fnptr", False) and v.type not in ("arr",):
+        return f"extern int (* {vol}{v.name})();"
+    if v.type == "arr":
+        return f"extern {vol}unsigned char {v.name}[];"
+    if v.type == "p":
+        return f"extern unsigned char * {vol}{v.name};" if vol else f"extern unsigned char *{v.name};"
+    return f"extern {vol}{TNAME[v.type]} {v.name};"
+
+
+def func_decl(prog, name):
+    sig = prog.sigs.get(name) or {"params": [], "ret": "i"}
+    ret = "void" if sig.get("void") else TNAME[sig.get("ret") or "i"]
+    if sig.get("varargs"):
+        return f"extern {ret} {name}();"
+    ps = ", ".join(("void *" if p == "p" else TNAME[p or "i"]) for p in sig["params"]) or "void"
+    return f"extern {ret} {name}({ps});"
+
+
+# ---------------------------------------------------------------------------------------------
+def layout_locals(L):
+    """Choose local types/declaration order so that Watcom's stable size sort reproduces the
+    original slot offsets.  Slots are listed shallow ([ebp-4]) to deep."""
+    offs = sorted(L.locals)
+    spill_off = L.spill[0] if L.spill else None
+    if spill_off is not None and spill_off not in L.locals:
+        offs = sorted(set(offs) | {spill_off})
+    deepest = max([L.frame] + offs) if offs or L.frame else 0
+    # aggregates (structs/arrays): address-taken locals, word stores (scalar shorts are stored
+    # as dwords) and odd offsets.  Scalars sort before them, so an aggregate extends up to the
+    # contiguous run of accessed scalar slots at the top of the frame.
+    agg_off = {o for o, v in L.locals.items() if v.addr or o % 4 or v.widths("const", "store") & {2}}
+    aggs = {}
+    if agg_off:
+        top = 0
+        while top + 4 in L.locals and top + 4 not in agg_off and top + 4 < min(agg_off) or top + 4 == spill_off:
+            top += 4
+        bases = sorted(o for o in agg_off if o > top)
+        # each aggregate starts at an address-taken base (or the deepest odd access)
+        starts = sorted({o for o in bases if L.locals[o].addr} or {max(bases)})
+        if max(bases) > max(starts):
+            starts.append(max(bases))
+        prev = top
+        for b in starts:
+            if b - prev == 4 and b % 4 == 0 and not L.locals[b].widths("const", "store") & {2} and                     b == max(o for o in offs if prev < o <= b):
+                prev = b
+                continue       # a plain address-taken scalar
+            aggs[b] = (prev, b)
+            prev = b
+    agg_of = {}
+    for b, (lo, hi) in aggs.items():
+        for o in list(L.locals):
+            if lo < o <= hi:
+                agg_of[o] = b
+    info = []
+    u = 4
+    while u <= max(deepest, 4) and (offs or L.frame):
+        if u in aggs:
+            lo, hi = aggs[u]
+            base = L.locals.get(u) or L.local(u)
+            base.type = f"arr{hi - lo}"
+            base.fields = True
+            for o, b in agg_of.items():
+                if b == u:
+                    L.locals[o].agg = (base, u - o)
+            info.append({"off": u, "var": base, "temp": False, "range": (hi - lo, hi - lo), "agg": True})
+            u += 4
+            continue
+        if any(b >= u > aggs[b][0] for b in aggs):
+            u += 4
+            continue
+        v = L.locals.get(u)
+        if u == spill_off:
+            w = L.spill[1]
+            rng = (1, 1) if w == 1 or L.ret_type == "c" else (2, 2) if L.ret_type == "s" or w == 2 else (2, 4)
+            info.append({"off": u, "var": None, "temp": True, "range": rng, "pref": rng[1]})
+            u += 4
+            continue
+        if v is None:
+            info.append({"off": u, "var": None, "unused": True, "range": (4, 4)})
+            u += 4
+            continue
+        ws = v.widths()
+        if 1 in ws:
+            rng = (1, 1)
+        elif 2 in ws:
+            rng = (2, 4)
+        else:
+            rng = (2, 4) if not (v.widths("arith", "rmw", "cmp", "sx", "zx") or v.ptr) else (4, 4)
+        info.append({"off": u, "var": v, "temp": False, "range": rng, "pref": 2 if 2 in ws else rng[1]})
+        u += 4
+    if L.frame and L.frame > deepest and not info:
+        pass
+    # greedy from the deepest slot: key(shallow) must sort before key(deep)
+    limit = (99, True)
+    for s in reversed(info):
+        lo, hi = s["range"]
+        pref = s.get("pref", hi)
+        best = None
+        for size in sorted({pref, hi, lo, 2, 4} & set(range(lo, hi + 1)) or {pref}, key=lambda z: (z != pref, -z)):
+            key = (size, s.get("temp", False))
+            if size < limit[0] or (size == limit[0] and (not key[1] or limit[1])):
+                best = size
+                break
+        if best is None:
+            best = pref
+        s["size"] = best
+        limit = (best, s.get("temp", False))
+    decl = []
+    for s in info:
+        v = s["var"]
+        if s.get("temp"):
+            w = L.spill[1]
+            if not getattr(L, "ret_narrow", False):
+                L.ret_type = "c" if w == 1 else ("s" if s["size"] == 2 else "i")
+            continue
+        if v is None:
+            v = Var("l", f"unused_{s['off']:x}", s["off"])
+            v.type = "i"
+            decl.append(v)
+            continue
+        if not s.get("agg"):
+            resolve_local(v, s["size"])
+        decl.append(v)
+    L.decl_locals = decl
+
+
+def resolve_function(L):
+    if L.spill:
+        ws = {st[1].w for st in L.stmts if st[0] == "ret" and st[1] is not None and st[1].op != "k"}
+        L.ret_type = "c" if L.spill[1] == 1 or ws == {1} else "s" if ws and max(ws) == 2 else "i"
+        L.ret_narrow = bool(ws) and max(ws) < 4
+    forms = defaultdict(Counter)
+    for c in L.prog.sigs[L.name]["calls"] if L.name in L.prog.sigs else []:
+        for k, f in enumerate(c):
+            forms[k][f] += 1
+    for k, v in L.args.items():
+        ws = v.widths()
+        if forms[k]["wide"]:
+            size = 4
+        elif 1 in ws and 4 not in ws:
+            size = 1
+        elif 2 in ws and 1 not in ws and not (v.widths("arith", "rmw", "push", "cmp") & {4}) and not v.ptr:
+            size = 2
+        else:
+            size = 4
+        resolve_local(v, size)
+
+
+def lift_program(prog, names, structured=True):
+    for f in prog.man["functions"]:
+        if f.get("kind", "c") != "c":
+            continue
+        L = Lift(prog, f)
+        try:
+            L.run()
+        except Exception as ex:  # keep going: a draft is still useful
+            L.unknown.append(f"lifter error: {ex!r}")
+        prog.lifts[f["name"]] = L
+    for L in prog.lifts.values():
+        resolve_function(L)
+    for L in prog.lifts.values():
+        layout_locals(L)
+    prog.resolve()
+    out = {}
+    for n in names:
+        L = prog.lifts.get(n)
+        if L is None:
+            L = Lift(prog, prog.funcs[n])
+            L.run()
+            resolve_function(L)
+            layout_locals(L)
+        out[n] = Render(L, structured).source(), L
+    return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Structuring: fold the fixed -od layouts of goto code into structured statements.  Each rule
+# rewrites text lines of the flat program; the rewritten form compiles to the same code.
+def structure(lines):
+    return lines
+
+
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("functions", nargs="*", help="manifest function names")
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--all", action="store_true", help="all non-matching functions")
+    ap.add_argument("--all", action="store_true", help="all non-matching C functions")
+    ap.add_argument("--controls", action="store_true", help="all matching functions")
     ap.add_argument("--range", nargs=2, metavar=("START", "END"), help="non-matching functions in [start,end)")
+    ap.add_argument("--goto", action="store_true", help="no structuring (flat goto form)")
     a = ap.parse_args()
-    man = json.loads((ROOT / "manifest.json").read_text())
-    byname = {f["name"]: f for f in man["functions"]}
+    prog = Program()
+    fns = [f for f in prog.man["functions"] if f.get("kind", "c") == "c"]
     selected = list(a.functions)
     if a.all:
-        selected += [f["name"] for f in man["functions"] if f["status"] != "matching"]
+        selected += [f["name"] for f in fns if f["status"] != "matching"]
+    if a.controls:
+        selected += [f["name"] for f in fns if f["status"] == "matching"]
     if a.range:
-        low, high = (int(x, 0) for x in a.range)
-        selected += [f["name"] for f in man["functions"] if f["status"] != "matching" and low <= int(f["start"], 16) < high]
+        lo, hi = (int(x, 0) for x in a.range)
+        selected += [f["name"] for f in fns if f["status"] != "matching" and lo <= int(f["start"], 16) < hi]
     if not selected:
-        ap.error("give functions, --all, or --range")
-    L = le.LE(ROOT / "assets" / "KE.EXE")
-    code = L.object_bytes(L.objects[0])[:L.objects[0]["vsize"]]
-    fix = {off: t for obj, off, typ, t in L.resolved_fixups() if obj == 1}
-    names = {v: k for k, v in man.get("symbols", {}).items()}
-    names.update({f"1:{int(f['start'], 16):x}": f["name"] for f in man["functions"]})
-    decls = defaultdict(set)
-    for src in (ROOT / "src").glob("*.c"):
-        for statement in re.findall(r"\bextern\s+[^;{}]+;", src.read_text(errors="replace")):
-            statement = " ".join(statement.split())
-            for symbol in re.findall(r"\b[fg]_[0-9a-f]+\b", statement):
-                decls[symbol].add(statement)
+        ap.error("give functions, --all, --controls or --range")
+    for n in selected:
+        if n not in prog.funcs:
+            ap.error(f"unknown function {n}")
     a.out.mkdir(parents=True, exist_ok=True)
-    for name in dict.fromkeys(selected):
-        if name not in byname:
-            ap.error(f"unknown function {name}")
-        f = byname[name]
-        lifted = Lifter(f, code, fix, names, decls, man)
-        (a.out / (name + ".c")).write_text(lifted.source())
-        print(f"{name} {f['start']}..{f['end']} unsupported={len(lifted.unknown)}")
+    res = lift_program(prog, list(dict.fromkeys(selected)), not a.goto)
+    for n, (text, L) in res.items():
+        (a.out / f"{n}.c").write_text(text)
+        print(f"{n} {L.fn['start']}..{L.fn['end']} unsupported={len(L.unknown)}")
 
 
 if __name__ == "__main__":

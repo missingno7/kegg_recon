@@ -20,6 +20,12 @@ Stack slots
 - Nested-block autos keep their own slot (no reuse after the block); `register` has no effect; `static`
   locals move to data.
 
+Calls
+- Constant argument to an `int`/`long`/pointer parameter (or an unprototyped call): `push imm`.
+  To a `char`/`short` (signed or unsigned) parameter: `mov eax,imm; push eax` (`xor eax,eax` for 0; the value is
+  zero-extended to the parameter width, so `(char)-1` gives `mov eax,0xff`). So call sites reveal the callee's
+  parameter types — and require the right prototype in the candidate.
+
 Control flow
 - `for (i = a; i < n; i++) body` compiles to: init; `L1: cmp; jl L3; jmp L4; L2: inc; jmp L1; L3: body; jmp L2; L4:`.
   A `while` loop has the plain `L1: cmp; jge L4; body; jmp L1` shape — pick the form by the layout.
