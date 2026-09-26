@@ -35,7 +35,8 @@ def load_manifest():
 
 def save_manifest(m):
     tmp = MAN.with_suffix(".tmp")
-    tmp.write_text(json.dumps(m, indent=1) + "\n")
+    with open(tmp, "w", newline="\n") as fh:
+        fh.write(json.dumps(m, indent=1) + "\n")
     os.replace(tmp, MAN)
 
 
