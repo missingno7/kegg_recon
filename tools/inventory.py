@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+sys.path.insert(0, str(ROOT / "build" / "pylib"))
 import le as lemod  # noqa: E402
 import libscan  # noqa: E402
 import omf  # noqa: E402  (used by libscan's library-member reader)
@@ -39,10 +40,10 @@ except ImportError as exc:  # pragma: no cover - environment-dependent path
 
 IMAGE = ROOT / "assets" / "KE.EXE"
 LIBS = [
-    Path("C:/tools/watcom-10.0a/LIB386/DOS/CLIB3S.LIB"),
-    Path("C:/tools/watcom-10.0a/LIB386/MATH387S.LIB"),
-    Path("C:/tools/watcom-10.0a/LIB386/DOS/EMU387.LIB"),
-    Path("C:/tools/watcom-10.0a/LIB386/MATH3S.LIB"),
+    Path("C:/tools/watcom-10.0/LIB386/DOS/clib3s.lib"),
+    Path("C:/tools/watcom-10.0/LIB386/math387s.lib"),
+    Path("C:/tools/watcom-10.0/LIB386/DOS/emu387.lib"),
+    Path("C:/tools/watcom-10.0/LIB386/math3s.lib"),
 ]
 
 # These boundaries are binary-derived anchors, checked against the signatures
