@@ -92,7 +92,7 @@ def batch(d: Path):
     return v.returncode
 
 
-def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, profile: str, note: str):
+def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, profile: str, note: str, places=()):
     """A whole translation unit: one source file, verified by one --all check over [start, end) including the
     unit's own data segments. Every manifest function inside the range becomes 'matching' with src = the unit."""
     man = load_manifest()
@@ -106,8 +106,9 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
     frozen = frozen_dir / Path(dest_rel).name
     frozen.write_bytes(cand.read_bytes().replace(bytes([13, 10]), bytes([10])))
     jpath = frozen_dir / "result.json"
+    placeargs = [a for pl in places for a in ("--place", pl)]
     p = subprocess.run([sys.executable, str(ROOT / "tools" / "check.py"), str(frozen), "--all", "--at", start,
-                        "--end", end, "--profile", profile, "--json", str(jpath)], capture_output=True, text=True)
+                        "--end", end, "--profile", profile, "--json", str(jpath), *placeargs], capture_output=True, text=True)
     print(p.stdout.strip())
     res = json.loads(jpath.read_text()) if jpath.exists() else None
     if not res or res["verdict"] != "EXACT":
@@ -136,6 +137,7 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
         units = [u for u in man.setdefault("units", []) if u["id"] != uid]
         units.append({"id": uid, "src": dest_rel, "start": start, "end": end, "profile": profile,
                       "src_sha256": sha, "data": [f"{d['seg']}@{d['base']}+{d['size']:#x}" for d in res.get("data", [])],
+                      **({"place": list(places)} if places else {}),
                       **({"note": note} if note else {})})
         man["units"] = sorted(units, key=lambda u: int(u["start"], 16))
         for k, v in res["bindings"].items():
@@ -165,7 +167,8 @@ def main(argv):
         i = args.index("--range")
         prof = args[args.index("--profile") + 1] if "--profile" in args else "game-c"
         note = args[args.index("--note") + 1] if "--note" in args else ""
-        return promote_unit(cand, uid, dest, args[i + 1], args[i + 2], prof, note)
+        places = [args[j + 1] for j, a in enumerate(args) if a == "--place"]
+        return promote_unit(cand, uid, dest, args[i + 1], args[i + 2], prof, note, places)
     no_validate = "--no-validate" in args
     verify_only = "--verify-only" in args
     draft = None

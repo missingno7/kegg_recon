@@ -18,8 +18,10 @@ python tools/tu.py build --range 0xSTART 0xEND [--literals] [--defs DEFS.c] [--o
       # verified by check.py --all (code + every referenced data segment + pointer fixups)
 python tools/tu.py scan --literals      # boundary probes; python tools/tu.py evidence  # CONST/_DATA ownership
 python tools/check.py TU.c --all --at 0xSTART --end 0xEND   # the authority
+      # [--place CONST=0xOFF --place _DATA=0xOFF] asserts where a TU segment lies when none of the TU's own code
+      # references it (e.g. a text pool used only by other TUs); verified by contents + pointer fixups
 ```
-Supervisor promotes an EXACT unit with `python tools/promote.py --unit ID TU.c src/NAME.c --range 0xSTART 0xEND`;
+Supervisor promotes an EXACT unit with `python tools/promote.py --unit ID TU.c src/NAME.c --range 0xSTART 0xEND [--place SEG=OFF]`;
 member functions then point at the unit (manifest `units`), per-function files are retired, validate checks the
 unit as a whole. Current proposal with evidence: build/tus.json (regenerate: `python tools/tu.py verify
 build/workers/tu/proposal.json`).

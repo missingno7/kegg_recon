@@ -55,7 +55,8 @@ def main(argv):
     def unit(u):
         out = ROOT / "build" / "validate" / f"unit_{u['id']}.json"
         cmd = [sys.executable, str(ROOT / "tools" / "check.py"), str(ROOT / u["src"]), "--all", "--at", u["start"],
-               "--end", u["end"], "--profile", u.get("profile", "game-c"), "--json", str(out), "--host", host]
+               "--end", u["end"], "--profile", u.get("profile", "game-c"), "--json", str(out), "--host", host,
+               *[a for pl in u.get("place", []) for a in ("--place", pl)]]
         return u, subprocess.run(cmd, capture_output=True, text=True)
 
     uok = 0

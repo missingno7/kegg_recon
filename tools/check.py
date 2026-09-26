@@ -58,6 +58,9 @@ def original():
     return _ORIG
 
 
+PLACE = {}  # segment name -> obj3 offset asserted with --place (verified by contents, must agree with bindings)
+
+
 def check_data(mod, si, res):
     """Contents of candidate data segments (strings, initialised data) must equal the original at the
     address their code references (or their symbols) bind to; pointers inside them must be LE fixups."""
@@ -75,6 +78,8 @@ def check_data(mod, si, res):
             if s_ == di and n in binds:
                 ob, off = binds[n].split(":")
                 bases.add(f"{ob}:{(int(off, 16) - o) & 0xFFFFFFFF:x}")
+        if seg.name in PLACE:
+            bases.add(f"3:{PLACE[seg.name]:x}")
         if not bases:
             out.append({"seg": seg.name, "size": seg.size, "status": "unbound"})
             probs.append(f"data segment {seg.name} ({seg.size} bytes) is not referenced by the compared code: cannot place it")
@@ -404,9 +409,15 @@ def main(argv):
     ap.add_argument("--json")
     ap.add_argument("--obj", help="use an existing object instead of compiling")
     ap.add_argument("--host", default="nt", help="nt (default) or dosbox (independent DOS/4GW host)")
+    ap.add_argument("--place", action="append", default=[], metavar="SEG=OFF",
+                    help="assert where a data segment not referenced by the compared code lies in obj3 "
+                         "(e.g. CONST=0x4); verified by contents and pointer fixups")
     ap.add_argument("--object", type=int, help="LE object of the original code (default: manifest entry, else 1)")
     a = ap.parse_args(argv[1:])
     global CODE_OBJ
+    for pl in a.place:
+        k, v = pl.split("=")
+        PLACE[k] = int(v, 16)
     ent = next((f for f in manifest().get("functions", []) if f.get("name") == a.func), None)
     CODE_OBJ = a.object or (ent or {}).get("object", 1)
     src = Path(a.source).resolve()

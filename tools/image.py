@@ -106,7 +106,7 @@ class Original:
         self.bytes = {}
         for o in L.objects:
             b = L.object_bytes(o)
-            self.bytes[o["n"]] = b + bytes(max(0, o["vsize"] - len(b)))
+            self.bytes[o["n"]] = (b + bytes(max(0, o["vsize"] - len(b))))[:o["vsize"]]
         self.page_obj = {}
         for p in range(L.hdr["num_pages"]):
             o, base = L.page_object(p)
@@ -487,9 +487,9 @@ class Plan:
     # --- names --------------------------------------------------------------
     def owner(self, obj, addr, end_ok=False):
         """Link item that owns (obj, addr) — game code/data — or None (runtime)."""
-        if obj in (1, 2):
+        if obj in (1, 2):   # code: an address equal to an object's end belongs to the next object
             for it in self.code_items + [self.tail]:
-                if it.obj == obj and (it.start <= addr < it.end or (end_ok and addr == it.end)):
+                if it.obj == obj and it.start <= addr < it.end:
                     return it
             return None
         for it in self.reals:
@@ -509,6 +509,8 @@ def disasm_rel32(code, base, start, end, funcs):
     md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
     out = []
     for f in funcs:
+        if f.get("object", 1) != 1:
+            continue
         a, b = max(start, int(f["start"], 16)), min(end, int(f["end"], 16))
         if a >= b:
             continue
@@ -541,7 +543,7 @@ class RawBuilder:
     def target_ref(self, it, obj, addr, want_exact=False):
         """How `it` refers to (obj, addr): ('self', seg key, field) | ('ext', name, field) | ('grp', field)."""
         ctx = self.ctx
-        if obj in (1, 2) and it.kind == "raw" and it.obj == obj and it.start <= addr <= it.end:
+        if obj in (1, 2) and it.kind == "raw" and it.obj == obj and it.start <= addr < it.end:
             return ("self", "text", addr - it.start)
         if obj == 3 and it.kind == "raw":
             for cls, a, b in it.pieces:
@@ -650,9 +652,56 @@ class RawBuilder:
                 groups[k:] = [merged]
         return groups
 
-    # --- emission ----------------------------------------------------------------
-    def build_object(self, it, outdir):
+    # --- analysis: fixups, references, exports (no output) ------------------------------
+    def analyze(self, it):
+        """Fixup specs of a raw object: [(range key, LE obj, site, loc, self_rel, tref, frame)]."""
         ctx, o = self.ctx, self.ctx.orig
+        st = {"le_fixups": 0, "rel32_fixups": 0, "rel32_baked_cross": 0}
+        ranges = []
+        if it.obj in (1, 2):
+            ranges.append(("text", it.obj, it.start, it.end))
+        ranges += [(c, 3, a, b) for c, a, b in it.pieces]
+        it.ranges = ranges
+
+        def seg_of(obj, addr):
+            for k, ro, a, b in ranges:
+                if ro == obj and a <= addr < b:
+                    return k, a
+            return None
+        specs = []
+        le_sites = set()
+        for (sobj, sa), info in sorted(o.sites.items()):
+            sk = seg_of(sobj, sa)
+            if not sk:
+                continue
+            le_sites.add((sobj, sa))
+            if info["type"] == "sel16":
+                specs.append((sk[0], sobj, sa, "base16", False, ("dgroup",), ("dgroup",)))
+                continue
+            if info["type"] != "off32":
+                raise SystemExit(f"{it.key}: unsupported LE fixup type {info['type']}")
+            tref = self.target_ref(it, info["tobj"], info["toff"])
+            specs.append((sk[0], sobj, sa, "off32", False, tref, ("flat",) if sobj != 2 else ("target",)))
+        st["le_fixups"] = len(le_sites)
+        if it.obj == 1:
+            fields = {a + k for (_, a) in le_sites for k in range(4)}
+            entries = {int(f["start"], 16) for f in ctx.funcs if f.get("object", 1) == 1} | set(ctx.rt_pub.values())
+            for fo, tgt in disasm_rel32(o.bytes[1], 0, it.start, it.end, ctx.funcs):
+                if it.start <= tgt < it.end or not (0 <= tgt < len(o.bytes[1])):
+                    continue
+                if any(fo + k in fields for k in range(4)) or fo + 4 > it.end:
+                    continue
+                tref = self.target_ref(it, 1, tgt, want_exact=True) if tgt in entries else None
+                if tref is None or tref[0] != "ext" or tref[2] != 0:
+                    st["rel32_baked_cross"] += 1
+                    continue
+                specs.append(("text", 1, fo, "off32", True, tref, ("flat",)))
+                st["rel32_fixups"] += 1
+        it.specs, it.le_sites, it.stats = specs, le_sites, st
+
+    # --- emission ----------------------------------------------------------------
+    def emit(self, it, outdir):
+        o = self.ctx.orig
         ob = Obj(it.key.replace(":", "_"))
         flat = ob.group("FLAT", [])
         segs = {}
@@ -663,134 +712,81 @@ class RawBuilder:
                 pcs = [(a, b) for c, a, b in it.pieces if c == cls]
                 if len(pcs) > 1:
                     raise SystemExit(f"{it.key}: two {cls} pieces")
-                if pcs:
-                    a, b = pcs[0]
-                    segs[cls] = ob.segment(cls, clsname, "byte", size=b - a,
-                                           data=None if cls == "_BSS" else o.bytes[3][a:b])
-                else:
-                    segs[cls] = ob.segment(cls, clsname, "byte", size=0, data=None if cls == "_BSS" else b"")
+                a, b = pcs[0] if pcs else (0, 0)
+                segs[cls] = ob.segment(cls, clsname, "byte", size=b - a,
+                                       data=None if cls == "_BSS" else o.bytes[3][a:b])
             dgroup = ob.group("DGROUP", [segs[c] for c in ("CONST", "CONST2", "_DATA", "_BSS")])
         else:
             segs["text"] = ob.segment("RAW16_TEXT", "CODE", "para", data=o.bytes[2][it.start:it.end], use32=False)
             dgroup = None
-        ranges = []   # (seg key, LE obj, start, end)
-        if it.obj in (1, 2):
-            ranges.append(("text", it.obj, it.start, it.end))
-        ranges += [(c, 3, a, b) for c, a, b in it.pieces]
-
-        def seg_of(obj, addr):
-            for k, ro, a, b in ranges:
-                if ro == obj and a <= addr < b:
-                    return k, a
-            return None
-
-        refs = []   # (site addr for ordering, name) for EXTDEF order
+        rstart = {k: a for k, _, a, _ in it.ranges}
+        data = {k: bytearray(ob.segs[si - 1].data) for k, si in segs.items() if ob.segs[si - 1].data is not None}
+        refs = []
         le_fix = {}
-
-        def mkfix(seg_key, rstart, obj, off, loc, self_rel, tref, frame):
-            nonlocal ob
-            si = segs[seg_key]
+        for key, sobj, site, loc, self_rel, tref, frame in it.specs:
+            fr = {"flat": ("grp", flat), "target": ("target",), "dgroup": ("grp", dgroup)}[frame[0]]
             kind = tref[0]
-            if kind == "self":
+            if kind == "dgroup":
+                tgt, fld = ("grp", dgroup), None
+            elif kind == "self":
                 tgt, fld = ("seg", segs[tref[1]]), tref[2]
             elif kind == "ext":
-                tgt, fld = ("ext", ob.extern(tref[1])), tref[2]
-                refs.append((off, tref[1]))
+                tgt, fld = ("ext", tref[1]), tref[2]
+                refs.append((site, tref[1]))
             elif kind == "grp":
                 tgt, fld = ("grp", dgroup), tref[1]
             else:  # seg-out: own text segment with an out-of-range displacement
-                self.stats["segment_relative_out_of_range"] += 1
                 tgt, fld = ("seg", segs["text"]), tref[1] - it.start
-            return ob.fixup(si, off - rstart, loc, target=tgt, frame=frame, self_rel=self_rel), fld
-
-        data = {k: bytearray(ob.segs[segs[k] - 1].data or b"") for k in segs}
-        # LE fixups of this object's ranges
-        for (sobj, sa), info in o.sites.items():
-            sk = seg_of(sobj, sa)
-            if not sk:
-                continue
-            key, rstart = sk
-            if info["type"] == "sel16":
-                f = ob.fixup(segs[key], sa - rstart, "base16", target=("grp", dgroup), frame=("grp", dgroup))
-                le_fix[(sobj, sa)] = f
-                continue
-            if info["type"] != "off32":
-                raise SystemExit(f"{it.key}: unsupported LE fixup type {info['type']}")
-            tref = self.target_ref(it, info["tobj"], info["toff"])
-            frame = ("grp", flat) if sobj != 2 else ("target",)
-            f, fld = mkfix(key, rstart, sobj, sa, "off32", False, tref, frame)
-            struct.pack_into("<I", data[key], sa - rstart, fld & 0xFFFFFFFF)
-            le_fix[(sobj, sa)] = f
-        self.stats["le_fixups"] += len(le_fix)
-        # self-relative calls/jumps to known entry points outside this object
-        rel_fix = []
-        if it.obj == 1:
-            fields = {a + k for (_, a) in le_fix for k in range(4)}
-            entries = {int(f["start"], 16) for f in ctx.funcs if f.get("object", 1) == 1} | set(ctx.rt_pub.values())
-            for fo, tgt in disasm_rel32(o.bytes[1], 0, it.start, it.end, ctx.funcs):
-                if it.start <= tgt < it.end or not (0 <= tgt < len(o.bytes[1])):
-                    continue
-                if any(fo + k in fields for k in range(4)) or fo + 4 > it.end:
-                    continue
-                if tgt not in entries:
-                    self.stats["rel32_baked_cross"] += 1
-                    continue
-                tref = self.target_ref(it, 1, tgt, want_exact=True)
-                if tref is None or tref[0] != "ext" or tref[2] != 0:
-                    self.stats["rel32_baked_cross"] += 1
-                    continue
-                f, _ = mkfix("text", it.start, 1, fo, "off32", True, tref, ("grp", flat))
-                struct.pack_into("<I", data["text"], fo - it.start, 0)
-                rel_fix.append(f)
-            self.stats["rel32_fixups"] += len(rel_fix)
+            f = ob.fixup(segs[key], site - rstart[key], loc, target=tgt, frame=fr, self_rel=self_rel)
+            if fld is not None:
+                struct.pack_into("<I", data[key], site - rstart[key], fld & 0xFFFFFFFF)
+            if not self_rel:
+                le_fix[(sobj, site)] = f
         for k, si in segs.items():
-            if ob.segs[si - 1].data is not None:
+            if k in data:
                 ob.segs[si - 1].data = bytes(data[k])
-        # LEDATA plan from the original processing order
-        Q = self.processing_order(it, list(le_fix))
+        # EXTDEF order: first reference address; pseudo references (runtime demand order) inserted
+        first = {}
+        for a, n in refs:
+            first[n] = min(first.get(n, 1 << 40), a)
+        order = sorted(first, key=lambda n: first[n])
+        for names, at in getattr(it, "pseudo", []):
+            idx = next((i for i, m in enumerate(order) if first[m] > at), len(order))
+            for k, pn in enumerate([n for n in names if n not in order]):
+                order.insert(idx + k, pn)
+        ob.externs = order
+        for f in ob.fixups:
+            if f.target[0] == "ext":
+                f.target = ("ext", order.index(f.target[1]) + 1)
+        it.first_ref = first
+        # LEDATA plan reproducing the original processing order of this object's LE fixups
+        Q = self.processing_order(it, sorted(le_fix))
         size = lambda s: 2 if o.sites[s]["type"] == "sel16" else 4
-        it.proc = []
-        for key, lobj, a, b in ranges:
+        it.groups = 0
+        for key, lobj, a, b in it.ranges:
             q = [s for s in Q if s[0] == lobj and a <= s[1] < b]
             for lo, hi, grp in self.group_sites(q, size):
                 ob.ledata(segs[key], lo - a, hi - a, [le_fix[s] for s in reversed(grp)])
-        it.proc = Q
-        # EXTDEF order: first reference address, runtime pseudo references inserted by the caller
-        order = []
-        for _, n in sorted(refs, key=lambda x: x[0]):
-            if n not in order:
-                order.append(n)
-        for n, at in getattr(it, "pseudo", []):
-            idx = next((i for i, m in enumerate(order) if self.first_ref(refs, m) > at), len(order))
-            for k, pn in enumerate(n):
-                if pn not in order:
-                    order.insert(idx + k, pn)
-        ob.externs = [e for e in order] + [e for e in ob.externs if e not in order]
-        # re-index fixup targets after reordering EXTDEFs
-        names = list(ob.externs)
-        for f in ob.fixups:
-            if f.target[0] == "ext":
-                pass  # indices assigned via extern() before reorder: remap below
-        remap = {}
-        for i, n in enumerate(self._ext_order_before, 1) if False else []:
-            remap[i] = names.index(n) + 1
-        it.extdefs = names
-        # publics requested by other objects
-        for n, (obj, addr) in sorted(it.exports.items(), key=lambda x: x[1]):
-            sk = seg_of(obj, addr) or next(((k, a) for k, ro, a, b in ranges if ro == obj and addr == b), None)
+                it.groups += 1
+        # publics requested by other objects (and by the runtime: main)
+        for n, (obj, addr) in sorted(it.exports.items(), key=lambda x: (x[1], x[0])):
+            sk = next(((k, a) for k, ro, a, b in it.ranges if ro == obj and a <= addr < b), None) \
+                or next(((k, a) for k, ro, a, b in it.ranges if ro == obj and addr == b), None)
             if not sk:
                 raise SystemExit(f"{it.key}: cannot export {n} at {obj}:{addr:x}")
             ob.public(n, segs[sk[0]], addr - sk[1])
-        self.stats["exports"] += len(it.exports)
         path = outdir / f"{it.key.replace(':', '_')}.obj"
         path.write_bytes(ob.to_bytes())
         it.objpath = path
         it.raw_mod = path.read_bytes()
+        it.mod = omf.parse_object(it.raw_mod)[0]
+        it.segbase = {}
+        segi = {s.name: i for i, s in enumerate(it.mod.segments) if s}
+        if it.obj in (1, 2):
+            it.segbase[1] = (it.obj, it.start)
+        for cls, a, b in it.pieces:
+            it.segbase[segi[cls]] = (3, a)
         return ob
-
-    @staticmethod
-    def first_ref(refs, name):
-        return min((a for a, n in refs if n == name), default=1 << 40)
 
 
 # ============================================================================ prediction
@@ -1037,19 +1033,15 @@ def run(args):
             continue
         if probs:
             raise SystemExit(f"unresolvable runtime reference: {probs}")
-        for it in plan.code_items + [plan.tail] + plan.carriers:
-            if not it.real:
-                it.segbase = {}
-                rb.build_object(it, objdir)
-                it.mod = omf.parse_object(it.raw_mod)[0]
-                segi = {s.name: i for i, s in enumerate(it.mod.segments) if s}
-                if it.obj in (1, 2):
-                    it.segbase[1] = (it.obj, it.start)
-                for cls, a, b in it.pieces:
-                    it.segbase[segi[cls]] = (3, a)
-            else:
-                shutil.copyfile(r_path := it.objpath, objdir / f"{it.key.replace(':', '_')}.obj")
-                it.objpath = objdir / f"{it.key.replace(':', '_')}.obj"
+        raws = [it for it in plan.code_items + [plan.tail] + plan.carriers if not it.real]
+        for it in raws:
+            rb.analyze(it)
+        for it in raws:
+            rb.emit(it, objdir)
+        for it in plan.reals:
+            dst = objdir / f"{it.key.replace(':', '_')}.obj"
+            shutil.copyfile(it.objpath, dst)
+            it.objpath = dst
         items = plan.items
         # --- runtime member order: pseudo references for members no game object pulls in time
         order = [(lib, mem) for s, e, lib, mem in ctx.members]
@@ -1119,47 +1111,28 @@ def run(args):
 
 
 def add_pseudo_refs(ctx, plan, rb, items, order, objdir):
-    """Members no game reference pulls (emu387 386inite: Watcom FP modules end with EXTDEF
-    __init_387_emulator, __8087 — build/image/probe/fp.c) get a pseudo EXTDEF in the raw object that makes the
-    demand order match the original: placed just before the reference that pulls the next member."""
+    """A runtime member that no game reference pulls in time (emu387 386inite: Watcom FP modules end with a
+    trailing EXTDEF __init_387_emulator, __8087 — build/image/probe/fp.c) gets a pseudo EXTDEF in the raw object
+    whose reference pulls the next member, placed just before that reference."""
     loaded, who = simulate_libs(ctx, items)
-    mods, pubs = ctx.libmods()
+    mods, _ = ctx.libmods()
     lib_code = [x for x in loaded if x in set(order)]
     i = next((i for i, (x, y) in enumerate(zip(lib_code, order)) if x != y), None)
-    if i is None:
+    if i is None or i + 1 >= len(order):
         return False
     want = order[i]
     m = next(m for n, m, _ in mods[want[0]] if n == want[1])
     names = [n for n, s, o, loc in m.publics if not loc]
-    if "__init_387_emulator" in names:
-        names = ["__init_387_emulator", "__8087"]
-    else:
-        names = names[:1]
-    nxt = order[i + 1] if i + 1 < len(order) else None
-    sym = who.get(("module", nxt[1])) if nxt else None
-    src = who.get(sym)
-    it = next((x for x in items if x.key == src), None)
+    names = ["__init_387_emulator", "__8087"] if "__init_387_emulator" in names else names[:1]
+    sym = who.get(("module", order[i + 1][1]))
+    it = next((x for x in items if x.key == who.get(sym)), None)
     if it is None or it.real:
         return False
-    at = RawBuilder.first_ref([(a, n) for a, n in _refs_of(it)], sym)
-    prev = order[i - 1] if i > 0 else None
-    it.pseudo = [(names, at - 1)]
-    it.notes.append(f"pseudo EXTDEF {names} before {sym} (runtime member {want[1]} has no game reference)")
-    rb.build_object(it, objdir)
-    it.mod = omf.parse_object(it.raw_mod)[0]
+    it.pseudo = [(names, it.first_ref[sym] - 1)]
+    it.notes.append(f"pseudo EXTDEF {names} before {sym} at {h(it.first_ref[sym])}: runtime member "
+                    f"{want[0]}:{want[1]} has no game reference")
+    rb.emit(it, objdir)
     return True
-
-
-def _refs_of(it):
-    """(first reference address, name) of a raw object's EXTDEFs, from its OMF."""
-    m = omf.parse_object(it.raw_mod)[0]
-    base = it.start if it.obj in (1, 2) else 0
-    first = {}
-    for f in m.fixups:
-        if (f.target[0] & 3) == 2:
-            n = m.externs[f.target[1]]
-            first[n] = min(first.get(n, 1 << 40), base + f.off)
-    return [(a, n) for n, a in first.items()]
 
 
 def write_report(out, report, plan, ctx, rb, excluded_log):
@@ -1172,7 +1145,12 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
                  "pieces": [f"{c} {h(a)}..{h(b)}" for c, a, b in r.pieces], "exports": len(r.exports),
                  "notes": r.notes} for r in plan.code_items + [plan.tail] + plan.carriers if not r.real],
     }
-    report["raw_stats"] = rb.stats
+    st = {}
+    for it in plan.code_items + [plan.tail] + plan.carriers:
+        for k, v in getattr(it, "stats", {}).items():
+            st[k] = st.get(k, 0) + v
+    st["exports"] = sum(len(it.exports) for it in plan.code_items + [plan.tail] + plan.carriers if not it.real)
+    report["raw_stats"] = st
     report["excluded_by_prediction"] = [{"key": k, "why": w} for k, w in excluded_log]
     report["rejected_split_points"] = [h(c) for c in plan.rejected_cuts]
     (out / "report.json").write_text(json.dumps(report, indent=1))
