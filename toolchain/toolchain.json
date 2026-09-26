@@ -1,6 +1,59 @@
 {
  "note": "Historical tool installs live under KEGG_TOOLS (default C:/tools), never in git. 'hosts' map a logical tool to the host executable. status: candidate | excluded | pending.",
  "installs": {
+  "wc100": {
+   "product": "WATCOM C/C++32 10.0 GA (installed tree, files dated 1994-05-31; compiler banner 'Version 10.0')",
+   "status": "candidate",
+   "dir": "watcom-10.0",
+   "source": {
+    "origin": "http://deadsoftware.ru/files/deaddoomer/WATCOM.zip (Doom2D forum, https://doom2d.org/forum/viewtopic.php?f=8&t=3000). An installed C:\\WATCOM tree (with AUTOEXEC.BAT/CONFIG.SYS), not pristine media. Authenticity evidence: BIN/dos4gw.exe is byte-identical to the game's DOS4GW.EXE; BINB/wstub.exe load image is identical to KE.EXE's stub; CLIB3S members match KE's runtime.",
+    "local": "download/watcom/deaddoomer_WATCOM.zip",
+    "sha256": "7bf0b04c1d076400bf998a8ad2e2fe1fb7e4d61382b7079b07ed5b282e17a27b",
+    "md5": "7a876667255c405555fd3dce132e63ac",
+    "subdir": "WATCOM",
+    "derivation": "7z x zip; install = WATCOM/ verbatim (lower-case file names as archived)"
+   },
+   "hosts": {
+    "wcc386": {
+     "nt": "BINNT/wcc386.exe",
+     "dos4gw": "BINB/wcc386.exe"
+    },
+    "wasm": {
+     "nt": "BINNT/wasm.exe",
+     "dos4gw": "BINB/wasm.exe"
+    },
+    "wlink": {
+     "nt": "BINNT/wlink.exe",
+     "dos4gw": "BIN/wlink.exe"
+    },
+    "wlib": {
+     "nt": "BINNT/wlib.exe"
+    },
+    "wdisasm": {
+     "nt": "BINNT/wdisasm.exe"
+    }
+   },
+   "env": {
+    "WATCOM": "",
+    "INCLUDE": "H"
+   },
+   "key_files": {
+    "BINB/wcc386.exe": "a4f4da1b8b2cd4e38b2b041975fc6b1d131255ae5eb575828b02f927fbf9bf65",
+    "BINNT/wcc386.exe": "6c35809c0fb39a44305894010c6cc0ab2010953b8221a89b8a0978b16cd4104b",
+    "BINB/wasm.exe": "a4419d0acab40f841d6fd00540f1813f6128d9630fbb150fc4618646c358f7f2",
+    "BINNT/wlink.exe": "bed77d1c9b47db6b1ad02dcf1c70c57b4d2d125c766a1371828df1b4ead4d489",
+    "BIN/wlink.exe": "da13f94f022b639fbee9aa9bcd554baec2fe8b5b13dd8769b22c969465a47cba",
+    "BINB/wstub.exe": "44e0585e632366053064520a5d759ae3d0ed1c09938cfc42a6f9fd2a9f1d99da",
+    "BIN/dos4gw.exe": "580f164bd05b438262267a7e03984529b56e3096ee158d5d2b0e6f159520d4c3",
+    "LIB386/DOS/clib3s.lib": "894ade9765a4b7fab4487a5d5a7a4d0b6b0491252ff86969cb845025e6218cb0",
+    "LIB386/math387s.lib": "893d05db1ff73d9310448369004a93c37920cdc0fcacd2c6ce948a3c6eb5c8dd",
+    "LIB386/math3s.lib": "360b820279be4d95cc495aaf0178ddbc24baa3e22140f89be292703bbec65f5e",
+    "LIB386/DOS/emu387.lib": "5b150d1cdca625eb27747b7ac182e36f5a66571e4441ccc19caccc6fbf773b5c",
+    "LIB386/noemu387.lib": "21afb6e48ff0860fff42a55202770c5e844f2e860ab0d7c4b91bf4d8ce1d956a"
+   },
+   "tree_sha256": "5498d143742753b52bdc57c5f76f27d1da224b1996e40ad316fa1a5f681a8157",
+   "tree_files": 2965
+  },
   "wc100a": {
    "product": "WATCOM C/C++32 10.0a (CD R01711, volume WATCOM_C10A, files dated 1994-09-01)",
    "status": "candidate",
@@ -92,14 +145,13 @@
   }
  },
  "pending": {
-  "wc100": "WATCOM C/C++ 10.0 GA (mid-1994, pre-'a'). Not yet located. Strongly suggested by the KE stub lacking the 'WATCOM patch level .a' marker.",
   "wc100pre": "10.0 Limited Availability prerelease 1994-03-16 (WinWorld, download/watcom/Watcom_CPP_10.0_Limited_Edition_1994-03-16.7z, sha256 aba13524...). Packed install media; not yet unpacked.",
   "wc105": "10.5 (1995) scene floppy set, download/watcom/watcom-10.5-win95nt.zip sha256 c8126c24... Upper-bracket control; not yet unpacked.",
   "wc95b_patch": "download/watcom/Patch32_95b.zip sha256 f400ba34... (9.5b 32-bit patches, 1993-08)."
  },
  "profiles": {
   "game-c": {
-   "install": "wc100a",
+   "install": "wc100",
    "tool": "wcc386",
    "flags": [
     "-3s",
@@ -110,7 +162,7 @@
    "evidence": "docs/evidence.md#compiler-profile"
   },
   "game-c-ot": {
-   "install": "wc100a",
+   "install": "wc100",
    "tool": "wcc386",
    "flags": [
     "-3s",

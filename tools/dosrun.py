@@ -1,6 +1,6 @@
 """Run a historical tool from a pinned install, deterministically.
 
-    python tools/dosrun.py [--install wc100a] [--host nt] [--cwd DIR] TOOL [ARGS...]
+    python tools/dosrun.py [--install wc100] [--host nt] [--cwd DIR] TOOL [ARGS...]
     python tools/dosrun.py wcc386 -3s -od -s foo.c          # runs in the current directory
 
 Library use:
@@ -82,7 +82,7 @@ def environment(inst_cfg, root: Path, cwd: Path):
     return env
 
 
-def run(tool: str, args, install: str = "wc100a", host: str = "nt", cwd=None, timeout=300) -> Result:
+def run(tool: str, args, install: str = "wc100", host: str = "nt", cwd=None, timeout=300) -> Result:
     cfg = config()
     inst = cfg["installs"][install]
     root = tools_root() / inst["dir"]
@@ -108,7 +108,7 @@ def run(tool: str, args, install: str = "wc100a", host: str = "nt", cwd=None, ti
 
 
 def main(argv):
-    install, host, cwd = "wc100a", "nt", None
+    install, host, cwd = "wc100", "nt", None
     args = list(argv[1:])
     while args and args[0].startswith("--"):
         opt = args.pop(0)

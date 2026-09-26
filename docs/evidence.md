@@ -14,19 +14,22 @@ entries short and give the command/evidence that decides them.
 | bin-fixups | 6296 fixups, all internal: 6292 off32 (5833 with 16-bit target offset, 459 with 32-bit), 4 sel16 (obj1 -> obj3). No imports | PROVEN | le.py fixup_histogram |
 | bin-crt | Watcom C/C++32 runtime linked: BEGTEXT `int3; jmp $` thunk at obj1:0, `__nullarea` 01 01 01 00 at obj3:0, cstart at entry with "WATCOM C/C++32 Run-Time system ... 1988-1994" | PROVEN | disassembly of obj1:0 and 0x142D8 |
 | bin-lib | 96 library code segments from **10.0a** CLIB3S/MATH387S/EMU387 match byte-exactly (fixups masked) in obj1 0x13B9C..0x1BCD1; 9.5b libraries match 2 trivial modules only | PROVEN | `python tools/libscan.py assets/KE.EXE <libs>` |
-| bin-lib-gaps | cstart (0x142D8..), ~0x14617-0x14705, ~0x15CA5-0x16292, ~0x1A7DD-0x1B2B1 do not match any 10.0a member -> differing module versions | PROVEN (that they differ); cause open | libscan gaps |
+| bin-lib-gaps | cstart (0x142D8..), ~0x14617-0x14705, ~0x15CA5-0x16292, ~0x1A7DD-0x1B2B1 do not match any 10.0a member | PROVEN; explained by bin-lib-ga |
+| bin-lib-ga | With **10.0 GA** libraries (clib3s/math387s/emu387) 100 members match exactly incl. cstrt386 at 0x142D8; remaining gaps are <=36 bytes | PROVEN | `python tools/libscan.py assets/KE.EXE C:/tools/watcom-10.0/LIB386/DOS/clib3s.lib C:/tools/watcom-10.0/LIB386/math387s.lib C:/tools/watcom-10.0/LIB386/DOS/emu387.lib` |
 | bin-regions | obj1 0x10..~0x112F9: ~325 functions with Watcom `/od` shape; ~0x112FA..0x13B9B: hand-written 32-bit asm (pushad/`lea ebp,[esp]`/`enter` prologues); 0x13B9C..end: runtime library | STRONG | prologue scan; to be replaced by tools/inventory.py |
 | bin-obj2 | obj2 = 4 real-mode IRQ handler templates (SB DSP x2, timer, keyboard), each paragraph-aligned, ORG-0 addressing, placeholder `mov ax,1234h` / `jmp far 1122:3344` patched at run time; no fixups | STRONG | 16-bit disassembly |
-| bin-stub | stub is a Watcom WSTUB-like 16-bit program (CRT "1988-1993"), contains `dos4g.exe`, lacks the `WATCOM patch level .a` marker; differs from 9.5b (10386 B) and 10.0a (10822 B) WSTUB.EXE | PROVEN (difference); origin HYPOTHESIS | strings/size |
-| bin-dos4gw | shipped DOS4GW.EXE is DOS/4GW 1.95 ("patch level .b"); 10.0a ships 1.97 | PROVEN | strings |
+| bin-stub | stub load image (KE[0x60:0x2992]) == 10.0 GA `BINB/wstub.exe` load image (wstub[0x40:]); identical 6 relocations; header re-laid (relocs at 0x40, 6-paragraph header, e_lfanew 0x2998 at 0x3C), file padded 10642 -> 10648 | PROVEN | byte comparison (see git log for command) |
+| bin-dos4gw | shipped DOS4GW.EXE (1.95) is byte-identical to Watcom 10.0 GA `BIN/dos4gw.exe`; 10.0a ships 1.97 | PROVEN | sha256 580f164b... both |
 
 ## Toolchain
 
 | id | claim | level | evidence |
 |---|---|---|---|
-| tc-family | Watcom C/C++32 10.0-era compiler, runtime and linker | STRONG | bin-crt, bin-lib |
-| tc-version | exact release is 10.0 GA (pre-'a') rather than 10.0a | HYPOTHESIS (leading) | bin-stub, bin-lib-gaps; 10.0 GA media not yet found |
+| tc-family | Watcom C/C++32 10.0-era compiler, runtime and linker | PROVEN | bin-crt, bin-lib |
+| tc-version | runtime, stub and DOS/4GW are from Watcom **10.0 GA** (1994-05-31 files), not 10.0a | PROVEN for runtime/stub/extender | bin-lib-ga, bin-stub, bin-dos4gw |
+| tc-compiler-version | game C compiled by the 10.0 GA wcc386 | STRONG (consistent; 10.0 and 10.0a give identical code on all controls so far — non-discriminating) | release consistency with tc-version |
 | tc-95b | 9.5b runtime | EXCLUDED (runtime) | bin-lib |
-| tc-3s-od | game C compiled `wcc386 -3s -od` (stack calling convention, no optimisation); `-s` (no `__CHK` calls) | STRONG | 10.0a `-3s -od -s` reproduces the exact prologue `push ebx/esi/edi/ebp; mov ebp,esp; sub esp,imm32` (even `sub esp,0`) and the for-loop layout seen at obj1:0x10 (main); no `__CHK` calls observed. No function matched yet |
+| tc-3s-od | most game C compiled `wcc386 -3s -od -s` | STRONG | 9 unrelated functions EXACT (strict verifier) incl. calls, globals, string literal, compare/branch: f_4cd0 f_7032 f_6e13 f_105a7 f_ca51 f_1b7e f_2250 f_ca6a (+ -ot cluster near-miss). `-s`: no `__CHK` calls anywhere |
+| tc-ot-cluster | functions in obj1 ~0x9960..0xA8BC are 4-aligned with 90/8BC0/8D4000 fillers: reproduced by `-3s -ot -od -s` (order matters: `-od -ot` optimises) | STRONG (shape reproduced; no EXACT yet) | probe p4.c; f_9ca4 differs only in stack-slot order |
 | tc-host | NT-hosted and DOS/4GW-hosted runs of the same bound image produce identical objects | HYPOTHESIS | to be tested with DOSBox-X |
 | tc-msdos-player | MS-DOS Player cannot run DOS/4GW-hosted Watcom tools | PROVEN | silent failure, no output (see tools/dosrun.py docstring) |
