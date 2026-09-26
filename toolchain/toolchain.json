@@ -228,6 +228,34 @@
     "ML.EXE": "4e4af054d8265e604ad44948348469b7f507befd8fc28bc4eae7d886af5c5f5d",
     "D2/ML.EXE": "711ac49652a85e5a3cd83ee522abf9aed38f8e5059e4f267b420cb17ff88147b"
    }
+  },
+  "asm_tasm100": {
+   "product": "Borland Turbo Assembler 1.00",
+   "status": "candidate",
+   "dir": "tasm-1.00/files/disk04",
+   "hosts": {
+    "tasm": {
+     "msdos": "TASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "TASM.EXE": "754b70821e4bac4997f398e3bdcee0f046a42cc3dad89cfbe0138f67d5b6142b"
+   }
+  },
+  "asm_tasm200": {
+   "product": "Borland Turbo Assembler 2.00",
+   "status": "candidate",
+   "dir": "tasm-2.00/files/disk01/expanded/TASM",
+   "hosts": {
+    "tasm": {
+     "msdos": "TASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "TASM.EXE": "672cc3814fb66fcb73550aa5ad98049bb52ebcd66c66dcdedbe81d83335e62ff"
+   }
   }
  },
  "pending": {
@@ -324,6 +352,27 @@
    "install": "asm_tasm101",
    "tool": "tasm",
    "flags": [
+    "/ml"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-tasm100": {
+   "install": "asm_tasm100",
+   "tool": "tasm",
+   "flags": [
+    "/ml"
+   ],
+   "host": "msdos",
+   "status": "experimental",
+   "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-asm-tasm200": {
+   "install": "asm_tasm200",
+   "tool": "tasm",
+   "flags": [
+    "/m2",
     "/ml"
    ],
    "host": "msdos",

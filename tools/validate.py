@@ -27,12 +27,12 @@ def main(argv):
     names = [f["name"] for f in fns]
     if len(set(names)) != len(names):
         errors.append("duplicate function names")
-    prev_end = -1
-    for f in sorted(fns, key=lambda f: int(f["start"], 16)):
-        s, e = int(f["start"], 16), int(f["end"], 16)
-        if s < prev_end:
+    prev = (0, -1)
+    for f in sorted(fns, key=lambda f: (f.get("object", 1), int(f["start"], 16))):
+        s, e, ob = int(f["start"], 16), int(f["end"], 16), f.get("object", 1)
+        if ob == prev[0] and s < prev[1]:
             errors.append(f"overlap at {f['name']} {f['start']}")
-        prev_end = e
+        prev = (ob, e)
     todo = [f for f in fns if f.get("status") == "matching"]
     for f in todo:
         src = ROOT / f["src"]

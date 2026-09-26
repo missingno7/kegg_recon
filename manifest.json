@@ -446,8 +446,10 @@
    "start": "0x2ccc",
    "end": "0x2da3",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2ccc.c",
+   "src_sha256": "bdbf5ded8068a971b9b0751a43da81dfe4cf740aab2e2285fed50567a0909900"
   },
   {
    "name": "f_2da3",
@@ -502,8 +504,10 @@
    "start": "0x3203",
    "end": "0x339f",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3203.c",
+   "src_sha256": "93380d22132dcb170e56972b1947466d0c8c10e15200cf57973407e9c6390370"
   },
   {
    "name": "f_339f",
@@ -656,8 +660,10 @@
    "start": "0x3e75",
    "end": "0x4066",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3e75.c",
+   "src_sha256": "6128d3e59840b3b3844ddfcc160897334f9b7ebae48892d7aa0c8428db4f32bd"
   },
   {
    "name": "f_4066",
@@ -1510,6 +1516,16 @@
    "profile": "game-c"
   },
   {
+   "name": "a_982c",
+   "start": "0x0982c",
+   "end": "0x0995c",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_982c.asm",
+   "src_sha256": "79eaeb85f05a5c729cb37ea8759171028428c447bcf01aa7da46c7578cf79269"
+  },
+  {
    "name": "f_9960",
    "start": "0x9960",
    "end": "0x9971",
@@ -1614,12 +1630,60 @@
    "src_sha256": "51dfc920a385cf693e590004bc9caae3cf206abf6516167b6dcd33c51e9091cc"
   },
   {
+   "name": "a_9f64",
+   "start": "0x09f64",
+   "end": "0x0a03f",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_9f64.asm",
+   "src_sha256": "ed415873be2bd47dbecc0b9198c982ab30df8985edb34515d74e1408d1437480"
+  },
+  {
+   "name": "a_a03f",
+   "start": "0x0a03f",
+   "end": "0x0a067",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_a03f.asm",
+   "src_sha256": "550053c2342472ccc84a896d26c287b6ff059acc1770b750f2ff904058df8e7b"
+  },
+  {
+   "name": "a_a067",
+   "start": "0x0a067",
+   "end": "0x0a0d2",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_a067.asm",
+   "src_sha256": "cb9000cfed428d16fe04a239886e19096f9c9bf160e145f6ac9e0def42206684"
+  },
+  {
    "name": "f_a0e0",
    "start": "0xa0e0",
    "end": "0xa284",
    "kind": "c",
    "status": "identified",
    "profile": "game-c-ot"
+  },
+  {
+   "name": "a_a284",
+   "start": "0x0a284",
+   "end": "0x0a4e1",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_a284.asm",
+   "src_sha256": "7d02316f73fd5394d03278b7406061e75d7916970e9022cdf29c2647273156ac"
+  },
+  {
+   "name": "a_a4e1",
+   "start": "0x0a4e1",
+   "end": "0x0a51f",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
   },
   {
    "name": "f_a520",
@@ -2010,24 +2074,30 @@
    "start": "0xc960",
    "end": "0xc9ce",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c960.c",
+   "src_sha256": "40a488dcad0a9e264586256e34ff8841429a5bd6731eef9f9a1e04c78ce69515"
   },
   {
    "name": "f_c9ce",
    "start": "0xc9ce",
    "end": "0xc9f4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c9ce.c",
+   "src_sha256": "5710f706182ff81ba7ebc49b2aa6452f1160a410d40a48fa6e8d71b0c2902891"
   },
   {
    "name": "f_c9f4",
    "start": "0xc9f4",
    "end": "0xca51",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c9f4.c",
+   "src_sha256": "ff3dfbfc1875f5bcc1cc29c42187659eaa1a1344144be91d0c7e8d220c5dd0a5"
   },
   {
    "name": "f_ca51",
@@ -2054,8 +2124,10 @@
    "start": "0xcb3f",
    "end": "0xccd5",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_cb3f.c",
+   "src_sha256": "b1e95ee0fa009ff94b2e9fd6db5f36c0487f4ea37d63f292e6c3408c2ed7db6c"
   },
   {
    "name": "f_ccd5",
@@ -2695,16 +2767,20 @@
    "start": "0xf905",
    "end": "0xfa42",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f905.c",
+   "src_sha256": "f1be07914e2d050aeddb66b7e3841d18c61d024fdc10cb8344ecdc60c3dd9892"
   },
   {
    "name": "f_fa42",
    "start": "0xfa42",
    "end": "0xfb17",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fa42.c",
+   "src_sha256": "1ef63824617b77b9a3ee4641536e4ff9e4c2bd653d6767d898845ced3b525b33"
   },
   {
    "name": "f_fb17",
@@ -2799,8 +2875,10 @@
    "start": "0xfe6a",
    "end": "0xff0d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fe6a.c",
+   "src_sha256": "7f5e82494610e7c232c9ccd7afb8f1afd4901c420baf64244f868eb2b100664d"
   },
   {
    "name": "f_ff0d",
@@ -2834,8 +2912,10 @@
    "start": "0xffbe",
    "end": "0x1004e",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ffbe.c",
+   "src_sha256": "a16acc306147623eb8af8b2afae2ea04eae1199c675fe3774d053435095798d2"
   },
   {
    "name": "f_1004e",
@@ -3030,6 +3110,270 @@
    "src_sha256": "1fb7f055b9e7760625878278327254663d876a871b626da4c33fad8b48697376"
   },
   {
+   "name": "a_112fa",
+   "start": "0x112fa",
+   "end": "0x11377",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_11377",
+   "start": "0x11377",
+   "end": "0x113bd",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_11377.asm",
+   "src_sha256": "33f7c635f3833306391304299da1795f4f22de5bb1fa9043aa21ce09294fb9c1"
+  },
+  {
+   "name": "a_113bd",
+   "start": "0x113bd",
+   "end": "0x113cf",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_113bd.asm",
+   "src_sha256": "ff7224b3e46b2379a063204389481a5336722b08f398719aaf7783147b596b30"
+  },
+  {
+   "name": "a_113cf",
+   "start": "0x113cf",
+   "end": "0x113e1",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_113cf.asm",
+   "src_sha256": "33feee73b08aacd2281080b596c51e22d4f51bbe5454ac6c5e5eff092798703c"
+  },
+  {
+   "name": "a_113e1",
+   "start": "0x113e1",
+   "end": "0x113f8",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_113e1.asm",
+   "src_sha256": "a648ba8cf1e7c6beae2c04f711a44a4abf846d8bc58386b74168dd77fd4acd83"
+  },
+  {
+   "name": "a_113f8",
+   "start": "0x113f8",
+   "end": "0x11420",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_113f8.asm",
+   "src_sha256": "a4453fc906fbadc96920ad1821a8099bfffe66ffb41697cd8d8c486414e6bca1"
+  },
+  {
+   "name": "a_11420",
+   "start": "0x11420",
+   "end": "0x1144d",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_11420.asm",
+   "src_sha256": "12009b6c3b21a4fa407dabb316314b6b950bc353e316e8600937b90ce85fbddb"
+  },
+  {
+   "name": "a_1144d",
+   "start": "0x1144d",
+   "end": "0x11485",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_1144d.asm",
+   "src_sha256": "7377a86102b1b2f235e942a28677099c71a005f80217f541f7f8204d109621cc"
+  },
+  {
+   "name": "a_11485",
+   "start": "0x11485",
+   "end": "0x11494",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "matching",
+   "src": "asm/a_11485.asm",
+   "src_sha256": "6f8005afcfa8594fe235ecd57274c63ca0711fb5b383acbdce974ffc8e963fd4"
+  },
+  {
+   "name": "a_11494",
+   "start": "0x11494",
+   "end": "0x11df8",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_11df8",
+   "start": "0x11df8",
+   "end": "0x12a9c",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_12a9c",
+   "start": "0x12a9c",
+   "end": "0x12b94",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_12b94",
+   "start": "0x12b94",
+   "end": "0x12cbd",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_12cbd",
+   "start": "0x12cbd",
+   "end": "0x12f30",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_12f30",
+   "start": "0x12f30",
+   "end": "0x12f9c",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_12f9c",
+   "start": "0x12f9c",
+   "end": "0x13324",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13324",
+   "start": "0x13324",
+   "end": "0x133f6",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_133f6",
+   "start": "0x133f6",
+   "end": "0x134f2",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_134f2",
+   "start": "0x134f2",
+   "end": "0x137a8",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_137a8",
+   "start": "0x137a8",
+   "end": "0x13824",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13824",
+   "start": "0x13824",
+   "end": "0x13889",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13889",
+   "start": "0x13889",
+   "end": "0x13944",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13944",
+   "start": "0x13944",
+   "end": "0x13964",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13964",
+   "start": "0x13964",
+   "end": "0x13984",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13984",
+   "start": "0x13984",
+   "end": "0x139a4",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_139a4",
+   "start": "0x139a4",
+   "end": "0x139c4",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_139c4",
+   "start": "0x139c4",
+   "end": "0x139e3",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_139e3",
+   "start": "0x139e3",
+   "end": "0x13a0a",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13a0a",
+   "start": "0x13a0a",
+   "end": "0x13a29",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13a29",
+   "start": "0x13a29",
+   "end": "0x13a48",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
+   "name": "a_13a48",
+   "start": "0x13a48",
+   "end": "0x13a95",
+   "kind": "asm",
+   "profile": "game-asm",
+   "status": "identified"
+  },
+  {
    "name": "f_13a95",
    "start": "0x13a95",
    "end": "0x13b72",
@@ -3046,6 +3390,50 @@
    "status": "identified",
    "profile": "game-c",
    "note": "C TU linked after the asm modules"
+  },
+  {
+   "name": "a_0",
+   "start": "0x00000",
+   "end": "0x00069",
+   "kind": "asm",
+   "profile": "game-asm",
+   "object": 2,
+   "status": "matching",
+   "src": "asm/irq.asm",
+   "src_sha256": "de2a1e33524113ef2b6646e6c63b8c39ee719bf6454475b3e6742c7f297606de"
+  },
+  {
+   "name": "a_70",
+   "start": "0x00070",
+   "end": "0x000d9",
+   "kind": "asm",
+   "profile": "game-asm",
+   "object": 2,
+   "status": "matching",
+   "src": "asm/irq.asm",
+   "src_sha256": "de2a1e33524113ef2b6646e6c63b8c39ee719bf6454475b3e6742c7f297606de"
+  },
+  {
+   "name": "a_e0",
+   "start": "0x000e0",
+   "end": "0x00103",
+   "kind": "asm",
+   "profile": "game-asm",
+   "object": 2,
+   "status": "matching",
+   "src": "asm/irq.asm",
+   "src_sha256": "de2a1e33524113ef2b6646e6c63b8c39ee719bf6454475b3e6742c7f297606de"
+  },
+  {
+   "name": "a_110",
+   "start": "0x00110",
+   "end": "0x00149",
+   "kind": "asm",
+   "profile": "game-asm",
+   "object": 2,
+   "status": "matching",
+   "src": "asm/irq.asm",
+   "src_sha256": "de2a1e33524113ef2b6646e6c63b8c39ee719bf6454475b3e6742c7f297606de"
   }
  ],
  "symbols": {
@@ -3059,7 +3447,11 @@
   "f_11358": "1:11358",
   "f_11365": "1:11365",
   "f_11377": "1:11377",
+  "f_113f8": "1:113f8",
+  "f_11420": "1:11420",
+  "f_1144d": "1:1144d",
   "f_115da": "1:115da",
+  "f_12a9c": "1:12a9c",
   "f_12b94": "1:12b94",
   "f_12cbd": "1:12cbd",
   "f_12f9c": "1:12f9c",
@@ -3077,6 +3469,8 @@
   "f_13fa1": "1:13fa1",
   "f_14197": "1:14197",
   "f_14771": "1:14771",
+  "f_1477c": "1:1477c",
+  "f_14793": "1:14793",
   "f_1515a": "1:1515a",
   "fclose": "1:14c13",
   "fopen": "1:14996",
@@ -3142,9 +3536,20 @@
   "g_69c8": "3:69c8",
   "g_6ae8": "3:6ae8",
   "g_6b78": "3:6b78",
+  "g_6c08": "3:6c08",
   "g_6cbb": "3:6cbb",
+  "g_739c": "3:739c",
+  "g_739e": "3:739e",
+  "g_73a2": "3:73a2",
   "g_73a8": "3:73a8",
   "g_73cc": "3:73cc",
+  "g_73d8": "3:73d8",
+  "g_73dc": "3:73dc",
+  "g_73e0": "3:73e0",
+  "g_73e4": "3:73e4",
+  "g_73e8": "3:73e8",
+  "g_73ec": "3:73ec",
+  "g_73f0": "3:73f0",
   "g_7404": "3:7404",
   "g_7408": "3:7408",
   "g_740c": "3:740c",
@@ -3166,7 +3571,10 @@
   "g_7474": "3:7474",
   "g_7476": "3:7476",
   "g_747c": "3:747c",
+  "g_747e": "3:747e",
+  "g_7482": "3:7482",
   "g_7486": "3:7486",
+  "g_7487": "3:7487",
   "g_7490": "3:7490",
   "g_7492": "3:7492",
   "g_7498": "3:7498",
@@ -3205,17 +3613,22 @@
   "g_7b2a": "3:7b2a",
   "g_7b2e": "3:7b2e",
   "g_7b34": "3:7b34",
+  "g_7b36": "3:7b36",
   "g_7b39": "3:7b39",
   "g_7b3b": "3:7b3b",
   "g_7b3d": "3:7b3d",
   "g_7b3f": "3:7b3f",
   "g_7b43": "3:7b43",
   "g_7b47": "3:7b47",
+  "g_7b4b": "3:7b4b",
   "g_7b6f": "3:7b6f",
   "g_7b71": "3:7b71",
+  "g_7b75": "3:7b75",
+  "g_7b79": "3:7b79",
   "g_7bfc": "3:7bfc",
   "g_7bfe": "3:7bfe",
   "g_7c00": "3:7c00",
+  "g_7c02": "3:7c02",
   "g_7c06": "3:7c06",
   "g_7c08": "3:7c08",
   "g_7c14": "3:7c14",
@@ -3224,6 +3637,8 @@
   "g_7c24": "3:7c24",
   "g_7c28": "3:7c28",
   "g_7c2c": "3:7c2c",
+  "g_7db2": "3:7db2",
+  "g_7db3": "3:7db3",
   "g_7db4": "3:7db4",
   "g_7db8": "3:7db8",
   "g_8418": "3:8418",
@@ -3246,6 +3661,9 @@
   "g_9af8": "3:9af8",
   "g_a848": "3:a848",
   "g_a990": "3:a990",
+  "g_ab40": "3:ab40",
+  "g_bf40": "3:bf40",
+  "g_d340": "3:d340",
   "g_dd40": "3:dd40",
   "g_dd44": "3:dd44",
   "g_dd48": "3:dd48",
@@ -3253,6 +3671,7 @@
   "g_dd54": "3:dd54",
   "g_dd6c": "3:dd6c",
   "g_dd74": "3:dd74",
+  "g_dd78": "3:dd78",
   "g_dd7c": "3:dd7c",
   "g_dd84": "3:dd84",
   "g_dd88": "3:dd88",
@@ -3300,6 +3719,7 @@
   "g_e164": "3:e164",
   "g_e1ac": "3:e1ac",
   "g_e1b0": "3:e1b0",
+  "g_e1b4": "3:e1b4",
   "g_e200": "3:e200",
   "g_e204": "3:e204",
   "g_e208": "3:e208",
@@ -3311,11 +3731,17 @@
   "g_e225": "3:e225",
   "g_e26c": "3:e26c",
   "g_e270": "3:e270",
+  "g_e2c4": "3:e2c4",
+  "g_e2c8": "3:e2c8",
+  "g_e2cc": "3:e2cc",
+  "g_e2d0": "3:e2d0",
   "g_e2d4": "3:e2d4",
   "g_e2d8": "3:e2d8",
   "g_e2dc": "3:e2dc",
   "g_e2e8": "3:e2e8",
   "g_e2ec": "3:e2ec",
+  "g_e2f8": "3:e2f8",
+  "g_e2fc": "3:e2fc",
   "g_e318": "3:e318",
   "g_e31c": "3:e31c",
   "g_e320": "3:e320",
@@ -3379,6 +3805,9 @@
   "g_e46f": "3:e46f",
   "g_e472": "3:e472",
   "g_e478": "3:e478",
+  "g_e488": "3:e488",
+  "g_e489": "3:e489",
+  "g_e48a": "3:e48a",
   "g_e48b": "3:e48b",
   "g_e48c": "3:e48c",
   "g_e48d": "3:e48d",
@@ -3426,7 +3855,8 @@
   "memmove": "1:13f76",
   "memset": "1:14120",
   "outp": "1:13fa3",
-  "printf": "1:15136"
+  "printf": "1:15136",
+  "sel:grp:DGROUP": "obj3"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",

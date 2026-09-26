@@ -37,16 +37,18 @@ import omf  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 _ORIG = None
+CODE_OBJ = 1  # LE object holding the compared code (1 = 32-bit code, 2 = 16-bit IRQ templates)
 
 
 def original():
     global _ORIG
     if _ORIG is None:
         L = lemod.LE(ROOT / "assets" / "KE.EXE")
-        code = L.object_bytes(L.objects[0])[:L.objects[0]["vsize"]]
+        o = L.objects[CODE_OBJ - 1]
+        code = L.object_bytes(o)[:o["vsize"]]
         fix, dfix = {}, {}
         for obj, off, typ, tgt in L.resolved_fixups():
-            if obj == 1:
+            if obj == CODE_OBJ:
                 fix[off] = (typ, tgt)
             elif obj == 3:
                 dfix[off] = (typ, tgt)
@@ -64,7 +66,7 @@ def check_data(mod, si, res):
     binds, probs = res["bindings"], res["problems"]
     out = []
     for di, seg in enumerate(mod.segments):
-        if not seg or di == si or seg.size == 0 or seg.cls.upper() in ("CODE", "BSS"):
+        if not seg or di == si or seg.size == 0 or seg.cls.upper() in ("CODE", "BSS") or seg.frame is not None:
             continue
         bases = set()
         if f"seg:{seg.name}" in binds:
@@ -179,8 +181,12 @@ def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
     return obj, r
 
 
-def code_segment(mod):
+def code_segment(mod, func=None):
     segs = [i for i, s in enumerate(mod.segments) if s and s.cls.upper() == "CODE" and s.size]
+    if func and len(segs) > 1:  # e.g. several paragraph-aligned USE16 template segments: take the one defining func
+        own = [s for n, s, o, _ in mod.publics if n == func and s in segs]
+        if own:
+            return own[0]
     if len(segs) != 1:
         raise SystemExit(f"expected one non-empty CODE segment, got {[mod.segments[i].name for i in segs]}")
     return segs[0]
@@ -213,6 +219,30 @@ def resolve_fixup(mod, f, seg_si):
     return key, f.disp + field
 
 
+def link_constant16(mod, f, si, rel, orig, a0, ofix, probs):
+    """16-bit fixups that WLINK resolves to constants (no LE fixup): off16 (absolute or self-relative) to the
+    compared USE16 segment itself (a paragraph segment is its own frame) and ptr16:16 to an absolute (AT) segment.
+    The original bytes must equal the computed constant."""
+    m, d = f.target
+    seg = mod.segments[f.seg]
+    field = int.from_bytes(seg.data[f.off:f.off + 2], "little")
+    tseg = mod.segments[d] if (m & 3) == 0 else None
+    if a0 + rel in ofix:
+        probs.append(f"original has an LE fixup at +{rel:#x} where the candidate has a link-time constant")
+        return
+    if f.loc == 1 and f.self_rel and tseg is not None and d == si and not seg.use32:
+        want = ((f.disp + field - (f.off + 2)) & 0xFFFF).to_bytes(2, "little")  # near call/jmp inside the segment
+    elif f.loc == 1 and tseg is not None and d == si and not seg.use32:
+        want = ((f.disp + field) & 0xFFFF).to_bytes(2, "little")
+    elif f.loc == 3 and tseg is not None and tseg.frame is not None:
+        want = ((f.disp + field) & 0xFFFF).to_bytes(2, "little") + tseg.frame.to_bytes(2, "little")
+    else:
+        probs.append(f"unsupported candidate fixup {f.kind()} at +{rel:#x}")
+        return
+    if orig[rel:rel + len(want)] != want:
+        probs.append(f"link-time constant at +{rel:#x}: candidate {want.hex()} != original {orig[rel:rel + len(want)].hex()}")
+
+
 def compare(mod, si, c0, c1, a0, orig_len=None):
     L, code, ofix = original()
     cand = bytes(mod.segments[si].data[c0:c1])
@@ -240,6 +270,16 @@ def compare(mod, si, c0, c1, a0, orig_len=None):
         size = f.size()
         masked.update(range(rel, rel + size))
         key, addend = resolve_fixup(mod, f, si)
+        if f.loc == 2 and not f.self_rel:  # base16 selector -> LE sel16 fixup to the target's object
+            osite = a0 + rel
+            if osite not in ofix or ofix[osite][0] != "sel16":
+                probs.append(f"candidate selector fixup at +{rel:#x} ({key}) has no original sel16 LE fixup")
+            else:
+                bind("sel:" + key, f"obj{ofix[osite][1].get('obj')}", rel)
+            continue
+        if f.loc in (1, 3) and (not f.self_rel or f.loc == 1):
+            link_constant16(mod, f, si, rel, orig, a0, ofix, probs)
+            continue
         if f.loc not in (9, 13):
             probs.append(f"unsupported candidate fixup {f.kind()} at +{rel:#x} -> {key}")
             continue
@@ -274,7 +314,7 @@ def compare(mod, si, c0, c1, a0, orig_len=None):
     return res, cand, orig, masked
 
 
-NAME_RX = re.compile(r"^([fg])_([0-9a-f]+)$")
+NAME_RX = re.compile(r"^([fga])_([0-9a-f]+)$")
 
 
 def check_bindings(res, man, own_names):
@@ -286,7 +326,7 @@ def check_bindings(res, man, own_names):
             continue
         m = NAME_RX.match(k)
         if m:  # address-named symbol: the name is the claim
-            want = f"{1 if m.group(1) == 'f' else 3}:{int(m.group(2), 16):x}"
+            want = f"{3 if m.group(1) == 'g' else 1}:{int(m.group(2), 16):x}"
             if v != want:
                 res["problems"].append(f"{k} binds to {v}, but its name says {want}")
         if k in known:
@@ -298,7 +338,7 @@ def check_bindings(res, man, own_names):
 
 
 def disasm(buf, base, masked_rel):
-    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32 if CODE_OBJ != 2 else capstone.CS_MODE_16)
     out = []
     for ins in md.disasm(buf, base):
         rel = ins.address - base
@@ -341,7 +381,11 @@ def main(argv):
     ap.add_argument("--json")
     ap.add_argument("--obj", help="use an existing object instead of compiling")
     ap.add_argument("--host", default="nt", help="nt (default) or dosbox (independent DOS/4GW host)")
+    ap.add_argument("--object", type=int, help="LE object of the original code (default: manifest entry, else 1)")
     a = ap.parse_args(argv[1:])
+    global CODE_OBJ
+    ent = next((f for f in manifest().get("functions", []) if f.get("name") == a.func), None)
+    CODE_OBJ = a.object or (ent or {}).get("object", 1)
     src = Path(a.source).resolve()
     man = manifest()
     tag = a.func or src.stem
@@ -356,7 +400,7 @@ def main(argv):
             mod = omf.load(objp)[0]
         finally:
             shutil.rmtree(work, ignore_errors=True)
-    si = code_segment(mod)
+    si = code_segment(mod, None if a.all else a.func)
     ext = symbol_extents(mod, si)
     seg_end = mod.segments[si].size
     if a.all:

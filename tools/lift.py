@@ -163,14 +163,24 @@ class Program:
 
     # proven declarations -------------------------------------------------------------------
     def load_decls(self):
+        """Proven declarations: a function's own definition in its matching source first, then the
+        most common declaration of each symbol across src/."""
         from context import top_level_decls
-        out = {}
+        seen = defaultdict(Counter)
+        own = {}
         for src in sorted((ROOT / "src").glob("*.c")):
-            for stmt in top_level_decls(src.read_text(errors="replace")):
+            text = src.read_text(errors="replace")
+            for stmt in top_level_decls(text):
                 if not stmt.startswith("extern ") and "(" not in stmt:
                     continue
                 for d in parse_decl(stmt):
-                    out.setdefault(d["name"], d)
+                    seen[d["name"]][json.dumps(d, sort_keys=True)] += 1
+            body = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+            for m in re.finditer(r"(?m)^([A-Za-z_][\w \t*]*?)\b(f_[0-9a-f]+)\s*\(([^)]*)\)\s*\{", body):
+                for d in parse_decl(f"{m.group(1)} {m.group(2)}({m.group(3)});"):
+                    own[d["name"]] = d
+        out = {n: json.loads(c.most_common(1)[0][0]) for n, c in seen.items()}
+        out.update(own)
         return out
 
     def fname(self, addr):
@@ -275,7 +285,8 @@ def resolve_global(v):
     if v.ptr or (d and d["type"] == "p"):
         v.type = "p"
         return
-    w = min(ws) if ws else 4
+    stores = v.widths("store", "const", "rmw")
+    w = max(stores) if stores else (max(ws) if ws else 4)
     if v.widths("sx") & {w}:
         signed = True
     elif v.widths("zx") & {w}:
@@ -322,7 +333,7 @@ def resolve_sig(prog, name, sig):
             t = lift.args[k].type
         else:
             forms = Counter(c[k] for c in sig["calls"] if k < len(c))
-            if forms["narrow"] and not forms["wide"]:
+            if (forms["narrow"] or forms["narrow16"]) and not forms["wide"]:
                 t = "s"
             else:
                 t = "p" if forms["ptr"] and not forms["wide"] else "i"
@@ -564,6 +575,14 @@ class Lift:
         for u in uses:
             if isinstance(u, E):
                 used |= {id(n) for n in u.walk()}
+        self.consumed |= used
+        for r, e in list(self.regs.items()):
+            if e is not None and e.op == "post" and id(e) not in used and id(e) not in self.consumed:
+                self.consumed.add(id(e))
+                self.stmts.append(("expr", e))
+                if e.a.var:
+                    e.a.var.volatile = True
+                self.regs[r] = None
         keep = []
         live = set()
         for r, e in self.regs.items():
@@ -581,6 +600,7 @@ class Lift:
             self.stmts.append(st)
 
     def flush(self):
+        self.emit(None)
         for c in self.pending:
             self.stmts.append(("expr", c))
         self.pending = []
@@ -596,12 +616,15 @@ class Lift:
             loc.var.note(loc.w, how)
             if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 2 and not val.x and val.op != "k":
                 loc.var.note(2, "nval")
+            if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 4 and not val.x and val.op in ("v", "m", "call"):
+                loc.var.note(4, "wval")
         self.emit(("set", loc, val), [loc, val])
 
     def run(self):
         body = self.frame_parts()
         self.regs, self.pending, self.pushes = {}, [], []
         self.flags = None
+        self.consumed = set()
         self.last_load = None
         self.retval = False
         targets = set()
@@ -614,7 +637,9 @@ class Lift:
                 targets.add(sw[1])
         self.targets = targets
         n = 0
+        self.body = body
         while n < len(body):
+            self.pos = n
             i = body[n]
             if i.addr in targets:
                 self.flush()
@@ -645,11 +670,11 @@ class Lift:
                     e = self.read(src, i, how)
                     self.last_load = e
                     if mn != "mov":
-                        e = self.extend(e, "s" if mn == "movsx" else "z")
+                        e = self.extend(e, "s" if mn == "movsx" else "z", dst[2])
                 elif mn == "mov":
                     e = self.read(src, i, w=dst[2])
                 else:
-                    e = self.extend(self.reg(src[1]), "s" if mn == "movsx" else "z")
+                    e = self.extend(self.reg(src[1]), "s" if mn == "movsx" else "z", dst[2])
                     e = self.retyped(e, src[2], "s" if mn == "movsx" else "z")
                 if dst[1] in ("ah", "bh", "ch", "dh"):
                     self.regs[dst[1]] = e
@@ -671,8 +696,8 @@ class Lift:
             if op[0] == "i" and not i.ifix:
                 form = "wide"
             elif op[0] == "r" and e.op == "k":
-                form = "narrow"
-            elif op[0] == "r" and e.op == "v" and e.w == 4 and not e.x and e.var.kind in ("a", "g") and                     self.last_load is e:
+                form = "narrow16" if e.v & 0xFFFFFFFF > 0xFF else "narrow"
+            elif op[0] == "r" and e.op == "v" and e.w == 4 and not e.x and e.var.kind in ("a", "g", "l") and                     self.last_load is e:
                 e.var.volatile = True
                 form = "wide"
             elif op[0] == "r" and e.op in ("v", "m") and e.x and e.var and 4 in e.var.widths("mov", "store", "const", "arith", "cmp", "rmw"):
@@ -690,11 +715,20 @@ class Lift:
         if mn in ("add", "sub") and ops[0][0] == "r" and ops[0][1] == "esp":
             return 1
         if mn in ("cmp", "test"):
+            if mn == "test" and ops[0][0] == "m" and ops[0][5] == 4 and ops[1][0] == "i" and 0 <= ops[1][1] < 0x100:
+                loc = self.mem_loc(ops[0], i)
+                if loc.op == "v":
+                    loc.var.volatile = True     # Watcom narrows `x & 2` to a byte test unless volatile
             a = self.read(ops[0], i, "cmp")
             b = self.read(ops[1], i, "cmp", w=a.w if ops[1][0] == "i" else None)
             if ops[1][0] == "i" and ops[0][0] in ("r", "m"):
                 w = ops[0][2] if ops[0][0] == "r" else ops[0][5]
                 b = K(b.v, w) if b.op == "k" else b
+                if mn == "cmp" and w == 2 and b.op == "k" and b.v & 0x8000 and a.op in ("v", "m"):
+                    if a.op == "v":
+                        a.var.sign[False] += 3
+                    else:
+                        a.x, a.typ, a.w = "z", 2, 2
                 if w < 4 and b.op == "k":
                     b.v = b.v & ((1 << (8 * w)) - 1)
             if ops[0][0] == "r" and ops[0][2] < 4:
@@ -730,7 +764,15 @@ class Lift:
         self.emit(("asm", f"{mn} {i.text}"))
         return 1
 
-    def extend(self, e, x):
+    def extend(self, e, x, w=4):
+        if w == 2:
+            n = E("ext", e, w=2, x=x)       # movzx ax, byte: an explicit (unsigned short) cast
+            n.typ = e.w
+            return n
+        if e.op == "ext" and e.w == 2 and e.x == x:
+            n = E("ext", e.a, w=4, x=x)
+            n.typ, n.b = e.typ, "16"
+            return n
         if e.op in ("v", "m"):
             n = E(e.op, e.a, w=4, x=x, var=e.var)
             n.typ = e.w
@@ -817,8 +859,19 @@ class Lift:
                 self.setreg(dst[1], K(0, dst[2]))
                 return 1
             a = self.reg(dst[1])
+            full = self.regs.get(SUBREG[dst[1]][0]) if dst[1] in SUBREG else None
             if src[0] == "r" and src[1] == dst[1] and mn == "add":
                 e = E("*", a, K(2), w=dst[2])
+            elif mn in ("or", "xor", "and") and src[0] == "i" and dst[2] < 4 and full is not None and full.w > dst[2]:
+                # `or al, 13h` / `and al, 0fch` on a full-width value: Watcom's short form of a
+                # 32-bit operation whose constant leaves the upper bytes alone
+                k = src[1] & ((1 << (8 * dst[2])) - 1)
+                if mn == "and":
+                    k |= ((1 << (8 * full.w)) - 1) ^ ((1 << (8 * dst[2])) - 1)
+                e = E(op, full, K(k), w=full.w)
+                self.regs[SUBREG[dst[1]][0]] = e
+                self.flags = ("res", e, None, False)
+                return 1
             else:
                 b = self.read(src, i, "arith")
                 if src[0] == "r" and src[2] < 4:
@@ -852,6 +905,8 @@ class Lift:
             if e is None:
                 continue
             for n in e.walk():
+                if id(n) in self.consumed:
+                    continue
                 if n.op == loc.op and n.w == loc.w and not n.x and (
                         (n.op == "v" and n.var is loc.var) or (n.op == "m" and same_place(n, loc))):
                     n.op, n.a, n.name = "post", E(loc.op, loc.a, w=loc.w, var=loc.var), op
@@ -861,9 +916,14 @@ class Lift:
     def call(self, i, nxt):
         nargs = 0
         consumed = 1
-        if nxt and nxt.mn == "add" and nxt.ops[0][0] == "r" and nxt.ops[0][1] == "esp" and nxt.ops[1][0] == "i":
-            nargs = nxt.ops[1][1] // 4
-            consumed = 2
+        # the caller pops the arguments, possibly after saving eax (`mov edx,eax; add esp,4`)
+        for j in range(self.pos + 1, min(self.pos + 4, len(self.body))):
+            x = self.body[j]
+            if x.mn == "add" and x.ops[0][0] == "r" and x.ops[0][1] == "esp" and x.ops[1][0] == "i":
+                nargs = x.ops[1][1] // 4
+                break
+            if not (x.mn == "mov" and x.ops[0][0] == "r" and x.ops[1][0] == "r" and x.ops[1][1] == "eax"):
+                break
         take = self.pushes[len(self.pushes) - nargs:] if nargs else []
         if nargs:
             del self.pushes[len(self.pushes) - nargs:]
@@ -880,6 +940,7 @@ class Lift:
                 target.var.fnptr = True
             target.ptr = False
         c = E("call", target, args=args)
+        c.name = forms
         self.emit(None, [c])
         self.regs = {k: v for k, v in self.regs.items() if k in ("ebx", "esi", "edi")}
         self.regs["eax"] = c
@@ -997,11 +1058,52 @@ class Render:
         self.L, self.prog = lift, lift.prog
         self.structured = structured
         self.used_globals, self.used_funcs, self.includes = {}, {}, set()
+        self.tcache = {}
+
+    def prepare(self):
+        """Per-file prototypes: this function's call sites decide narrow/wide parameters (the
+        original TUs did not always agree) and whether a void callee must return int here."""
+        forms, used, wide = defaultdict(list), set(), set()
+        for st in self.L.stmts:
+            for x in st[1:]:
+                if not isinstance(x, E):
+                    continue
+                if x.op == "call" and x.a.op == "fn" and st[0] != "expr":
+                    wide.add(x.a.name)
+                for n in x.walk():
+                    for kid in n.kids():
+                        if kid.op == "call" and kid.a.op == "fn" and n.op not in ("trunc", "ext"):
+                            wide.add(kid.a.name)
+                    if n.op == "call" and n.a.op == "fn":
+                        forms[n.a.name].append(n.name or [])
+                        if not (st[0] == "expr" and x is n):
+                            used.add(n.a.name)
+        self.protos = {}
+        for name, fl in forms.items():
+            sig = self.prog.sigs.get(name) or {"params": [], "ret": "i"}
+            params = list(sig.get("params") or [])
+            if not sig.get("lib"):
+                for k in range(len(params)):
+                    fs = Counter(f[k] for f in fl if k < len(f))
+                    if fs["wide"] and params[k] in ("c", "sc", "s", "us"):
+                        params[k] = "i"
+                    elif fs["narrow16"] and params[k] not in ("s", "us"):
+                        params[k] = "s"
+                    elif fs["narrow"] and params[k] not in ("c", "sc", "s", "us"):
+                        params[k] = "s"
+            void = sig.get("void") and name not in used
+            ret = sig.get("ret") or "i"
+            if name in wide and ret in ("c", "sc", "s", "us") and not sig.get("lib"):
+                ret = "i"
+            self.protos[name] = {"params": params, "void": void, "ret": ret,
+                                 "varargs": sig.get("varargs"), "lib": sig.get("lib")}
 
     # types -----------------------------------------------------------------------------------
     def ty(self, e):
         """C type code of the rendered expression."""
         op = e.op
+        if id(e) in self.tcache:
+            return self.tcache[id(e)]
         if op == "k":
             return "i"
         if op == "v":
@@ -1012,7 +1114,7 @@ class Render:
             return "p"
         if op == "call":
             if e.a.op == "fn":
-                sig = self.prog.sigs.get(e.a.name)
+                sig = self.protos.get(e.a.name) or self.prog.sigs.get(e.a.name)
                 return (sig and sig.get("ret")) or "i"
             return "i"
         if op in ("trunc",):
@@ -1208,7 +1310,7 @@ class Render:
         if op == "trunc":
             return f"({TNAME[tcode(e.w, False)]}){self.paren(e.a, self.expr(e.a))}"
         if op == "ext":
-            t = tcode(e.typ, e.x == "s")
+            t = tcode(2 if e.w == 2 or e.b == "16" else e.typ, e.x == "s")
             return f"({TNAME[t]}){self.paren(e.a, self.expr(e.a))}"
         if op == "neg":
             return f"-{self.paren(e.a, self.expr(e.a))}"
@@ -1228,33 +1330,61 @@ class Render:
 
     def binary(self, e):
         op = e.op
-        ta, tb = self.ty(e.a), self.ty(e.b)
-        a = self.paren(e.a, self.expr(e.a, ta if e.b.op != "k" else None))
-        b = self.paren(e.b, self.expr(e.b, promote(ta) if e.b.op == "k" else None))
+        a = self.expr(e.a)
+        ta = self.ty(e.a)
+        b = self.expr(e.b, promote(ta) if e.b.op == "k" else None)
+        tb = self.ty(e.b)
+        a, b = self.paren(e.a, a), self.paren(e.b, b)
+        ca, cb = promote(ta), promote(tb)
         if op in (">>", "/", "%"):
-            pa = promote(ta)
-            if e.uns and pa in ("i",):
-                a = f"(unsigned){a}"
-            elif not e.uns and pa in ("u", "p"):
-                a = f"(int){a}"
-        if op in ("*", "&", "|", "^", "<<", ">>", "/", "%") and ta == "p":
-            a = f"(int){a}" if not a.startswith("(int)") and not a.startswith("(unsigned)") else a
-        if op in ("*", "&", "|", "^", "/", "%") and tb == "p":
-            b = f"(int){b}"
-        if op in ("+", "-") and ta == "p" and tb == "p":
-            b = f"(int){b}"
+            if e.uns and ca == "i" and (op == ">>" or cb == "i"):
+                a, ca = f"(unsigned){a}", "u"
+            elif not e.uns:
+                if ca in ("u", "p"):
+                    a, ca = f"(int){a}", "i"
+                if op != ">>" and cb in ("u", "p"):
+                    b, cb = f"(int){b}", "i"
+        if op in ("*", "&", "|", "^", "<<", ">>", "/", "%") and ca == "p":
+            a, ca = f"(int){a}", "i"
+        if op in ("*", "&", "|", "^", "/", "%") and cb == "p":
+            b, cb = f"(int){b}", "i"
+        if op in ("+", "-") and ca == "p" and cb == "p":
+            b, cb = f"(int){b}", "i"
+        if op in ("+", "-") and "p" in (ca, cb):
+            rt = "p"
+        elif op in ("<<", ">>"):
+            rt = ca
+        else:
+            rt = "u" if "u" in (ca, cb) else "i"
+        self.tcache[id(e)] = rt
         return f"{a} {op} {b}"
+
+    def nuns(self, e):
+        """Expression Watcom types as a narrow unsigned value (compared at byte/word width)."""
+        if e.op == "k":
+            return 0 <= e.v <= 0xFFFF
+        if e.op in ("v", "m"):
+            return self.ty(e) in ("c", "us")
+        if e.op in ("&", "|", "^"):
+            return self.nuns(e.a) and self.nuns(e.b)
+        return e.op == "ext" and e.x == "z"
 
     def cmp(self, e):
         a, b, rel = e.a, e.b, e.rel
-        ta, tb = self.ty(a), self.ty(b)
         if a.op == "k" and b.op != "k":
-            a, b, ta, tb, rel = b, a, tb, ta, SWAP[rel]
+            a, b, rel = b, a, SWAP[rel]
         sa = self.paren(a, self.expr(a))
+        ta = self.ty(a)
         sb = self.paren(b, self.expr(b, ta if b.op == "k" else None))
+        tb = self.ty(b)
+        if (ta == "p") != (tb == "p") and not (b.op == "k" and b.v == 0):
+            if ta == "p":
+                sa, ta = f"({'unsigned' if e.uns else 'int'}){sa}", "u" if e.uns else "i"
+            else:
+                sb, tb = f"({'unsigned' if e.uns else 'int'}){sb}", "u" if e.uns else "i"
         if rel in ("<", "<=", ">", ">="):
             pa, pb = promote(ta), promote(tb) if b.op != "k" else promote(ta)
-            c_uns = "u" in (pa, pb) or "p" in (pa, pb) or (ta in ("c", "us") and (tb in ("c", "us") or b.op == "k"))
+            c_uns = "u" in (pa, pb) or "p" in (pa, pb) or (self.nuns(a) and (self.nuns(b) or b.op == "k"))
             if e.uns and not c_uns:
                 sa = f"(unsigned){sa}"
             elif not e.uns and c_uns:
@@ -1264,9 +1394,6 @@ class Render:
                     sa = f"(int){sa}"
                     if b.op != "k":
                         sb = f"(int){sb}"
-        if b.op == "k" and b.v == 0 and rel in ("==", "!="):
-            if ta == "p" or a.op == "addr":
-                return f"{sa} {rel} 0"
         return f"{sa} {rel} {sb}"
 
     def use_func(self, name):
@@ -1278,7 +1405,7 @@ class Render:
         if e.a.op == "fn":
             name = e.a.name
             self.use_func(name)
-            sig = self.prog.sigs.get(name) or {}
+            sig = self.protos.get(name) or self.prog.sigs.get(name) or {}
             params = sig.get("params") or []
         else:
             sig = {}
@@ -1373,6 +1500,7 @@ class Render:
     # whole function ----------------------------------------------------------------------------
     def source(self):
         L = self.L
+        self.prepare()
         body = []
         stmts = L.stmts
         used_labels = set()
@@ -1401,7 +1529,7 @@ class Render:
         for name in sorted(self.used_funcs):
             if name == L.name or name in LIB_HEADERS:
                 continue
-            out.append(func_decl(self.prog, name))
+            out.append(func_decl(self.protos.get(name) or self.prog.sigs.get(name), name))
         ret = TNAME[L.ret_type] if L.ret_type else "void"
         params = ", ".join(("volatile " if k in L.args and L.args[k].volatile else "") +
                            f"{TNAME[L.args[k].type] if k in L.args else 'int'} a{k}" for k in range(L.nparams)) or "void"
@@ -1425,11 +1553,12 @@ class Render:
 
 def decl_text(v):
     t = v.type
+    vol = "volatile " if v.volatile else ""
     if t == "p":
-        return f"unsigned char *{v.name}"
+        return f"unsigned char * {vol}{v.name}"
     if t.startswith("arr"):
-        return f"unsigned char {v.name}[{t[3:]}]"
-    return f"{TNAME[t]} {v.name}"
+        return f"{vol}unsigned char {v.name}[{t[3:]}]"
+    return f"{vol}{TNAME[t]} {v.name}"
 
 
 def global_decl(v):
@@ -1443,8 +1572,8 @@ def global_decl(v):
     return f"extern {vol}{TNAME[v.type]} {v.name};"
 
 
-def func_decl(prog, name):
-    sig = prog.sigs.get(name) or {"params": [], "ret": "i"}
+def func_decl(sig, name):
+    sig = sig or {"params": [], "ret": "i"}
     ret = "void" if sig.get("void") else TNAME[sig.get("ret") or "i"]
     if sig.get("varargs"):
         return f"extern {ret} {name}();"
@@ -1470,16 +1599,19 @@ def layout_locals(L):
         top = 0
         while top + 4 in L.locals and top + 4 not in agg_off and top + 4 < min(agg_off) or top + 4 == spill_off:
             top += 4
-        bases = sorted(o for o in agg_off if o > top)
-        # each aggregate starts at an address-taken base (or the deepest odd access)
-        starts = sorted({o for o in bases if L.locals[o].addr} or {max(bases)})
-        if max(bases) > max(starts):
-            starts.append(max(bases))
+        if spill_off and L.spill[1] == 4 and L.ret_type == "i":
+            top = spill_off     # an int return temp sorts after every scalar auto
+        deep = max([o for o in offs if o > top] + [L.frame])
+        deep = (deep + 3) // 4 * 4
+        # aggregates start at address-taken bases; the deepest one ends at the frame bottom
+        starts = sorted({o for o in agg_off if o > top and L.locals[o].addr and o % 4 == 0} | {deep})
         prev = top
         for b in starts:
-            if b - prev == 4 and b % 4 == 0 and not L.locals[b].widths("const", "store") & {2} and                     b == max(o for o in offs if prev < o <= b):
+            if b - prev == 4 and not L.locals.get(b, Var("l", "", 0)).widths("const", "store") & {2} and                     not any(o % 4 for o in offs if prev < o <= b) and b != deep:
                 prev = b
                 continue       # a plain address-taken scalar
+            if b not in L.locals:
+                L.local(b)
             aggs[b] = (prev, b)
             prev = b
     agg_of = {}
@@ -1516,8 +1648,11 @@ def layout_locals(L):
             u += 4
             continue
         ws = v.widths()
-        if 1 in ws:
+        wide = v.widths("const", "store", "cmp", "rmw", "arith", "wval") & {4}
+        if 1 in ws and not wide:
             rng = (1, 1)
+        elif 1 in ws or v.widths("wval"):
+            rng = (4, 4)
         elif 2 in ws:
             rng = (2, 4)
         else:
@@ -1573,6 +1708,10 @@ def resolve_function(L):
         ws = v.widths()
         if forms[k]["wide"]:
             size = 4
+        elif forms[k]["narrow16"]:
+            size = 2
+        elif forms[k]["narrow"]:
+            size = 1 if 1 in ws else 2
         elif 1 in ws and 4 not in ws:
             size = 1
         elif 2 in ws and 1 not in ws and not (v.widths("arith", "rmw", "push", "cmp") & {4}) and not v.ptr:

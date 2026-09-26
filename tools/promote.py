@@ -2,6 +2,7 @@
 
     python tools/promote.py CAND.c FUNC [--verify-only]          # must be EXACT; writes src/FUNC.c + manifest
     python tools/promote.py CAND.c FUNC --draft "short note"     # not exact: keep best draft + mismatch summary
+    python tools/promote.py CAND.asm a_0 --as asm/irq.asm         # several routines sharing one module file
     python tools/promote.py --batch DIR                           # every DIR/f_HEX.c that is EXACT, one validation
 
 FUNC must be a manifest function (its start/end are the authority for the extent).  The candidate is
@@ -98,6 +99,9 @@ def main(argv):
     no_validate = "--no-validate" in args
     verify_only = "--verify-only" in args
     draft = None
+    as_path = None
+    if "--as" in args:
+        i = args.index("--as"); as_path = args[i + 1]; del args[i:i + 2]
     if "--draft" in args:
         i = args.index("--draft"); draft = args[i + 1]; del args[i:i + 2]
     args = [a for a in args if not a.startswith("--")]
@@ -159,11 +163,11 @@ def main(argv):
                 raise SystemExit(f"binding {k}={v} contradicts {known[k]}")
             if k not in known:
                 man.setdefault("symbols", {})[k] = v
-        dest = ROOT / "src" / frozen.name
+        dest = ROOT / (as_path or (("asm/" if frozen.suffix.lower() == ".asm" else "src/") + frozen.name))
         old_src = dest.read_bytes() if dest.exists() else None
         dest.parent.mkdir(exist_ok=True)
         shutil.copyfile(frozen, dest)
-        e.update({"status": "matching", "src": f"src/{frozen.name}", "profile": e.get("profile", "game-c"),
+        e.update({"status": "matching", "src": dest.relative_to(ROOT).as_posix(), "profile": e.get("profile", "game-c"),
                   "src_sha256": hashlib.sha256(dest.read_bytes()).hexdigest()})
         for k in ("draft", "mismatch", "note"):
             e.pop(k, None)
@@ -180,7 +184,7 @@ def main(argv):
             print("ROLLED BACK: regression\n" + v.stdout[-2000:])
             return 1
         (ROOT / "drafts" / frozen.name).unlink(missing_ok=True)
-    print(f"PROMOTED {func} -> src/{frozen.name}")
+    print(f"PROMOTED {func} -> {dest.relative_to(ROOT).as_posix()}")
     return 0
 
 

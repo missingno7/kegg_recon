@@ -29,6 +29,7 @@ class Segment:
     combine: int
     size: int
     use32: bool
+    frame: object = None  # AT segment frame number (absolute segment), else None
     data: bytearray = field(default_factory=bytearray)
     covered: bytearray = field(default_factory=bytearray)
 
@@ -168,8 +169,9 @@ def parse_module(data: bytes, pos: int = 0):
         elif typ in (0x98, 0x99):
             acbp = r.u8()
             align, comb, big, use32 = acbp >> 5, (acbp >> 2) & 7, (acbp >> 1) & 1, acbp & 1
+            at_frame = None
             if align == 0:
-                r.u16(); r.u8()
+                at_frame = r.u16(); r.u8()
             size = r.off()
             if big:
                 size = 0x100000000 if r.is32 else 0x10000
@@ -177,7 +179,7 @@ def parse_module(data: bytes, pos: int = 0):
             if m.easy:
                 use32 = 1
             alloc = size if size < (1 << 24) else 0
-            m.segments.append(Segment(m.lnames[nm], m.lnames[cl], align, comb, size, bool(use32),
+            m.segments.append(Segment(m.lnames[nm], m.lnames[cl], align, comb, size, bool(use32), at_frame,
                                       bytearray(alloc), bytearray(alloc)))
         elif typ == 0x9A:
             nm = m.lnames[r.idx()]

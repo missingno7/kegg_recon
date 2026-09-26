@@ -27,8 +27,8 @@ def main(argv):
     fns = {f["name"]: f for f in man["functions"]}
     cands = []
     for d in dirs:
-        for c in sorted(d.glob("f_*.c")):
-            f = fns.get(c.stem)
+        for c in sorted({p.resolve() for p in [*d.glob("f_*.c"), *d.glob("a_*.asm")]}):
+            f = fns.get(c.stem.lower())
             if f and f.get("status") != "matching":
                 cands.append((c, f))
 
