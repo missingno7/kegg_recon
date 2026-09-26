@@ -64,8 +64,10 @@
    "start": "0x10",
    "end": "0x3b2",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_10.c",
+   "src_sha256": "8be52116fb7d90a5787c83eed9601506a37ccbcaaf35990aa227060b7c3ddcb3"
   },
   {
    "name": "f_3b2",
@@ -82,16 +84,20 @@
    "start": "0x441",
    "end": "0x52f",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_441.c",
+   "src_sha256": "654c7a4dbfa193dd94c5a90115d0e0392fd22e1cc32f039e60ca602d2b128be3"
   },
   {
    "name": "f_52f",
    "start": "0x52f",
    "end": "0x6ca",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_52f.c",
+   "src_sha256": "41b403eac8f29ced4b02330bd48f45d4d10fa465b60e81a2aeae08c5705ff5d3"
   },
   {
    "name": "f_6ca",
@@ -148,24 +154,30 @@
    "start": "0x951",
    "end": "0x9f9",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_951.c",
+   "src_sha256": "158819780bb47c3e0d5dc4528e9e38aa70a614a94333403ac626870198893126"
   },
   {
    "name": "f_9f9",
    "start": "0x9f9",
    "end": "0xaa2",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_9f9.c",
+   "src_sha256": "4b8a0e99554d5116139a42164e8bb2f11344b3986ca2187b8aa239e5c844746b"
   },
   {
    "name": "f_aa2",
    "start": "0xaa2",
    "end": "0xe70",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_aa2.c",
+   "src_sha256": "92598c0ac3837e8f3c1e0e1975dc1d25c97ad52ebda7793173e9f6036c9b7012"
   },
   {
    "name": "f_e70",
@@ -182,24 +194,30 @@
    "start": "0xea4",
    "end": "0xff0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ea4.c",
+   "src_sha256": "8c7da5596e14a143b3ecf7ca1051e97b4f219aec7a4506e9771ac66dfca18e50"
   },
   {
    "name": "f_ff0",
    "start": "0xff0",
    "end": "0x113c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ff0.c",
+   "src_sha256": "042e2d6be6c6362a5bdd71dcc435e7060c4d2179fbdcbb80d200fdf63e1decdc"
   },
   {
    "name": "f_113c",
    "start": "0x113c",
    "end": "0x1202",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_113c.c",
+   "src_sha256": "efe68bddfbf780c2189e707ad90d35170c007038152e6f96d4a05162066607c3"
   },
   {
    "name": "f_1202",
@@ -226,8 +244,10 @@
    "start": "0x127e",
    "end": "0x13aa",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_127e.c",
+   "src_sha256": "8f5edf7bdd012983dcf36bb5d3702406d6de389463ce2bca891540b30b0ff759"
   },
   {
    "name": "f_13aa",
@@ -244,8 +264,10 @@
    "start": "0x1416",
    "end": "0x16bb",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_1416.c",
+   "src_sha256": "7b2e59bdd1efe700cb6690f993567e15a729b82d8d8e8d3896905bf8c0bc1124"
   },
   {
    "name": "f_16bb",
@@ -1060,8 +1082,10 @@
    "start": "0x5381",
    "end": "0x5771",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_5381.c",
+   "src_sha256": "6052e894cc9ef710358bd4ef71fb2cadda4ae6ee9d7321911b218558f8575272"
   },
   {
    "name": "f_5771",
@@ -1118,16 +1142,20 @@
    "start": "0x5966",
    "end": "0x5aaf",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_5966.c",
+   "src_sha256": "526a723ab44c62b9c09e2d1a8a414e93b78799a6ab99ab02b0291813102fb664"
   },
   {
    "name": "f_5aaf",
    "start": "0x5aaf",
    "end": "0x5e2d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_5aaf.c",
+   "src_sha256": "775d6b3a0cfd71744635eaa575590d958fa9cd73930a0ed5855ca74155cd4017"
   },
   {
    "name": "f_5e2d",
@@ -1504,16 +1532,20 @@
    "start": "0x843a",
    "end": "0x84a0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_843a.c",
+   "src_sha256": "660119bc64695ca0078a00f4b5f36e9ea8575c03b0239f864a526c43509c687f"
   },
   {
    "name": "f_84a0",
    "start": "0x84a0",
    "end": "0x8585",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_84a0.c",
+   "src_sha256": "f30b2ea47d2dae85315bbacb68cca5f835869324a9e4b56f98d51c62f9c6ca01"
   },
   {
    "name": "f_8585",
@@ -1616,32 +1648,40 @@
    "start": "0x9974",
    "end": "0x9ac2",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9974.c",
+   "src_sha256": "fbeedf21503179849aebe0538baf3f7b7c421149f3442797232a062eabb3c408"
   },
   {
    "name": "f_9ac4",
    "start": "0x9ac4",
    "end": "0x9afa",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9ac4.c",
+   "src_sha256": "fcf0bf4dd389d677c76f2507cc5c62fc45f5b6fa0f9931508f649c9dfb4852bb"
   },
   {
    "name": "f_9afc",
    "start": "0x9afc",
    "end": "0x9b43",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9afc.c",
+   "src_sha256": "c493b75a9d74607258d830c04a9f5bf9c0e47ab1f33db7faaa8c4bfc1f68df4a"
   },
   {
    "name": "f_9b44",
    "start": "0x9b44",
    "end": "0x9c90",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9b44.c",
+   "src_sha256": "2b1334c6e56486dc2629e568045316a1397ab16d81f01b6bb6dc227574717a2c"
   },
   {
    "name": "f_9c90",
@@ -1668,32 +1708,40 @@
    "start": "0x9d40",
    "end": "0x9e0d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9d40.c",
+   "src_sha256": "180edac1b6ab9545fa2394529f4e9c8e82dd7a8a9efa195a40b99f471944a16f"
   },
   {
    "name": "f_9e10",
    "start": "0x9e10",
    "end": "0x9e53",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9e10.c",
+   "src_sha256": "03d005b5beb6ce9fa1875cbda4213298dd1b2123852b3cd1167d68039f058103"
   },
   {
    "name": "f_9e54",
    "start": "0x9e54",
    "end": "0x9eec",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9e54.c",
+   "src_sha256": "48195c2ab59538f7f5bf20c12ca3be54981ad1e63c9a2323a66c977bdc036219"
   },
   {
    "name": "f_9eec",
    "start": "0x9eec",
    "end": "0x9f48",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9eec.c",
+   "src_sha256": "65d92b6e4a435ee0072f39fceb4d3eb204d5772a76b91d72416dc16c6c4c79b5"
   },
   {
    "name": "f_9f48",
@@ -1740,8 +1788,10 @@
    "start": "0xa0e0",
    "end": "0xa284",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_a0e0.c",
+   "src_sha256": "d525cc20fbf2556af4b9f9204bb88a1d00e0f77665e76d6ef24827d3f5ae3145"
   },
   {
    "name": "a_a284",
@@ -1768,16 +1818,20 @@
    "start": "0xa520",
    "end": "0xa572",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_a520.c",
+   "src_sha256": "50c3059666eccb3f4dd22454e40ae5bde16016d5b318b6fa6a121acdf9fce1b6"
   },
   {
    "name": "f_a574",
    "start": "0xa574",
    "end": "0xa656",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_a574.c",
+   "src_sha256": "7c5db999feba7f25baed9cb72139f0dff34ec57bc8a7f058006c7d7d8590557d"
   },
   {
    "name": "f_a658",
@@ -1800,8 +1854,10 @@
    "start": "0xa8bc",
    "end": "0xa958",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_a8bc.c",
+   "src_sha256": "79f6dcc23a82d2c7d9770751eceaae46c54dbabfd69104a70e20dfd8bb2b89a9"
   },
   {
    "name": "f_a966",
@@ -2128,8 +2184,10 @@
    "start": "0xc3fb",
    "end": "0xc621",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c3fb.c",
+   "src_sha256": "fa8ade98fc2523fd4d8374fe6b0d7a30423a237f284b3c3b598d681b14a5d68a"
   },
   {
    "name": "f_c621",
@@ -2264,8 +2322,10 @@
    "start": "0xccd5",
    "end": "0xcdee",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ccd5.c",
+   "src_sha256": "df332993f98f5d3e42450e5fa4902e9724c9108933d092c3bac94593e9fb3bf6"
   },
   {
    "name": "f_cdee",
@@ -2288,9 +2348,10 @@
    "start": "0xd252",
    "end": "0xd288",
    "kind": "c-interrupt",
-   "status": "identified",
+   "status": "matching",
    "profile": "game-c",
-   "note": "__interrupt handler; end = next region"
+   "src": "src/f_d252.c",
+   "src_sha256": "46b6800b06c42dc60d1c9b46b5e03006714ccddc8a0c8676664e7ad3f788d980"
   },
   {
    "name": "f_d288",
@@ -2337,8 +2398,10 @@
    "start": "0xd4ba",
    "end": "0xd5d0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_d4ba.c",
+   "src_sha256": "fb0c413e9a320e4de5bf987003a47e2b8af8726de0eca5f0e979a9c4d679bf1e"
   },
   {
    "name": "f_d5d0",
@@ -2365,8 +2428,10 @@
    "start": "0xd7b8",
    "end": "0xda01",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_d7b8.c",
+   "src_sha256": "679925783d1c04dfaa3b532e4b91e04a01015f7014474c0cbcd7403a39d1cb17"
   },
   {
    "name": "f_da01",
@@ -2519,8 +2584,10 @@
    "start": "0xe473",
    "end": "0xe6b3",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e473.c",
+   "src_sha256": "62f71bb4a338ced6a2be4549bf2addb85aa2fbfc397f87736a972cc2454ef51e"
   },
   {
    "name": "f_e6b3",
@@ -2537,8 +2604,10 @@
    "start": "0xe813",
    "end": "0xe855",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e813.c",
+   "src_sha256": "91892a71f9254a94b80489c0a5f007c7b54e5d9a486dab39a843465f2ae2309a"
   },
   {
    "name": "f_e855",
@@ -3054,9 +3123,10 @@
    "start": "0xff5c",
    "end": "0xff9d",
    "kind": "c-interrupt",
-   "status": "identified",
+   "status": "matching",
    "profile": "game-c",
-   "note": "__interrupt handler; end = next region"
+   "src": "src/f_ff5c.c",
+   "src_sha256": "4d75a949fea24ebf1c8d50ed11ace13971fd8999d23e191a68cbe059571588e1"
   },
   {
    "name": "f_ff9d",
@@ -3268,8 +3338,10 @@
    "start": "0x11146",
    "end": "0x111de",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_11146.c",
+   "src_sha256": "d77740847029a4eeba36ada26b9803c173430c777ac9db2ffe1aca82377e1b14"
   },
   {
    "name": "f_111de",
@@ -3592,18 +3664,20 @@
    "start": "0x13a95",
    "end": "0x13b72",
    "kind": "c",
-   "status": "identified",
+   "status": "matching",
    "profile": "game-c",
-   "note": "C TU linked after the asm modules"
+   "src": "src/f_13a95.c",
+   "src_sha256": "b9c8cd3d4bcdebb45a44a28cf22ebf6bcf3a494510392f62abb7e1f136051d63"
   },
   {
    "name": "f_13b72",
    "start": "0x13b72",
    "end": "0x13b9c",
    "kind": "c",
-   "status": "identified",
+   "status": "matching",
    "profile": "game-c",
-   "note": "C TU linked after the asm modules"
+   "src": "src/f_13b72.c",
+   "src_sha256": "383ab8d0b295fb46f26fe9b20aa974b72bbe34ff7af7be5b65e00693b0de0f14"
   },
   {
    "name": "a_0",
@@ -3652,6 +3726,7 @@
  ],
  "symbols": {
   "__CHP": "1:140e8",
+  "__GETDS": "1:145a4",
   "_disable": "1:13f9f",
   "_enable": "1:13fa1",
   "_rotl": "1:145fe",
@@ -3671,9 +3746,11 @@
   "f_11358": "1:11358",
   "f_11365": "1:11365",
   "f_11377": "1:11377",
+  "f_113bd": "1:113bd",
   "f_113f8": "1:113f8",
   "f_11420": "1:11420",
   "f_1144d": "1:1144d",
+  "f_11485": "1:11485",
   "f_11494": "1:11494",
   "f_114a0": "1:114a0",
   "f_11530": "1:11530",
@@ -3696,6 +3773,7 @@
   "f_13a0a": "1:13a0a",
   "f_13a29": "1:13a29",
   "f_13a48": "1:13a48",
+  "f_13a88": "1:13a88",
   "f_9f64": "1:9f64",
   "f_c886": "1:c886",
   "f_c936": "1:c936",
@@ -3713,6 +3791,9 @@
   "fseek": "1:14a8c",
   "ftell": "1:14bdf",
   "fwrite": "1:14f47",
+  "g_101d": "3:101d",
+  "g_101e": "3:101e",
+  "g_102b": "3:102b",
   "g_1030": "3:1030",
   "g_1032": "3:1032",
   "g_123c": "3:123c",
@@ -3723,7 +3804,10 @@
   "g_2416": "3:2416",
   "g_241e": "3:241e",
   "g_2426": "3:2426",
+  "g_2428": "3:2428",
+  "g_242c": "3:242c",
   "g_243f": "3:243f",
+  "g_25ec": "3:25ec",
   "g_269c": "3:269c",
   "g_2e9c": "3:2e9c",
   "g_2fe4": "3:2fe4",
@@ -3749,16 +3833,36 @@
   "g_38ba": "3:38ba",
   "g_38be": "3:38be",
   "g_38c2": "3:38c2",
+  "g_38c6": "3:38c6",
+  "g_38ca": "3:38ca",
+  "g_38f6": "3:38f6",
+  "g_38fa": "3:38fa",
   "g_3902": "3:3902",
+  "g_3906": "3:3906",
+  "g_390c": "3:390c",
   "g_3be4": "3:3be4",
   "g_43ec": "3:43ec",
   "g_4bf4": "3:4bf4",
   "g_557c": "3:557c",
+  "g_5bfc": "3:5bfc",
+  "g_5c4c": "3:5c4c",
   "g_5c78": "3:5c78",
+  "g_5e68": "3:5e68",
+  "g_5e6c": "3:5e6c",
   "g_5ec0": "3:5ec0",
+  "g_5ef0": "3:5ef0",
+  "g_6098": "3:6098",
   "g_60f0": "3:60f0",
   "g_6160": "3:6160",
+  "g_61d0": "3:61d0",
   "g_6218": "3:6218",
+  "g_6230": "3:6230",
+  "g_6288": "3:6288",
+  "g_62f8": "3:62f8",
+  "g_6368": "3:6368",
+  "g_6378": "3:6378",
+  "g_6410": "3:6410",
+  "g_6508": "3:6508",
   "g_6790": "3:6790",
   "g_67b0": "3:67b0",
   "g_6864": "3:6864",
@@ -3772,6 +3876,11 @@
   "g_68f8": "3:68f8",
   "g_68fc": "3:68fc",
   "g_6900": "3:6900",
+  "g_6904": "3:6904",
+  "g_6908": "3:6908",
+  "g_690c": "3:690c",
+  "g_6910": "3:6910",
+  "g_6914": "3:6914",
   "g_6918": "3:6918",
   "g_691c": "3:691c",
   "g_6920": "3:6920",
@@ -3800,6 +3909,10 @@
   "g_697c": "3:697c",
   "g_6980": "3:6980",
   "g_6984": "3:6984",
+  "g_6988": "3:6988",
+  "g_698c": "3:698c",
+  "g_6990": "3:6990",
+  "g_6994": "3:6994",
   "g_69c8": "3:69c8",
   "g_6ae8": "3:6ae8",
   "g_6b78": "3:6b78",
@@ -3813,11 +3926,13 @@
   "g_73a2": "3:73a2",
   "g_73a6": "3:73a6",
   "g_73a8": "3:73a8",
+  "g_73ac": "3:73ac",
   "g_73b4": "3:73b4",
   "g_73b8": "3:73b8",
   "g_73bc": "3:73bc",
   "g_73c0": "3:73c0",
   "g_73c4": "3:73c4",
+  "g_73c8": "3:73c8",
   "g_73cc": "3:73cc",
   "g_73d8": "3:73d8",
   "g_73dc": "3:73dc",
@@ -3846,6 +3961,7 @@
   "g_7448": "3:7448",
   "g_744c": "3:744c",
   "g_7450": "3:7450",
+  "g_7454": "3:7454",
   "g_7458": "3:7458",
   "g_745c": "3:745c",
   "g_7460": "3:7460",
@@ -3861,6 +3977,7 @@
   "g_7482": "3:7482",
   "g_7486": "3:7486",
   "g_7487": "3:7487",
+  "g_748c": "3:748c",
   "g_7490": "3:7490",
   "g_7492": "3:7492",
   "g_7498": "3:7498",
@@ -3869,6 +3986,7 @@
   "g_74a6": "3:74a6",
   "g_74ac": "3:74ac",
   "g_74ae": "3:74ae",
+  "g_74b4": "3:74b4",
   "g_74b6": "3:74b6",
   "g_74bc": "3:74bc",
   "g_74be": "3:74be",
@@ -3896,7 +4014,13 @@
   "g_755b": "3:755b",
   "g_756b": "3:756b",
   "g_756f": "3:756f",
+  "g_7585": "3:7585",
+  "g_7586": "3:7586",
   "g_7588": "3:7588",
+  "g_758c": "3:758c",
+  "g_7590": "3:7590",
+  "g_7594": "3:7594",
+  "g_75a4": "3:75a4",
   "g_75a8": "3:75a8",
   "g_75ac": "3:75ac",
   "g_75b0": "3:75b0",
@@ -3919,6 +4043,8 @@
   "g_7b1a": "3:7b1a",
   "g_7b20": "3:7b20",
   "g_7b22": "3:7b22",
+  "g_7b24": "3:7b24",
+  "g_7b26": "3:7b26",
   "g_7b28": "3:7b28",
   "g_7b2a": "3:7b2a",
   "g_7b2e": "3:7b2e",
@@ -3994,9 +4120,11 @@
   "g_8420": "3:8420",
   "g_8424": "3:8424",
   "g_8428": "3:8428",
+  "g_8870": "3:8870",
   "g_8db0": "3:8db0",
   "g_8db4": "3:8db4",
   "g_8db8": "3:8db8",
+  "g_8dc8": "3:8dc8",
   "g_8dd0": "3:8dd0",
   "g_8dd4": "3:8dd4",
   "g_8dd8": "3:8dd8",
@@ -4005,6 +4133,7 @@
   "g_8e00": "3:8e00",
   "g_8e04": "3:8e04",
   "g_8e08": "3:8e08",
+  "g_8e10": "3:8e10",
   "g_8e1c": "3:8e1c",
   "g_8e20": "3:8e20",
   "g_8e24": "3:8e24",
@@ -4059,6 +4188,8 @@
   "g_dd88": "3:dd88",
   "g_dd90": "3:dd90",
   "g_dd94": "3:dd94",
+  "g_dd98": "3:dd98",
+  "g_dd9c": "3:dd9c",
   "g_dda0": "3:dda0",
   "g_dda4": "3:dda4",
   "g_dda8": "3:dda8",
@@ -4071,10 +4202,12 @@
   "g_ddc4": "3:ddc4",
   "g_ddc8": "3:ddc8",
   "g_ddcc": "3:ddcc",
+  "g_ddd0": "3:ddd0",
   "g_ddd4": "3:ddd4",
   "g_ddd8": "3:ddd8",
   "g_dddc": "3:dddc",
   "g_de5c": "3:de5c",
+  "g_de60": "3:de60",
   "g_dedc": "3:dedc",
   "g_dee0": "3:dee0",
   "g_dee4": "3:dee4",
@@ -4088,17 +4221,21 @@
   "g_df38": "3:df38",
   "g_df3c": "3:df3c",
   "g_df40": "3:df40",
+  "g_df44": "3:df44",
   "g_df48": "3:df48",
   "g_df4c": "3:df4c",
   "g_df50": "3:df50",
   "g_df54": "3:df54",
+  "g_df58": "3:df58",
   "g_df5c": "3:df5c",
   "g_df60": "3:df60",
   "g_df64": "3:df64",
   "g_df68": "3:df68",
   "g_df6c": "3:df6c",
   "g_df70": "3:df70",
+  "g_df74": "3:df74",
   "g_df78": "3:df78",
+  "g_e13a": "3:e13a",
   "g_e13b": "3:e13b",
   "g_e13c": "3:e13c",
   "g_e13d": "3:e13d",
@@ -4119,9 +4256,22 @@
   "g_e160": "3:e160",
   "g_e162": "3:e162",
   "g_e164": "3:e164",
+  "g_e168": "3:e168",
+  "g_e16c": "3:e16c",
+  "g_e170": "3:e170",
+  "g_e1a8": "3:e1a8",
   "g_e1ac": "3:e1ac",
   "g_e1b0": "3:e1b0",
   "g_e1b4": "3:e1b4",
+  "g_e1b8": "3:e1b8",
+  "g_e1bc": "3:e1bc",
+  "g_e1be": "3:e1be",
+  "g_e1c0": "3:e1c0",
+  "g_e1c4": "3:e1c4",
+  "g_e1d0": "3:e1d0",
+  "g_e1d4": "3:e1d4",
+  "g_e1d8": "3:e1d8",
+  "g_e1ec": "3:e1ec",
   "g_e1fc": "3:e1fc",
   "g_e200": "3:e200",
   "g_e204": "3:e204",
@@ -4134,6 +4284,10 @@
   "g_e225": "3:e225",
   "g_e22c": "3:e22c",
   "g_e230": "3:e230",
+  "g_e23c": "3:e23c",
+  "g_e240": "3:e240",
+  "g_e244": "3:e244",
+  "g_e248": "3:e248",
   "g_e24c": "3:e24c",
   "g_e250": "3:e250",
   "g_e26c": "3:e26c",
@@ -4151,10 +4305,14 @@
   "g_e2e4": "3:e2e4",
   "g_e2e8": "3:e2e8",
   "g_e2ec": "3:e2ec",
+  "g_e2f4": "3:e2f4",
   "g_e2f8": "3:e2f8",
   "g_e2fc": "3:e2fc",
   "g_e300": "3:e300",
   "g_e304": "3:e304",
+  "g_e308": "3:e308",
+  "g_e30c": "3:e30c",
+  "g_e310": "3:e310",
   "g_e314": "3:e314",
   "g_e318": "3:e318",
   "g_e31c": "3:e31c",
@@ -4276,15 +4434,19 @@
   "malloc": "1:14609",
   "memcpy": "1:13f76",
   "memset": "1:14120",
+  "o2_103": "2:103",
+  "o2_e0": "2:e0",
   "outp": "1:13fa3",
   "outpw": "1:14771",
   "printf": "1:15136",
   "sel:grp:DGROUP": "obj3",
+  "spawnlp": "1:13b9c",
   "strcat": "1:13e60",
   "strchr": "1:14142",
   "strcmp": "1:141d0",
   "strcpy": "1:13bb6",
-  "strlen": "1:13f5d"
+  "strlen": "1:13f5d",
+  "strtoul": "1:13d21"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",

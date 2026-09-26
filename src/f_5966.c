@@ -1,0 +1,55 @@
+/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
+extern unsigned char g_6410[];
+extern unsigned char g_6508[];
+extern int g_8e04;
+extern unsigned char g_8e10[];
+extern int g_8e20;
+extern unsigned char g_a988[];
+extern int g_dd78;
+extern int g_dd9c;
+extern unsigned char g_ddb0[];
+extern int g_ddcc;
+extern int g_ddd0;
+extern unsigned char *g_df2c;
+extern unsigned char g_e142;
+extern void f_42e1(unsigned char, unsigned char, int, int);
+extern void f_5aaf(void);
+extern void f_5f71(int, int, int, int);
+extern void f_7e62(int, int, int, int, int, int, int);
+extern int f_dd01(int, int);
+void f_5966(void)
+{
+    if (g_e142 == 0) goto L_59a4;
+    if ((g_dd78 - g_ddcc) <= 0) goto L_5a9c;
+    g_8e20 = 0x16;
+    *(int *)g_8e10 = (int)g_6508;
+    goto L_59b8;
+L_59a4:;
+    g_8e20 = 0x37;
+    *(int *)g_8e10 = (int)g_6410;
+L_59b8:;
+    if (g_ddd0 != g_8e20) goto L_59e6;
+    f_7e62(0x90, 0x10, 0, 0, (int)g_df2c, *(int *)g_8e10, 1);
+L_59e6:;
+    --g_ddd0;
+    if (g_ddd0 > 0) goto L_5a9c;
+    g_ddd0 = *(int *)g_ddb0;
+    if (g_dd9c < 8) goto L_5a13;
+    g_dd9c -= 8;
+L_5a13:;
+    g_8e04 = *(unsigned char *)(g_a988 + g_dd9c++);
+    if (g_e142 == 0) goto L_5a6b;
+    g_8e04 = f_dd01() & 7;
+    f_42e1(1, 0, 0xa0, 0x20);
+    if (g_8e04 != 5) goto L_5a6b;
+    g_8e04 = 0;
+L_5a6b:;
+    if ((unsigned)g_8e04 <= 7) goto L_5a7e;
+    g_8e04 = 7;
+L_5a7e:;
+    f_5f71(0xa0, 0x10, (unsigned)f_dd01() >> 7, g_8e04);
+L_5a9c:;
+    if (g_ddcc == 0) goto L_5aaa;
+    f_5aaf();
+L_5aaa:;
+}

@@ -1,0 +1,38 @@
+/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
+extern short g_7b14;
+extern short g_7b16;
+extern void f_133f6(int, int, int);
+extern void f_ec76(void *);
+void f_a8bc(unsigned char * a0)
+{
+    int v_4;
+    int v_8;
+    int v_c;
+    int v_10;
+    v_c = g_7b16;
+    g_7b16 = g_7b14;
+    f_ec76((void *)*(int *)(a0 + 4));
+    v_10 = *(int *)a0;
+    v_8 = 0;
+L_a8fb:;
+    if (v_8 < *(int *)(a0 + 0xc)) goto L_a910;
+    goto L_a94a;
+L_a908:;
+    v_8++;
+    goto L_a8fb;
+L_a910:;
+    v_4 = 0;
+L_a917:;
+    if (v_4 < *(int *)(a0 + 8)) goto L_a92c;
+    goto L_a948;
+L_a924:;
+    v_4++;
+    goto L_a917;
+L_a92c:;
+    f_133f6(v_4, v_8, *(unsigned char *)(unsigned char *)(v_10++));
+    goto L_a924;
+L_a948:;
+    goto L_a908;
+L_a94a:;
+    g_7b16 = (unsigned short)v_c;
+}
