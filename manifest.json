@@ -3523,7 +3523,9 @@
    "end": "0x12a9c",
    "kind": "asm",
    "profile": "game-asm",
-   "status": "identified"
+   "status": "blocked",
+   "draft": "build/workers/asm2/a_11df8.asm",
+   "mismatch": "3235/3236 bytes: at 0x1297f original encodes a redundant SIB byte (00 14 66) where MASM 5.10A emits 00 16; no MASM syntax found that reproduces it without byte emission"
   },
   {
    "name": "a_12a9c",
