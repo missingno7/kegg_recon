@@ -1,6 +1,6 @@
 """Regression gate: freshly rebuild and re-verify every 'matching' function in manifest.json.
 
-    python tools/validate.py [--quiet] [-j N] [--host dosbox]
+    python tools/validate.py [--quiet] [-j N] [--host dosbox] [--image]   # --image: also the whole-image WLINK build
 
 Also checks manifest consistency: sorted non-overlapping extents, source hashes, unique names.
 Exit status 0 only if everything that is claimed still verifies EXACT.
@@ -78,6 +78,13 @@ def main(argv):
           f"{sum(1 for f in fns if f.get('status') == 'matching')} functions, {code_bytes} bytes; {len(errors)} error(s)")
     for e in errors[: (20 if quiet else 200)]:
         print("  -", e)
+    if "--image" in argv:
+        p = subprocess.run([sys.executable, str(ROOT / "tools" / "image.py"), "--mode", "canonical"],
+                           capture_output=True, text=True)
+        first = (p.stdout.strip().splitlines() or ["image.py produced no output"])[0]
+        print(first)
+        if p.returncode != 0:
+            errors.append("whole image not identical: " + first)
     return 0 if not errors else 1
 
 

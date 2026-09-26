@@ -29,7 +29,18 @@ Setup: `python -m pip install --no-user --target build/pylib capstone==5.0.7` (t
 
 ## Tools
 
-- `tools/le.py` — LE reader (header, objects, pages, fixups). `python tools/le.py assets/KE.EXE`
-- `tools/omf.py` — OMF object/library reader (Watcom 32-bit, Easy OMF).
-- `tools/libscan.py` — find runtime library members inside the original code object.
-- `tools/dosrun.py` — run a historical tool deterministically.
+| command | purpose |
+|---|---|
+| `python tools/context.py NAME` | worker packet: annotated disassembly, proven declarations, caller usage, best draft |
+| `python tools/check.py CAND NAME` | strict verifier for one function (`--all --at A --end B` for a whole TU incl. its data) |
+| `python tools/harvest.py DIR...` | check every candidate in worker dirs at once (`--promote`: supervisor only) |
+| `python tools/promote.py ...` | single-writer promotion of EXACT functions / asm / units (`--unit`) |
+| `python tools/validate.py [--host dosbox] [--image]` | regression gate over everything claimed; `--image` also links the whole EXE |
+| `python tools/image.py --mode canonical` | one WLINK run: canonical sources + explicit raw debt + GA libs -> must equal KE.EXE |
+| `python tools/lift.py NAME --refine` | automatic `-d2` decompiler (first drafts; many EXACT) |
+| `python tools/tu.py build --range A B` | synthesise a whole translation unit from matched members |
+| `python tools/status.py` | progress from manifest.json |
+| `tools/le.py`, `omf.py`, `omfwrite.py`, `libscan.py`, `inventory.py`, `tumap.py`, `show.py`, `dosrun.py`, `dosbox.py` | readers/writers and runners |
+
+Docs: `docs/evidence.md` (what is proven), `docs/compiler-notes.md` (Watcom idioms), `docs/grinding.md` and
+`docs/units.md` (worker workflows), `docs/bootstrap.md` (lessons from earlier projects).
