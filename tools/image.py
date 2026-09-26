@@ -281,7 +281,7 @@ def cache_compile(ctx, src: Path, profile: str, cache: Path):
     return out
 
 
-def canonical_items(ctx, cache):
+def canonical_items(ctx, cache, whatif=None):
     man = ctx.man
     items = []
     unit_src = {}
@@ -306,14 +306,51 @@ def canonical_items(ctx, cache):
                   int(f["end"], 16), f["src"], f["profile"])
         it.functions = [f["name"]]
         items.append(it)
-    for it in items:
-        try:
-            it.objpath = it.cache_path = cache_compile(ctx, ROOT / it.src, it.profile, cache)
-        except SystemExit as e:
-            it.problems.append(f"compile failed: {str(e).splitlines()[0]}")
-            continue
-        it.raw_mod = it.objpath.read_bytes()
-        it.mod = omf.parse_object(it.raw_mod)[0]
+    def build(lst):
+        for it in lst:
+            try:
+                it.objpath = it.cache_path = cache_compile(ctx, ROOT / it.src, it.profile, cache)
+            except SystemExit as e:
+                it.problems.append(f"compile failed: {str(e).splitlines()[0]}")
+                continue
+            it.raw_mod = it.objpath.read_bytes()
+            it.mod = omf.parse_object(it.raw_mod)[0]
+    if not whatif:
+        build(items)
+        return items
+    asm1 = [it for it in items if it.kind == "asm" and it.obj == 1]
+    build([it for it in items if it not in asm1])
+    wanted = {"main"} | {e for it in items if it.mod for e in it.mod.externs if e}
+    for it in asm1:
+        wanted |= {e for e in re.findall(r"EXTRN\s+(\w+)", (ROOT / it.src).read_text(errors="replace"))}
+    wdir = whatif
+    wdir.mkdir(parents=True, exist_ok=True)
+    for it in asm1:
+        text = (ROOT / it.src).read_text(errors="replace")
+        text = re.sub(r"\bASM_TEXT\s+SEGMENT\s+PARA\b", "_TEXT SEGMENT BYTE", text)
+        text = re.sub(r"\bASM_TEXT\b", "_TEXT", text)
+        # an empty REFDATA segment used as DS assumption gives the data fixups a frame outside DGROUP, and WLINK
+        # takes the LE target object from the frame: declare the EXTRNs outside any segment instead
+        text = re.sub(r"^REFDATA\s+SEGMENT[^\n]*\n|^REFDATA\s+ENDS[^\n]*\n", "", text, flags=re.M)
+        text = re.sub(r",\s*DS:REFDATA", "", text)
+        lines = text.splitlines()
+        added = []
+        for name in sorted(wanted):
+            a = ctx.addr_of_name(name)
+            if not a or a[0] != 1 or not it.start <= a[1] < it.end or re.search(rf"PUBLIC\s+{name}\b", text):
+                continue
+            rx = re.compile(rf"^\s*(a_{a[1]:x}|L_{a[1]:X}|L_{a[1]:x})\s*(:|LABEL)", re.I)
+            k = next((i for i, ln in enumerate(lines) if rx.match(ln)), None)
+            if k is None:
+                continue
+            lines[k + 1:k + 1] = [f"        PUBLIC {name}", f"{name} LABEL NEAR"]
+            added.append(name)
+        dst = wdir / Path(it.src).name
+        dst.write_text("\n".join(lines) + "\n")
+        it.notes.append(f"WHAT-IF copy {dst.relative_to(ROOT).as_posix()}: ASM_TEXT PARA -> _TEXT BYTE"
+                        + (f", aliases {added}" if added else ""))
+        it.src = dst.relative_to(ROOT).as_posix()
+    build(asm1)
     return items
 
 
@@ -1121,7 +1158,7 @@ def culprit_of(ctx, ev):
 
 def run(args):
     ctx = Ctx()
-    out = ROOT / "build" / "image" / args.mode
+    out = ROOT / "build" / "image" / (args.mode + ("-asmwhatif" if args.asm_whatif else ""))
     objdir = out / "objs"
     shutil.rmtree(objdir, ignore_errors=True)
     objdir.mkdir(parents=True)
@@ -1129,7 +1166,7 @@ def run(args):
     cache.mkdir(parents=True, exist_ok=True)
     reals = []
     if args.mode == "canonical":
-        reals = canonical_items(ctx, cache)
+        reals = canonical_items(ctx, cache, out / "asm-whatif" if args.asm_whatif else None)
         for r in reals:
             place_real(ctx, r)
             if r.key in args.exclude:
@@ -1178,7 +1215,8 @@ def run(args):
         ev = evaluate(ctx, args, reals, objdir, ref_order)
     plan, rb, bad, lib_problem = ev["plan"], ev["rb"], ev["bad"], ev["lib_problem"]
     excluded_log = [(k, w) for k, w in excluded_log if k not in readmitted]
-    report = {"mode": args.mode, "prediction_rounds": rounds, "readmitted_by_addback": readmitted}
+    report = {"mode": args.mode + (" (asm what-if: NOT canonical sources)" if args.asm_whatif else ""),
+              "prediction_rounds": rounds, "readmitted_by_addback": readmitted}
     report["predicted_fixup_order_mismatches"] = [
         {"page": k[0], "list": k[1], "index": i, "original": w and f"{w[0]}:{w[1]:x}",
          "predicted": g and f"{g[0]}:{g[1]:x}"} for k, i, w, g in bad]
@@ -1303,7 +1341,7 @@ def add_pseudo_refs(ctx, plan, rb, items, order, objdir):
 
 def write_report(out, report, plan, ctx, rb, excluded_log):
     report["items"] = {
-        "real": [{"key": r.key, "range": f"{r.obj}:{r.start:x}..{r.end:x}", "src": r.src,
+        "real": [{"key": r.key, "range": f"{r.obj}:{r.start:x}..{r.end:x}", "src": r.src, "notes": r.notes,
                   "data": {k: f"{h(b)}+{h(n)}" for k, (b, n) in r.data.items()}} for r in plan.reals],
         "rejected": [{"key": r.key, "range": f"{r.obj}:{r.start:x}..{r.end:x}", "src": r.src, "problems": r.problems}
                      for r in plan.rejected],
@@ -1320,7 +1358,7 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
     report["excluded_by_prediction"] = [{"key": k, "why": w} for k, w in excluded_log if w != "re-admitted"]
     cats = {}
     for r in plan.rejected:
-        p = r.problems[-1] if r.problems else ""
+        p = r.problems[0] if r.problems else ""
         c = ("LE fixup order (cuts an original LEDATA chunk / chunking differs)" if p.startswith("LE fixup order") else
              "runtime demand order" if p.startswith("runtime demand") else
              "code segment not _TEXT (ASM_TEXT PARA)" if p.startswith("code segment") else
@@ -1377,6 +1415,9 @@ def main(argv):
     ap.add_argument("--no-predict", dest="predict", action="store_false",
                     help="do not exclude canonical objects predicted to break identity")
     ap.add_argument("--no-addback", action="store_true", help="skip the re-admission pass after exclusions")
+    ap.add_argument("--asm-whatif", action="store_true",
+                    help="DIAGNOSTIC: link scratch copies of asm/*.asm with ASM_TEXT PARA -> _TEXT BYTE and "
+                         "PUBLIC aliases for imported entry names (build/image/canonical-asmwhatif; not canonical)")
     return run(ap.parse_args(argv[1:]))
 
 
