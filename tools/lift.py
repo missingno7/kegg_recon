@@ -772,6 +772,8 @@ class Lift:
             return
         if src[0] == "m":
             mark(a)
+            if b.op == "m":
+                self.int_result = True    # `(int)(p + a[i])`: mov edx,[p]; add edx,[a+eax]
         elif plain(b) and b.seq < a.seq:
             mark(b)
         elif plain(b) and a.op == b.op:
@@ -847,6 +849,8 @@ class Lift:
                 loc.var.note(2, "nval")
             if loc.var.kind in ("l", "a") and loc.w == 4 and val.w == 4 and not val.x and val.op in ("v", "m"):
                 loc.var.note(4, "wval")
+        if val.name == "intres" and val.op == "+" and loc.op == "v" and loc.var.kind == "g":
+            self.force_int.add(loc.var)
         mine = {id(n) for n in loc.walk()} | {id(n) for n in val.walk()}
         nx = self.body[self.pos + 1] if self.pos + 1 < len(self.body) else None
         embedded = nx is not None and nx.mn in ("cmp", "add", "sub", "and", "or", "xor", "imul") and             len(nx.ops) == 2 and nx.ops[1] == dst and nx.ops[0][0] == "r" and             self.regs.get(nx.ops[0][1]) is not None and id(self.regs[nx.ops[0][1]]) not in mine | self.consumed
@@ -868,6 +872,8 @@ class Lift:
         self.copy = None
         self.local_ptr = set()
         self.local_int = set()
+        self.force_int = set()
+        self.int_result = False
         self.pre_pending = []
         self.last_load = None
         self.retval = False
@@ -1202,6 +1208,7 @@ class Lift:
                     b = E(b.op, b.a, w=4, var=b.var)
                 if dst[2] < 4:
                     a = self.narrow(a, dst[2])
+                self.int_result = False
                 if mn == "add" and dst[1] != "eax" and dst[2] == 4:
                     self.pointer_sum(a, b, src)
                 elif mn == "add" and dst[2] == 4 and src[0] == "r":
@@ -1223,6 +1230,8 @@ class Lift:
                 if op in ("+", "*", "&", "|", "^") and src[0] == "r" and commute(a, b):
                     a, b = b, a
                 e = E(op, a, b, uns=uns, w=dst[2])
+                if self.int_result:
+                    e.name = "intres"
                 if mn in ("sar", "shr"):
                     self.mark_sign(a, mn == "sar")
             e = bitfield_read(simplify(e))
@@ -2089,10 +2098,13 @@ class Render:
     # whole function ----------------------------------------------------------------------------
     def source(self):
         L = self.L
-        saved = {v: (v.type, v.volatile) for v in L.local_ptr | L.local_int}
+        saved = {v: (v.type, v.volatile) for v in L.local_ptr | L.local_int | L.force_int}
         for v in L.local_ptr:       # pointer arithmetic seen in this function: a pointer here
             if v.type in ("i", "u"):
                 v.type, v.volatile = "p", False
+        for v in L.force_int - L.local_ptr:     # receives `(int)(p + a[i])`
+            if v.type == "p":
+                v.type = "i"
         for v in L.local_int - L.local_ptr:     # plain int arithmetic here
             if v.type == "p" and ((v.decl and v.decl["type"] in ("i", "u")) or not v.ptr):
                 v.type = v.decl["type"] if v.decl and v.decl["type"] in ("i", "u") else "i"
