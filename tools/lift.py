@@ -1814,6 +1814,8 @@ class Render:
             b, cb = f"(int){b}", "i"
         if op in ("+", "-") and ca == "p" and cb == "p":
             b, cb = f"(int){b}", "i"
+        if op == "-" and cb == "p" and ca != "p":
+            b, cb = f"(int){b}", "i"
         if op in ("+", "-") and "p" in (ca, cb):
             rt = "p"
         elif op in ("<<", ">>"):
@@ -1982,6 +1984,22 @@ class Render:
             return f"if ({self.expr(st[1])}) goto L_{st[2]:x};"
         if k == "goto":
             return f"goto L_{st[1]:x};"
+        if k in ("break", "continue"):
+            return f"{k};"
+        if k in ("ifbreak", "ifcontinue"):
+            return f"if ({self.expr(st[1])}) {k[2:]};"
+        if k == "ifthen":
+            return "\n".join([f"if ({self.expr(st[1])}) {{"] + self.block(st[2]) + ["}"])
+        if k == "ifelse":
+            return "\n".join([f"if ({self.expr(st[1])}) {{"] + self.block(st[2]) + ["} else {"] +
+                             self.block(st[3]) + ["}"])
+        if k == "while":
+            return "\n".join([f"while ({self.expr(st[1])}) {{"] + self.block(st[2]) + ["}"])
+        if k == "for":
+            step = ", ".join(self.stmt(x).rstrip(";") for x in st[2])
+            return "\n".join([f"for (; {self.expr(st[1])}; {step}) {{"] + self.block(st[3]) + ["}"])
+        if k == "dowhile":
+            return "\n".join(["do {"] + self.block(st[1]) + [f"}} while ({self.expr(st[2])});"])
         if k == "label":
             lines = []
             for sw in list(self.switches):
@@ -2004,6 +2022,12 @@ class Render:
             self.switches.append({"at": at, "end": end, "default": None if end else dflt})
             return f"switch ({self.expr(val)}) {{"
         return f"/* ? {k} */"
+
+    def block(self, stmts):
+        out = []
+        for x in stmts:
+            out.extend(self.stmt(x).split("\n"))
+        return out
 
     # whole function ----------------------------------------------------------------------------
     def source(self):
@@ -2037,12 +2061,12 @@ class Render:
                 if st[3] is not None:
                     used_labels.add(st[3])
                     used_labels.add(st[3])
-        for st in stmts:
-            if st[0] == "label" and st[1] not in used_labels:
-                continue
-            body.extend(self.stmt(st).split("\n"))
+        flat = [st for st in stmts if not (st[0] == "label" and st[1] not in used_labels)]
         if self.structured:
-            body = structure(body)
+            flat = Structurer(flat).run()
+        for st in flat:
+            body.extend(self.stmt(st).split("\n"))
+        body += ["}"] * len(self.switches)     # switches whose default case lies inside them
         # declarations
         out = ["/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */"]
         for inc in sorted(self.includes):
@@ -2406,8 +2430,183 @@ def lift_program(prog, names, structured=True):
 # ---------------------------------------------------------------------------------------------
 # Structuring: fold the fixed -od layouts of goto code into structured statements.  Each rule
 # rewrites text lines of the flat program; the rewritten form compiles to the same code.
-def structure(lines):
-    return lines
+def negate(c):
+    """The condition that jumps when `c` does not: `if (c) goto L; S; L:` == `if (!c) { S }`."""
+    if c.op == "cmp" and c.rel in NEG:
+        n = E("cmp", c.a, c.b, rel=NEG[c.rel], uns=c.uns)
+        return n
+    return None
+
+
+class Structurer:
+    """Fold the fixed -od layouts of the flat goto program into if/else, while, for and do-while
+    (probes b.c/e.c: each structured form compiles to exactly the same jumps).  Anything that does
+    not fit a layout stays a goto; --refine keeps the goto form if structuring ever changes code."""
+    SIMPLE = ("set", "opset", "incdec", "expr", "copy", "bfset")
+
+    def __init__(self, stmts):
+        self.stmts = stmts
+        self.refs = Counter()
+        for st in stmts:
+            if st[0] == "if" and st[2] is not None:
+                self.refs[st[2]] += 1
+            elif st[0] == "goto":
+                self.refs[st[1]] += 1
+            elif st[0] == "switch":
+                for t in st[2]:
+                    self.refs[t] += 1
+                if st[3] is not None:
+                    self.refs[st[3]] += 1
+
+    def run(self):
+        if any(st[0] == "switch" for st in self.stmts):
+            return self.stmts        # case labels must stay at their statements
+        return self.seq(list(self.stmts))
+
+    @staticmethod
+    def find(seq, kind, target, start):
+        for j in range(start, len(seq)):
+            if seq[j][0] == kind and seq[j][1] == target:
+                return j
+        return None
+
+    def jumps(self, block, lab):
+        """Top-level (not inside nested loops) references to `lab` in a structured block."""
+        n = 0
+        for st in block:
+            if st[0] in ("goto",) and st[1] == lab or st[0] == "if" and st[2] == lab:
+                n += 1
+            elif st[0] == "ifthen":
+                n += self.jumps(st[2], lab)
+            elif st[0] == "ifelse":
+                n += self.jumps(st[2], lab) + self.jumps(st[3], lab)
+        return n
+
+    def nested_refs(self, block, lab):
+        n = 0
+        for st in block:
+            if st[0] in ("goto",) and st[1] == lab or st[0] == "if" and st[2] == lab:
+                n += 1
+            for x in st[1:]:
+                if isinstance(x, list):
+                    n += self.nested_refs(x, lab)
+        return n
+
+    def convert(self, block, lab, kind):
+        out = []
+        for st in block:
+            if st[0] == "goto" and st[1] == lab:
+                st = (kind,)
+            elif st[0] == "if" and st[2] == lab:
+                st = ("if" + kind, st[1])
+            elif st[0] == "ifthen":
+                st = ("ifthen", st[1], self.convert(st[2], lab, kind))
+            elif st[0] == "ifelse":
+                st = ("ifelse", st[1], self.convert(st[2], lab, kind), self.convert(st[3], lab, kind))
+            out.append(st)
+        return out
+
+    def loop_body(self, body, lbreak, lcont):
+        """Structure a loop body and turn its jumps to the loop exits into break/continue; None if
+        a jump from a nested loop would need a goto into this loop's hidden positions."""
+        body = self.seq(body)
+        for lab, kind in ((lbreak, "break"), (lcont, "continue")):
+            if lab is None:
+                continue
+            if self.nested_refs(body, lab) != self.jumps(body, lab):
+                return None
+            body = self.convert(body, lab, kind)
+        return body
+
+    def seq(self, seq):
+        out = []
+        i = 0
+        while i < len(seq):
+            r = self.at(seq, i)
+            if r is None:
+                out.append(seq[i])
+                i += 1
+            else:
+                node, i = r
+                out.append(node)
+        return out
+
+    def at(self, seq, i):
+        st = seq[i]
+        n = len(seq)
+        if st[0] == "label":
+            top = st[1]
+            # for: Ltop: if (c) goto Lbody; goto Lend; Lstep: step; goto Ltop; Lbody: body; goto Lstep; Lend:
+            if i + 3 < n and seq[i + 1][0] == "if" and seq[i + 2][0] == "goto" and seq[i + 3][0] == "label":
+                lbody, lend, lstep = seq[i + 1][2], seq[i + 2][1], seq[i + 3][1]
+                j = self.find(seq, "goto", top, i + 4)
+                if j is not None and all(x[0] in self.SIMPLE for x in seq[i + 4:j]) and j + 1 < n and \
+                        seq[j + 1] == ("label", lbody) and self.refs[top] == 1 and self.refs[lbody] == 1:
+                    k = self.find(seq, "label", lend, j + 2)
+                    if k is not None and seq[k - 1] == ("goto", lstep):
+                        body = seq[j + 2:k - 1]
+                        c = seq[i + 1][1]
+                        inner = [x for x in body]
+                        nb = self.jumps_flat(inner, lend)
+                        nc = self.jumps_flat(inner, lstep)
+                        if self.refs[lend] == 1 + nb and self.refs[lstep] == 2 + nc and c.op == "cmp":
+                            b = self.loop_body(inner, lend, lstep)
+                            if b is not None:
+                                return ("for", c, list(seq[i + 4:j]), b), k + 1
+            # while: Ltop: if (c) goto Lend; body; [Lcont:] goto Ltop; Lend:
+            if i + 1 < n and seq[i + 1][0] == "if" and seq[i + 1][1].op == "cmp":
+                lend = seq[i + 1][2]
+                j = self.find(seq, "goto", top, i + 2)
+                if j is not None and j + 1 < n and seq[j + 1] == ("label", lend) and self.refs[top] == 1:
+                    body = seq[i + 2:j]
+                    lcont = None
+                    if body and body[-1][0] == "label":
+                        lcont = body[-1][1]
+                        body = body[:-1]
+                        if self.refs[lcont] != self.jumps_flat(body, lcont):
+                            lcont = "bad"
+                    c = negate(seq[i + 1][1])
+                    if c is not None and lcont != "bad" and self.refs[lend] == 1 + self.jumps_flat(body, lend):
+                        b = self.loop_body(body, lend, lcont)
+                        if b is not None:
+                            return ("while", c, b), j + 2
+            # do-while: Ltop: body; [Lcont:] if (c) goto Ltop; [Lend:]
+            j = next((k for k in range(i + 1, n) if seq[k][0] == "if" and seq[k][2] == top), None)
+            if j is not None and self.refs[top] == 1 and seq[j][1].op == "cmp":
+                body = seq[i + 1:j]
+                lcont = None
+                if body and body[-1][0] == "label":
+                    lcont = body[-1][1]
+                    body = body[:-1]
+                lend = seq[j + 1][1] if j + 1 < n and seq[j + 1][0] == "label" else None
+                okc = lcont is None or self.refs[lcont] == self.jumps_flat(body, lcont)
+                okb = lend is None or self.refs[lend] == self.jumps_flat(body, lend)
+                if okc and okb and not any(x[0] == "label" and self.refs[x[1]] and
+                                           self.find(seq, "goto", x[1], j) is not None for x in body):
+                    b = self.loop_body(body, lend, lcont)
+                    if b is not None:
+                        return ("dowhile", b, seq[j][1]), (j + 1 if lend is None else j + 2)
+            return None
+        if st[0] == "if" and st[2] is not None and st[1].op == "cmp":
+            lab = st[2]
+            j = self.find(seq, "label", lab, i + 1)
+            if j is None or self.refs[lab] != 1:
+                return None
+            c = negate(st[1])
+            if c is None:
+                return None
+            # if/else: if (c) goto Lelse; S1; goto Lend; Lelse: S2; Lend:
+            if j - 1 > i and seq[j - 1][0] == "goto":
+                lend = seq[j - 1][1]
+                k = self.find(seq, "label", lend, j + 1)
+                if k is not None and self.refs[lend] == 1:
+                    return ("ifelse", c, self.seq(seq[i + 1:j - 1]), self.seq(seq[j + 1:k])), k + 1
+            return ("ifthen", c, self.seq(seq[i + 1:j])), j + 1
+        return None
+
+    @staticmethod
+    def jumps_flat(block, lab):
+        return sum(1 for st in block if (st[0] == "goto" and st[1] == lab) or (st[0] == "if" and st[2] == lab))
 
 
 def main():

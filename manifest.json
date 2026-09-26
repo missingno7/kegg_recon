@@ -1220,8 +1220,10 @@
    "start": "0x6a1d",
    "end": "0x6b02",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_6a1d.c",
+   "src_sha256": "61a1614311c47ec4557b1ef5a6a8357ee8823e3e9d99a7e24b11d0329d3115c7"
   },
   {
    "name": "f_6b02",
@@ -4030,6 +4032,7 @@
   "g_94b4": "3:94b4",
   "g_94b8": "3:94b8",
   "g_9af8": "3:9af8",
+  "g_a518": "3:a518",
   "g_a608": "3:a608",
   "g_a848": "3:a848",
   "g_a988": "3:a988",
