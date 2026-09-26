@@ -142,13 +142,11 @@ def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
     else:
         args = [*prof["flags"], f"-fo={win(obj)}", f"-i={win(ROOT / 'include')}", src.name]
     if host == "dosbox":  # DOS paths: compile a copy inside the work dir
-        shutil.copyfile(src, outdir / src.name)
-        args = [a for a in args if not a.startswith(("-fo=", "-i="))] + ["-fo=" + obj.name]
+        shutil.copyfile(src, outdir / "CAND.C")
+        args = [a for a in args if not a.startswith(("-fo=", "-i=")) and a != src.name] + ["-fo=CAND.OBJ", "CAND.C"]
         r = dosrun.run(tool, args, install=prof["install"], cwd=outdir, host="dosbox")
-        if not obj.exists():
-            alt = outdir / obj.name.upper()
-            if alt.exists():
-                alt.rename(obj)
+        if (outdir / "CAND.OBJ").exists():
+            (outdir / "CAND.OBJ").rename(obj)
     else:
         r = dosrun.run(tool, args, install=prof["install"], cwd=src.parent)
     (outdir / (src.stem + ".log")).write_text(r.out)
