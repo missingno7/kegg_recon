@@ -22,7 +22,7 @@ Historical installs live outside git under `C:/tools` (override `KEGG_TOOLS`), s
 `--install NAME` recreates one from its pinned source archive.
 
 ```
-python tools/dosrun.py wcc386 -3s -od -s foo.c      # pinned tool, clean environment
+python tools/dosrun.py wcc386 -3s -d2 -s foo.c      # pinned tool, clean environment
 ```
 
 Setup: `python -m pip install --no-user --target build/pylib capstone==5.0.7` (tools import capstone from there).

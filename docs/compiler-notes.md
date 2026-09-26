@@ -1,4 +1,4 @@
-# Watcom 10.0 `-3s -od` code-generation notes
+# Watcom 10.0 `-3s -d2` code-generation notes
 
 Proven by controlled probes (identical under 10.0 GA and 10.0a, `-od` and `-ot -od`) or by EXACT matches.
 Details: `build/workers/slots/REPORT.md` (not tracked; regenerate with the probes it lists).
@@ -14,7 +14,7 @@ Stack slots
 - Small structs take a dword slot; larger ones keep their size, 4-aligned. Arrays are packed at element
   width with a dword-aligned base.
 - The spill of a returned value (`mov [ebp-N],eax; mov eax,[ebp-N]; leave`) takes its own slot whose
-  position depends on the local types and the returned expression — e.g. with two `unsigned` locals it
+  position depends on the local types and the returned expression â€” e.g. with two `unsigned` locals it
   comes first, with two `unsigned short` locals it comes last (f_9ca4). Wrong slot order is usually a
   type problem, not a flag problem.
 - Nested-block autos keep their own slot (no reuse after the block); `register` has no effect; `static`
@@ -24,11 +24,11 @@ Calls
 - Constant argument to an `int`/`long`/pointer parameter (or an unprototyped call): `push imm`.
   To a `char`/`short` (signed or unsigned) parameter: `mov eax,imm; push eax` (`xor eax,eax` for 0; the value is
   zero-extended to the parameter width, so `(char)-1` gives `mov eax,0xff`). So call sites reveal the callee's
-  parameter types — and require the right prototype in the candidate.
+  parameter types â€” and require the right prototype in the candidate.
 
 Control flow
 - `for (i = a; i < n; i++) body` compiles to: init; `L1: cmp; jl L3; jmp L4; L2: inc; jmp L1; L3: body; jmp L2; L4:`.
-  A `while` loop has the plain `L1: cmp; jge L4; body; jmp L1` shape — pick the form by the layout.
+  A `while` loop has the plain `L1: cmp; jge L4; body; jmp L1` shape â€” pick the form by the layout.
 - `switch` with a dense range: jump table inside the function, preceded by `jmp` over it and a `nop` to
   4-align the table.
 
@@ -49,7 +49,7 @@ in every probe, `-hw` format; `-hc` changes code and is excluded). PROVEN by:
   `check.py` currently reports as unplaceable data. `build/workers/idioms/hv.py "-3s -d2 -s" FILES` compiles
   with `-d2` and runs `check.py --obj`, treating only those debug-segment problems as ignorable (`EXACT*`).
   Needed centrally: profile `game-c-d2` and a check.py rule that ignores debug-class segments. Until then
-  `volatile` is NOT the source construct — do not add it.
+  `volatile` is NOT the source construct â€” do not add it.
 - `-od` vs `-d2` differ only on ebp-relative operands (params/autos), never on globals (`od_vs_d2.c`):
   push (`push dword ptr [ebp+x]` vs `mov eax,[ebp+x]; push eax`), flag test (`test byte ptr [ebp+x],m` vs
   `test dword ptr [ebp+x],m`; the original has 21 dword / 0 byte tests on dword autos), and the dead load of a
@@ -95,7 +95,7 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
   `if (s->hi)` -> `test byte ptr [eax],mask` (f_3918 `struct { unsigned char lo:2, hi:6; unsigned char flag; }`;
   `bitf.c`). Byte-width `shr al`/`and al` on a loaded byte means a bitfield, not `(x >> n) & m`.
 - Sums of calls: write the natural left-associative `f(a)+f(b)+f(c)+...` in call order; partial sums rotate through
-  ESI/EBX across the calls (`movzx esi,al; ...; add ebx,esi`) � f_a966, no reordering tricks needed.
+  ESI/EBX across the calls (`movzx esi,al; ...; add ebx,esi`) — f_a966, no reordering tricks needed.
 - Structs are packed (`-zp1` default): `struct {int a; unsigned char b; int c;}` puts `c` at +5 (`testb.c`).
 - `enum` objects take the smallest integer type (byte if values fit): `movzx eax,byte ptr` when passed (`p2.c`).
 - Address constants as arguments (`&g`, arrays, string literals, function names) -> `mov eax,offset; push eax`;
