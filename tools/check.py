@@ -21,7 +21,10 @@ import argparse
 import difflib
 import hashlib
 import json
+import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import capstone
@@ -177,6 +180,9 @@ def compare(mod, si, c0, c1, a0, orig_len=None):
     return res, cand, orig, masked
 
 
+NAME_RX = re.compile(r"^([fg])_([0-9a-f]+)$")
+
+
 def check_bindings(res, man, own_names):
     known = known_symbols(man)
     new = {}
@@ -184,6 +190,11 @@ def check_bindings(res, man, own_names):
         if k.startswith("seg:") or k.startswith("grp:"):
             new[k] = v
             continue
+        m = NAME_RX.match(k)
+        if m:  # address-named symbol: the name is the claim
+            want = f"{1 if m.group(1) == 'f' else 3}:{int(m.group(2), 16):x}"
+            if v != want:
+                res["problems"].append(f"{k} binds to {v}, but its name says {want}")
         if k in known:
             if known[k] != v:
                 res["problems"].append(f"binding {k}={v} contradicts manifest {known[k]}")
@@ -241,10 +252,15 @@ def main(argv):
     tag = a.func or src.stem
     outdir = ROOT / "build" / "check" / tag
     if a.obj:
-        objp = Path(a.obj)
+        mod = omf.load(Path(a.obj))[0]
     else:
-        objp, _ = compile_candidate(src, a.profile, outdir)
-    mod = omf.load(objp)[0]
+        (ROOT / "build" / "tmp").mkdir(parents=True, exist_ok=True)
+        work = Path(tempfile.mkdtemp(prefix=tag + "-", dir=ROOT / "build" / "tmp"))
+        try:
+            objp, _ = compile_candidate(src, a.profile, work)
+            mod = omf.load(objp)[0]
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
     si = code_segment(mod)
     ext = symbol_extents(mod, si)
     seg_end = mod.segments[si].size
@@ -277,6 +293,9 @@ def main(argv):
             want = f"1:{a0 + off - c0:x}"
             if res["bindings"][name] != want:
                 res["problems"].append(f"local symbol {name} bound to {res['bindings'][name]} but lies at {want}")
+    segkey = "seg:" + mod.segments[si].name
+    if segkey in res["bindings"] and res["bindings"][segkey] != f"1:{(a0 - c0) & 0xFFFFFFFF:x}":
+        res["problems"].append(f"{segkey} bound to {res['bindings'][segkey]}, expected 1:{(a0 - c0) & 0xFFFFFFFF:x}")
     res["verdict"] = "EXACT" if not res["problems"] else "DIFF"
     res["diff"] = instruction_diff(cand, orig, a0, masked) if res["verdict"] != "EXACT" else None
     res["source"] = str(src)

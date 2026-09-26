@@ -108,6 +108,18 @@
    ],
    "status": "hypothesis",
    "evidence": "docs/evidence.md#compiler-profile"
+  },
+  "game-c-ot": {
+   "install": "wc100a",
+   "tool": "wcc386",
+   "flags": [
+    "-3s",
+    "-ot",
+    "-od",
+    "-s"
+   ],
+   "status": "hypothesis",
+   "evidence": "functions 4-aligned with 90/8bc0/8d4000 fillers, /od frames (obj1 ~0x9960-0xa8bc)"
   }
  }
 }

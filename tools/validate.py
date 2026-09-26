@@ -1,0 +1,65 @@
+"""Regression gate: freshly rebuild and re-verify every 'matching' function in manifest.json.
+
+    python tools/validate.py [--quiet] [-j N]
+
+Also checks manifest consistency: sorted non-overlapping extents, source hashes, unique names.
+Exit status 0 only if everything that is claimed still verifies EXACT.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def main(argv):
+    quiet = "--quiet" in argv
+    jobs = int(argv[argv.index("-j") + 1]) if "-j" in argv else 8
+    man = json.loads((ROOT / "manifest.json").read_text())
+    fns = man.get("functions", [])
+    errors = []
+    names = [f["name"] for f in fns]
+    if len(set(names)) != len(names):
+        errors.append("duplicate function names")
+    prev_end = -1
+    for f in sorted(fns, key=lambda f: int(f["start"], 16)):
+        s, e = int(f["start"], 16), int(f["end"], 16)
+        if s < prev_end:
+            errors.append(f"overlap at {f['name']} {f['start']}")
+        prev_end = e
+    todo = [f for f in fns if f.get("status") == "matching"]
+    for f in todo:
+        src = ROOT / f["src"]
+        if not src.exists():
+            errors.append(f"{f['name']}: missing {f['src']}")
+        elif hashlib.sha256(src.read_bytes()).hexdigest() != f.get("src_sha256"):
+            errors.append(f"{f['name']}: source changed since promotion")
+
+    def one(f):
+        out = ROOT / "build" / "validate" / f"{f['name']}.json"
+        cmd = [sys.executable, str(ROOT / "tools" / "check.py"), str(ROOT / f["src"]), f["name"],
+               "--at", f["start"], "--end", f["end"], "--profile", f.get("profile", "game-c"), "--json", str(out)]
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        return f, p
+
+    ok = 0
+    with ThreadPoolExecutor(jobs) as ex:
+        for f, p in ex.map(one, todo):
+            if p.returncode == 0 and p.stdout.startswith("EXACT"):
+                ok += 1
+            else:
+                errors.append(f"{f['name']}: {p.stdout.strip().splitlines()[0] if p.stdout.strip() else p.stderr.strip()[:200]}")
+    code_bytes = sum(int(f["end"], 16) - int(f["start"], 16) for f in todo)
+    print(f"validate: {ok}/{len(todo)} matching functions EXACT ({code_bytes} bytes); {len(errors)} error(s)")
+    for e in errors[: (20 if quiet else 200)]:
+        print("  -", e)
+    return 0 if not errors else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
