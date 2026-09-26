@@ -23,7 +23,12 @@ original per-page LE fixup record order under the WLINK model measured in build/
   * each page keeps a list of 512-byte blocks of LE records; a record that does not fit opens a new block,
     blocks are written newest first; sel16 (base) records live in a separate list written before off32 ones.
 The same model predicts the fixup order of real objects from their OMF, so a substitution that cannot be
-identical (e.g. a function object that cuts one of the original LEDATA chunks) is kept as raw debt and reported.
+identical (e.g. a function object that cuts one of the original LEDATA chunks) is kept as raw debt and reported;
+excluded items are then re-admitted one at a time if the prediction stays clean (add-back pass).  The linked
+file is always compared in full (SHA-256, stub, LE header, object table, page map, object bytes, fixup pages).
+
+    python tools/image.py --asm-whatif       # DIAGNOSTIC only: scratch copies of asm/*.asm with the segment
+                                             # directive / entry aliases / REFDATA frame changed (not canonical)
 """
 from __future__ import annotations
 
@@ -34,7 +39,6 @@ import re
 import shutil
 import struct
 import sys
-from bisect import bisect_right
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -610,8 +614,7 @@ class RawBuilder:
     def __init__(self, plan):
         self.plan = plan
         self.ctx = plan.ctx
-        self.stats = {"le_fixups": 0, "rel32_fixups": 0, "rel32_baked_cross": 0, "exports": 0,
-                      "group_relative": 0, "segment_relative_out_of_range": 0}
+        self.stats = {"group_relative": 0}   # targets expressed as DGROUP/segment + offset (no public)
 
     def canonical_name(self, obj, addr):
         n = self.ctx.fn_start.get((obj, addr))
@@ -1061,7 +1064,7 @@ def accounting(ctx, plan):
         add("obj1", "raw" if not it.real else it.kind, it.end - it.start)
     t = plan.tail
     add("obj2", "raw" if not t.real else t.kind, t.end - t.start)
-    init_end = o.L.objects[2]["vsize"] if False else len(o.L.object_bytes(o.L.objects[2]))
+    init_end = len(o.L.object_bytes(o.L.objects[2]))
     game3 = 0
     for it in plan.reals:
         for cls, (b, n) in it.data.items():
@@ -1354,6 +1357,7 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
         for k, v in getattr(it, "stats", {}).items():
             st[k] = st.get(k, 0) + v
     st["exports"] = sum(len(it.exports) for it in plan.code_items + [plan.tail] + plan.carriers if not it.real)
+    st.update(rb.stats)
     report["raw_stats"] = st
     report["excluded_by_prediction"] = [{"key": k, "why": w} for k, w in excluded_log if w != "re-admitted"]
     cats = {}
