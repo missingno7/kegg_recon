@@ -388,8 +388,10 @@
    "start": "0x2796",
    "end": "0x27df",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2796.c",
+   "src_sha256": "8fcbcb6100602c15bc74987b4c3a8496168c85f5db5e6d2c0abd7356e5750e8a"
   },
   {
    "name": "f_27df",
@@ -412,8 +414,10 @@
    "start": "0x2c72",
    "end": "0x2ccc",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2c72.c",
+   "src_sha256": "7ee22dad0eea8c62750bc5fbbd866693c177ed1b2b605788d7a5280eba6479ea"
   },
   {
    "name": "f_2ccc",
@@ -428,24 +432,30 @@
    "start": "0x2da3",
    "end": "0x2e4a",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2da3.c",
+   "src_sha256": "d06a51f25f25918bf4b5bff46bddbf63b98be97f34494be58f27d3229fc85cf0"
   },
   {
    "name": "f_2e4a",
    "start": "0x2e4a",
    "end": "0x2eab",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2e4a.c",
+   "src_sha256": "d223855418024e42b374b0622c601433231043cfe641e822cacb80e4662eedaf"
   },
   {
    "name": "f_2eab",
    "start": "0x2eab",
    "end": "0x2f0c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2eab.c",
+   "src_sha256": "7d5ef594f1ff0aacc159d0965099d1c69be79f931bd4b99500ad7f9494a4fb4f"
   },
   {
    "name": "f_2f0c",
@@ -692,8 +702,10 @@
    "start": "0x45d0",
    "end": "0x4602",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_45d0.c",
+   "src_sha256": "2261b1dee2369da51c2a60dfac6f6ab054b8d8b7913a80b22d3bd04bf7285a76"
   },
   {
    "name": "f_4602",
@@ -708,8 +720,10 @@
    "start": "0x469b",
    "end": "0x46e7",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_469b.c",
+   "src_sha256": "8945661289e542cb81630b5bb848184e3636895477561519b31c883503038a47"
   },
   {
    "name": "f_46e7",
@@ -724,56 +738,70 @@
    "start": "0x4745",
    "end": "0x4761",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4745.c",
+   "src_sha256": "d961a1e06d8ffa29c56a9defda8370e9c45b4e040aed7f5f250f31a4bf65eef6"
   },
   {
    "name": "f_4761",
    "start": "0x4761",
    "end": "0x4802",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4761.c",
+   "src_sha256": "9bc998c45136b5571c7984fc674a88b50a6069fdce2057177844cd400ff77ab7"
   },
   {
    "name": "f_4802",
    "start": "0x4802",
    "end": "0x4847",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4802.c",
+   "src_sha256": "a7e16bd4b3e1d7913c7655b436fd4266cd2f54cf635c412f1acb05befb50867a"
   },
   {
    "name": "f_4847",
    "start": "0x4847",
    "end": "0x4886",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4847.c",
+   "src_sha256": "8ca208b8414c88b25b9568dcbed24d6755cd0a9203fcdb11b835fca9239f4738"
   },
   {
    "name": "f_4886",
    "start": "0x4886",
    "end": "0x48d2",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4886.c",
+   "src_sha256": "7d588c1cf2b2aba591309508c5cfbde593bdad4699f031d6e6120c4926f42637"
   },
   {
    "name": "f_48d2",
    "start": "0x48d2",
    "end": "0x4931",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_48d2.c",
+   "src_sha256": "191182091e741424a43395e585a7583ced540024e9ce6e67c423d5f9e7430b14"
   },
   {
    "name": "f_4931",
    "start": "0x4931",
    "end": "0x4955",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4931.c",
+   "src_sha256": "1a51616f9b437624e00f37775dec9477fc240dd2f70b3ab64f28895db571091f"
   },
   {
    "name": "f_4955",
@@ -788,64 +816,80 @@
    "start": "0x49c7",
    "end": "0x49fb",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_49c7.c",
+   "src_sha256": "a80e6ee0caa432b9f2573094b5f5f7893882631eb3752ab62a58be1b1fb710e0"
   },
   {
    "name": "f_49fb",
    "start": "0x49fb",
    "end": "0x4a5a",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_49fb.c",
+   "src_sha256": "fbda5b0e198b08ce13270ec39a6af9c9a5a0225dcd061bfc778ebece6e4ba72b"
   },
   {
    "name": "f_4a5a",
    "start": "0x4a5a",
    "end": "0x4aca",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4a5a.c",
+   "src_sha256": "7f551885887d9016a509ba2206b687f7030f5cd76ebd763fd71258b5360e01dc"
   },
   {
    "name": "f_4aca",
    "start": "0x4aca",
    "end": "0x4af0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4aca.c",
+   "src_sha256": "7ad97b7d50c53ec90ffdb1a53be65958021640367318f1d0b9fa56d7ee3d19d6"
   },
   {
    "name": "f_4af0",
    "start": "0x4af0",
    "end": "0x4b4f",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4af0.c",
+   "src_sha256": "1296a5084c73d11f4c2410b310adcf2158772d08a6f1c95375af9f26fdbb77c9"
   },
   {
    "name": "f_4b4f",
    "start": "0x4b4f",
    "end": "0x4bae",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4b4f.c",
+   "src_sha256": "909b71acf7faa3d1b594277ba5ac489a8d7d24817b97abd4ef1a27be7a8036d9"
   },
   {
    "name": "f_4bae",
    "start": "0x4bae",
    "end": "0x4c0d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4bae.c",
+   "src_sha256": "e4c242e4c1360971545035c6308e1d01abc5300c511c3c9bd987100e129dfd22"
   },
   {
    "name": "f_4c0d",
    "start": "0x4c0d",
    "end": "0x4c6c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4c0d.c",
+   "src_sha256": "b73e2badee1f7bd767d0d2a3b84ea105c1fba09e0605cafae5907ec86762f385"
   },
   {
    "name": "f_4c6c",
@@ -870,8 +914,10 @@
    "start": "0x4ce1",
    "end": "0x4cf2",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4ce1.c",
+   "src_sha256": "18c9254314535aa8b4c7cfc4a1d27c2511a20cd805bd5e57df334538120941ff"
   },
   {
    "name": "f_4cf2",
@@ -2697,19 +2743,45 @@
   }
  ],
  "symbols": {
+  "f_13a48": "1:13a48",
   "g_387a": "3:387a",
+  "g_5c78": "3:5c78",
+  "g_6160": "3:6160",
   "g_6924": "3:6924",
+  "g_6950": "3:6950",
+  "g_6954": "3:6954",
+  "g_6968": "3:6968",
+  "g_696c": "3:696c",
+  "g_6970": "3:6970",
   "g_746e": "3:746e",
   "g_7474": "3:7474",
   "g_7476": "3:7476",
+  "g_747c": "3:747c",
+  "g_7b14": "3:7b14",
   "g_7b18": "3:7b18",
+  "g_7c08": "3:7c08",
+  "g_8db8": "3:8db8",
   "g_8ddc": "3:8ddc",
+  "g_8e20": "3:8e20",
+  "g_8e24": "3:8e24",
   "g_947c": "3:947c",
   "g_9488": "3:9488",
+  "g_dd44": "3:dd44",
   "g_dd48": "3:dd48",
+  "g_ddb8": "3:ddb8",
+  "g_ddd4": "3:ddd4",
+  "g_ddd8": "3:ddd8",
+  "g_de5c": "3:de5c",
+  "g_dee4": "3:dee4",
+  "g_df28": "3:df28",
+  "g_df30": "3:df30",
+  "g_df40": "3:df40",
   "g_e324": "3:e324",
   "g_e35a": "3:e35a",
   "g_e37a": "3:e37a",
+  "g_e4c4": "3:e4c4",
+  "g_e4c6": "3:e4c6",
+  "g_e4c8": "3:e4c8",
   "g_e4d0": "3:e4d0",
   "getenv": "1:1427c"
  }
