@@ -112,16 +112,20 @@
    "start": "0x7e9",
    "end": "0x81d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7e9.c",
+   "src_sha256": "838f579056c25960cdecbcf229cdf0245d55102722ceb70ec01b834d757182f0"
   },
   {
    "name": "f_81d",
    "start": "0x81d",
    "end": "0x8d3",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_81d.c",
+   "src_sha256": "dfd13a117dd0ff2bafbeab6c7c3dcd065bc49778263d98b2dada235b3b302f4c"
   },
   {
    "name": "f_8d3",
@@ -160,8 +164,10 @@
    "start": "0xe70",
    "end": "0xea4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e70.c",
+   "src_sha256": "43849e8d5b28552b67538b8d81f55d83e0b23968f9d525eaaf485522c431b6a0"
   },
   {
    "name": "f_ea4",
@@ -256,16 +262,20 @@
    "start": "0x19b9",
    "end": "0x1af4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_19b9.c",
+   "src_sha256": "f92235f4a95c709741493dc9976bbaa0d41cd3f8a789470f4419a119b1e6bb5a"
   },
   {
    "name": "f_1af4",
    "start": "0x1af4",
    "end": "0x1b7e",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_1af4.c",
+   "src_sha256": "216adc4cd6a97e6d6ac0c3181099be1e1e60f7db3a43119f9351f249da2bda9a"
   },
   {
    "name": "f_1b7e",
@@ -340,24 +350,30 @@
    "start": "0x240f",
    "end": "0x2484",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_240f.c",
+   "src_sha256": "b6f7205c82782172042b262cab17a7f8703cd2684d15b42bc3d5a68800acce60"
   },
   {
    "name": "f_2484",
    "start": "0x2484",
    "end": "0x251c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2484.c",
+   "src_sha256": "8932ac8525994dc643c58bbee970726a9e80f9e37a282e94774bc182ce211dc3"
   },
   {
    "name": "f_251c",
    "start": "0x251c",
    "end": "0x2565",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_251c.c",
+   "src_sha256": "9851bf681db0b9f74aacc8224dacd5f33b364c048cc3cd4734b26ff4d4fa5b97"
   },
   {
    "name": "f_2565",
@@ -372,16 +388,20 @@
    "start": "0x2689",
    "end": "0x26fe",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2689.c",
+   "src_sha256": "96dba7e9a1f618b7fba23ccd5a95d78ca8c388691cf51d8a00ee35daf8c6f117"
   },
   {
    "name": "f_26fe",
    "start": "0x26fe",
    "end": "0x2796",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_26fe.c",
+   "src_sha256": "c8740d0b21329402da0c05dc002361fad532d7ff98b0bf0caee8d4b0bfa54531"
   },
   {
    "name": "f_2796",
@@ -498,8 +518,10 @@
    "start": "0x3406",
    "end": "0x34b7",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3406.c",
+   "src_sha256": "087afac12ad2039fe6e8b79ccde9bc7db2dfbe87b7dbadd1047f7e47b845289e"
   },
   {
    "name": "f_34b7",
@@ -568,8 +590,10 @@
    "start": "0x3ba4",
    "end": "0x3beb",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3ba4.c",
+   "src_sha256": "c2b8b807c2d4b917c2e4cbebdfd9a8f6f33a018650ea9928f3fd584a5b3a4ed3"
   },
   {
    "name": "f_3beb",
@@ -594,8 +618,10 @@
    "start": "0x3cc9",
    "end": "0x3d23",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3cc9.c",
+   "src_sha256": "1b74cff96f205d85a841bb4057fcbad9c5c5fea3223717001efbe41f5ff9b850"
   },
   {
    "name": "f_3d23",
@@ -610,8 +636,10 @@
    "start": "0x3e0f",
    "end": "0x3e75",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_3e0f.c",
+   "src_sha256": "2197354c424b3e7d6a2a03487fbde3dcbbf793e07b1afefdd0841b6a392f190c"
   },
   {
    "name": "f_3e75",
@@ -654,8 +682,10 @@
    "start": "0x42e1",
    "end": "0x4394",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_42e1.c",
+   "src_sha256": "849cd6c1f1e44dcd4262a43c4d68c78bcf66bf3d2d19ce305039eb0a45c779a6"
   },
   {
    "name": "f_4394",
@@ -672,8 +702,10 @@
    "start": "0x4413",
    "end": "0x4480",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4413.c",
+   "src_sha256": "a9721ddd08549ed0321d4681f0853d1cb938b898d1fc7fa3ef2000f5b97c382a"
   },
   {
    "name": "f_4480",
@@ -690,8 +722,10 @@
    "start": "0x44a9",
    "end": "0x4551",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_44a9.c",
+   "src_sha256": "fa354c876f235f707b3bd480e6c79f8f05a6655ffc09da38562387ca8165fee8"
   },
   {
    "name": "f_4551",
@@ -708,8 +742,10 @@
    "start": "0x456d",
    "end": "0x45a6",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_456d.c",
+   "src_sha256": "8bd9e8458b9178e2f04f1ae13563736098dbaf46484101ed011849179d1e3500"
   },
   {
    "name": "f_45a6",
@@ -1082,16 +1118,20 @@
    "start": "0x61a6",
    "end": "0x6278",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_61a6.c",
+   "src_sha256": "45165dcd1e7c948dc7fdd4f65ff9b0df9ce5455ddebd37b8bf071dada682e5d2"
   },
   {
    "name": "f_6278",
    "start": "0x6278",
    "end": "0x6327",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_6278.c",
+   "src_sha256": "8e3d18a6ad5f0e6a07707db15e67e212908407757c498ef9d5c18c358b410d4c"
   },
   {
    "name": "f_6327",
@@ -1150,8 +1190,10 @@
    "start": "0x6ee8",
    "end": "0x6f66",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_6ee8.c",
+   "src_sha256": "a4ac5db71dee9c032ebb3eada2dc6798243bba7ca92835fa6718a1abf6f1590e"
   },
   {
    "name": "f_6f66",
@@ -1176,8 +1218,10 @@
    "start": "0x704d",
    "end": "0x7068",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_704d.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_7068",
@@ -1192,8 +1236,10 @@
    "start": "0x7112",
    "end": "0x7184",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7112.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_7184",
@@ -1216,8 +1262,10 @@
    "start": "0x7532",
    "end": "0x7551",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7532.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_7551",
@@ -1232,16 +1280,20 @@
    "start": "0x788d",
    "end": "0x78dd",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_788d.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_78dd",
    "start": "0x78dd",
    "end": "0x798c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_78dd.c",
+   "src_sha256": "4d952e189c43940017d2e27d28f206e72dc20936f5d97e7f92dc7229ceb77a06"
   },
   {
    "name": "f_798c",
@@ -1256,8 +1308,10 @@
    "start": "0x7bd5",
    "end": "0x7bf4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7bd5.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_7bf4",
@@ -1272,8 +1326,10 @@
    "start": "0x7e12",
    "end": "0x7e62",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7e12.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_7e62",
@@ -1296,24 +1352,30 @@
    "start": "0x8004",
    "end": "0x8066",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_8004.c",
+   "src_sha256": "2cf723e016eea21f17f5c6598cac35d992a4cd894f80c417e9ef27b4c7ec9733"
   },
   {
    "name": "f_8066",
    "start": "0x8066",
    "end": "0x80d8",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_8066.c",
+   "src_sha256": "2cf723e016eea21f17f5c6598cac35d992a4cd894f80c417e9ef27b4c7ec9733"
   },
   {
    "name": "f_80d8",
    "start": "0x80d8",
    "end": "0x814b",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_80d8.c",
+   "src_sha256": "a4ac5db71dee9c032ebb3eada2dc6798243bba7ca92835fa6718a1abf6f1590e"
   },
   {
    "name": "f_814b",
@@ -1368,8 +1430,10 @@
    "start": "0x8585",
    "end": "0x85a4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_8585.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_85a4",
@@ -1384,8 +1448,10 @@
    "start": "0x8f7e",
    "end": "0x8fce",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_8f7e.c",
+   "src_sha256": "042cdab0bce59e86c4a5348526d8e694d61f2d5e8527eb865cc80bc1baef3ed7"
   },
   {
    "name": "f_8fce",
@@ -1402,8 +1468,10 @@
    "start": "0x9053",
    "end": "0x91a3",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_9053.c",
+   "src_sha256": "7c16201b0821f568f63454b8b1bc430d825b95e5f8615b1057d9463c9178618a"
   },
   {
    "name": "f_91a3",
@@ -1418,8 +1486,10 @@
    "start": "0x95ee",
    "end": "0x963b",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_95ee.c",
+   "src_sha256": "2cf723e016eea21f17f5c6598cac35d992a4cd894f80c417e9ef27b4c7ec9733"
   },
   {
    "name": "f_9640",
@@ -1434,8 +1504,10 @@
    "start": "0x9960",
    "end": "0x9971",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9960.c",
+   "src_sha256": "a3eb980477c846a5723a7194e73d463c051740126ea41888fba0452c8fd9850f"
   },
   {
    "name": "f_9974",
@@ -1474,8 +1546,10 @@
    "start": "0x9c90",
    "end": "0x9ca1",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9c90.c",
+   "src_sha256": "27931f6a0be9cebd95273aa7dbd79b69e68911d5996568ad797102dcfcfe00e5"
   },
   {
    "name": "f_9ca4",
@@ -1524,8 +1598,10 @@
    "start": "0x9f48",
    "end": "0x9f62",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c-ot"
+   "status": "matching",
+   "profile": "game-c-ot",
+   "src": "src/f_9f48.c",
+   "src_sha256": "51dfc920a385cf693e590004bc9caae3cf206abf6516167b6dcd33c51e9091cc"
   },
   {
    "name": "f_a0e0",
@@ -1588,8 +1664,10 @@
    "start": "0xacdd",
    "end": "0xad63",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_acdd.c",
+   "src_sha256": "2a291f7066a10ffcbddd7421d3869014ad745201c9eae47b18564cf05974a0d7"
   },
   {
    "name": "f_ad63",
@@ -1644,16 +1722,20 @@
    "start": "0xb541",
    "end": "0xb57a",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_b541.c",
+   "src_sha256": "9e3265fa86dd7ba5ec22fc72391d9262427f3f954773f82615e0e36fdff65fef"
   },
   {
    "name": "f_b57a",
    "start": "0xb57a",
    "end": "0xb5df",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_b57a.c",
+   "src_sha256": "8b22af2fc3468d2913ca584bc50c8b902a3989dc6d458fead189d318cf94455b"
   },
   {
    "name": "f_b5df",
@@ -1708,8 +1790,10 @@
    "start": "0xbc42",
    "end": "0xbc91",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_bc42.c",
+   "src_sha256": "881c3cc2423cce3a4e315c4f9fd96f6ea269a21c1d86d665bea82d12468865f7"
   },
   {
    "name": "f_bc91",
@@ -1756,8 +1840,10 @@
    "start": "0xbf98",
    "end": "0xbfba",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_bf98.c",
+   "src_sha256": "742e74f5565ccd94415740d8f613c2c409354e706bbd00f1e5b7bc67dde52b43"
   },
   {
    "name": "f_bfba",
@@ -1828,16 +1914,20 @@
    "start": "0xc321",
    "end": "0xc3ab",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c321.c",
+   "src_sha256": "211bbdb025c970dfcfdc5065fc02b4e9a1c458654af22a568c9054981cd510a2"
   },
   {
    "name": "f_c3ab",
    "start": "0xc3ab",
    "end": "0xc3fb",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c3ab.c",
+   "src_sha256": "9f2d0e3de9215ea7c5536d057161718ca93199130992bddef2355fa82f9f52f8"
   },
   {
    "name": "f_c3fb",
@@ -1876,24 +1966,30 @@
    "start": "0xc886",
    "end": "0xc8c0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c886.c",
+   "src_sha256": "4b1011e74ca3e7ef15ab0faf07ef303c85aa51f1bc22983a8d030814a740b65a"
   },
   {
    "name": "f_c8c0",
    "start": "0xc8c0",
    "end": "0xc936",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c8c0.c",
+   "src_sha256": "bc385e00d919048e654dc342858ca957745efb5b710517681d6eb110b54a1d03"
   },
   {
    "name": "f_c936",
    "start": "0xc936",
    "end": "0xc960",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_c936.c",
+   "src_sha256": "81e580306480c1836819f3caafd180f89d0c97ebeba307a423f0733f12e6843e"
   },
   {
    "name": "f_c960",
@@ -2057,16 +2153,20 @@
    "start": "0xdce0",
    "end": "0xdd01",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_dce0.c",
+   "src_sha256": "15b95e750d8646d4f2cb9e76145a7a9e78ab96c5d7f253ac285ff17a26676139"
   },
   {
    "name": "f_dd01",
    "start": "0xdd01",
    "end": "0xdd53",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_dd01.c",
+   "src_sha256": "4a6160d1ed13701097ab35e3e6f8f6da92a3cfc62e347f5a354472358e7cf16e"
   },
   {
    "name": "f_dd53",
@@ -2153,16 +2253,20 @@
    "start": "0xe3e5",
    "end": "0xe41d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e3e5.c",
+   "src_sha256": "2adc902f523778a8bf9be51b75d99e1c4f361428b3024cc6280b103dbf2d3a95"
   },
   {
    "name": "f_e41d",
    "start": "0xe41d",
    "end": "0xe473",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e41d.c",
+   "src_sha256": "44357ce48f1c70986d606d5b0576583485725eb2aa6ea9997d790fbe3691dfbf"
   },
   {
    "name": "f_e473",
@@ -2193,16 +2297,20 @@
    "start": "0xe855",
    "end": "0xe88d",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e855.c",
+   "src_sha256": "3d8a166542067228dc55c24a09848d3bd02bab5e85687d1d691ad94559e54924"
   },
   {
    "name": "f_e88d",
    "start": "0xe88d",
    "end": "0xe914",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e88d.c",
+   "src_sha256": "3d5ed83633652aac7e308aa9f7d929414b156bd04569018d9318c411f81d68dc"
   },
   {
    "name": "f_e914",
@@ -2217,8 +2325,10 @@
    "start": "0xe95c",
    "end": "0xe983",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e95c.c",
+   "src_sha256": "1ac7b1239fb34ce5c5ec51d94f25a9bf4a044d090ffae8d83af5c0ed79bfd21e"
   },
   {
    "name": "f_e983",
@@ -2233,8 +2343,10 @@
    "start": "0xe9b3",
    "end": "0xe9dd",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_e9b3.c",
+   "src_sha256": "78ae3dc15d37fbfa26103bc675da3f74fc1db01e2927bfaade60ae8d6c510a7d"
   },
   {
    "name": "f_e9dd",
@@ -2305,48 +2417,60 @@
    "start": "0xecdf",
    "end": "0xed38",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ecdf.c",
+   "src_sha256": "32d2677b12bb0d33075eb29ce0e20f941ac84648c0dfcccc44e70e5caaf0e8d5"
   },
   {
    "name": "f_ed38",
    "start": "0xed38",
    "end": "0xeda0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ed38.c",
+   "src_sha256": "0f43c1e19079000dc4c445be077fefe8b77d81190b0267f19b7c70f8ea87e08c"
   },
   {
    "name": "f_eda0",
    "start": "0xeda0",
    "end": "0xedd5",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_eda0.c",
+   "src_sha256": "cd20d1d9c12a362ca4302d1000ed6df2bacf1e8afbf447e1ffeff74872117ec6"
   },
   {
    "name": "f_edd5",
    "start": "0xedd5",
    "end": "0xee33",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_edd5.c",
+   "src_sha256": "f127b57eb53d1d70805ba62791d3ad8a8eba5a657578ee2a75981b1f3a4a920b"
   },
   {
    "name": "f_ee33",
    "start": "0xee33",
    "end": "0xee65",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ee33.c",
+   "src_sha256": "377d4208af37be8d8e37e28f328bf26a4253333ab3eb7a625e045abac614b40d"
   },
   {
    "name": "f_ee65",
    "start": "0xee65",
    "end": "0xeeac",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ee65.c",
+   "src_sha256": "d387468411f240e740611ca1286f3808dcf9f24cd86c9f878a46e7207766cbfc"
   },
   {
    "name": "f_eeac",
@@ -2361,8 +2485,10 @@
    "start": "0xefa0",
    "end": "0xeff1",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_efa0.c",
+   "src_sha256": "728669f2827a4a3cbbfd0bae939a72f755fc9c0351ea7469e8080318bc12c45f"
   },
   {
    "name": "f_eff1",
@@ -2417,32 +2543,40 @@
    "start": "0xf59a",
    "end": "0xf690",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f59a.c",
+   "src_sha256": "10878ec02b1edfa0d8e85ef62d4303b1bd63d6c338d46178bbeef527a9d80c94"
   },
   {
    "name": "f_f690",
    "start": "0xf690",
    "end": "0xf6a1",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f690.c",
+   "src_sha256": "6cb0f1f0bacc560b4d6841c8accbde5a691cfbcffe749064b7a46759dfdf5967"
   },
   {
    "name": "f_f6a1",
    "start": "0xf6a1",
    "end": "0xf6d9",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f6a1.c",
+   "src_sha256": "bfbcdf8f1cb34473aec952563530594ab7d307b952eba3a6ea8a9db060eaf270"
   },
   {
    "name": "f_f6d9",
    "start": "0xf6d9",
    "end": "0xf6f8",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_f6d9.c",
+   "src_sha256": "5401fb3b60c14c4d49eb7e402cb2801d1302b98f279d66f2347353f531fb567a"
   },
   {
    "name": "f_f6f8",
@@ -2513,40 +2647,50 @@
    "start": "0xfb92",
    "end": "0xfbc0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fb92.c",
+   "src_sha256": "62d50f8f1d41cbb95ddf7d22320b16e79c525f3ba36cb6563402c0605ac7c750"
   },
   {
    "name": "f_fbc0",
    "start": "0xfbc0",
    "end": "0xfc1e",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fbc0.c",
+   "src_sha256": "9e0ff8d0ba30659be0b38a7ba7f7b7edea5b2ef25bd9a35445e5c665d118f782"
   },
   {
    "name": "f_fc1e",
    "start": "0xfc1e",
    "end": "0xfc86",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fc1e.c",
+   "src_sha256": "08924efc534c057f11770e2757323049e8644a3497cfb0bccc66c0e822d4a125"
   },
   {
    "name": "f_fc86",
    "start": "0xfc86",
    "end": "0xfcab",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fc86.c",
+   "src_sha256": "b57915b948c972fcef7be5d1b37d9396a92b4d9d4305e8b28a9ea78650320c51"
   },
   {
    "name": "f_fcab",
    "start": "0xfcab",
    "end": "0xfce4",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fcab.c",
+   "src_sha256": "e9a88c720682c71f89168adb052dd33c973141d8087055e77d844eaa4ed39240"
   },
   {
    "name": "f_fce4",
@@ -2561,8 +2705,10 @@
    "start": "0xfd3b",
    "end": "0xfd7b",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_fd3b.c",
+   "src_sha256": "b2862ac1d47e320f7a003cf2a90b5ac508d1f5862c1d737254297cd8903539d4"
   },
   {
    "name": "f_fd7b",
@@ -2602,8 +2748,10 @@
    "start": "0xff9d",
    "end": "0xffbe",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ff9d.c",
+   "src_sha256": "a07053cb20ebcd1a439c76487e36511e479a3ae8a43b8add9df3b71a08195f8f"
   },
   {
    "name": "f_ffbe",
@@ -2618,16 +2766,20 @@
    "start": "0x1004e",
    "end": "0x100ab",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_1004e.c",
+   "src_sha256": "12afe97ad63c9b04e6c73c0e0ddf0d18d8694c8c1aba75ec9483f9c16ef1b2fd"
   },
   {
    "name": "f_100ab",
    "start": "0x100ab",
    "end": "0x100fa",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_100ab.c",
+   "src_sha256": "9178a34e32dba3ce34fc462ea86e3677d5b531f8d10243d9cc65b02e0da49c5c"
   },
   {
    "name": "f_100fa",
@@ -2650,40 +2802,50 @@
    "start": "0x10369",
    "end": "0x103b9",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_10369.c",
+   "src_sha256": "37951a26e8fcd9a32bd7ace89f21d25fe7faa2511811492534e1eb3b2fa1871e"
   },
   {
    "name": "f_103b9",
    "start": "0x103b9",
    "end": "0x1040c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_103b9.c",
+   "src_sha256": "027398c2584ee63fa8d99182f78671a6ec69b1e5bd043a98efdb5dba701fb1cb"
   },
   {
    "name": "f_1040c",
    "start": "0x1040c",
    "end": "0x10487",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_1040c.c",
+   "src_sha256": "faf4b70ec56b39608ce09a8adeae30a9a90a86836d83715cc67c3ad37baccb38"
   },
   {
    "name": "f_10487",
    "start": "0x10487",
    "end": "0x10502",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_10487.c",
+   "src_sha256": "ff00029a6344504cd8ceb0c68f8e85c13a8a8c61d50b13e0a987e151595ad62f"
   },
   {
    "name": "f_10502",
    "start": "0x10502",
    "end": "0x105a7",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_10502.c",
+   "src_sha256": "64dc49bc85bd4ed95500346c056c89ce696e492b410e8941739139cc9284aa1a"
   },
   {
    "name": "f_105a7",
@@ -2764,16 +2926,20 @@
    "start": "0x111de",
    "end": "0x11209",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_111de.c",
+   "src_sha256": "a9c567e4de15a45f80ab207d21a9e8a2d464ee88ffeb37faa24eb87d9ddecaa7"
   },
   {
    "name": "f_11209",
    "start": "0x11209",
    "end": "0x11256",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_11209.c",
+   "src_sha256": "1fb7f055b9e7760625878278327254663d876a871b626da4c33fad8b48697376"
   },
   {
    "name": "f_13a95",
@@ -2795,14 +2961,58 @@
   }
  ],
  "symbols": {
+  "__CHP": "1:140e8",
+  "_rotl": "1:145fe",
+  "atexit": "1:14197",
+  "exit": "1:1515a",
+  "f_1133f": "1:1133f",
+  "f_11358": "1:11358",
+  "f_11365": "1:11365",
+  "f_11377": "1:11377",
+  "f_115da": "1:115da",
+  "f_12b94": "1:12b94",
   "f_12f9c": "1:12f9c",
+  "f_130b7": "1:130b7",
+  "f_135e8": "1:135e8",
+  "f_139c4": "1:139c4",
+  "f_13a0a": "1:13a0a",
+  "f_13a29": "1:13a29",
   "f_13a48": "1:13a48",
+  "f_14771": "1:14771",
+  "f_1515a": "1:1515a",
+  "g_2426": "3:2426",
+  "g_243f": "3:243f",
   "g_387a": "3:387a",
+  "g_389e": "3:389e",
+  "g_38a2": "3:38a2",
+  "g_38a6": "3:38a6",
+  "g_38aa": "3:38aa",
+  "g_38ae": "3:38ae",
+  "g_38b2": "3:38b2",
+  "g_38b6": "3:38b6",
+  "g_38ba": "3:38ba",
+  "g_38be": "3:38be",
+  "g_38c2": "3:38c2",
   "g_557c": "3:557c",
   "g_5c78": "3:5c78",
+  "g_5ec0": "3:5ec0",
+  "g_60f0": "3:60f0",
   "g_6160": "3:6160",
+  "g_67b0": "3:67b0",
+  "g_68b7": "3:68b7",
   "g_68f8": "3:68f8",
+  "g_68fc": "3:68fc",
+  "g_6900": "3:6900",
+  "g_6918": "3:6918",
+  "g_691c": "3:691c",
+  "g_6920": "3:6920",
   "g_6924": "3:6924",
+  "g_6928": "3:6928",
+  "g_692c": "3:692c",
+  "g_6930": "3:6930",
+  "g_6934": "3:6934",
+  "g_6938": "3:6938",
+  "g_693c": "3:693c",
   "g_6940": "3:6940",
   "g_6944": "3:6944",
   "g_6948": "3:6948",
@@ -2812,36 +3022,95 @@
   "g_6958": "3:6958",
   "g_695c": "3:695c",
   "g_6960": "3:6960",
+  "g_6964": "3:6964",
   "g_6968": "3:6968",
   "g_696c": "3:696c",
   "g_6970": "3:6970",
   "g_69c8": "3:69c8",
+  "g_6ae8": "3:6ae8",
+  "g_6b78": "3:6b78",
+  "g_6cbb": "3:6cbb",
   "g_73a8": "3:73a8",
+  "g_73cc": "3:73cc",
+  "g_7404": "3:7404",
+  "g_7408": "3:7408",
+  "g_740c": "3:740c",
+  "g_7410": "3:7410",
+  "g_7414": "3:7414",
+  "g_7420": "3:7420",
+  "g_742c": "3:742c",
+  "g_7430": "3:7430",
+  "g_7448": "3:7448",
+  "g_744c": "3:744c",
+  "g_7450": "3:7450",
+  "g_7458": "3:7458",
+  "g_745c": "3:745c",
+  "g_7460": "3:7460",
+  "g_7464": "3:7464",
   "g_746c": "3:746c",
   "g_746e": "3:746e",
+  "g_7470": "3:7470",
   "g_7474": "3:7474",
   "g_7476": "3:7476",
   "g_747c": "3:747c",
+  "g_74fd": "3:74fd",
+  "g_7536": "3:7536",
+  "g_754c": "3:754c",
+  "g_754d": "3:754d",
+  "g_75a8": "3:75a8",
+  "g_75b0": "3:75b0",
+  "g_75b4": "3:75b4",
+  "g_75cc": "3:75cc",
+  "g_7b00": "3:7b00",
+  "g_7b0c": "3:7b0c",
   "g_7b14": "3:7b14",
   "g_7b16": "3:7b16",
   "g_7b18": "3:7b18",
   "g_7b1a": "3:7b1a",
   "g_7b20": "3:7b20",
   "g_7b22": "3:7b22",
+  "g_7b2a": "3:7b2a",
+  "g_7b39": "3:7b39",
+  "g_7b3b": "3:7b3b",
+  "g_7b3d": "3:7b3d",
+  "g_7b3f": "3:7b3f",
+  "g_7b43": "3:7b43",
+  "g_7b47": "3:7b47",
+  "g_7bfc": "3:7bfc",
+  "g_7bfe": "3:7bfe",
+  "g_7c00": "3:7c00",
+  "g_7c06": "3:7c06",
   "g_7c08": "3:7c08",
+  "g_7db4": "3:7db4",
+  "g_7db8": "3:7db8",
+  "g_8428": "3:8428",
   "g_8db8": "3:8db8",
   "g_8ddc": "3:8ddc",
   "g_8e1c": "3:8e1c",
   "g_8e20": "3:8e20",
   "g_8e24": "3:8e24",
+  "g_8e48": "3:8e48",
+  "g_8e4c": "3:8e4c",
+  "g_9478": "3:9478",
   "g_947c": "3:947c",
+  "g_9480": "3:9480",
   "g_9488": "3:9488",
+  "g_9490": "3:9490",
+  "g_94a0": "3:94a0",
+  "g_94b0": "3:94b0",
+  "g_9af8": "3:9af8",
   "g_a848": "3:a848",
+  "g_a990": "3:a990",
   "g_dd40": "3:dd40",
   "g_dd44": "3:dd44",
   "g_dd48": "3:dd48",
   "g_dd4c": "3:dd4c",
+  "g_dd54": "3:dd54",
+  "g_dd6c": "3:dd6c",
   "g_dd74": "3:dd74",
+  "g_dd7c": "3:dd7c",
+  "g_dd84": "3:dd84",
+  "g_dd88": "3:dd88",
   "g_dd90": "3:dd90",
   "g_dd94": "3:dd94",
   "g_dda0": "3:dda0",
@@ -2868,25 +3137,105 @@
   "g_df30": "3:df30",
   "g_df34": "3:df34",
   "g_df38": "3:df38",
+  "g_df3c": "3:df3c",
   "g_df40": "3:df40",
+  "g_df6c": "3:df6c",
   "g_df78": "3:df78",
+  "g_e13b": "3:e13b",
   "g_e143": "3:e143",
   "g_e148": "3:e148",
+  "g_e14c": "3:e14c",
   "g_e150": "3:e150",
   "g_e154": "3:e154",
+  "g_e158": "3:e158",
+  "g_e15c": "3:e15c",
+  "g_e15e": "3:e15e",
+  "g_e160": "3:e160",
+  "g_e162": "3:e162",
   "g_e164": "3:e164",
   "g_e1ac": "3:e1ac",
   "g_e1b0": "3:e1b0",
+  "g_e200": "3:e200",
+  "g_e204": "3:e204",
+  "g_e208": "3:e208",
+  "g_e209": "3:e209",
+  "g_e20d": "3:e20d",
+  "g_e219": "3:e219",
+  "g_e21d": "3:e21d",
+  "g_e221": "3:e221",
+  "g_e225": "3:e225",
+  "g_e26c": "3:e26c",
+  "g_e270": "3:e270",
+  "g_e2d4": "3:e2d4",
+  "g_e2d8": "3:e2d8",
+  "g_e2dc": "3:e2dc",
+  "g_e2e8": "3:e2e8",
+  "g_e2ec": "3:e2ec",
   "g_e324": "3:e324",
+  "g_e336": "3:e336",
+  "g_e346": "3:e346",
+  "g_e356": "3:e356",
   "g_e35a": "3:e35a",
+  "g_e366": "3:e366",
+  "g_e36a": "3:e36a",
+  "g_e36e": "3:e36e",
+  "g_e372": "3:e372",
+  "g_e376": "3:e376",
   "g_e37a": "3:e37a",
+  "g_e37f": "3:e37f",
+  "g_e380": "3:e380",
+  "g_e383": "3:e383",
+  "g_e384": "3:e384",
+  "g_e385": "3:e385",
+  "g_e386": "3:e386",
+  "g_e3fc": "3:e3fc",
+  "g_e3fe": "3:e3fe",
+  "g_e408": "3:e408",
+  "g_e40a": "3:e40a",
+  "g_e40c": "3:e40c",
+  "g_e40e": "3:e40e",
+  "g_e410": "3:e410",
+  "g_e412": "3:e412",
+  "g_e418": "3:e418",
+  "g_e41a": "3:e41a",
+  "g_e424": "3:e424",
+  "g_e426": "3:e426",
+  "g_e428": "3:e428",
+  "g_e42a": "3:e42a",
+  "g_e42c": "3:e42c",
+  "g_e42e": "3:e42e",
+  "g_e469": "3:e469",
+  "g_e46b": "3:e46b",
+  "g_e46d": "3:e46d",
+  "g_e46e": "3:e46e",
+  "g_e46f": "3:e46f",
+  "g_e472": "3:e472",
+  "g_e48d": "3:e48d",
+  "g_e48e": "3:e48e",
+  "g_e48f": "3:e48f",
+  "g_e490": "3:e490",
+  "g_e492": "3:e492",
+  "g_e494": "3:e494",
+  "g_e4a6": "3:e4a6",
+  "g_e4a8": "3:e4a8",
+  "g_e4ae": "3:e4ae",
+  "g_e4b0": "3:e4b0",
+  "g_e4b4": "3:e4b4",
+  "g_e4b8": "3:e4b8",
+  "g_e4ba": "3:e4ba",
+  "g_e4bc": "3:e4bc",
+  "g_e4c2": "3:e4c2",
   "g_e4c4": "3:e4c4",
   "g_e4c6": "3:e4c6",
   "g_e4c8": "3:e4c8",
   "g_e4d0": "3:e4d0",
+  "g_e4dc": "3:e4dc",
+  "g_e4e0": "3:e4e0",
   "getenv": "1:1427c",
   "inp": "1:13fad",
+  "int386": "1:145d0",
   "memmove": "1:13f76",
-  "outp": "1:13fa3"
+  "outp": "1:13fa3",
+  "printf": "1:15136"
  }
 }
