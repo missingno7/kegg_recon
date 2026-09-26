@@ -312,8 +312,8 @@ def resolve_global(v):
     d = v.decl
     if v.widths("rmwn") and not v.array:
         v.volatile = True
-    if v.psum and not v.array and (not d or d.get("volatile") or d["type"] == "p") and not v.widths("sx", "zx"):
-        v.type, v.volatile = "p", False     # pointer arithmetic elsewhere (a proven plain int wins)
+    if v.psum and not v.array and (not d or d["type"] in ("i", "u", "p")) and not v.widths("sx", "zx"):
+        v.type, v.volatile = "p", False     # pointer arithmetic somewhere: a byte pointer
         return
     if d and d["type"] not in ("p", "arr") and not v.array:
         v.type = d["type"]
@@ -865,6 +865,7 @@ class Lift:
         self.switch_val = {}
         self.copy = None
         self.local_ptr = set()
+        self.local_int = set()
         self.pre_pending = []
         self.last_load = None
         self.retval = False
@@ -1206,6 +1207,10 @@ class Lift:
                     if plain and a.op not in ("v", "m", "k") and b.seq > max(n.seq for n in a.walk())                             and not any(n.op == "call" for n in a.walk()):
                         self.local_ptr.add(b.var)
                         b.var.psum += 1
+                    elif plain and a.op == "call" and b.seq > a.seq:
+                        self.local_int.add(b.var)     # `call f; mov edx,[g]; add eax,edx`: int g
+                elif mn == "add" and dst[2] == 4 and src[0] == "m" and dst[1] == "eax" and b.op == "v" and                         b.var.kind == "g" and not b.x:
+                    self.local_int.add(b.var)         # `add eax,[g]`: g is an int here
                 if op in ("+", "*", "&", "|", "^") and src[0] == "r" and commute(a, b):
                     a, b = b, a
                 e = E(op, a, b, uns=uns, w=dst[2])
@@ -2003,10 +2008,13 @@ class Render:
     # whole function ----------------------------------------------------------------------------
     def source(self):
         L = self.L
-        saved = {v: (v.type, v.volatile) for v in L.local_ptr}
+        saved = {v: (v.type, v.volatile) for v in L.local_ptr | L.local_int}
         for v in L.local_ptr:       # pointer arithmetic seen in this function: a pointer here
             if v.type in ("i", "u"):
                 v.type, v.volatile = "p", False
+        for v in L.local_int - L.local_ptr:     # plain int arithmetic here
+            if v.type == "p" and v.decl and v.decl["type"] in ("i", "u"):
+                v.type = v.decl["type"]
         try:
             return self._source()
         finally:
