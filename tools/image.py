@@ -163,10 +163,14 @@ class Ctx:
         self.rt_pub = {k: int(v.split(":")[1], 16) for k, v in rt["publics"].items()}
         dl = rt["data_layout"]
         c2 = dl["CONST2_istable"].split("..")
-        self.classes = {  # game part of each DGROUP class in obj3 (cursor at class start .. first runtime piece)
+        # game part of each DGROUP segment in obj3: segment start .. first runtime contribution.  WLINK starts a
+        # combined segment at its largest contribution alignment (dword for Watcom C and clib data), so _DATA
+        # begins at align4(end of CONST2), not at the CONST2 end.
+        a4 = lambda x: (x + 3) & ~3
+        self.classes = {
             "CONST": (4, int(dl["first_runtime_CONST"], 16)),
-            "_DATA": (int(c2[1], 16), int(dl["first_runtime_initialized_DATA"], 16)),
-            "_BSS": (int(dl["YIE"], 16), int(dl["first_runtime_BSS"], 16)),
+            "_DATA": (a4(int(c2[1], 16)), int(dl["first_runtime_initialized_DATA"], 16)),
+            "_BSS": (a4(int(dl["YIE"], 16)), int(dl["first_runtime_BSS"], 16)),
         }
         self.funcs = sorted((f for f in self.man["functions"]), key=lambda f: (f.get("object", 1), int(f["start"], 16)))
         self.fn_by_name = {f["name"]: f for f in self.funcs}
@@ -253,6 +257,7 @@ class Item:
     pieces: list = field(default_factory=list)      # raw data carriers: [(class, start, end)]
     exports: dict = field(default_factory=dict)     # raw: name -> (obj, addr)
     order: float = 0.0
+    cache_path: Path | None = None
 
     @property
     def real(self):
@@ -303,7 +308,7 @@ def canonical_items(ctx, cache):
         items.append(it)
     for it in items:
         try:
-            it.objpath = cache_compile(ctx, ROOT / it.src, it.profile, cache)
+            it.objpath = it.cache_path = cache_compile(ctx, ROOT / it.src, it.profile, cache)
         except SystemExit as e:
             it.problems.append(f"compile failed: {str(e).splitlines()[0]}")
             continue
@@ -342,32 +347,53 @@ def place_real(ctx, it):
             cur += s.size
         if cur != it.end:
             it.problems.append(f"USE16 layout ends at {h(cur)} != {h(it.end)}")
-    # data segments: base from publics with address names, else from code fixups vs original LE targets
-    for i, s in enumerate(m.segments):
-        if not s or i in it.segbase or s.frame is not None or s.cls.upper() in ("DEBSYM", "DEBTYP"):
-            continue
-        if s.size == 0:
-            continue
+    # data segments: base from publics with address names, from fixups in already placed segments (code, then
+    # data) against the original LE targets, else from the manifest unit's data record
+    unit = next((u for u in ctx.man.get("units", []) if f"unit:{u['id']}" == it.key), None)
+    declared = {}
+    for d in (unit or {}).get("data", []):
+        mm = re.match(r"(\w+)@3:([0-9a-f]+)\+0x([0-9a-f]+)", d)
+        if mm:
+            declared[mm.group(1)] = (int(mm.group(2), 16), int(mm.group(3), 16))
+    todo = [i for i, s in enumerate(m.segments) if s and i not in it.segbase and s.frame is None and s.size
+            and s.cls.upper() not in ("DEBSYM", "DEBTYP")]
+    for i in todo:
+        s = m.segments[i]
         if s.cls.upper() not in ("DATA", "BSS") or s.name not in ("CONST", "CONST2", "_DATA", "_BSS"):
             it.problems.append(f"segment {s.name}/{s.cls} ({s.size} bytes) has no place in the image")
-            continue
-        bases = set()
+    todo = [i for i in todo if m.segments[i].name in ("CONST", "CONST2", "_DATA", "_BSS")]
+    bases = {i: set() for i in todo}
+    for i in todo:
         for n, si, o, loc in m.publics:
             if si == i:
                 a = ctx.addr_of_name(n)
                 if a and a[0] == 3:
-                    bases.add(a[1] - o)
+                    bases[i].add(a[1] - o)
+    progress = True
+    while progress:
+        progress = False
         for f in m.fixups:
-            if f.seg in it.segbase and (f.target[0] & 3) == 0 and f.target[1] == i and not f.self_rel and f.loc == 9:
-                o, base = it.segbase[f.seg]
-                site = ctx.orig.sites.get((o, base + f.off))
-                if site and site["tobj"] == 3:
-                    fld = int.from_bytes(m.segments[f.seg].data[f.off:f.off + 4], "little")
-                    bases.add(site["toff"] - fld - f.disp)
-        if len(bases) != 1:
-            it.problems.append(f"cannot place {s.name} ({s.size} bytes): bases {sorted(map(h, bases))}")
+            i = f.target[1] if (f.target[0] & 3) == 0 else None
+            if i not in bases or bases[i] or f.seg not in it.segbase or f.self_rel or f.loc != 9:
+                continue
+            o, base = it.segbase[f.seg]
+            site = ctx.orig.sites.get((o, base + f.off))
+            if site and site["tobj"] == 3:
+                fld = int.from_bytes(m.segments[f.seg].data[f.off:f.off + 4], "little")
+                bases[i].add(site["toff"] - fld - f.disp)
+        for i in todo:
+            if i not in it.segbase and len(bases[i]) == 1:
+                it.segbase[i] = (3, next(iter(bases[i])))
+                progress = True
+    for i in todo:
+        s = m.segments[i]
+        if not bases[i] and s.name in declared and declared[s.name][1] == s.size:
+            bases[i].add(declared[s.name][0])
+            it.notes.append(f"{s.name} base from the manifest unit data record")
+        if len(bases[i]) != 1:
+            it.problems.append(f"cannot place {s.name} ({s.size} bytes): bases {sorted(map(h, bases[i]))}")
             continue
-        base = bases.pop()
+        base = next(iter(bases[i]))
         it.segbase[i] = (3, base)
         if s.name == "CONST2":
             it.problems.append(f"CONST2 contribution at {h(base)}: the original has no game CONST2 bytes")
@@ -486,20 +512,36 @@ class Plan:
 
     # --- names --------------------------------------------------------------
     def owner(self, obj, addr, end_ok=False):
-        """Link item that owns (obj, addr) — game code/data — or None (runtime)."""
-        if obj in (1, 2):   # code: an address equal to an object's end belongs to the next object
+        """Link item that owns (obj, addr) — game code/data — or None (runtime).  end_ok: a one-past-end
+        address belongs to the object it ends (data, and the end of the obj2 IRQ module)."""
+        if obj == 1 and not (0x10 <= addr < self.ctx.code_end):
+            return None
+        if obj in (1, 2):
             for it in self.code_items + [self.tail]:
                 if it.obj == obj and it.start <= addr < it.end:
                     return it
+            if end_ok:
+                for it in self.code_items + [self.tail]:
+                    if it.obj == obj and addr == it.end:
+                        return it
             return None
         for it in self.reals:
             for cls, (base, size) in it.data.items():
-                if base <= addr < base + size or (end_ok and addr == base + size):
+                if base <= addr < base + size:
                     return it
         for it in self.carriers:
             for cls, a, b in it.pieces:
-                if a <= addr < b or (end_ok and addr == b):
+                if a <= addr < b:
                     return it
+        if end_ok:
+            for it in self.reals:
+                for cls, (base, size) in it.data.items():
+                    if addr == base + size:
+                        return it
+            for it in self.carriers:
+                for cls, a, b in it.pieces:
+                    if addr == b:
+                        return it
         return None
 
 
@@ -543,13 +585,14 @@ class RawBuilder:
     def target_ref(self, it, obj, addr, want_exact=False):
         """How `it` refers to (obj, addr): ('self', seg key, field) | ('ext', name, field) | ('grp', field)."""
         ctx = self.ctx
-        if obj in (1, 2) and it.kind == "raw" and it.obj == obj and it.start <= addr < it.end:
+        if obj in (1, 2) and it.kind == "raw" and it.obj == obj and (
+                it.start <= addr < it.end or (obj == 2 and addr == it.end)):
             return ("self", "text", addr - it.start)
         if obj == 3 and it.kind == "raw":
             for cls, a, b in it.pieces:
                 if a <= addr <= b:
                     return ("self", cls, addr - a)
-        own = self.plan.owner(obj, addr, end_ok=True)
+        own = self.plan.owner(obj, addr, end_ok=(obj != 1))
         if own is None:
             if obj == 1:
                 n, a = ctx.lib_public_at(addr)
@@ -585,7 +628,7 @@ class RawBuilder:
         for r in plan.reals:
             for n in r.publics:
                 defined.setdefault(n, r.key)
-        problems = []
+        problems = []   # (item to keep as raw, reason): the owner of the address when it is real
         for name, where, who in need:
             if name in defined:
                 continue
@@ -594,8 +637,9 @@ class RawBuilder:
                 continue
             own = plan.owner(*where)
             if own is None or own.real:
-                problems.append((who, f"extern {name} = {where[0]}:{where[1]:x} lies in "
-                                      f"{own.key if own else 'the runtime'} which does not define it"))
+                msg = (f"{who} imports {name} = {where[0]}:{where[1]:x}, which lies in "
+                       f"{own.key if own else 'the runtime'} that does not define it")
+                problems.append((own.key if own is not None else who, msg))
                 continue
             own.exports[name] = where
         return problems
@@ -1003,6 +1047,42 @@ def accounting(ctx, plan):
 
 
 # ============================================================================ driver
+def build_objects(ctx, plan, objdir):
+    """Raw objects for `plan` (+ copies of the real ones) in objdir; returns (RawBuilder, export problems)."""
+    rb = RawBuilder(plan)
+    probs = rb.request_exports()
+    if probs:
+        return rb, probs
+    raws = [it for it in plan.code_items + [plan.tail] + plan.carriers if not it.real]
+    for it in raws:
+        rb.analyze(it)
+    for it in raws:
+        rb.emit(it, objdir)
+    for it in plan.reals:
+        dst = objdir / f"{it.key.replace(':', '_')}.obj"
+        shutil.copyfile(it.cache_path, dst)
+        it.objpath = dst
+    # runtime demand order: a member no game reference pulls in time gets a pseudo EXTDEF (once)
+    order = [(lib, mem) for s, e, lib, mem in ctx.members]
+    add_pseudo_refs(ctx, plan, rb, plan.items, order, objdir)
+    return rb, []
+
+
+def reference_runtime_order(ctx, out):
+    """Library load order of the all-raw link (proven byte-identical): the reference for predictions."""
+    refdir = out / "ref-objs"
+    shutil.rmtree(refdir, ignore_errors=True)
+    refdir.mkdir(parents=True)
+    plan = Plan(ctx, [], "raw")
+    plan.build()
+    rb, probs = build_objects(ctx, plan, refdir)
+    if probs:
+        raise SystemExit(f"all-raw reference plan: {probs}")
+    loaded, _ = simulate_libs(ctx, plan.items)
+    shutil.rmtree(refdir, ignore_errors=True)
+    return loaded
+
+
 def run(args):
     ctx = Ctx()
     out = ROOT / "build" / "image" / args.mode
@@ -1018,74 +1098,42 @@ def run(args):
             place_real(ctx, r)
             if r.key in args.exclude:
                 r.problems.append("excluded on the command line")
+    ref_order = reference_runtime_order(ctx, out)
     excluded_log = []
     rounds = 0
     while True:
         rounds += 1
+        for f in objdir.iterdir():
+            f.unlink()
         plan = Plan(ctx, reals, args.mode)
         plan.build()
-        rb = RawBuilder(plan)
-        probs = rb.request_exports()
-        newly = [(k, p) for k, p in probs if k in {r.key for r in plan.reals}]
-        if newly:
-            for k, p in newly:
-                next(r for r in reals if r.key == k).problems.append(p)
+        rb, probs = build_objects(ctx, plan, objdir)
+        live = {r.key for r in plan.reals}
+        if [p for p in probs if p[0] in live]:
+            for k, p in probs:
+                if k in live:
+                    next(r for r in reals if r.key == k).problems.append(p)
             continue
         if probs:
             raise SystemExit(f"unresolvable runtime reference: {probs}")
-        raws = [it for it in plan.code_items + [plan.tail] + plan.carriers if not it.real]
-        for it in raws:
-            rb.analyze(it)
-        for it in raws:
-            rb.emit(it, objdir)
-        for it in plan.reals:
-            dst = objdir / f"{it.key.replace(':', '_')}.obj"
-            shutil.copyfile(it.objpath, dst)
-            it.objpath = dst
         items = plan.items
-        # --- runtime member order: pseudo references for members no game object pulls in time
-        order = [(lib, mem) for s, e, lib, mem in ctx.members]
         loaded, who = simulate_libs(ctx, items)
-        lib_code = [x for x in loaded if x in set(order)]
         lib_problem = None
-        if lib_code != order:
-            i = next((i for i, (x, y) in enumerate(zip(lib_code, order)) if x != y), min(len(lib_code), len(order)))
-            lib_problem = (i, order[i] if i < len(order) else None, lib_code[i] if i < len(lib_code) else None)
-        if lib_problem and not any(getattr(it, "pseudo", None) for it in items) and args.mode in ("raw", "canonical"):
-            if add_pseudo_refs(ctx, plan, rb, items, order, objdir):
-                loaded, who = simulate_libs(ctx, items)
-                lib_code = [x for x in loaded if x in set(order)]
-                lib_problem = None
-                if lib_code != order:
-                    i = next((i for i, (x, y) in enumerate(zip(lib_code, order)) if x != y),
-                             min(len(lib_code), len(order)))
-                    lib_problem = (i, order[i] if i < len(order) else None, lib_code[i] if i < len(lib_code) else None)
-        # --- fixup order prediction
+        if loaded != ref_order:
+            i = next((i for i, (x, y) in enumerate(zip(loaded, ref_order)) if x != y),
+                     min(len(loaded), len(ref_order)))
+            lib_problem = (i, ref_order[i] if i < len(ref_order) else None, loaded[i] if i < len(loaded) else None)
         bad = compare_chains(ctx, predict_chains(ctx, items))
         culprit = None
         if bad and args.predict:
-            for k, i, want, got in bad:
-                for s in (got, want):
-                    if s is None:
-                        continue
-                    own = plan.owner(*s)
-                    if own is not None and own.real:
-                        culprit = (own, f"LE fixup order on page {k[0]} ({k[1]}) differs at chain index {i}: "
-                                        f"original {s[0]}:{s[1]:x} (object boundary cuts an original LEDATA chunk "
-                                        f"or the object's own chunking differs)")
-                        break
-                if culprit:
-                    break
-        if culprit is None and lib_problem and args.predict:
-            j, want, got = lib_problem
-            if got is not None:
-                mname = got[1]
-                sym = who.get(("module", mname))
-                src = who.get(sym)
-                own = next((r for r in plan.reals if r.key == src), None)
-                if own is not None:
-                    culprit = (own, f"pulls runtime member {mname} via {sym} before {want[1] if want else '-'} "
-                                    f"(original demand order)")
+            culprit = fixup_culprit(ctx, plan, bad)
+        if culprit is None and lib_problem and args.predict and lib_problem[2] is not None:
+            _, want, got = lib_problem
+            sym = who.get(("module", got[1]))
+            own = next((r for r in plan.reals if r.key == who.get(sym)), None)
+            if own is not None:
+                culprit = (own, f"runtime demand order: its EXTDEF {sym} pulls {got[0]}:{got[1]} where the original "
+                                f"pulls {want[0] + ':' + want[1] if want else 'nothing'}")
         if culprit:
             own, why = culprit
             own.problems.append(why)
@@ -1094,10 +1142,10 @@ def run(args):
         break
     report = {"mode": args.mode, "prediction_rounds": rounds}
     report["predicted_fixup_order_mismatches"] = [
-        {"page": k[0], "list": k[1], "index": i, "original": w and f"{w[0]}:{w[1]:x}", "predicted": g and f"{g[0]}:{g[1]:x}"}
-        for k, i, w, g in bad]
-    report["predicted_runtime_order"] = "original" if not lib_problem else {
-        "index": lib_problem[0], "original": lib_problem[1], "predicted": lib_problem[2]}
+        {"page": k[0], "list": k[1], "index": i, "original": w and f"{w[0]}:{w[1]:x}",
+         "predicted": g and f"{g[0]}:{g[1]:x}"} for k, i, w, g in bad]
+    report["predicted_runtime_order"] = "reference" if not lib_problem else {
+        "index": lib_problem[0], "reference": lib_problem[1], "predicted": lib_problem[2]}
     r, exe = link(ctx, items, out)
     report["wlink"] = {"rc": r.rc, "output": r.out.strip().splitlines()[-20:]}
     if r.rc != 0 or not exe.exists():
@@ -1105,9 +1153,45 @@ def run(args):
         write_report(out, report, plan, ctx, rb, excluded_log)
         return 1
     report.update(compare(ctx, plan, exe))
+    report["runtime_map_check"] = map_runtime_check(ctx, out / "ke.map")
     report["accounting"] = accounting(ctx, plan)
     write_report(out, report, plan, ctx, rb, excluded_log)
     return 0 if report["identical"] else 1
+
+
+def fixup_culprit(ctx, plan, bad):
+    """Real object to blame for the first predicted fixup-order mismatch: the owner of either differing site,
+    else a real object lying between the two sites (it cut an original LEDATA chunk), else one on that page."""
+    for k, i, want, got in bad:
+        why = (f"LE fixup order: page {k[0]} {k[1]}-list differs at record {i} "
+               f"(original {want and f'{want[0]}:{want[1]:x}'}, predicted {got and f'{got[0]}:{got[1]:x}'}); "
+               f"an object boundary or the object's own LEDATA chunking differs from the original objects")
+        for s in (got, want):
+            own = plan.owner(*s) if s is not None else None
+            if own is not None and own.real:
+                return own, why
+        pts = [s for s in (want, got) if s is not None]
+        lo, hi = min(a for _, a in pts), max(a for _, a in pts)
+        obj = pts[0][0]
+        between = [r for r in plan.reals if r.obj == obj and r.start < hi + 4 and r.end > lo] +                   [r for r in plan.reals if any(b < hi + 4 and b + n > lo for b, n in r.data.values()) and obj == 3]
+        if between:
+            return between[0], why
+        page_lo = ctx.orig.page_obj[k[0]][1]
+        on_page = [r for r in plan.reals if r.obj == obj and r.start < page_lo + 4096 and r.end > page_lo]
+        if on_page:
+            return on_page[0], why
+    return None
+
+
+def map_runtime_check(ctx, mapfile):
+    """Library modules WLINK linked (map order) vs manifest runtime.members."""
+    mods = re.findall(r"^Module: .*[\\/]([A-Za-z0-9_]+\.lib)\(([^)]+)\)", mapfile.read_text(errors="replace"), re.M)
+    linked = [(lib.lower(), m) for lib, m in mods]
+    man = [(lib, mem) for s, e, lib, mem in ctx.members]
+    return {"linked_modules": len(linked),
+            "manifest_members_not_linked": [f"{l}:{m}" for l, m in man if (l, m) not in linked],
+            "linked_not_in_manifest": [f"{l}:{m}" for l, m in linked if (l, m) not in man],
+            "manifest_order_kept": [x for x in linked if x in man] == [x for x in man if x in linked]}
 
 
 def add_pseudo_refs(ctx, plan, rb, items, order, objdir):
@@ -1118,15 +1202,19 @@ def add_pseudo_refs(ctx, plan, rb, items, order, objdir):
     mods, _ = ctx.libmods()
     lib_code = [x for x in loaded if x in set(order)]
     i = next((i for i, (x, y) in enumerate(zip(lib_code, order)) if x != y), None)
-    if i is None or i + 1 >= len(order):
+    if i is None or i + 1 >= len(order) or order[i] in lib_code[:i + 1]:
         return False
     want = order[i]
     m = next(m for n, m, _ in mods[want[0]] if n == want[1])
     names = [n for n, s, o, loc in m.publics if not loc]
-    names = ["__init_387_emulator", "__8087"] if "__init_387_emulator" in names else names[:1]
+    if "__init_387_emulator" not in names:   # the only member known to be pulled by a trailing EXTDEF
+        return False
+    names = ["__init_387_emulator", "__8087"]
     sym = who.get(("module", order[i + 1][1]))
     it = next((x for x in items if x.key == who.get(sym)), None)
     if it is None or it.real:
+        plan.notes = getattr(plan, "notes", []) + [
+            f"runtime member {want[1]} needs a pseudo reference before {sym}, which comes from a real object"]
         return False
     it.pseudo = [(names, it.first_ref[sym] - 1)]
     it.notes.append(f"pseudo EXTDEF {names} before {sym} at {h(it.first_ref[sym])}: runtime member "
@@ -1183,7 +1271,7 @@ def summary(rep, out):
                      f"({e.get('owner', '-')}) counts {e['count']}")
     if rep["predicted_fixup_order_mismatches"]:
         L.append(f"  predicted fixup-order mismatches: {len(rep['predicted_fixup_order_mismatches'])}")
-    if rep["predicted_runtime_order"] != "original":
+    if rep["predicted_runtime_order"] != "reference":
         L.append(f"  predicted runtime member order differs: {rep['predicted_runtime_order']}")
     return "\n".join(L)
 
