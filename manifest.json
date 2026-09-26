@@ -58,5 +58,2641 @@
   ],
   "fixup_sites": 6296
  },
- "functions": []
+ "functions": [
+  {
+   "name": "f_10",
+   "start": "0x10",
+   "end": "0x3b2",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3b2",
+   "start": "0x3b2",
+   "end": "0x441",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_441",
+   "start": "0x441",
+   "end": "0x52f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_52f",
+   "start": "0x52f",
+   "end": "0x6ca",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6ca",
+   "start": "0x6ca",
+   "end": "0x708",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_708",
+   "start": "0x708",
+   "end": "0x7e9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7e9",
+   "start": "0x7e9",
+   "end": "0x81d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_81d",
+   "start": "0x81d",
+   "end": "0x8d3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8d3",
+   "start": "0x8d3",
+   "end": "0x951",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_951",
+   "start": "0x951",
+   "end": "0x9f9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_9f9",
+   "start": "0x9f9",
+   "end": "0xaa2",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_aa2",
+   "start": "0xaa2",
+   "end": "0xe70",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e70",
+   "start": "0xe70",
+   "end": "0xea4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ea4",
+   "start": "0xea4",
+   "end": "0xff0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ff0",
+   "start": "0xff0",
+   "end": "0x113c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_113c",
+   "start": "0x113c",
+   "end": "0x1202",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1202",
+   "start": "0x1202",
+   "end": "0x1227",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1227",
+   "start": "0x1227",
+   "end": "0x127e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_127e",
+   "start": "0x127e",
+   "end": "0x13aa",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_13aa",
+   "start": "0x13aa",
+   "end": "0x1416",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1416",
+   "start": "0x1416",
+   "end": "0x16bb",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_16bb",
+   "start": "0x16bb",
+   "end": "0x17d2",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_17d2",
+   "start": "0x17d2",
+   "end": "0x18bc",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_18bc",
+   "start": "0x18bc",
+   "end": "0x19b9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_19b9",
+   "start": "0x19b9",
+   "end": "0x1af4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1af4",
+   "start": "0x1af4",
+   "end": "0x1b7e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1b7e",
+   "start": "0x1b7e",
+   "end": "0x1bc2",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_1b7e.c",
+   "src_sha256": "862b04b6b3242a1a0ebfbc83d195b9e31346270cd02df60dca60d86ba90bbc78"
+  },
+  {
+   "name": "f_1bc2",
+   "start": "0x1bc2",
+   "end": "0x1d80",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1d80",
+   "start": "0x1d80",
+   "end": "0x1e87",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1e87",
+   "start": "0x1e87",
+   "end": "0x20f4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_20f4",
+   "start": "0x20f4",
+   "end": "0x2188",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2188",
+   "start": "0x2188",
+   "end": "0x2250",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2250",
+   "start": "0x2250",
+   "end": "0x228e",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_2250.c",
+   "src_sha256": "43fb4e9a02ef99e16513d9ec3464857d120719bb731e60f8b8f1dd040dfd9e5b"
+  },
+  {
+   "name": "f_228e",
+   "start": "0x228e",
+   "end": "0x240f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_240f",
+   "start": "0x240f",
+   "end": "0x2484",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2484",
+   "start": "0x2484",
+   "end": "0x251c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_251c",
+   "start": "0x251c",
+   "end": "0x2565",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2565",
+   "start": "0x2565",
+   "end": "0x2689",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2689",
+   "start": "0x2689",
+   "end": "0x26fe",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_26fe",
+   "start": "0x26fe",
+   "end": "0x2796",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2796",
+   "start": "0x2796",
+   "end": "0x27df",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_27df",
+   "start": "0x27df",
+   "end": "0x2903",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2903",
+   "start": "0x2903",
+   "end": "0x2c72",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2c72",
+   "start": "0x2c72",
+   "end": "0x2ccc",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2ccc",
+   "start": "0x2ccc",
+   "end": "0x2da3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2da3",
+   "start": "0x2da3",
+   "end": "0x2e4a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2e4a",
+   "start": "0x2e4a",
+   "end": "0x2eab",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2eab",
+   "start": "0x2eab",
+   "end": "0x2f0c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2f0c",
+   "start": "0x2f0c",
+   "end": "0x2f9e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_2f9e",
+   "start": "0x2f9e",
+   "end": "0x3203",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3203",
+   "start": "0x3203",
+   "end": "0x339f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_339f",
+   "start": "0x339f",
+   "end": "0x3406",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3406",
+   "start": "0x3406",
+   "end": "0x34b7",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_34b7",
+   "start": "0x34b7",
+   "end": "0x353f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_353f",
+   "start": "0x353f",
+   "end": "0x35b5",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_35b5",
+   "start": "0x35b5",
+   "end": "0x35e4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_35e4",
+   "start": "0x35e4",
+   "end": "0x3702",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3702",
+   "start": "0x3702",
+   "end": "0x3918",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3918",
+   "start": "0x3918",
+   "end": "0x3ac0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3ac0",
+   "start": "0x3ac0",
+   "end": "0x3ba4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3ba4",
+   "start": "0x3ba4",
+   "end": "0x3beb",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3beb",
+   "start": "0x3beb",
+   "end": "0x3caa",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3caa",
+   "start": "0x3caa",
+   "end": "0x3cc9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3cc9",
+   "start": "0x3cc9",
+   "end": "0x3d23",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3d23",
+   "start": "0x3d23",
+   "end": "0x3e0f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3e0f",
+   "start": "0x3e0f",
+   "end": "0x3e75",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_3e75",
+   "start": "0x3e75",
+   "end": "0x4066",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4066",
+   "start": "0x4066",
+   "end": "0x4085",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4085",
+   "start": "0x4085",
+   "end": "0x4291",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4291",
+   "start": "0x4291",
+   "end": "0x42e1",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_42e1",
+   "start": "0x42e1",
+   "end": "0x4394",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4394",
+   "start": "0x4394",
+   "end": "0x4413",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4413",
+   "start": "0x4413",
+   "end": "0x4480",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4480",
+   "start": "0x4480",
+   "end": "0x44a9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_44a9",
+   "start": "0x44a9",
+   "end": "0x4551",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4551",
+   "start": "0x4551",
+   "end": "0x456d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_456d",
+   "start": "0x456d",
+   "end": "0x45a6",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_45a6",
+   "start": "0x45a6",
+   "end": "0x45d0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_45d0",
+   "start": "0x45d0",
+   "end": "0x4602",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4602",
+   "start": "0x4602",
+   "end": "0x469b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_469b",
+   "start": "0x469b",
+   "end": "0x46e7",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_46e7",
+   "start": "0x46e7",
+   "end": "0x4745",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4745",
+   "start": "0x4745",
+   "end": "0x4761",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4761",
+   "start": "0x4761",
+   "end": "0x4802",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4802",
+   "start": "0x4802",
+   "end": "0x4847",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4847",
+   "start": "0x4847",
+   "end": "0x4886",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4886",
+   "start": "0x4886",
+   "end": "0x48d2",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_48d2",
+   "start": "0x48d2",
+   "end": "0x4931",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4931",
+   "start": "0x4931",
+   "end": "0x4955",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4955",
+   "start": "0x4955",
+   "end": "0x49c7",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_49c7",
+   "start": "0x49c7",
+   "end": "0x49fb",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_49fb",
+   "start": "0x49fb",
+   "end": "0x4a5a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4a5a",
+   "start": "0x4a5a",
+   "end": "0x4aca",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4aca",
+   "start": "0x4aca",
+   "end": "0x4af0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4af0",
+   "start": "0x4af0",
+   "end": "0x4b4f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4b4f",
+   "start": "0x4b4f",
+   "end": "0x4bae",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4bae",
+   "start": "0x4bae",
+   "end": "0x4c0d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4c0d",
+   "start": "0x4c0d",
+   "end": "0x4c6c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4c6c",
+   "start": "0x4c6c",
+   "end": "0x4cd0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4cd0",
+   "start": "0x4cd0",
+   "end": "0x4ce1",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4cd0.c",
+   "src_sha256": "194ca9e4ff89ccb67f851fad2d5a1bf74a9e90c2a20b2ed91b0e655c033dc7b1"
+  },
+  {
+   "name": "f_4ce1",
+   "start": "0x4ce1",
+   "end": "0x4cf2",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_4cf2",
+   "start": "0x4cf2",
+   "end": "0x5381",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_5381",
+   "start": "0x5381",
+   "end": "0x5771",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_5771",
+   "start": "0x5771",
+   "end": "0x57bf",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_57bf",
+   "start": "0x57bf",
+   "end": "0x57fa",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_57fa",
+   "start": "0x57fa",
+   "end": "0x58b0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_58b0",
+   "start": "0x58b0",
+   "end": "0x592c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_592c",
+   "start": "0x592c",
+   "end": "0x5966",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_5966",
+   "start": "0x5966",
+   "end": "0x5aaf",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_5aaf",
+   "start": "0x5aaf",
+   "end": "0x5e2d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_5e2d",
+   "start": "0x5e2d",
+   "end": "0x5f71",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_5f71",
+   "start": "0x5f71",
+   "end": "0x608a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_608a",
+   "start": "0x608a",
+   "end": "0x60e5",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_60e5",
+   "start": "0x60e5",
+   "end": "0x6156",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6156",
+   "start": "0x6156",
+   "end": "0x61a6",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_61a6",
+   "start": "0x61a6",
+   "end": "0x6278",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6278",
+   "start": "0x6278",
+   "end": "0x6327",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6327",
+   "start": "0x6327",
+   "end": "0x69cd",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_69cd",
+   "start": "0x69cd",
+   "end": "0x6a1d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6a1d",
+   "start": "0x6a1d",
+   "end": "0x6b02",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6b02",
+   "start": "0x6b02",
+   "end": "0x6e13",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6e13",
+   "start": "0x6e13",
+   "end": "0x6e2e",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_6e13.c",
+   "src_sha256": "e544386401a03ce4a620367cac86df7e9cc77906fd54f125478bdb3d3340c822"
+  },
+  {
+   "name": "f_6e2e",
+   "start": "0x6e2e",
+   "end": "0x6ee8",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6ee8",
+   "start": "0x6ee8",
+   "end": "0x6f66",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_6f66",
+   "start": "0x6f66",
+   "end": "0x7032",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7032",
+   "start": "0x7032",
+   "end": "0x704d",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_7032.c",
+   "src_sha256": "f7dbf9c3ff27048ddcf5eb6314b7530e7c744b163ce91de90d258a3daa6f1a92"
+  },
+  {
+   "name": "f_704d",
+   "start": "0x704d",
+   "end": "0x7068",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7068",
+   "start": "0x7068",
+   "end": "0x7112",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7112",
+   "start": "0x7112",
+   "end": "0x7184",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7184",
+   "start": "0x7184",
+   "end": "0x73c0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_73c0",
+   "start": "0x73c0",
+   "end": "0x7532",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7532",
+   "start": "0x7532",
+   "end": "0x7551",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7551",
+   "start": "0x7551",
+   "end": "0x788d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_788d",
+   "start": "0x788d",
+   "end": "0x78dd",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_78dd",
+   "start": "0x78dd",
+   "end": "0x798c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_798c",
+   "start": "0x798c",
+   "end": "0x7bd5",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7bd5",
+   "start": "0x7bd5",
+   "end": "0x7bf4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7bf4",
+   "start": "0x7bf4",
+   "end": "0x7e12",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7e12",
+   "start": "0x7e12",
+   "end": "0x7e62",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7e62",
+   "start": "0x7e62",
+   "end": "0x7f8a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_7f8a",
+   "start": "0x7f8a",
+   "end": "0x8004",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8004",
+   "start": "0x8004",
+   "end": "0x8066",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8066",
+   "start": "0x8066",
+   "end": "0x80d8",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_80d8",
+   "start": "0x80d8",
+   "end": "0x814b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_814b",
+   "start": "0x814b",
+   "end": "0x82cc",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_82cc",
+   "start": "0x82cc",
+   "end": "0x8345",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8345",
+   "start": "0x8345",
+   "end": "0x83b1",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_83b1",
+   "start": "0x83b1",
+   "end": "0x843a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_843a",
+   "start": "0x843a",
+   "end": "0x84a0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_84a0",
+   "start": "0x84a0",
+   "end": "0x8585",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8585",
+   "start": "0x8585",
+   "end": "0x85a4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_85a4",
+   "start": "0x85a4",
+   "end": "0x8f7e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8f7e",
+   "start": "0x8f7e",
+   "end": "0x8fce",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_8fce",
+   "start": "0x8fce",
+   "end": "0x9053",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_9053",
+   "start": "0x9053",
+   "end": "0x91a3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_91a3",
+   "start": "0x91a3",
+   "end": "0x95ee",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_95ee",
+   "start": "0x95ee",
+   "end": "0x963b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_9640",
+   "start": "0x9640",
+   "end": "0x982b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_9960",
+   "start": "0x9960",
+   "end": "0x9971",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9974",
+   "start": "0x9974",
+   "end": "0x9ac2",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9ac4",
+   "start": "0x9ac4",
+   "end": "0x9afa",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9afc",
+   "start": "0x9afc",
+   "end": "0x9b43",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9b44",
+   "start": "0x9b44",
+   "end": "0x9c90",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9c90",
+   "start": "0x9c90",
+   "end": "0x9ca1",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9ca4",
+   "start": "0x9ca4",
+   "end": "0x9d3e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9d40",
+   "start": "0x9d40",
+   "end": "0x9e0d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9e10",
+   "start": "0x9e10",
+   "end": "0x9e53",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9e54",
+   "start": "0x9e54",
+   "end": "0x9eec",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9eec",
+   "start": "0x9eec",
+   "end": "0x9f48",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_9f48",
+   "start": "0x9f48",
+   "end": "0x9f62",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a0e0",
+   "start": "0xa0e0",
+   "end": "0xa284",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a520",
+   "start": "0xa520",
+   "end": "0xa572",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a574",
+   "start": "0xa574",
+   "end": "0xa656",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a658",
+   "start": "0xa658",
+   "end": "0xa80b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a810",
+   "start": "0xa810",
+   "end": "0xa8ba",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a8bc",
+   "start": "0xa8bc",
+   "end": "0xa958",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c-ot"
+  },
+  {
+   "name": "f_a966",
+   "start": "0xa966",
+   "end": "0xacdd",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_acdd",
+   "start": "0xacdd",
+   "end": "0xad63",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ad63",
+   "start": "0xad63",
+   "end": "0xae56",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ae56",
+   "start": "0xae56",
+   "end": "0xb03c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b03c",
+   "start": "0xb03c",
+   "end": "0xb17e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b17e",
+   "start": "0xb17e",
+   "end": "0xb1df",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b1df",
+   "start": "0xb1df",
+   "end": "0xb4a7",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b4a7",
+   "start": "0xb4a7",
+   "end": "0xb541",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b541",
+   "start": "0xb541",
+   "end": "0xb57a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b57a",
+   "start": "0xb57a",
+   "end": "0xb5df",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b5df",
+   "start": "0xb5df",
+   "end": "0xb639",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b639",
+   "start": "0xb639",
+   "end": "0xb680",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b680",
+   "start": "0xb680",
+   "end": "0xb6e4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b6e4",
+   "start": "0xb6e4",
+   "end": "0xb76c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b76c",
+   "start": "0xb76c",
+   "end": "0xb804",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_b804",
+   "start": "0xb804",
+   "end": "0xbc42",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bc42",
+   "start": "0xbc42",
+   "end": "0xbc91",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bc91",
+   "start": "0xbc91",
+   "end": "0xbd24",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bd24",
+   "start": "0xbd24",
+   "end": "0xbd8b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bd8b",
+   "start": "0xbd8b",
+   "end": "0xbdd3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bdd3",
+   "start": "0xbdd3",
+   "end": "0xbf24",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bf24",
+   "start": "0xbf24",
+   "end": "0xbf98",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bf98",
+   "start": "0xbf98",
+   "end": "0xbfba",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_bfba",
+   "start": "0xbfba",
+   "end": "0xc011",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c011",
+   "start": "0xc011",
+   "end": "0xc059",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c059",
+   "start": "0xc059",
+   "end": "0xc14b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c14b",
+   "start": "0xc14b",
+   "end": "0xc20d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c20d",
+   "start": "0xc20d",
+   "end": "0xc26a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c26a",
+   "start": "0xc26a",
+   "end": "0xc294",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c294",
+   "start": "0xc294",
+   "end": "0xc2d0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c2d0",
+   "start": "0xc2d0",
+   "end": "0xc321",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c321",
+   "start": "0xc321",
+   "end": "0xc3ab",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c3ab",
+   "start": "0xc3ab",
+   "end": "0xc3fb",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c3fb",
+   "start": "0xc3fb",
+   "end": "0xc621",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c621",
+   "start": "0xc621",
+   "end": "0xc685",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c685",
+   "start": "0xc685",
+   "end": "0xc826",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c826",
+   "start": "0xc826",
+   "end": "0xc886",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c886",
+   "start": "0xc886",
+   "end": "0xc8c0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c8c0",
+   "start": "0xc8c0",
+   "end": "0xc936",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c936",
+   "start": "0xc936",
+   "end": "0xc960",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c960",
+   "start": "0xc960",
+   "end": "0xc9ce",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c9ce",
+   "start": "0xc9ce",
+   "end": "0xc9f4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_c9f4",
+   "start": "0xc9f4",
+   "end": "0xca51",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ca51",
+   "start": "0xca51",
+   "end": "0xca6a",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ca51.c",
+   "src_sha256": "3f1a28cc7d567d9d31b2f9ce19236eb5c8626116e77500a6d0d20941e2779138"
+  },
+  {
+   "name": "f_ca6a",
+   "start": "0xca6a",
+   "end": "0xcac2",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_ca6a.c",
+   "src_sha256": "23d5fc106573deec4ef6a31b391fd30dc96ec0f91146be7b5bffe3cafe851d39"
+  },
+  {
+   "name": "f_cb3f",
+   "start": "0xcb3f",
+   "end": "0xccd5",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ccd5",
+   "start": "0xccd5",
+   "end": "0xcdee",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_cdee",
+   "start": "0xcdee",
+   "end": "0xd010",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d010",
+   "start": "0xd010",
+   "end": "0xd252",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d252",
+   "start": "0xd252",
+   "end": "0xd288",
+   "kind": "c-interrupt",
+   "status": "identified",
+   "profile": "game-c",
+   "note": "__interrupt handler; end = next region"
+  },
+  {
+   "name": "f_d288",
+   "start": "0xd288",
+   "end": "0xd2f0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d2f0",
+   "start": "0xd2f0",
+   "end": "0xd36c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d36c",
+   "start": "0xd36c",
+   "end": "0xd408",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d408",
+   "start": "0xd408",
+   "end": "0xd4ba",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d4ba",
+   "start": "0xd4ba",
+   "end": "0xd5d0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d5d0",
+   "start": "0xd5d0",
+   "end": "0xd656",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d656",
+   "start": "0xd656",
+   "end": "0xd7b8",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_d7b8",
+   "start": "0xd7b8",
+   "end": "0xda01",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_da01",
+   "start": "0xda01",
+   "end": "0xdce0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_dce0",
+   "start": "0xdce0",
+   "end": "0xdd01",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_dd01",
+   "start": "0xdd01",
+   "end": "0xdd53",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_dd53",
+   "start": "0xdd53",
+   "end": "0xddb9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ddb9",
+   "start": "0xddb9",
+   "end": "0xde21",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_de21",
+   "start": "0xde21",
+   "end": "0xde3e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_de3e",
+   "start": "0xde3e",
+   "end": "0xdea6",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_dea6",
+   "start": "0xdea6",
+   "end": "0xdf49",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_df49",
+   "start": "0xdf49",
+   "end": "0xdf7f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_df7f",
+   "start": "0xdf7f",
+   "end": "0xdfc3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_dfc3",
+   "start": "0xdfc3",
+   "end": "0xe028",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e028",
+   "start": "0xe028",
+   "end": "0xe095",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e095",
+   "start": "0xe095",
+   "end": "0xe3e5",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e3e5",
+   "start": "0xe3e5",
+   "end": "0xe41d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e41d",
+   "start": "0xe41d",
+   "end": "0xe473",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e473",
+   "start": "0xe473",
+   "end": "0xe6b3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e6b3",
+   "start": "0xe6b3",
+   "end": "0xe813",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e813",
+   "start": "0xe813",
+   "end": "0xe855",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e855",
+   "start": "0xe855",
+   "end": "0xe88d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e88d",
+   "start": "0xe88d",
+   "end": "0xe914",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e914",
+   "start": "0xe914",
+   "end": "0xe95c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e95c",
+   "start": "0xe95c",
+   "end": "0xe983",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e983",
+   "start": "0xe983",
+   "end": "0xe9b3",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e9b3",
+   "start": "0xe9b3",
+   "end": "0xe9dd",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_e9dd",
+   "start": "0xe9dd",
+   "end": "0xea04",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ea04",
+   "start": "0xea04",
+   "end": "0xea71",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ea71",
+   "start": "0xea71",
+   "end": "0xea9f",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ea9f",
+   "start": "0xea9f",
+   "end": "0xebcd",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ebcd",
+   "start": "0xebcd",
+   "end": "0xec44",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ec44",
+   "start": "0xec44",
+   "end": "0xec76",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ec76",
+   "start": "0xec76",
+   "end": "0xec9c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ec9c",
+   "start": "0xec9c",
+   "end": "0xecdf",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ecdf",
+   "start": "0xecdf",
+   "end": "0xed38",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ed38",
+   "start": "0xed38",
+   "end": "0xeda0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_eda0",
+   "start": "0xeda0",
+   "end": "0xedd5",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_edd5",
+   "start": "0xedd5",
+   "end": "0xee33",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ee33",
+   "start": "0xee33",
+   "end": "0xee65",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ee65",
+   "start": "0xee65",
+   "end": "0xeeac",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_eeac",
+   "start": "0xeeac",
+   "end": "0xefa0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_efa0",
+   "start": "0xefa0",
+   "end": "0xeff1",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_eff1",
+   "start": "0xeff1",
+   "end": "0xf0f6",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f0f6",
+   "start": "0xf0f6",
+   "end": "0xf253",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f253",
+   "start": "0xf253",
+   "end": "0xf306",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f306",
+   "start": "0xf306",
+   "end": "0xf3b9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f3b9",
+   "start": "0xf3b9",
+   "end": "0xf46c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f46c",
+   "start": "0xf46c",
+   "end": "0xf59a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f59a",
+   "start": "0xf59a",
+   "end": "0xf690",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f690",
+   "start": "0xf690",
+   "end": "0xf6a1",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f6a1",
+   "start": "0xf6a1",
+   "end": "0xf6d9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f6d9",
+   "start": "0xf6d9",
+   "end": "0xf6f8",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f6f8",
+   "start": "0xf6f8",
+   "end": "0xf7e4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f7e4",
+   "start": "0xf7e4",
+   "end": "0xf82d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f82d",
+   "start": "0xf82d",
+   "end": "0xf875",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f875",
+   "start": "0xf875",
+   "end": "0xf8bb",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f8bb",
+   "start": "0xf8bb",
+   "end": "0xf905",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_f905",
+   "start": "0xf905",
+   "end": "0xfa42",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fa42",
+   "start": "0xfa42",
+   "end": "0xfb17",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fb17",
+   "start": "0xfb17",
+   "end": "0xfb92",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fb92",
+   "start": "0xfb92",
+   "end": "0xfbc0",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fbc0",
+   "start": "0xfbc0",
+   "end": "0xfc1e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fc1e",
+   "start": "0xfc1e",
+   "end": "0xfc86",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fc86",
+   "start": "0xfc86",
+   "end": "0xfcab",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fcab",
+   "start": "0xfcab",
+   "end": "0xfce4",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fce4",
+   "start": "0xfce4",
+   "end": "0xfd3b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fd3b",
+   "start": "0xfd3b",
+   "end": "0xfd7b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fd7b",
+   "start": "0xfd7b",
+   "end": "0xfe6a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_fe6a",
+   "start": "0xfe6a",
+   "end": "0xff0d",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ff0d",
+   "start": "0xff0d",
+   "end": "0xff5c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ff5c",
+   "start": "0xff5c",
+   "end": "0xff9d",
+   "kind": "c-interrupt",
+   "status": "identified",
+   "profile": "game-c",
+   "note": "__interrupt handler; end = next region"
+  },
+  {
+   "name": "f_ff9d",
+   "start": "0xff9d",
+   "end": "0xffbe",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_ffbe",
+   "start": "0xffbe",
+   "end": "0x1004e",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1004e",
+   "start": "0x1004e",
+   "end": "0x100ab",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_100ab",
+   "start": "0x100ab",
+   "end": "0x100fa",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_100fa",
+   "start": "0x100fa",
+   "end": "0x10137",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_10137",
+   "start": "0x10137",
+   "end": "0x10369",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_10369",
+   "start": "0x10369",
+   "end": "0x103b9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_103b9",
+   "start": "0x103b9",
+   "end": "0x1040c",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1040c",
+   "start": "0x1040c",
+   "end": "0x10487",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_10487",
+   "start": "0x10487",
+   "end": "0x10502",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_10502",
+   "start": "0x10502",
+   "end": "0x105a7",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_105a7",
+   "start": "0x105a7",
+   "end": "0x105c2",
+   "kind": "c",
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_105a7.c",
+   "src_sha256": "81a3350e23808e2d8f0f6f8cadf2e85b0838f63c0e787514e0adf0af441da76b"
+  },
+  {
+   "name": "f_105c2",
+   "start": "0x105c2",
+   "end": "0x1065b",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1065b",
+   "start": "0x1065b",
+   "end": "0x107b6",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_107b6",
+   "start": "0x107b6",
+   "end": "0x1085a",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_1085a",
+   "start": "0x1085a",
+   "end": "0x108a9",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_108a9",
+   "start": "0x108a9",
+   "end": "0x10d72",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_10d72",
+   "start": "0x10d72",
+   "end": "0x11051",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_11051",
+   "start": "0x11051",
+   "end": "0x11146",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_11146",
+   "start": "0x11146",
+   "end": "0x111de",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_111de",
+   "start": "0x111de",
+   "end": "0x11209",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  },
+  {
+   "name": "f_11209",
+   "start": "0x11209",
+   "end": "0x11256",
+   "kind": "c",
+   "status": "identified",
+   "profile": "game-c"
+  }
+ ],
+ "symbols": {
+  "g_387a": "3:387a",
+  "g_6924": "3:6924",
+  "g_746e": "3:746e",
+  "g_7474": "3:7474",
+  "g_7476": "3:7476",
+  "g_7b18": "3:7b18",
+  "g_8ddc": "3:8ddc",
+  "g_947c": "3:947c",
+  "g_9488": "3:9488",
+  "g_dd48": "3:dd48",
+  "g_e324": "3:e324",
+  "g_e35a": "3:e35a",
+  "g_e37a": "3:e37a",
+  "g_e4d0": "3:e4d0",
+  "getenv": "1:1427c"
+ }
 }
