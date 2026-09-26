@@ -124,7 +124,7 @@ def known_symbols(man):
     out = {}
     for f in man.get("functions", []):
         if f.get("name"):
-            out[f["name"]] = f"1:{int(f['start'], 16):x}"
+            out[f["name"]] = f"{f.get('object', 1)}:{int(f['start'], 16):x}"
     for k, v in man.get("symbols", {}).items():
         out[k] = v
     for k, v in man.get("runtime", {}).get("publics", {}).items():
@@ -341,14 +341,14 @@ NAME_RX = re.compile(r"^([fga])_([0-9a-f]+)$")
 
 def check_bindings(res, man, own_names):
     runtime_gate(res, man)
-    known = known_symbols(man)
+    known = known_symbols(man)  # manifest names (object-qualified) take precedence over the name convention
     new = {}
     for k, v in res["bindings"].items():
         if k.startswith("seg:") or k.startswith("grp:"):
             new[k] = v
             continue
         m = NAME_RX.match(k)
-        if m:  # address-named symbol: the name is the claim
+        if m and k not in known:  # address-named symbol not in the manifest: the name is the claim
             want = f"{3 if m.group(1) == 'g' else 1}:{int(m.group(2), 16):x}"
             if v != want:
                 res["problems"].append(f"{k} binds to {v}, but its name says {want}")

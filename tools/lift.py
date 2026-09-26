@@ -115,6 +115,7 @@ class Var:
         self.decl = None          # proven declaration (globals)
         self.volatile = False
         self.psum = 0             # pointer-arithmetic evidence (see Lift.pointer_sum)
+        self.stride = None        # pointee size of a pointer stepped with p++ (not 1)
 
     def note(self, w, how):
         self.acc[(w, how)] += 1
@@ -610,8 +611,11 @@ class Lift:
         elif disp:
             terms.append(K(disp))
         # pointer evidence: the single unscaled non-constant term is the base
-        cand = [t for t in terms if t.op in ("v", "m") and t.w == 4]
-        if len(cand) == 1 and not any(t.op == "addr" for t in terms):
+        flat = [x for t in terms for x in leaves(t)]
+        cand = [t for t in flat if t.op in ("v", "m") and t.w == 4 and not t.x]
+        if not any(t.op == "addr" or t.ptr for t in flat) and len(cand) > 1:
+            cand = [t for t in cand if t.op == "m"][:1] if sum(t.op == "m" for t in cand) == 1 else cand
+        if len(cand) == 1 and not any(t.op == "addr" for t in flat):
             c = cand[0]
             if c.op == "v":
                 c.var.ptr += 1
@@ -1101,6 +1105,9 @@ class Lift:
             hi = (b.v & 0xFFFF0000) >> 16
             if (mn == "and" and hi == 0xFFFF) or (mn != "and" and hi == 0):
                 loc.var.note(4, "rmwn")   # Watcom would narrow this for a plain int: volatile/short
+        if mn in ("add", "sub") and b.op == "k" and loc.op == "v" and loc.w == 4 and 1 < b.v < 0x10000                 and self.post_incdec(loc, "++" if mn == "add" else "--"):
+            loc.var.stride = b.v    # `mov eax,[p]; add [p],18h`: p++ on a pointer to 24-byte records
+            return 1
         if mn == "and" and b.op == "k" and self.live_values({id(n) for n in loc.walk()}) and not self.bf_pending:
             # possibly the clearing half of a bitfield store (`and byte [m],~mask; or [m],val`)
             self.bf_pending = (loc, b.v, uns)
@@ -1598,6 +1605,8 @@ class Render:
             if acc:
                 return acc
             name = self.vname(e.var)
+            if e.var.stride and e.var.type == "p":
+                return f"((unsigned char *){name})"
             return f"({TNAME[t]}){name}" if cast else name
         if op == "m":
             return self.deref(e, self.mem_type(e))
@@ -1636,6 +1645,9 @@ class Render:
         if op == "pre":
             return f"{e.name}{self.lvalue(e.a)}"
         if op == "post":
+            if e.a.op == "v" and e.a.var.stride and e.a.var.type == "p":
+                self.structs.add(e.a.var.stride)
+                return f"((unsigned char *){self.lvalue(e.a)}{e.name})"
             return f"{self.lvalue(e.a)}{e.name}"
         if op == "preop":
             return f"({self.lvalue(e.a)} {e.name}= {self.expr(e.b)})"
@@ -1767,6 +1779,21 @@ class Render:
     # statements -------------------------------------------------------------------------------
     def stmt(self, st):
         k = st[0]
+        if k == "set" and st[1].op == "v" and st[1].var.stride and st[1].var.type == "p":
+            n = st[1].var.stride
+            self.structs.add(n)
+            return f"{self.lvalue(st[1])} = (S{n} *){self.paren(st[2], self.expr(st[2]))};"
+        if k == "opset" and st[1].op == "v" and st[1].var.stride and st[1].var.type == "p" and st[2] in ("+", "-"):
+            n, v, name = st[1].var.stride, st[3], self.lvalue(st[1])
+            self.structs.add(n)
+            if v.op == "k" and v.v % n == 0:
+                q = v.v // n
+                return f"{name} {st[2]}= {q};" if q != 1 else f"{name}{st[2]}{st[2]};"
+            if v.op == "*" and v.b.op == "k" and v.b.v == n:
+                return f"{name} {st[2]}= {self.paren(v.a, self.expr(v.a))};"
+            if v.op == "<<" and v.b.op == "k" and (1 << v.b.v) == n:
+                return f"{name} {st[2]}= {self.paren(v.a, self.expr(v.a))};"
+            return f"{name} = (S{n} *)((unsigned char *){name} {st[2]} {self.paren(v, self.expr(v))});"
         if k == "set":
             loc, val = st[1], st[2]
             lt = self.lv_type(loc)
@@ -1882,6 +1909,9 @@ class Render:
         out = ["/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */"]
         for inc in sorted(self.includes):
             out.append(f"#include <{inc}>")
+        for v in list(L.decl_locals) + list(self.used_globals.values()) + list(L.args.values()):
+            if v.stride and v.type == "p":
+                self.structs.add(v.stride)
         for n in sorted(self.bitfields):
             out.append(self.bitfields[n])
         for n in sorted(self.structs):
@@ -1920,6 +1950,8 @@ class Render:
 def decl_text(v):
     t = v.type
     vol = "volatile " if v.volatile else ""
+    if t == "p" and v.stride:
+        return f"S{v.stride} * {vol}{v.name}"
     if t == "p":
         return f"unsigned char * {vol}{v.name}"
     if t.startswith("arr"):
@@ -1929,6 +1961,8 @@ def decl_text(v):
 
 def global_decl(v):
     vol = "volatile " if v.volatile else ""
+    if v.type == "p" and v.stride:
+        return f"extern S{v.stride} * {vol}{v.name};"
     if getattr(v, "fnptr", False) and v.type not in ("arr",):
         return f"extern int (* {vol}{v.name})();"
     if v.type == "arr":

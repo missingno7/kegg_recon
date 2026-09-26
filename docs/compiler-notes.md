@@ -50,6 +50,15 @@ in every probe, `-hw` format; `-hc` changes code and is excluded). PROVEN by:
   with `-d2` and runs `check.py --obj`, treating only those debug-segment problems as ignorable (`EXACT*`).
   Needed centrally: profile `game-c-d2` and a check.py rule that ignores debug-class segments. Until then
   `volatile` is NOT the source construct — do not add it.
+- `-od` vs `-d2` differ only on ebp-relative operands (params/autos), never on globals (`od_vs_d2.c`):
+  push (`push dword ptr [ebp+x]` vs `mov eax,[ebp+x]; push eax`), flag test (`test byte ptr [ebp+x],m` vs
+  `test dword ptr [ebp+x],m`; the original has 21 dword / 0 byte tests on dword autos), and the dead load of a
+  post-increment statement. Every `volatile` in src/ (params, locals, `volatile int g_dee0`, `int (* volatile
+  g_8db8)(void)`) was a stand-in for one of these (or for the pointer-arithmetic order below); none is authentic.
+  A real volatile *global* would be visible under `-d2` as a dead `mov eax,[g]` before `g++;` statements and as
+  `test dword ptr [g],m` instead of `test byte ptr` (`volat2.c`); the original has neither (its 4
+  `mov eax,[g]; inc [g]` sites all use the old value, e.g. `tbl[g++]`), so no ISR-shared global is declared
+  volatile in the game C. Call form `g_8db8()` vs `(*g_8db8)()` makes no difference (`volat.c`).
 
 Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
 - Post-increment statement of a local/param `i++;` / `p++;` -> dead `mov eax,[slot]` before `inc`/`add [slot],n`
