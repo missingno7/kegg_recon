@@ -12,6 +12,7 @@ NEG = [  # (file, func, start, end)
     ("wrong_width.c", "f_7032", "0x7032", "0x704d"),
     ("wrong_symbol.c", "f_7032", "0x7032", "0x704d"),
     ("wrong_call.c", "f_2250", "0x2250", "0x228e"),
+    ("wrong_string.c", "f_ca6a", "0xca6a", "0xcac2"),
 ]
 
 

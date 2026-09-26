@@ -43,12 +43,73 @@ def original():
     if _ORIG is None:
         L = lemod.LE(ROOT / "assets" / "KE.EXE")
         code = L.object_bytes(L.objects[0])[:L.objects[0]["vsize"]]
-        fix = {}
+        fix, dfix = {}, {}
         for obj, off, typ, tgt in L.resolved_fixups():
             if obj == 1:
                 fix[off] = (typ, tgt)
+            elif obj == 3:
+                dfix[off] = (typ, tgt)
+        data = L.object_bytes(L.objects[2])
         _ORIG = (L, code, fix)
+        original.data = (data, dfix, L.objects[2]["vsize"])
     return _ORIG
+
+
+def check_data(mod, si, res):
+    """Contents of candidate data segments (strings, initialised data) must equal the original at the
+    address their code references (or their symbols) bind to; pointers inside them must be LE fixups."""
+    original()
+    data, dfix, vsize = original.data
+    binds, probs = res["bindings"], res["problems"]
+    out = []
+    for di, seg in enumerate(mod.segments):
+        if not seg or di == si or seg.size == 0 or seg.cls.upper() in ("CODE", "BSS"):
+            continue
+        bases = set()
+        if f"seg:{seg.name}" in binds:
+            bases.add(binds[f"seg:{seg.name}"])
+        for n, s_, o, _ in mod.publics:
+            if s_ == di and n in binds:
+                ob, off = binds[n].split(":")
+                bases.add(f"{ob}:{(int(off, 16) - o) & 0xFFFFFFFF:x}")
+        if not bases:
+            out.append({"seg": seg.name, "size": seg.size, "status": "unbound"})
+            probs.append(f"data segment {seg.name} ({seg.size} bytes) is not referenced by the compared code: cannot place it")
+            continue
+        if len(bases) > 1:
+            probs.append(f"data segment {seg.name} has inconsistent bases {sorted(bases)}")
+            continue
+        ob, base = next(iter(bases)).split(":")
+        base = int(base, 16)
+        if ob != "3":
+            probs.append(f"data segment {seg.name} binds to object {ob}")
+            continue
+        cand = bytes(seg.data)
+        masked = set()
+        for f in mod.fixups:
+            if f.seg != di:
+                continue
+            masked.update(range(f.off, f.off + f.size()))
+            site = base + f.off
+            if site not in dfix:
+                probs.append(f"{seg.name}+{f.off:#x}: candidate pointer, no original LE fixup at 3:{site:x}")
+                continue
+            typ, tgt = dfix[site]
+            key, addend = resolve_fixup(mod, f, di)
+            v = f"{tgt.get('obj')}:{(tgt.get('off', 0) - addend) & 0xFFFFFFFF:x}"
+            if key in binds and binds[key] != v:
+                probs.append(f"binding conflict {key}: {binds[key]} vs {v} (data pointer)")
+            binds.setdefault(key, v)
+        for site in dfix:
+            if base <= site < base + seg.size and (site - base) not in masked:
+                probs.append(f"original LE fixup at 3:{site:x} inside {seg.name} has no candidate pointer")
+        orig = data[base:base + seg.size]
+        orig = orig + bytes(seg.size - len(orig))  # beyond initialised pages reads as zero
+        nd = [i for i in range(seg.size) if i not in masked and orig[i] != cand[i]]
+        if nd:
+            probs.append(f"{seg.name} contents differ at 3:{base + nd[0]:x} ({len(nd)} bytes)")
+        out.append({"seg": seg.name, "base": f"3:{base:x}", "size": seg.size, "diff_bytes": len(nd)})
+    res["data"] = out
 
 
 def manifest():
@@ -285,6 +346,7 @@ def main(argv):
     if a.all and olen is None:
         olen = c1 - c0
     res, cand, orig, masked = compare(mod, si, c0, c1, a0, olen)
+    check_data(mod, si, res)
     own = {n for n, *_ in mod.publics}
     check_bindings(res, man, own)
     # internal consistency: symbols defined in this object must sit at the matching offset
