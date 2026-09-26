@@ -110,3 +110,37 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
   then (g+1)//2) and assigns slots in the sorted order. So parameter types and the return type move the locals:
   wrong slot order usually means a wrong prototype, a wrong narrow/wide local or return type, or a missing
   nested-block auto. `tools/lift.py` inverts this rule; use it to get a consistent declaration set.
+
+## Operand evaluation order and expression temps (worker `hard`, probes `build/workers/hard/p/t3..t10.c`, `dis.py`)
+- Binary operators (`+`, `<`, ...) evaluate the *deeper* operand tree first; on a tie the left one goes first.
+  No-op conversion nodes count as a level: int<->unsigned (explicit cast or usual arithmetic conversion),
+  short->int (`movsx`), integer->pointer cast; pointer->pointer casts and constant struct/array offsets
+  folded into the address do not always (2-D row offset does). Writing the operands in the other order does
+  not help (commutative ops are not swapped). So register order tells you where the hidden conversions are:
+  - `g_e326[a1] + g_e336[a1]` -> left index in EAX first; the original's right-index-in-EDX-first is
+    `int g_e326[3][4]; g_e326[0][a1] + g_e326[1][a1] + g_e326[2][a1]` (f_a810 EXACT; `g_e336[(unsigned)a1]`
+    also works) (`t3.c`).
+  - `p->e + *p->f` (int, int*) -> right chain first (`mov eax,[p]; mov eax,[eax+f]; mov edx,[p]; mov edx,[edx+e]`);
+    with `unsigned *f` (int+unsigned converts the left) or `(int)unsigned_e + ...` the left base is loaded first
+    (`mov edx,[p]; mov eax,[p]; mov eax,[eax+f]; mov edx,[edx+e]; add edx,[eax]`). `*(unsigned *)int_field`
+    does not (int->ptr cast deepens the right again); `*(unsigned *)charptr_field` does (`t6.c`-`t8.c`).
+    f_7bf4 EXACT with `struct Frame { unsigned img; int time; } *f;` and `g_8db4 = p->e + p->f->img;`.
+  - `if ((xs = bx + b.ox) + b.w < (ax = x + a.ox))`: the left (assignment + movsx) is deeper -> computed first
+    into EDX, compare `cmp edx,[ax]; jl` (f_b6e4). With `... + mx` (int) on the right side the original's
+    `cmp eax,edx; jg` comes from writing `(ax = x + a.ox) + mx > (xs = bx + b.ox) + b.w` (f_b76c) (`t10.c`).
+- Assignment inside a condition keeps the `mov [slot],r; cmp r2,[slot]` reload (as `asgcond.c`).
+- A call result copied *before* the caller's `add esp,N` (`call f; mov ebx,eax` or `mov [ebp-8],eax; add esp,8`)
+  is a temporary inside a larger expression; a named-local assignment statement stores *after* `add esp`.
+  FPU conversion temps get ordinary 4-byte stack slots and are reused: `(float)(int expr)` spilled across a
+  later call is `mov [t],ebx; fild [t]; fstp [t]`, and `(int)(f() * g * fl)` gives `mov [t],eax; fild [t];
+  ...; call __CHP; fistp [t]`. So a frame smaller than the declared locals + a temp means "no locals, one big
+  expression": f_b03c EXACT as `g_e1f8 = f_dd53(..) + ((f_13324(..) + f_13324(..)) >> 1) +
+  (int)(f_dd53(-g_740c >> 1, g_740c >> 1) * g_e1fc * (float)(abs(x1-x2) + abs(y1-y2))) / (g_740c >> 1);`
+  (heaviest operand -- the division -- evaluated first, partial sums in EBX/ESI).
+- Struct-by-value params: f_b6e4/f_b76c take `(Frame a, int x, int y, Frame b, int x, int y, ...)` with an
+  18-byte packed `Frame` of 9 shorts (arguments are dword-padded: 20 bytes on the stack). Their return type is
+  `short` (no `int` return + local order reproduces the frame); the matched caller f_7551 compares `cmp eax,-1`,
+  i.e. its TU saw an `int` (probably implicit) declaration.
+- `and eax,1; and eax,1; mov edx,eax; and byte ptr [p],~m; shl edx,k; or dword ptr [p],edx` = a 1-bit bitfield
+  store of an already-masked value: `((Flags *)g_de5c)->b2 = (x >> 3) & 1;` (f_4cf2 EXACT; manual
+  `(*p & ~4) | (v << 2)` gives load/or/store).

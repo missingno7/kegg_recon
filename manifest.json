@@ -1175,8 +1175,10 @@
    "start": "0x4cf2",
    "end": "0x5381",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_4cf2.c",
+   "src_sha256": "2716c455c2826d71fa3b60e674c1e04706fecc624a5bcd1103f2a1eda4ef346b"
   },
   {
    "name": "f_5381",
@@ -2021,8 +2023,10 @@
    "start": "0xb03c",
    "end": "0xb17e",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_b03c.c",
+   "src_sha256": "d4065fe4bef4fedcca35b5eb800480a8ad17a0fc68a6351a7800592f65113ad2"
   },
   {
    "name": "f_b17e",
@@ -2109,16 +2113,20 @@
    "start": "0xb6e4",
    "end": "0xb76c",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_b6e4.c",
+   "src_sha256": "7cae76caa812f11cf02f751249d7cba961cc3a7b6b74e57f08b988699e52b5fb"
   },
   {
    "name": "f_b76c",
    "start": "0xb76c",
    "end": "0xb804",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "matching",
+   "profile": "game-c",
+   "src": "src/f_b76c.c",
+   "src_sha256": "5a57ca1010081b40c9a18ee47e757d4edfaa28b02b1d3208937e7eac8540c79c"
   },
   {
    "name": "f_b804",
@@ -3880,6 +3888,7 @@
   "_rotl": "1:145fe",
   "_splitpath": "1:13ff4",
   "_stricmp": "1:14092",
+  "abs": "1:14105",
   "atexit": "1:14197",
   "exit": "1:1515a",
   "f_10": "1:10",
@@ -4142,6 +4151,7 @@
   "g_3809": "3:3809",
   "g_3861": "3:3861",
   "g_387a": "3:387a",
+  "g_388a": "3:388a",
   "g_388e": "3:388e",
   "g_3892": "3:3892",
   "g_3896": "3:3896",
@@ -4170,6 +4180,7 @@
   "g_38f2": "3:38f2",
   "g_38f6": "3:38f6",
   "g_38fa": "3:38fa",
+  "g_38fe": "3:38fe",
   "g_3902": "3:3902",
   "g_3906": "3:3906",
   "g_390c": "3:390c",
@@ -4198,6 +4209,7 @@
   "g_62f8": "3:62f8",
   "g_6368": "3:6368",
   "g_6378": "3:6378",
+  "g_63dc": "3:63dc",
   "g_6410": "3:6410",
   "g_6508": "3:6508",
   "g_6790": "3:6790",
@@ -4671,6 +4683,7 @@
   "g_e1e4": "3:e1e4",
   "g_e1e8": "3:e1e8",
   "g_e1ec": "3:e1ec",
+  "g_e1f8": "3:e1f8",
   "g_e1fc": "3:e1fc",
   "g_e200": "3:e200",
   "g_e204": "3:e204",
