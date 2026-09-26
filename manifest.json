@@ -5124,7 +5124,8 @@
     "start": "0x0154EF",
     "end": "0x0154F0",
     "lib": "clib3s.lib",
-    "member": "ljmphdl"
+    "member": "crwd386",
+    "note": "corrected: byte is crwd386 __null_FPE_rtn; ljmphdl is not linked (proven by WLINK map, image.py)"
    },
    {
     "start": "0x0154F0",

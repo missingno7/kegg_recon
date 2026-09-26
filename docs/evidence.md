@@ -47,3 +47,14 @@ entries short and give the command/evidence that decides them.
 | link-objects | 3 objects = USE32 CODE (BEGTEXT first) / USE16 CODE / DGROUP(+BSS+STACK); bases 0x10000 then next 64 KiB boundary; file pages padded to 4096, BSS/STACK virtual only | PROVEN | controlled links reproduce KE's bases and page map |
 | link-fixups | one record per site (no source lists); 32-bit target flag exactly for targets >= 0x10000; page-crossing fixup recorded on the next page with negative offset (KE has 6); per-page record order follows contribution order, not sorted | PROVEN | fixup stress links |
 | link-stack | STACK segment is obj3 0xE610..0xF610 = 4096 bytes = WLINK/clib default (no `option stack` needed) | STRONG | runtime _BSS ends at 0xE610 (build/workers/crtdiff/runtime-ga.json) |
+
+## Whole image
+
+| id | claim | level | evidence |
+|---|---|---|---|
+| img-hybrid | One WLINK 10.0 GA run over (canonical sources where their object structure is proven) + explicit raw-debt objects + the GA libraries + GA wstub reproduces KE.EXE byte-for-byte (sha256 5a465cc7...); nothing is copied into or patched in the output | PROVEN | `python tools/image.py --mode canonical` (and `--mode raw`); report build/image/<mode>/report.json with byte accounting |
+| link-fixorder | WLINK writes the fixups of one LEDATA in reverse; per page, records in 512-byte blocks, newest block first; sel16 records in a separate list first | PROVEN (model reproduces all 33 fixup pages) | build/image/probe |
+| link-libs | library members pulled on demand in first-reference order, dependencies after; library order irrelevant (no shared publics); emu387 `386inite` needs the FP pseudo-reference a Watcom FP module emits | PROVEN | image.py all-raw build reproduces member order |
+| link-dgroup | a combined segment starts at its largest contribution's alignment (game _DATA starts 0x25EC) | PROVEN | image.py |
+| obj-chunks | original LEDATA chunk boundaries recovered from fixup order; no object boundary inside a chunk -> no object boundary at 0x9f9 or 0x4085; asm groups (0xa03f/0xa067/0xa4e1, 0x112fa..0x11485, 0x12b94/0x12cbd, 0x133f6/0x134f2, 0x13889, 0x139e3/0x13a0a/0x13a29) are single modules | STRONG | image.py report "chunking" |
+| main | f_13a95 is `main` (cstart calls it) | PROVEN | link requires it |
