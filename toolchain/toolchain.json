@@ -1,0 +1,113 @@
+{
+ "note": "Historical tool installs live under KEGG_TOOLS (default C:/tools), never in git. 'hosts' map a logical tool to the host executable. status: candidate | excluded | pending.",
+ "installs": {
+  "wc100a": {
+   "product": "WATCOM C/C++32 10.0a (CD R01711, volume WATCOM_C10A, files dated 1994-09-01)",
+   "status": "candidate",
+   "dir": "watcom-10.0a",
+   "source": {
+    "origin": "https://archive.org/details/Watcom_C_10.0 (file Watcom_C++_10.0.iso; despite the item name the compiler banner is 10.0a). archive.org watcomcc10.0cd-rom WATCOM_C10A.ISO extracts to an identical tree.",
+    "local": "download/watcom/Watcom_C++_10.0.iso",
+    "sha256": "c55c2c70c6e42d4c55d079693da7f3ed8719003cd562e2445c8ea77b000fdbfb",
+    "md5": "7b3b8ab28fda8c14122050d6536bdd9b",
+    "subdir": "WATCOM",
+    "derivation": "7z x ISO; install = ISO:/WATCOM tree verbatim (no setup program run)"
+   },
+   "hosts": {
+    "wcc386": {
+     "nt": "BINNT/WCC386.EXE",
+     "dos4gw": "BINB/WCC386.EXE"
+    },
+    "wasm": {
+     "nt": "BINNT/WASM.EXE",
+     "dos4gw": "BINB/WASM.EXE"
+    },
+    "wlink": {
+     "nt": "BINNT/WLINK.EXE",
+     "dos4gw": "BIN/WLINK.EXE"
+    },
+    "wlib": {
+     "nt": "BINNT/WLIB.EXE"
+    },
+    "wdisasm": {
+     "nt": "BINNT/WDISASM.EXE"
+    }
+   },
+   "env": {
+    "WATCOM": "",
+    "INCLUDE": "H"
+   },
+   "key_files": {
+    "BINB/WCC386.EXE": "c3666de94f6fa6800f452dae8acf45505ecdb62f0ade2cc27cc86c2d9e8e2b6b",
+    "BINB/WASM.EXE": "a79e0dc11a26b098728aa988cfc974113e7ac5d28c81baded1f077ed27be0513",
+    "BINNT/WCC386.EXE": "8fee7d6ab3f2c06a0a874135e3898386898679e7dd53993fcc508e296364767d",
+    "BINNT/WLINK.EXE": "ae8bb02cce0e92ed1a0c5c003a7312bb05f8bf3c252e1efa27a4835fb83b9ff1",
+    "BINNT/WLIB.EXE": "f20631839a9c1c38969f0c5930e26010361c6175790992181455b5c0ffb1cbb3",
+    "BIN/WLINK.EXE": "33379379fe3034b0083c4455b61600a841c7e97d9bd2dbb016176fd4536fb797",
+    "BINB/WSTUB.EXE": "304f5f20b24894489363228d30ea8756025922eb9aecd929f10c2e3ac3e319f3",
+    "BIN/DOS4GW.EXE": "dd9f4f342533f99570475b62e53231a468de2e3d83e4fc31e80c27d3a7d6b49c",
+    "LIB386/DOS/CLIB3S.LIB": "031c9b3467137d357dfbed0ab3fad4badd0fb862afd399dad473615ff2ccdb48",
+    "LIB386/MATH387S.LIB": "56c06c8798691e821912eb195824c55557e2fee5f84837622f48bf6400897ddb",
+    "LIB386/MATH3S.LIB": "7f828bc8295c9a9f6cd0e51c867e01d1af379a54e03b07a30c23ea46dfbc5845",
+    "LIB386/DOS/EMU387.LIB": "5b150d1cdca625eb27747b7ac182e36f5a66571e4441ccc19caccc6fbf773b5c",
+    "LIB386/NOEMU387.LIB": "21afb6e48ff0860fff42a55202770c5e844f2e860ab0d7c4b91bf4d8ce1d956a"
+   },
+   "tree_sha256": "94f301770e60cd5e5fdab3614c02776d6ec098f59589e32992c8a3f694a3618f",
+   "tree_files": 5115
+  },
+  "wc95b": {
+   "product": "WATCOM C/C++32 9.5b (installed tree, files dated 1993-05-05)",
+   "status": "excluded-runtime",
+   "dir": "watcom-9.5b",
+   "source": {
+    "origin": "https://archive.org/details/watcom-9.5b_202511 (WATCOM_9.5b.zip, floppy install with all features)",
+    "local": "download/watcom/WATCOM_9.5b.zip",
+    "sha256": "a228f13ff1e454b976badaac9fe29779a1ed3152736ba9a8910cccf4419b23ca",
+    "md5": "73e6570517a68695df6d14c5bcf884c9",
+    "subdir": "WATCOM_9.5b",
+    "derivation": "unzip; install = WATCOM_9.5b/ verbatim"
+   },
+   "hosts": {
+    "wcc386": {
+     "nt": "BINNT/WCC386.EXE"
+    },
+    "wlink": {
+     "nt": "BINNT/WLINK.EXE"
+    },
+    "wlib": {
+     "nt": "BINNT/WLIB.EXE"
+    }
+   },
+   "env": {
+    "WATCOM": "",
+    "INCLUDE": "H"
+   },
+   "key_files": {
+    "BINNT/WCC386.EXE": "8120ccd90e6cdfdcfebca3ef647e8a4489618a12d1548a43cd7fbae75e110956",
+    "BINNT/WLINK.EXE": "ec92090be14a1ddf8ba00f4d2cbcf48eff2b8dcf56d5d4eb90f1079034d14907",
+    "LIB386/DOS/CLIB3S.LIB": "95b423adf7561bd638876fac51108c92243cc057e0084e98b98b7cd032b3edae"
+   },
+   "tree_sha256": "e2f24d5ac5b768a761b8f76aa5758f3e46480a09751ea38b5a17b7fb3219722f",
+   "tree_files": 1223
+  }
+ },
+ "pending": {
+  "wc100": "WATCOM C/C++ 10.0 GA (mid-1994, pre-'a'). Not yet located. Strongly suggested by the KE stub lacking the 'WATCOM patch level .a' marker.",
+  "wc100pre": "10.0 Limited Availability prerelease 1994-03-16 (WinWorld, download/watcom/Watcom_CPP_10.0_Limited_Edition_1994-03-16.7z, sha256 aba13524...). Packed install media; not yet unpacked.",
+  "wc105": "10.5 (1995) scene floppy set, download/watcom/watcom-10.5-win95nt.zip sha256 c8126c24... Upper-bracket control; not yet unpacked.",
+  "wc95b_patch": "download/watcom/Patch32_95b.zip sha256 f400ba34... (9.5b 32-bit patches, 1993-08)."
+ },
+ "profiles": {
+  "game-c": {
+   "install": "wc100a",
+   "tool": "wcc386",
+   "flags": [
+    "-3s",
+    "-od",
+    "-s"
+   ],
+   "status": "hypothesis",
+   "evidence": "docs/evidence.md#compiler-profile"
+  }
+ }
+}

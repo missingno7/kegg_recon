@@ -1,0 +1,10 @@
+# original game files (user supplied, never committed)
+/assets/
+/original/
+# everything generated
+/build/
+__pycache__/
+*.pyc
+*.obj
+*.OBJ
+*.err

@@ -1,0 +1,62 @@
+{
+ "format": "kegg-manifest-1",
+ "note": "Single canonical status file. Addresses are LE object offsets (hex). status: identified|candidate|matching|blocked. Only tools/promote.py writes 'matching'.",
+ "original": {
+  "KE.EXE": {
+   "size": 210031,
+   "sha256": "5a465cc78d7ef797934f4a95029a278ff10c1ae547ce0cd067eb8c076f50b7ee"
+  },
+  "DOS4GW.EXE": {
+   "size": 254556,
+   "sha256": "580f164bd05b438262267a7e03984529b56e3096ee158d5d2b0e6f159520d4c3"
+  }
+ },
+ "le": {
+  "stub": {
+   "size": 10648,
+   "sha256": "3d1278454dbb867e17b383b65571031b232bb924393a49d116d7220080b54091"
+  },
+  "objects": [
+   {
+    "n": 1,
+    "base": "0x10000",
+    "vsize": "0x1bcd1",
+    "init": 114688,
+    "sha256": "e2258204eb79e87afb68ba071f3acb40e4dba0a25322447980aa93c99d73ad96",
+    "flags": [
+     "R",
+     "X",
+     "PRELOAD",
+     "BIG"
+    ]
+   },
+   {
+    "n": 2,
+    "base": "0x30000",
+    "vsize": "0x149",
+    "init": 4096,
+    "sha256": "d325c7673bea3d7aaa4a505e76ec67bf55ed17ead3884516c7a17f394acb3e56",
+    "flags": [
+     "R",
+     "X",
+     "PRELOAD"
+    ]
+   },
+   {
+    "n": 3,
+    "base": "0x40000",
+    "vsize": "0xf610",
+    "init": 34927,
+    "sha256": "f29afb18c4fb3e3e0d74e0e49521bca5774e46e723e8e5e787697980d0504b61",
+    "flags": [
+     "R",
+     "W",
+     "PRELOAD",
+     "BIG"
+    ]
+   }
+  ],
+  "fixup_sites": 6296
+ },
+ "functions": []
+}
