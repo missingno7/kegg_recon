@@ -756,8 +756,9 @@ class Lift:
         plain = lambda e: e.op in ("v", "m") and e.w == 4 and not e.x and (e.op == "m" or e.var.kind == "g")
 
         def mark(e):
+            e.ptr = True
             if e.op == "m":
-                e.ptr = True
+                pass
             else:
                 self.local_ptr.add(e.var)
                 e.var.psum += 1
@@ -861,6 +862,7 @@ class Lift:
         self.regs, self.pending, self.pushes = {}, [], []
         self.flags = None
         self.consumed = set()
+        self.flags_same = False
         self.bf_pending = None
         self.switch_val = {}
         self.copy = None
@@ -1009,6 +1011,7 @@ class Lift:
             if ops[1][0] == "r" and ops[1][2] < 4:
                 b = self.narrow(b, ops[1][2])
             self.flags = (mn, a, b, ops[0][0] == "r" and ops[1][0] == "r" and ops[0][1] == ops[1][1])
+            self.flags_same = self.flags[3] and mn == "test"
             return 1
         if mn.startswith("j") and mn != "jmp":
             self.branch(i)
@@ -1187,7 +1190,7 @@ class Lift:
                 return 1
             else:
                 b = self.read(src, i, "arith")
-                if mn in ("shl", "sal", "sar", "shr") and src[0] == "r" and src[1] == "cl" and                         (self.regs.get("ecx") is not None) and self.regs["ecx"].w == 4:
+                if mn in ("shl", "sal", "sar", "shr") and src[0] == "r" and src[1] == "cl" and                         (self.regs.get("ecx") is not None):
                     b = self.regs["ecx"]
                 elif src[0] == "r" and src[2] < 4:
                     b = self.narrow(b, src[2])
@@ -1292,7 +1295,8 @@ class Lift:
                 if id(n) in self.consumed:
                     continue
                 if n.op == loc.op and n.w == loc.w and not n.x and (
-                        (n.op == "v" and n.var is loc.var) or (n.op == "m" and same_place(n, loc))):
+                        (n.op == "v" and n.var is loc.var) or
+                        (n.op == "m" and (same_place(n, loc) or n.a.key() == loc.a.key()))):
                     n.op, n.a, n.name = "post", E(loc.op, loc.a, w=loc.w, var=loc.var), op
                     return True
         return False
@@ -1352,6 +1356,15 @@ class Lift:
             return E("cmp", E("&", a, b, w=a.w), K(0), rel=rel, uns=uns)
         return E("cmp", a, K(0), rel=rel, uns=uns)
 
+    def fuse_asg(self, c):
+        if not self.stmts or c.op != "cmp" or c.b.op != "k" or c.b.v != 0 or c.a.op not in ("v", "m"):
+            return
+        last = self.stmts[-1]
+        if last[0] == "set" and last[1].op == c.a.op and last[1].key() == E(c.a.op, c.a.a, w=c.a.w, var=c.a.var).key() \
+                and self.flags_same:
+            self.stmts.pop()
+            c.a = E("asg", last[1], last[2], w=c.a.w)
+
     def fuse_pre(self, c):
         """`dec [eax+4]; cmp [eax+4],0` with the address register reused: `if (--p[1] == 0)`."""
         if not self.stmts or c.op != "cmp" or c.a.op != "m":
@@ -1376,6 +1389,7 @@ class Lift:
         target = i.ops[0][1]
         c = self.cond(i.mn)
         self.fuse_pre(c)
+        self.fuse_asg(c)
         self.emit(("if", c, target), [c])
         self.flush()
         self.flags = None
@@ -1579,6 +1593,8 @@ class Render:
         v = e.var
         vt = v.type or "i"
         aw = e.typ if e.x else e.w
+        if (vt.startswith("arr") or getattr(v, "agg", None)) and e.ptr and aw == 4:
+            return "p", True
         if vt.startswith("arr") or getattr(v, "agg", None) or vt not in TW:
             return tcode(aw, e.x == "s" or (not e.x and aw > 1)), True
         if TW[vt] == aw:
@@ -1645,6 +1661,8 @@ class Render:
         tn = TNAME[t]
         if off is None:
             return f"*({tn} *){base}"
+        if off.startswith("-"):
+            return f"*({tn} *)({base} - {off[1:]})"
         return f"*({tn} *)({base} + {off})"
 
     def bitfield(self, loc, o, w, unit, signed):
@@ -1784,7 +1802,8 @@ class Render:
             if e.a.op == "v" and e.a.var.stride and e.a.var.type == "p":
                 self.structs.add(e.a.var.stride)
                 return f"((unsigned char *){self.lvalue(e.a)}{e.name})"
-            return f"{self.lvalue(e.a)}{e.name}"
+            lv = self.lvalue(e.a)
+            return f"({lv}){e.name}" if lv.startswith("*") else f"{lv}{e.name}"
         if op == "preop":
             return f"({self.lvalue(e.a)} {e.name}= {self.expr(e.b)})"
         if op == "cmp":
@@ -2038,8 +2057,8 @@ class Render:
             if v.type in ("i", "u"):
                 v.type, v.volatile = "p", False
         for v in L.local_int - L.local_ptr:     # plain int arithmetic here
-            if v.type == "p" and v.decl and v.decl["type"] in ("i", "u"):
-                v.type = v.decl["type"]
+            if v.type == "p" and ((v.decl and v.decl["type"] in ("i", "u")) or not v.ptr):
+                v.type = v.decl["type"] if v.decl and v.decl["type"] in ("i", "u") else "i"
         try:
             return self._source()
         finally:
@@ -2601,12 +2620,12 @@ class Structurer:
         if st[0] == "if" and st[2] is not None and st[1].op == "cmp" and st[2] == self.end:
             # `if (c) goto END` where END is the end of the enclosing if-block: a nested if
             c = negate(st[1])
-            if c is not None:
+            if c is not None and i + 1 < len(seq):    # `if (x) {}` would drop the jump
                 return ("ifthen", c, self.seq(seq[i + 1:])), len(seq)
         if st[0] == "if" and st[2] is not None and st[1].op == "cmp":
             lab = st[2]
             j = self.find(seq, "label", lab, i + 1)
-            if j is None:
+            if j is None or j == i + 1:
                 return None
             c = negate(st[1])
             if c is None:
