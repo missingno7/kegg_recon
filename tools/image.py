@@ -1083,6 +1083,42 @@ def reference_runtime_order(ctx, out):
     return loaded
 
 
+def evaluate(ctx, args, reals, objdir, ref_order):
+    """One planning round: objects written to objdir; returns a dict with the plan and the predictions."""
+    for f in objdir.iterdir():
+        f.unlink()
+    plan = Plan(ctx, reals, args.mode)
+    plan.build()
+    rb, probs = build_objects(ctx, plan, objdir)
+    ev = {"plan": plan, "rb": rb, "probs": probs, "bad": [], "lib_problem": None, "who": {}}
+    if probs:
+        return ev
+    loaded, who = simulate_libs(ctx, plan.items)
+    ev["who"] = who
+    if loaded != ref_order:
+        i = next((i for i, (x, y) in enumerate(zip(loaded, ref_order)) if x != y), min(len(loaded), len(ref_order)))
+        ev["lib_problem"] = (i, ref_order[i] if i < len(ref_order) else None, loaded[i] if i < len(loaded) else None)
+    ev["bad"] = compare_chains(ctx, predict_chains(ctx, plan.items))
+    return ev
+
+
+def culprit_of(ctx, ev):
+    plan = ev["plan"]
+    if ev["bad"]:
+        c = fixup_culprit(ctx, plan, ev["bad"])
+        if c:
+            return c
+    lp = ev["lib_problem"]
+    if lp and lp[2] is not None:
+        _, want, got = lp
+        sym = ev["who"].get(("module", got[1]))
+        own = next((r for r in plan.reals if r.key == ev["who"].get(sym)), None)
+        if own is not None:
+            return own, (f"runtime demand order: its EXTDEF {sym} pulls {got[0]}:{got[1]} where the original "
+                         f"pulls {want[0] + ':' + want[1] if want else 'nothing'}")
+    return None
+
+
 def run(args):
     ctx = Ctx()
     out = ROOT / "build" / "image" / args.mode
@@ -1099,54 +1135,58 @@ def run(args):
             if r.key in args.exclude:
                 r.problems.append("excluded on the command line")
     ref_order = reference_runtime_order(ctx, out)
-    excluded_log = []
+    excluded_log, readmitted = [], []
     rounds = 0
-    while True:
-        rounds += 1
-        for f in objdir.iterdir():
-            f.unlink()
-        plan = Plan(ctx, reals, args.mode)
-        plan.build()
-        rb, probs = build_objects(ctx, plan, objdir)
-        live = {r.key for r in plan.reals}
-        if [p for p in probs if p[0] in live]:
-            for k, p in probs:
-                if k in live:
+
+    def converge():
+        nonlocal rounds
+        while True:
+            rounds += 1
+            ev = evaluate(ctx, args, reals, objdir, ref_order)
+            live = {r.key for r in ev["plan"].reals}
+            blame = [(k, p) for k, p in ev["probs"] if k in live]
+            if blame:
+                for k, p in blame:
                     next(r for r in reals if r.key == k).problems.append(p)
-            continue
-        if probs:
-            raise SystemExit(f"unresolvable runtime reference: {probs}")
-        items = plan.items
-        loaded, who = simulate_libs(ctx, items)
-        lib_problem = None
-        if loaded != ref_order:
-            i = next((i for i, (x, y) in enumerate(zip(loaded, ref_order)) if x != y),
-                     min(len(loaded), len(ref_order)))
-            lib_problem = (i, ref_order[i] if i < len(ref_order) else None, loaded[i] if i < len(loaded) else None)
-        bad = compare_chains(ctx, predict_chains(ctx, items))
-        culprit = None
-        if bad and args.predict:
-            culprit = fixup_culprit(ctx, plan, bad)
-        if culprit is None and lib_problem and args.predict and lib_problem[2] is not None:
-            _, want, got = lib_problem
-            sym = who.get(("module", got[1]))
-            own = next((r for r in plan.reals if r.key == who.get(sym)), None)
-            if own is not None:
-                culprit = (own, f"runtime demand order: its EXTDEF {sym} pulls {got[0]}:{got[1]} where the original "
-                                f"pulls {want[0] + ':' + want[1] if want else 'nothing'}")
-        if culprit:
-            own, why = culprit
-            own.problems.append(why)
-            excluded_log.append((own.key, why))
-            continue
-        break
-    report = {"mode": args.mode, "prediction_rounds": rounds}
+                continue
+            if ev["probs"]:
+                raise SystemExit(f"unresolvable runtime reference: {ev['probs']}")
+            c = culprit_of(ctx, ev) if args.predict else None
+            if c:
+                c[0].problems.append(c[1])
+                excluded_log.append((c[0].key, c[1]))
+                continue
+            return ev
+
+    ev = converge()
+    soft = ("LE fixup order", "runtime demand order")
+    if args.predict and not args.no_addback:
+        # add-back pass: re-admit each item excluded by prediction or by an import-name conflict alone if the
+        # plan stays clean (the conflicting partner may have been excluded meanwhile)
+        cands = [r for r in reals if r.problems and all(p.startswith(soft) or " imports " in p for p in r.problems)]
+        for r in sorted(cands, key=lambda x: (x.obj, x.start)):
+            key = r.key
+            saved = r.problems
+            r.problems = []
+            rounds += 1
+            e2 = evaluate(ctx, args, reals, objdir, ref_order)
+            if not e2["probs"] and not e2["bad"] and not e2["lib_problem"]:
+                readmitted.append(key)
+                excluded_log.append((key, "re-admitted"))
+            else:
+                r.problems = saved
+        ev = evaluate(ctx, args, reals, objdir, ref_order)
+    plan, rb, bad, lib_problem = ev["plan"], ev["rb"], ev["bad"], ev["lib_problem"]
+    excluded_log = [(k, w) for k, w in excluded_log if k not in readmitted]
+    report = {"mode": args.mode, "prediction_rounds": rounds, "readmitted_by_addback": readmitted}
     report["predicted_fixup_order_mismatches"] = [
         {"page": k[0], "list": k[1], "index": i, "original": w and f"{w[0]}:{w[1]:x}",
          "predicted": g and f"{g[0]}:{g[1]:x}"} for k, i, w, g in bad]
     report["predicted_runtime_order"] = "reference" if not lib_problem else {
         "index": lib_problem[0], "reference": lib_problem[1], "predicted": lib_problem[2]}
-    r, exe = link(ctx, items, out)
+    report["chunking"] = {r.key: chunk_check(ctx, r) for r in reals
+                          if r.kind == "unit" and r.mod is not None and r.obj == 1}
+    r, exe = link(ctx, plan.items, out)
     report["wlink"] = {"rc": r.rc, "output": r.out.strip().splitlines()[-20:]}
     if r.rc != 0 or not exe.exists():
         report["identical"] = False
@@ -1157,6 +1197,44 @@ def run(args):
     report["accounting"] = accounting(ctx, plan)
     write_report(out, report, plan, ctx, rb, excluded_log)
     return 0 if report["identical"] else 1
+
+
+def original_runs(ctx, obj, lo, hi):
+    """Descending runs of each original page chain inside [lo, hi): the fixups of one original LEDATA."""
+    o = ctx.orig
+    out = []
+    for (p, k), ch in sorted(o.chains.items()):
+        if k != "off" or o.page_obj[p][0] != obj:
+            continue
+        cur = []
+        for ob, a in ch:
+            if not lo <= a < hi or (cur and a > cur[-1]):
+                if cur:
+                    out.append(cur)
+                cur = []
+            if lo <= a < hi:
+                cur.append(a)
+        if cur:
+            out.append(cur)
+    return sorted((min(r), max(r)) for r in out)
+
+
+def chunk_check(ctx, it):
+    """Compare the original LEDATA chunks (recovered from the LE record order) with the compiled object's
+    LEDATA records for the item's code: identical chunking is necessary for an identical fixup order."""
+    starts = sorted(it.start + off for si, off, fl in ledata_groups(it.raw_mod)
+                    if it.segbase.get(si, (None,))[0] == 1)
+    runs = original_runs(ctx, 1, it.start, it.end)
+    split = [(a, b) for a, b in runs if any(a < s <= b for s in starts)]
+    merged = [(r1, r2) for r1, r2 in zip(runs, runs[1:])
+              if not any(r1[1] < s <= r2[0] for s in starts) and r1[1] < r2[0]
+              and r1[1] // 4096 == r2[0] // 4096]   # runs on two pages may be one chunk
+    res = {"compiled_ledata": len(starts), "original_runs": len(runs), "agree": not split and not merged}
+    if split:
+        res["original_chunk_split_by_compiled_ledata"] = f"{h(split[0][0])}..{h(split[0][1])}"
+    if merged:
+        res["original_chunks_merged_in_one_compiled_ledata"] = f"{h(merged[0][0][1])} | {h(merged[0][1][0])}"
+    return res
 
 
 def fixup_culprit(ctx, plan, bad):
@@ -1239,7 +1317,21 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
             st[k] = st.get(k, 0) + v
     st["exports"] = sum(len(it.exports) for it in plan.code_items + [plan.tail] + plan.carriers if not it.real)
     report["raw_stats"] = st
-    report["excluded_by_prediction"] = [{"key": k, "why": w} for k, w in excluded_log]
+    report["excluded_by_prediction"] = [{"key": k, "why": w} for k, w in excluded_log if w != "re-admitted"]
+    cats = {}
+    for r in plan.rejected:
+        p = r.problems[-1] if r.problems else ""
+        c = ("LE fixup order (cuts an original LEDATA chunk / chunking differs)" if p.startswith("LE fixup order") else
+             "runtime demand order" if p.startswith("runtime demand") else
+             "code segment not _TEXT (ASM_TEXT PARA)" if p.startswith("code segment") else
+             "segment alignment" if p.startswith("segment alignment") else
+             "code size != extent (source holds more functions)" if p.startswith("code size") else
+             "import-name conflict" if " imports " in p else
+             "data placement" if p.startswith(("cannot place", "CONST2", "_DATA", "CONST", "_BSS")) else p[:60])
+        e = cats.setdefault(c, {"items": 0, "bytes": 0})
+        e["items"] += 1
+        e["bytes"] += r.end - r.start
+    report["rejection_categories"] = cats
     report["rejected_split_points"] = [h(c) for c in plan.rejected_cuts]
     (out / "report.json").write_text(json.dumps(report, indent=1))
     print(summary(report, out))
@@ -1254,6 +1346,8 @@ def summary(rep, out):
     it = rep["items"]
     L.append(f"  objects: {len(it['real'])} real, {len(it['raw'])} raw debt; {len(it['rejected'])} canonical "
              f"sources kept as raw ({len(rep['excluded_by_prediction'])} by fixup/runtime-order prediction)")
+    for c, e in sorted(rep.get("rejection_categories", {}).items(), key=lambda x: -x[1]["bytes"]):
+        L.append(f"    kept raw: {e['items']:3d} items {e['bytes']:6d} code bytes  {c}")
     if "accounting" in rep:
         t = rep["accounting"]["total"]
         L.append("  bytes: " + ", ".join(f"{k} {v}" for k, v in sorted(t.items())))
@@ -1282,6 +1376,7 @@ def main(argv):
     ap.add_argument("--exclude", action="append", default=[], help="item key to keep as raw debt")
     ap.add_argument("--no-predict", dest="predict", action="store_false",
                     help="do not exclude canonical objects predicted to break identity")
+    ap.add_argument("--no-addback", action="store_true", help="skip the re-admission pass after exclusions")
     return run(ap.parse_args(argv[1:]))
 
 
