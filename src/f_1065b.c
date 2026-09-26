@@ -1,4 +1,0 @@
-#include <stdio.h>
-extern char g_1264[];
-extern unsigned int g_7c08,g_7c0c,g_7c10,g_7c14,g_e4c8,g_e4d0,g_e4d4;
-int f_1065b(char * name,void * buf) { FILE * fp; int result; int cbresult; unsigned int length; ++g_7c14; g_e4d4=(unsigned int)name; fp=fopen(name,g_1264); if(fp==0) result=0x201; else { if(fseek(fp,0,2)!=0) result=0x205; else { length=(unsigned int)ftell(fp); if(length==0xffffffffU) result=0x206; else { if(fseek(fp,0,0)!=0) result=0x205; else { if((unsigned int)buf+length>g_7c0c && g_7c14!=0) result=0x207; else { g_e4c8=(unsigned int)fread(buf,1,length,fp); if(g_e4c8!=length) result=0x203; else { cbresult=((int (*)(void *,unsigned int))g_7c10)(buf,g_e4c8); if(cbresult<0) { g_7c08=0; g_e4d0=g_7c08; } else { g_e4c8-=cbresult; result=0; } } } } } } fclose(fp); } g_7c14=0xffffffffU; return result; }

@@ -33,7 +33,11 @@ def main(argv):
         if ob == prev[0] and s < prev[1]:
             errors.append(f"overlap at {f['name']} {f['start']}")
         prev = (ob, e)
-    todo = [f for f in fns if f.get("status") == "matching"]
+    todo = [f for f in fns if f.get("status") == "matching" and not f.get("unit")]
+    units = man.get("units", [])
+    for u in units:
+        if hashlib.sha256((ROOT / u["src"]).read_bytes()).hexdigest() != u.get("src_sha256"):
+            errors.append(f"unit {u['id']}: source changed since promotion")
     for f in todo:
         src = ROOT / f["src"]
         if not src.exists():
@@ -48,6 +52,19 @@ def main(argv):
         p = subprocess.run(cmd, capture_output=True, text=True)
         return f, p
 
+    def unit(u):
+        out = ROOT / "build" / "validate" / f"unit_{u['id']}.json"
+        cmd = [sys.executable, str(ROOT / "tools" / "check.py"), str(ROOT / u["src"]), "--all", "--at", u["start"],
+               "--end", u["end"], "--profile", u.get("profile", "game-c"), "--json", str(out), "--host", host]
+        return u, subprocess.run(cmd, capture_output=True, text=True)
+
+    uok = 0
+    with ThreadPoolExecutor(jobs) as ex:
+        for u, p in ex.map(unit, units):
+            if p.returncode == 0 and p.stdout.startswith("EXACT"):
+                uok += 1
+            else:
+                errors.append(f"unit {u['id']}: {p.stdout.strip().splitlines()[0] if p.stdout.strip() else p.stderr[:200]}")
     ok = 0
     with ThreadPoolExecutor(jobs) as ex:
         for f, p in ex.map(one, todo):
@@ -55,8 +72,9 @@ def main(argv):
                 ok += 1
             else:
                 errors.append(f"{f['name']}: {p.stdout.strip().splitlines()[0] if p.stdout.strip() else p.stderr.strip()[:200]}")
-    code_bytes = sum(int(f["end"], 16) - int(f["start"], 16) for f in todo)
-    print(f"validate: {ok}/{len(todo)} matching functions EXACT ({code_bytes} bytes); {len(errors)} error(s)")
+    code_bytes = sum(int(f["end"], 16) - int(f["start"], 16) for f in fns if f.get("status") == "matching")
+    print(f"validate: {uok}/{len(units)} units + {ok}/{len(todo)} separate functions EXACT; "
+          f"{sum(1 for f in fns if f.get('status') == 'matching')} functions, {code_bytes} bytes; {len(errors)} error(s)")
     for e in errors[: (20 if quiet else 200)]:
         print("  -", e)
     return 0 if not errors else 1

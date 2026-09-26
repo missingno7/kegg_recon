@@ -2056,12 +2056,16 @@ class Render:
                 continue
             out.append(func_decl(self.protos.get(name) or self.prog.sigs.get(name), name))
         ret = TNAME[L.ret_type] if L.ret_type else "void"
-        params = ", ".join(("volatile " if k in L.args and L.args[k].volatile else "") +
-                           f"{TNAME[L.args[k].type] if k in L.args else 'int'} a{k}" for k in range(L.nparams)) or "void"
+        params = ", ".join(f"{TNAME[L.args[k].type] if k in L.args else 'int'} a{k}" for k in range(L.nparams)) or "void"
         out.append(f"{ret} {L.name}({params})")
         out.append("{")
         for v in L.decl_locals:
             out.append(f"    {decl_text(v)};")
+        inner = getattr(L, "inner_locals", [])
+        if inner:           # autos of a nested block (allocated after the return temp)
+            out.append("    {")
+            for v in inner:
+                out.append(f"    {decl_text(v)};")
         ind = 1
         for line in body:
             if line.startswith("}"):
@@ -2072,13 +2076,15 @@ class Render:
                 out.append("    " * ind + line)
             if line.endswith("{"):
                 ind += 1
+        if inner:
+            out.append("    }")
         out.append("}")
         return "\n".join(out) + "\n"
 
 
 def decl_text(v):
     t = v.type
-    vol = "volatile " if v.volatile else ""
+    vol = ""        # under -d2 (the game's flags) no `volatile` is needed; see compiler-notes
     if t == "p" and v.stride:
         return f"S{v.stride} * {vol}{v.name}"
     if t == "p":
@@ -2089,7 +2095,7 @@ def decl_text(v):
 
 
 def global_decl(v):
-    vol = "volatile " if v.volatile else ""
+    vol = ""
     if v.type == "p" and v.stride:
         return f"extern S{v.stride} * {vol}{v.name};"
     if getattr(v, "fnptr", False) and v.type not in ("arr",):
@@ -2111,6 +2117,10 @@ def func_decl(sig, name):
 
 
 # ---------------------------------------------------------------------------------------------
+def param_sizes(L):
+    return [TW.get(L.args[k].type, 4) if k in L.args and L.args[k].type else 4 for k in range(L.nparams)]
+
+
 def layout_locals(L):
     """Choose local types/declaration order so that Watcom's stable size sort reproduces the
     original slot offsets.  Slots are listed shallow ([ebp-4]) to deep."""
@@ -2206,13 +2216,17 @@ def layout_locals(L):
         opts = sorted({z for z in (1, 2, 4) if lo <= z <= hi} | ({lo} if s_.get("agg") else set()),
                       key=lambda z: (z != pref, -z)) or [pref]
         options.append(opts)
-    chosen, order = None, None
-    for combo in itertools.islice(itertools.product(*options), 512):
-        if any(x > y for x, y in zip(combo, combo[1:])):
-            continue
-        P = unsort([(k, z, s_.get("temp", False)) for k, (s_, z) in enumerate(zip(slots, combo))])
-        if P is not None:
-            chosen, order = combo, P
+    chosen, order, inner = None, None, []
+    for nested in (False, True):
+        for combo in itertools.islice(itertools.product(*options), 512):
+            if any(x > y for x, y in zip(combo, combo[1:])):
+                continue
+            P = unsort([(k, z, s_.get("temp", False)) for k, (s_, z) in enumerate(zip(slots, combo))], nested,
+                       param_sizes(L))
+            if P is not None:
+                chosen, (order, inner) = combo, P
+                break
+        if chosen is not None:
             break
     if chosen is None:
         chosen = [o[0] for o in options]
@@ -2233,6 +2247,15 @@ def layout_locals(L):
         if not s_.get("agg"):
             resolve_local(v, s_["size"])
         decl.append(v)
+    L.inner_locals = []
+    for k in inner:       # autos of a nested block are sorted after the return temp
+        s_ = slots[k]
+        v = s_["var"] or Var("l", f"unused_{s_['off']:x}", s_["off"])
+        if s_["var"] is None:
+            v.type = "i"
+        elif not s_.get("agg"):
+            resolve_local(v, s_["size"])
+        L.inner_locals.append(v)
     for s_ in slots:
         if s_.get("temp"):
             w = L.spill[1]
@@ -2241,40 +2264,66 @@ def layout_locals(L):
     L.decl_locals = decl
 
 
-def unsort(final, budget=20000):
-    """Invert Watcom's frame sort.  `final` lists (id, size, is_temp) by slot (shallow first).
-    Returns the ids of the autos in a declaration order whose selection sort (first minimum of the
-    rest swapped into place), with the temps appended, yields `final`; None if impossible."""
-    n = len(final)
-    temps = [x[0] for x in final if x[2]]
-    count = [0]
+def shell_order(sizes):
+    """Watcom's frame sort: a shell sort by size (gaps n//2, then (g+1)//2 down to 1) over
+    [parameters, autos in declaration order, temps]; returns original indices in sorted order.
+    (Fitted to 16 controlled probes, build/workers/lift/sorts.py.)"""
+    A = list(range(len(sizes)))
+    n, gap = len(A), len(A) // 2
+    while gap > 0:
+        for i in range(gap, n):
+            t, j = A[i], i
+            while j >= gap and sizes[A[j - gap]] > sizes[t]:
+                A[j] = A[j - gap]
+                j -= gap
+            A[j] = t
+        if gap == 1:
+            break
+        gap = (gap + 1) // 2
+    return A
 
-    def dfs(i, A):
-        count[0] += 1
-        if count[0] > budget:
+
+def unsort(final, nested=False, params=(), budget=4000):
+    """Invert the frame sort.  `final` lists (id, size, is_temp) by slot (shallow first); `params`
+    are the parameter sizes (they take part in the sort but get no slot).  Returns (outer autos in
+    declaration order, inner-block autos) or None."""
+    temps = [x for x in final if x[2]]
+    autos = [x for x in final if not x[2]]
+    np_, nt = len(params), len(temps)
+    seen = set()
+    count = 0
+    for pat in itertools.permutations(sorted(x[1] for x in autos)):
+        if pat in seen:
+            continue
+        seen.add(pat)
+        count += 1
+        if count > budget:
             return None
-        if i < 0:
-            ids = [x[0] for x in A]
-            if ids[len(ids) - len(temps):] == temps or not temps and True:
-                if not temps or ids[len(ids) - len(temps):] == temps:
-                    return [x for x in ids if x not in temps]
-            return None
-        for j in range(i, n):
-            B = list(A)
-            B[i], B[j] = B[j], B[i]
-            m = min(x[1] for x in B[i:])
-            if B[j][1] != m or any(B[k][1] == m for k in range(i, j)):
+        for cut in (range(len(pat) + 1) if nested else [len(pat)]):
+            sizes = list(params) + list(pat[:cut]) + [x[1] for x in temps] + list(pat[cut:])
+            order = [k for k in shell_order(sizes) if k >= np_]
+            if len(order) != len(final):
                 continue
-            r = dfs(i - 1, B)
-            if r is not None:
-                return r
-        return None
-    if n == 0:
-        return []
-    return dfs(n - 2, list(final))
+            P = [None] * len(sizes)
+            ok = True
+            for pos, item in zip(order, final):
+                P[pos] = item
+                if sizes[pos] != item[1]:
+                    ok = False
+            tpos = list(range(np_ + cut, np_ + cut + nt))
+            if not ok or [P[k] for k in tpos] != temps:
+                continue
+            outer = [P[k][0] for k in range(np_, np_ + cut)]
+            inner = [P[k][0] for k in range(np_ + cut + nt, len(sizes))]
+            if temps or not inner:
+                return outer, inner
+    return None
 
 
 def resolve_function(L):
+    calls = L.prog.sigs[L.name]["calls"] if L.name in L.prog.sigs else []
+    if calls and len({len(c) for c in calls}) == 1:
+        L.nparams = max(L.nparams, len(calls[0]))    # unused trailing parameters still sort
     if L.spill:
         ws = {st[1].w for st in L.stmts if st[0] == "ret" and st[1] is not None and st[1].op != "k"}
         L.ret_type = "c" if L.spill[1] == 1 or ws == {1} else "s" if ws and max(ws) == 2 else "i"

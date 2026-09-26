@@ -92,10 +92,80 @@ def batch(d: Path):
     return v.returncode
 
 
+def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, profile: str, note: str):
+    """A whole translation unit: one source file, verified by one --all check over [start, end) including the
+    unit's own data segments. Every manifest function inside the range becomes 'matching' with src = the unit."""
+    man = load_manifest()
+    s0, e0 = int(start, 16), int(end, 16)
+    members = [f for f in man["functions"] if f.get("object", 1) == 1 and s0 <= int(f["start"], 16) < e0]
+    if not members or int(members[0]["start"], 16) != s0 or int(members[-1]["end"], 16) > e0:
+        raise SystemExit("range does not start at a manifest function or cuts one")
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    frozen_dir = ROOT / "build" / "promote" / f"{uid}-{stamp}"
+    frozen_dir.mkdir(parents=True, exist_ok=True)
+    frozen = frozen_dir / Path(dest_rel).name
+    frozen.write_bytes(cand.read_bytes().replace(bytes([13, 10]), bytes([10])))
+    jpath = frozen_dir / "result.json"
+    p = subprocess.run([sys.executable, str(ROOT / "tools" / "check.py"), str(frozen), "--all", "--at", start,
+                        "--end", end, "--profile", profile, "--json", str(jpath)], capture_output=True, text=True)
+    print(p.stdout.strip())
+    res = json.loads(jpath.read_text()) if jpath.exists() else None
+    if not res or res["verdict"] != "EXACT":
+        print("NOT PROMOTED")
+        return 1
+    names = [x["name"] for x in res.get("symbols", [])]
+    missing = [f["name"] for f in members if f["name"] not in names]
+    if missing:
+        print("NOT PROMOTED: unit does not define", missing)
+        return 1
+    with Lock():
+        man = load_manifest()
+        backup = MAN.read_text()
+        dest = ROOT / dest_rel
+        dest.parent.mkdir(exist_ok=True)
+        shutil.copyfile(frozen, dest)
+        sha = hashlib.sha256(dest.read_bytes()).hexdigest()
+        old = set()
+        for f in man["functions"]:
+            if f.get("object", 1) == 1 and s0 <= int(f["start"], 16) < e0:
+                if f.get("src") and f.get("src") != dest_rel:
+                    old.add(f["src"])
+                f.update({"status": "matching", "src": dest_rel, "unit": uid, "profile": profile, "src_sha256": sha})
+                for k in ("draft", "mismatch", "note"):
+                    f.pop(k, None)
+        units = [u for u in man.setdefault("units", []) if u["id"] != uid]
+        units.append({"id": uid, "src": dest_rel, "start": start, "end": end, "profile": profile,
+                      "src_sha256": sha, "data": [f"{d['seg']}@{d['base']}+{d['size']:#x}" for d in res.get("data", [])],
+                      **({"note": note} if note else {})})
+        man["units"] = sorted(units, key=lambda u: int(u["start"], 16))
+        for k, v in res["bindings"].items():
+            if not k.startswith(("seg:", "grp:", "sel:")) and k not in man.get("symbols", {}):
+                man.setdefault("symbols", {})[k] = v
+        save_manifest(man)
+        v = subprocess.run([sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet"], capture_output=True, text=True)
+        if v.returncode != 0:
+            MAN.write_text(backup)
+            print("ROLLED BACK: regression\n" + v.stdout[-2000:])
+            return 1
+        still = {f.get("src") for f in man["functions"]}
+        for o in old:
+            if o not in still and (ROOT / o).exists():
+                (ROOT / o).unlink()  # superseded per-function file (kept in git history)
+    print(f"PROMOTED unit {uid} ({len(members)} functions) -> {dest_rel}")
+    return 0
+
+
 def main(argv):
     args = argv[1:]
     if args and args[0] == "--batch":
         return batch(Path(args[1]))
+    if args and args[0] == "--unit":
+        # --unit ID CAND DEST --range START END [--profile P] [--note TEXT]
+        uid, cand, dest = args[1], Path(args[2]).resolve(), args[3]
+        i = args.index("--range")
+        prof = args[args.index("--profile") + 1] if "--profile" in args else "game-c"
+        note = args[args.index("--note") + 1] if "--note" in args else ""
+        return promote_unit(cand, uid, dest, args[i + 1], args[i + 2], prof, note)
     no_validate = "--no-validate" in args
     verify_only = "--verify-only" in args
     draft = None

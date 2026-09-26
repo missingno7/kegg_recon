@@ -1,4 +1,0 @@
-#include <i86.h>
-extern short g_7bfc,g_7bfe,g_7c00;
-extern short g_e496,g_e498,g_e49a,g_e49c,g_e49e,g_e4a0,g_e4a2,g_e4a4,g_e4aa,g_e4ac,g_e4ae,g_e4b0,g_e4b2,g_e4b4,g_e4b6,g_e4b8,g_e4ba,g_e4bc,g_e4be,g_e4c0,g_e4c4,g_e4c6;
-void f_10137(void) { if(g_7bfc==-1) { union REGS r; g_7c00=g_7bfe; g_e49c=g_e49e; g_e49e=g_e496; g_e496=g_e4a2; g_e4a2=g_e4ac; g_e49a=g_e4a0; g_e4a0=g_e498; g_e498=g_e4a4; g_e4a4=g_e4aa; g_e4ac=g_e4ae; g_e4ae=g_e4b8; g_e4b8=g_e4ba; g_e4aa=g_e4b0; g_e4b0=g_e4b4; g_e4b4=g_e4bc; r.w.ax=3; int386(0x33,&r,&r); g_7bfe=r.x.ebx; g_e4ba=r.w.cx>>1; g_e4bc=r.w.dx>>1; g_e4be=g_e4c6; g_e4c0=g_e4c4; g_e4c6=(g_e4ba+g_e4b8+g_e4ae+g_e4ac)>>2; g_e4b2=g_e4c6; g_e4c4=(g_e4bc+g_e4b4+g_e4b0+g_e4aa)>>2; g_e4b2=g_e4c4; g_e4b2=(g_e4ba+g_e4b8+g_e4ae+g_e4ac+g_e4a2+g_e496+g_e49e+g_e49c)>>3; g_e4b6=(g_e4bc+g_e4b4+g_e4b0+g_e4aa+g_e4a4+g_e498+g_e4a0+g_e49a)>>3; } }
