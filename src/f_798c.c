@@ -6,7 +6,7 @@ extern int g_948c;
 extern int g_9490;
 extern int g_9498;
 extern int g_949c;
-extern volatile int g_94a8;
+extern int g_94a8;
 extern int g_94ac;
 extern int g_94b4;
 extern unsigned char *g_dd4c;
@@ -18,10 +18,10 @@ extern void f_c20d(int);
 extern int f_dd53(int, int);
 void f_798c(void)
 {
-    volatile int v_4;
-    volatile int v_8;
-    volatile int v_c;
-    volatile int v_10;
+    int v_4;
+    int v_8;
+    int v_c;
+    int v_10;
     int v_14;
     v_4 = 0xf6;
     v_8 = 0x56;

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 extern void f_14197(void *);
-void f_d656(unsigned char *p, volatile int release) {
+void f_d656(unsigned char *p, int release) {
     union REGS regs;
     struct SREGS sregs;
     memset(&sregs, 0, 12);

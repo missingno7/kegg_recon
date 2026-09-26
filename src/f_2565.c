@@ -21,7 +21,7 @@ extern int f_20f4(void);
 extern void f_b1df(int, int, int);
 extern void f_b541(int, int, unsigned char, int, int);
 extern void f_b57a(int, int, int, int);
-void f_2565(volatile int a0)
+void f_2565(int a0)
 {
     f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
     f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);

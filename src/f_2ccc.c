@@ -29,7 +29,7 @@ void f_2ccc(void)
     f_c14b(g_dd44, g_e4c8, 0x1f40, -1);
     g_e150 = (int)&g_6c08;
     f_35b5();
-    g_7b34 = ((*(volatile short *)&g_7b34) & 0xfffe) & 0xfffd;
+    g_7b34 = ((*(short *)&g_7b34) & 0xfffe) & 0xfffd;
     f_84a0(0x8ca);
     f_c3ab();
 }

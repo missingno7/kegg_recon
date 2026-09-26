@@ -8,7 +8,7 @@ extern short g_e2fc;
 extern int f_11530(int, int, int, int, int);
 extern void f_115da(void);
 extern void f_c011(void);
-short f_bf24(volatile int a0, short a1)
+short f_bf24(int a0, short a1)
 {
     int unused_8;
     if (g_747c != -1) goto L_bf89;

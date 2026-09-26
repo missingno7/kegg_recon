@@ -1,5 +1,5 @@
 extern int g_9488, g_dd4c;
-extern unsigned char * volatile g_9478;
+extern unsigned char * g_9478;
 extern unsigned char g_8e4c[];
 
 void f_78dd(int a, int b, int x, int y, int c, int d, int e)

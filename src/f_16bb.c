@@ -12,7 +12,7 @@ extern void f_130b7(int, int, int, int, int, int, int, int);
 extern void f_b1df(int, int, int);
 extern void f_b541(int, int, unsigned char, int, int);
 extern void f_b57a(int, int, int, int);
-void f_16bb(volatile int a0)
+void f_16bb(int a0)
 {
     unsigned char v_4;
     int v_8;

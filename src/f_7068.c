@@ -6,14 +6,14 @@ extern unsigned char g_6890[];
 extern int g_946c;
 extern int g_9474;
 extern int g_948c;
-extern volatile int g_9494;
+extern int g_9494;
 extern int g_9498;
 extern int g_949c;
-extern volatile int g_94a4;
-extern volatile int g_94a8;
+extern int g_94a4;
+extern int g_94a8;
 extern int g_94ac;
 extern int g_94b4;
-extern volatile unsigned char g_e13e;
+extern unsigned char g_e13e;
 void f_7068(void)
 {
     g_94a4 = *(int *)(g_6884 + (g_e13e << 4));

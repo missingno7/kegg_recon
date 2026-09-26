@@ -3,7 +3,7 @@ extern void f_e813(void);
 extern void _disable(void);
 extern void _enable(void);
 void f_e6b3(unsigned char *p) {
-    volatile int i;
+    int i;
     f_e813();
     _disable();
     if (p[0] & 1) {

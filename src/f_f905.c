@@ -1,6 +1,6 @@
 extern unsigned char g_7b79[], g_e488, g_e48a;
 extern unsigned short g_e468[], g_e478[];
-void f_f905(volatile unsigned char key) {
+void f_f905(unsigned char key) {
     if ((key & 0x6f) > 0x60) return;
     g_e48a = key;
     key &= 0x7f;

@@ -17,7 +17,7 @@ extern void f_c321(void);
 extern void f_c3ab(void);
 void f_c14b(int a0, int a1, int a2, int a3)
 {
-    volatile int v_4;
+    int v_4;
     if (g_747c != -1) goto L_c208;
     if (*(short *)g_74c4 == -1) goto L_c194;
     v_4 = f_bdd3(4);

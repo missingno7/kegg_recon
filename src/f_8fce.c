@@ -1,5 +1,5 @@
 extern int g_dda8;
-extern unsigned char * volatile g_ddb4;
+extern unsigned char * g_ddb4;
 extern unsigned char g_df78[];
 
 void f_8fce(int x, int y)

@@ -8,9 +8,9 @@ extern int g_e35a;
 void f_12f9c(int, int, int, int, int);
 void f_ed38(void);
 void f_9d40(unsigned char);
-void f_ec76(volatile int);
+void f_ec76(int);
 
-void f_3beb(volatile int a)
+void f_3beb(int a)
 {
     short value;
     if (g_7b14 != g_7b20)

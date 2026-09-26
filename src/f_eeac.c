@@ -4,8 +4,8 @@ extern int outp(int, int), inp(int);
 extern void f_f59a(void);
 int f_eeac(void) {
     unsigned char a;
-    volatile unsigned char b;
-    volatile int i;
+    unsigned char b;
+    int i;
     outp(0x201, 0xff);
     for (i = 0; i < 1000; i++) {
         a = (unsigned char)inp(0x201);

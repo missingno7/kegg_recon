@@ -20,7 +20,7 @@ extern int g_ddac, g_dda8, g_ddb8;
 extern Rec12 *g_ddb4;
 extern Rec12 g_df78[];
 extern int g_8e1c, g_8e20, g_8e24;
-extern int (* volatile g_8db8)(void);
+extern int (* g_8db8)(void);
 extern int (*g_6160[])(void);
 extern void *g_ddd4;
 extern int g_ddc4, g_ddcc;

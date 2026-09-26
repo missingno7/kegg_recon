@@ -12,8 +12,8 @@ void f_12cbd(int, int, int);
 void f_3ac0(int a, int b, int c)
 {
     unsigned char saved_7b16;
-    volatile int x;
-    volatile int y;
+    int x;
+    int y;
     int saved_746e;
 
     saved_7b16 = (unsigned char)g_7b16;

@@ -1,5 +1,5 @@
 extern int g_df48, g_df4c, g_df54;
-extern unsigned char * volatile g_dd40;
+extern unsigned char * g_dd40;
 extern void f_13a48(void *, int, int, int);
 void f_13aa(void) {
     f_13a48(g_dd40 + g_df48 * 3, 0xc0, 0x20, 0);

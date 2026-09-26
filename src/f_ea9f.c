@@ -1,8 +1,8 @@
 extern int g_7b04, g_7b08, g_7b0c;
 extern void f_13a48(void *, int, int, int);
 extern void f_9d40(short);
-void f_ea9f(void * volatile a, volatile int x, int y, int step) {
-    volatile int i;
+void f_ea9f(void * a, int x, int y, int step) {
+    int i;
     if (x < -63) x = -63;
     if (x > 63) x = 63;
     if (y < -63) y = -63;

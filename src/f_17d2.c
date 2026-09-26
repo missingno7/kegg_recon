@@ -1,11 +1,11 @@
 /* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
-extern volatile unsigned int g_8dfc;
-extern volatile unsigned int g_8e00;
-extern volatile unsigned int g_8e04;
-extern volatile unsigned int g_8e08;
-extern volatile unsigned char g_e13c;
-extern volatile unsigned char g_e140;
-int f_17d2(volatile unsigned long a0)
+extern unsigned int g_8dfc;
+extern unsigned int g_8e00;
+extern unsigned int g_8e04;
+extern unsigned int g_8e08;
+extern unsigned char g_e13c;
+extern unsigned char g_e140;
+int f_17d2(unsigned long a0)
 {
     a0 = (a0 >> 4) | (a0 << 0xc);
     a0 ^= 0x7b69;

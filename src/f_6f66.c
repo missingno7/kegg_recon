@@ -3,8 +3,8 @@ extern unsigned char g_91ac[];
 extern unsigned char f_13324(int, int);
 void f_6f66(void)
 {
-    volatile int v_4;
-    volatile int v_8;
+    int v_4;
+    int v_8;
     int v_c;
     v_8 = 0;
 L_6f79:;

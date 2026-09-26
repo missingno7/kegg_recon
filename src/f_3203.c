@@ -31,7 +31,7 @@ int f_3203(void)
     int result;
 
     f_339f();
-    g_7b34 = ((*(volatile short *)&g_7b34) & 0xfffe) & 0xfffd;
+    g_7b34 = ((*(short *)&g_7b34) & 0xfffe) & 0xfffd;
     g_7b3d = 0;
     f_c8c0(g_d340, 0x100, 4, g_ab40, g_bf40);
 

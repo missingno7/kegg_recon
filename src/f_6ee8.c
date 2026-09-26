@@ -1,10 +1,10 @@
-extern volatile unsigned char g_e13e;
+extern unsigned char g_e13e;
 extern unsigned char g_e13b, g_e46b;
 extern unsigned char *g_dd40;
 extern void *g_dddc;
 extern int g_8e1c, g_8e20, g_7b0c;
 extern int g_94a0, g_9490;
-extern volatile int g_94a4, g_94a8, g_9494;
+extern int g_94a4, g_94a8, g_9494;
 extern int g_94ac, g_946c, g_948c, g_949c;
 extern int g_94b4, g_9498, g_9474;
 extern int g_e36a, g_e366;

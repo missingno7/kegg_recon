@@ -1,6 +1,6 @@
 extern unsigned char g_8e1c;
 extern int g_8e20, g_ddb8;
-extern unsigned char * volatile g_ddb4;
+extern unsigned char * g_ddb4;
 
 void f_9053(void)
 {

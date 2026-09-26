@@ -22,9 +22,9 @@ extern void f_b541(int, int, unsigned char, int, int);
 extern void f_b57a(int, int, int, int);
 void f_1bc2(void)
 {
-    volatile int v_4;
-    volatile int v_8;
-    volatile int v_c;
+    int v_4;
+    int v_8;
+    int v_c;
     f_b541((int)g_43ec, g_dd4c, 0, 0x11, 0x17);
     f_b57a(g_e36e, g_e372, g_e376, g_e37a);
     f_b1df(0x32, 0x10, g_388e);

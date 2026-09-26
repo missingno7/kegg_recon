@@ -3,10 +3,10 @@ extern int strcpy(int, int);
 extern int ltoa(int, int, int);
 extern int strlen(int);
 extern void f_b1df(int, int, int);
-void f_b4a7(volatile int a0, volatile int a1, volatile int a2, volatile int a3, int a4)
+void f_b4a7(int a0, int a1, int a2, int a3, int a4)
 {
     int v_4;
-    volatile int v_8;
+    int v_8;
     unsigned char v_28[32];
     ltoa(a2, (int)((v_28 + a4) + 1), a3);
     v_8 = a4 - strlen((int)((v_28 + a4) + 1));
