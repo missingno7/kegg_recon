@@ -99,7 +99,10 @@ def run(tool: str, args, install: str = "wc100", host: str = "nt", cwd=None, tim
         tool_sha = _check(inst, root, exe)
         cmd = [str(tools_root() / MSDOS), "-e", str(root / exe), *map(str, args)]
     elif host == "dosbox":
-        raise NotImplementedError("dosbox host: see tools/dosbox.py (cross-check path)")
+        import dosbox
+        rc, out = dosbox.run_dosbox(tool, args, install=install, cwd=cwd, timeout=timeout)
+        image = hosts.get("dos4gw")
+        return Result(rc, out, ["dosbox", tool, *map(str, args)], host, _sha(root / image) if image else "")
     else:
         raise ValueError(host)
     p = subprocess.run(cmd, cwd=cwd, env=environment(inst, root, cwd), stdout=subprocess.PIPE,

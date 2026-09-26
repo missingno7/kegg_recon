@@ -45,7 +45,8 @@ def _check(inst_cfg: dict, root: Path, rel: str) -> str:
     path = root / Path(rel)
     if not path.is_file():
         raise FileNotFoundError(f"pinned toolchain image is missing: {path}")
-    expected = inst_cfg.get("key_files", {}).get(rel)
+    keys = {k.lower(): v for k, v in inst_cfg.get("key_files", {}).items()}
+    expected = keys.get(rel.lower())
     if not expected:
         raise RuntimeError(f"no locked SHA-256 for toolchain image {rel}")
     actual = _sha(path)
@@ -116,7 +117,7 @@ def _private_names(cwd: Path):
     raise RuntimeError(f"could not reserve unique DOSBox scratch names in {cwd}")
 
 
-def run_dosbox(tool: str, args, install: str = "wc100a", cwd=None, timeout=300) -> tuple[int, str]:
+def run_dosbox(tool: str, args, install: str = "wc100", cwd=None, timeout=300) -> tuple[int, str]:
     """Run a DOS/4GW Watcom tool; return its DOS ERRORLEVEL and output text."""
     cfg = config()
     try:
@@ -213,7 +214,7 @@ def run_dosbox(tool: str, args, install: str = "wc100a", cwd=None, timeout=300) 
 
 
 def main(argv) -> int:
-    install, cwd, timeout = "wc100a", None, 300
+    install, cwd, timeout = "wc100", None, 300
     args = list(argv[1:])
     while args and args[0].startswith("--"):
         opt = args.pop(0)

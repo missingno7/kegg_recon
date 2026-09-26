@@ -128,7 +128,7 @@ def known_symbols(man):
     return out
 
 
-def compile_candidate(src: Path, profile: str, outdir: Path):
+def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
     cfg = dosrun.config()
     prof = cfg["profiles"][profile]
     outdir.mkdir(parents=True, exist_ok=True)
@@ -141,7 +141,16 @@ def compile_candidate(src: Path, profile: str, outdir: Path):
         args = [*prof["flags"], f"-fo={win(obj)}", src.name]
     else:
         args = [*prof["flags"], f"-fo={win(obj)}", f"-i={win(ROOT / 'include')}", src.name]
-    r = dosrun.run(tool, args, install=prof["install"], cwd=src.parent)
+    if host == "dosbox":  # DOS paths: compile a copy inside the work dir
+        shutil.copyfile(src, outdir / src.name)
+        args = [a for a in args if not a.startswith(("-fo=", "-i="))] + ["-fo=" + obj.name]
+        r = dosrun.run(tool, args, install=prof["install"], cwd=outdir, host="dosbox")
+        if not obj.exists():
+            alt = outdir / obj.name.upper()
+            if alt.exists():
+                alt.rename(obj)
+    else:
+        r = dosrun.run(tool, args, install=prof["install"], cwd=src.parent)
     (outdir / (src.stem + ".log")).write_text(r.out)
     if r.rc != 0 or not obj.exists():
         raise SystemExit(f"COMPILE FAILED rc={r.rc}\n{r.out}")
@@ -309,6 +318,7 @@ def main(argv):
     ap.add_argument("--profile", default="game-c")
     ap.add_argument("--json")
     ap.add_argument("--obj", help="use an existing object instead of compiling")
+    ap.add_argument("--host", default="nt", help="nt (default) or dosbox (independent DOS/4GW host)")
     a = ap.parse_args(argv[1:])
     src = Path(a.source).resolve()
     man = manifest()
@@ -320,7 +330,7 @@ def main(argv):
         (ROOT / "build" / "tmp").mkdir(parents=True, exist_ok=True)
         work = Path(tempfile.mkdtemp(prefix=tag + "-", dir=ROOT / "build" / "tmp"))
         try:
-            objp, _ = compile_candidate(src, a.profile, work)
+            objp, _ = compile_candidate(src, a.profile, work, a.host)
             mod = omf.load(objp)[0]
         finally:
             shutil.rmtree(work, ignore_errors=True)

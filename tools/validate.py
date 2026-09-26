@@ -1,6 +1,6 @@
 """Regression gate: freshly rebuild and re-verify every 'matching' function in manifest.json.
 
-    python tools/validate.py [--quiet] [-j N]
+    python tools/validate.py [--quiet] [-j N] [--host dosbox]
 
 Also checks manifest consistency: sorted non-overlapping extents, source hashes, unique names.
 Exit status 0 only if everything that is claimed still verifies EXACT.
@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 def main(argv):
     quiet = "--quiet" in argv
     jobs = int(argv[argv.index("-j") + 1]) if "-j" in argv else 8
+    host = argv[argv.index("--host") + 1] if "--host" in argv else "nt"
     man = json.loads((ROOT / "manifest.json").read_text())
     fns = man.get("functions", [])
     errors = []
@@ -43,7 +44,7 @@ def main(argv):
     def one(f):
         out = ROOT / "build" / "validate" / f"{f['name']}.json"
         cmd = [sys.executable, str(ROOT / "tools" / "check.py"), str(ROOT / f["src"]), f["name"],
-               "--at", f["start"], "--end", f["end"], "--profile", f.get("profile", "game-c"), "--json", str(out)]
+               "--at", f["start"], "--end", f["end"], "--profile", f.get("profile", "game-c"), "--json", str(out), "--host", host]
         p = subprocess.run(cmd, capture_output=True, text=True)
         return f, p
 
