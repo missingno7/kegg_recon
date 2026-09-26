@@ -31,5 +31,5 @@ entries short and give the command/evidence that decides them.
 | tc-95b | 9.5b runtime | EXCLUDED (runtime) | bin-lib |
 | tc-3s-od | most game C compiled `wcc386 -3s -od -s` | STRONG | 9 unrelated functions EXACT (strict verifier) incl. calls, globals, string literal, compare/branch: f_4cd0 f_7032 f_6e13 f_105a7 f_ca51 f_1b7e f_2250 f_ca6a (+ -ot cluster near-miss). `-s`: no `__CHK` calls anywhere |
 | tc-ot-cluster | functions in obj1 ~0x9960..0xA8BC are 4-aligned with 90/8BC0/8D4000 fillers: reproduced by `-3s -ot -od -s` (order matters: `-od -ot` optimises) | STRONG (shape reproduced; no EXACT yet) | probe p4.c; f_9ca4 differs only in stack-slot order |
-| tc-host | NT-hosted and DOS/4GW-hosted runs of the same bound image produce identical objects | HYPOTHESIS | to be tested with DOSBox-X |
+| tc-host | NT-loader and DOS/4GW (DOSBox-X) runs of the same bound compiler/assembler give identical segment data and FIXUPPs (only THEADR/COMENT source-path metadata differs) | PROVEN | 30 C objects x 3 flag sets + WASM (build/workers/dosbox/REPORT.md); `python tools/validate.py --host dosbox` re-proves every match on DOSBox-X |
 | tc-msdos-player | MS-DOS Player cannot run DOS/4GW-hosted Watcom tools | PROVEN | silent failure, no output (see tools/dosrun.py docstring) |
