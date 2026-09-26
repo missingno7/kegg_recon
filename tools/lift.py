@@ -1214,6 +1214,8 @@ class Lift:
                         self.local_int.add(b.var)     # `call f; mov edx,[g]; add eax,edx`: int g
                 elif mn == "add" and dst[2] == 4 and src[0] == "m" and dst[1] == "eax" and b.op == "v" and                         b.var.kind == "g" and not b.x:
                     self.local_int.add(b.var)         # `add eax,[g]`: g is an int here
+                    if a.op == "v" and a.var.kind == "g" and a.w == 4 and not a.x:
+                        self.local_int.add(a.var)     # ... and so is a plain global in eax
                 if op in ("+", "*", "&", "|", "^") and src[0] == "r" and commute(a, b):
                     a, b = b, a
                 e = E(op, a, b, uns=uns, w=dst[2])
