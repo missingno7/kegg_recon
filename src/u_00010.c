@@ -546,7 +546,7 @@ extern struct DisplayModeInfo g_e324;
 extern short g_7b14;
 extern short g_7b20;
 extern void f_ea9f(void *, int, int, int);
-extern void f_a810(void *, int);
+extern void plot_transformed_pixel(void *, int);
 extern void f_ee33(int);
 extern short audio_stream_flag;
 extern short g_7b3d_yrsiuxxd;

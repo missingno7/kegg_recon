@@ -94,10 +94,10 @@ extern void f_843a(void);
 extern void f_9640(void *, void *);
 extern void f_9d40(unsigned char);
 extern void f_a574_wrvhrpegbz(int);
-extern void f_a810(void *, int);
-extern void f_b1df(int, int, int);
-extern void f_b541(int, int, unsigned char, int, int);
-extern void f_b57a(int, int, int, int);
+extern void plot_transformed_pixel(void *, int);
+extern void draw_text(int, int, int);
+extern void configure_text_renderer(int, int, unsigned char, int, int);
+extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
 extern void set_img_buffers(int, int, short, int, int);
 extern int f_e095_ughrsvpfh();
@@ -125,7 +125,7 @@ extern void f_13aa(void);
 extern void f_1416(void);
 extern void redraw_image_region(int, int);
 extern void f_ed38(void);
-extern int f_b17e(void *, void *);
+extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
 extern short g_e4c6;
@@ -290,7 +290,7 @@ extern State *g_dee4;
 void f_61a6_vby(void);
 void f_10502(int, int);
 extern char g_269c[];
-void f_b4a7(int, int, int, int, int);
+void draw_zero_padded_number(int, int, int, int, int);
 extern int g_8db0;
 void submit_audio_request(int);
 extern char g_2fec[];
@@ -361,7 +361,7 @@ extern int g_8db4;
 extern void (*g_8db8)(void);
 extern unsigned char p_A990[];
 void f_8004(int *, int);
-int f_b5df(void *, void *);
+int rectangles_intersect(void *, void *);
 void f_4291(void);
 extern short windows_environment_detected;
 void f_4394(void);
@@ -514,7 +514,7 @@ void f_4085(void)
         ++*(int *)(g_dda4 + 4);
         if (g_e142_baun != 0)
             ++*(int *)(g_dda4 + 4);
-        g_8db4 = f_b17e(g_dda4 + 8, g_dda4 + 0xc) + g_df34_nnyybtp;
+        g_8db4 = next_packed_table_value(g_dda4 + 8, g_dda4 + 0xc) + g_df34_nnyybtp;
         if (*(int *)g_dda4 > 0x140 || *(int *)g_dda4 < 0 ||
             *(int *)(g_dda4 + 4) > 0xd8 || *(int *)(g_dda4 + 4) < 0) {
             f_4291();
@@ -524,7 +524,7 @@ void f_4085(void)
             g_e22c = *(int *)g_dda4;
             g_e230 = *(int *)(g_dda4 + 4);
             f_8004(&g_e22c, g_8db4);
-            if (f_b5df(&g_e24c, &g_e22c) != 0) {
+            if (rectangles_intersect(&g_e24c, &g_e22c) != 0) {
                 g_dDb8 = ((unsigned char *)g_dda4)[0x10] + 1;
                 g_8e20 = ((unsigned char *)g_dda4)[0x11];
                 if (g_8e20 >= 0x1c)

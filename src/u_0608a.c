@@ -119,7 +119,7 @@ extern void f_3e0f(int, int);
 extern void f_69cd(void);
 extern void f_8004(void *, void *);
 extern void f_8066(void *, void *);
-extern int f_b5df(void *, void *);
+extern int rectangles_intersect(void *, void *);
 extern void play_audio_request_at(int, int);
 void *memcpy(void *, const void *, size_t);
 
@@ -223,7 +223,7 @@ L_6464:;
             *(int *)g_e22c = g_dd94->at_00;
             g_e230 = g_dd94->at_04;
             f_8066(g_e22c, (void *)g_dd94->at_10);
-            if (f_b5df(g_e24c, g_e22c) != 0) {
+            if (rectangles_intersect(g_e24c, g_e22c) != 0) {
                 g_dd94->at_24 |= 2;
                 if ((*(int *)(g_dd90 + 0x10) & 3) == 2) {
                     g_dd94->at_20 = 0;

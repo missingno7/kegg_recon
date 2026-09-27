@@ -8,7 +8,7 @@ extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
 extern unsigned char *g_e4d0_wfmxdlyju;
-extern int a_982c(void);
+extern int decode_and_verify_asset(void);
 extern int f_108a9(int, int, unsigned);
 extern void f_10d72(int, int, int, int);
 extern int f_11051(unsigned);
@@ -35,7 +35,7 @@ void main(void)
     g_7c08_orxezsknd = f_ddb9(0x55730);
     g_e4d0_wfmxdlyju = (unsigned char *)g_7c08_orxezsknd;
     g_7c0c = g_7c08_orxezsknd + 0x55730;
-    g_7c10 = (int)a_982c;
+    g_7c10 = (int)decode_and_verify_asset;
     audio_stream_stop_flag = -1;
     /* Register the arena and load the protected-mode game support code. */
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);

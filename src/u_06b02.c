@@ -66,7 +66,7 @@ int g_9484;
 int g_9488;
 int g_948c;
 
-extern void f_a810(void *, int);
+extern void plot_transformed_pixel(void *, int);
 extern void submit_audio_request(int);
 extern void set_img_buffers(int, int, short, int, int);
 extern void redraw_image_region(int, int);
@@ -129,8 +129,8 @@ extern int g_68f4;
 extern unsigned char *image_buffer_cursor;
 extern unsigned char g_6864[];
 extern void f_78dd(int, int, int, int, int, int, int);
-extern int f_b17e(void *, void *);
-extern int f_b76c(S18, int, int, S18, int, int, int, int, int, int);
+extern int next_packed_table_value(void *, void *);
+extern int frames_intersect_inset(S18, int, int, S18, int, int, int, int, int, int);
 void *memcpy(void *, const void *, size_t);
 extern unsigned char g_687c[];
 
@@ -190,7 +190,7 @@ int f_6b02(void)
     f_7068();
     f_9d40(0);
     f_9d40(0);
-    f_a810((void *)k_DD48_jbwjbqarofg, g_7b18);
+    plot_transformed_pixel((void *)k_DD48_jbwjbqarofg, g_7b18);
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b14 = g_7b18;
@@ -491,7 +491,7 @@ L_7583:;
 L_758b:;
     *(int *)(g_9478 + 4) += *(int *)(g_9478 + 0xc);
     *(int *)(g_9478 + 8) += *(int *)(g_9478 + 0x10);
-    f_b17e(g_9478 + 0x18, g_9478 + 0x1c);
+    next_packed_table_value(g_9478 + 0x18, g_9478 + 0x1c);
     v_8 = (S18 *)(*(int *)*(unsigned char * *)(g_9478 + 0x1c) + *(unsigned char * *)(g_9478 + 0x14));
     if ((*(int *)(g_9478 + 4) >> 4) > 0x150) goto L_7600;
     if ((*(int *)(g_9478 + 4) >> 4) >= -0x10) goto L_7602;
@@ -509,7 +509,7 @@ L_7626:;
 L_7630:;
     if (*(int *)g_9478 != 0) goto L_7771;
     v_4 = (S18 *)(g_dd4c_ilunphmaok + 0x395c);
-    if (f_b76c(*v_4, 0xf6, 0x46,
+    if (frames_intersect_inset(*v_4, 0xf6, 0x46,
                *v_8,
                *(int *)(g_9478 + 4) >> 4, *(int *)(g_9478 + 8) >> 4,
                0xa, 0, 0xa, 0) != -1) goto L_7701;
@@ -527,7 +527,7 @@ L_776c:;
     goto L_7835;
 L_7771:;
     v_4 = (S18 *)(g_dd4c_ilunphmaok + 0x35d6);
-    if (f_b76c(*v_4,
+    if (frames_intersect_inset(*v_4,
                g_e4c6, m_E4c4,
                *v_8,
                (*(int *)(g_9478 + 4) >> 4) + 8, *(int *)(g_9478 + 8) >> 4,

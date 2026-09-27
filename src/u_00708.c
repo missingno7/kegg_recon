@@ -81,10 +81,10 @@ extern void f_843a(void);
 extern void f_9640(void *, void *);
 extern void f_9d40(unsigned char);
 extern int f_a574_wrvhrpegbz();
-extern void f_a810(void *, int);
-extern void f_b1df(int, int, int);
-extern void f_b541(int, int, unsigned char, int, int);
-extern void f_b57a(int, int, int, int);
+extern void plot_transformed_pixel(void *, int);
+extern void draw_text(int, int, int);
+extern void configure_text_renderer(int, int, unsigned char, int, int);
+extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
 extern void set_img_buffers(int, int, short, int, int);
 extern int f_e095_ughrsvpfh();
@@ -112,7 +112,7 @@ extern void f_13aa(void);
 extern void f_1416(void);
 extern void redraw_image_region(int, int);
 extern void f_ed38(void);
-extern int f_b17e(void *, void *);
+extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
 extern short g_e4c6;
@@ -171,7 +171,7 @@ extern int g_388e;
 extern int g_8ddc;
 extern unsigned char g_e141;
 struct TextState { unsigned char mode; int v209, v20d, v211, v215, v219, v21d, v221, v225; unsigned char pad[3]; };
-extern struct TextState g_e208;
+extern struct TextState g_text_render_state;
 extern unsigned g_3861;
 extern unsigned g_dedc;
 extern char *strcpy(char *, const char *);
@@ -280,7 +280,7 @@ extern unsigned char *g_dee4;
 void f_61a6_vby(void);
 void f_10502(int, int);
 extern char g_269c[];
-void f_b4a7(int, int, int, int, int);
+void draw_zero_padded_number(int, int, int, int, int);
 extern int g_8db0;
 void submit_audio_request(int);
 extern unsigned char g_8e24;
@@ -1598,7 +1598,7 @@ void f_8d3_szjtcdqild(void) {
     x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
     f_ea9f(x_dd40_xbukycw, 0, -63, -1);
     g_7b14 = g_7b20;
-    f_a810(k_DD48_jbwjbqarofg, g_7b14);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b14);
     f_ee33(g_7b14);
     f_ea9f(x_dd40_xbukycw, -63, 0, 1);
 }
@@ -1692,12 +1692,12 @@ L_bd6:;
     v_4 = *(signed char *)&g_7b16;
     v_8 = image_color_depth;
     f_ec9c();
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_b541((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    f_b57a((int)(g_e324.left + 6), (int)(g_e324.top + 4), g_e324.right - 6, g_e324.bottom - 2);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
+    configure_text_renderer((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
+    set_text_clip_rect((int)(g_e324.left + 6), (int)(g_e324.top + 4), g_e324.right - 6, g_e324.bottom - 2);
     g_7b16 = g_7b18;
     image_color_depth = 8;
-    f_b1df(8, 8, g_38c6);
+    draw_text(8, 8, g_38c6);
     g_7b16 = (unsigned short)v_4;
     image_color_depth = (unsigned short)v_8;
     f_3beb(g_e1d8);
@@ -1799,12 +1799,12 @@ void f_ff0(void)
     v_4 = *(signed char *)&g_7b16;
     v_8 = image_color_depth;
     f_ec9c();
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_b541((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    f_b57a((int)g_e324.left, (int)g_e324.top, g_e324.right, g_e324.bottom);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
+    configure_text_renderer((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
+    set_text_clip_rect((int)g_e324.left, (int)g_e324.top, g_e324.right, g_e324.bottom);
     g_7b16 = g_7b18;
     image_color_depth = 8;
-    f_b1df(0x10, 0x36, g_38ca);
+    draw_text(0x10, 0x36, g_38ca);
     g_7b16 = (unsigned short)v_4;
     image_color_depth = (unsigned short)v_8;
     f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size));
@@ -1848,7 +1848,7 @@ L_11fd:;
 }
 
 void f_1202(void) {
-    f_b17e(&g_df60, &g_df70);
+    next_packed_table_value(&g_df60, &g_df70);
 }
 
 void f_1227(void) {
@@ -2016,15 +2016,15 @@ void f_16bb(int a0)
     int v_8;
     v_4 = *(signed char *)&g_7b16;
     v_8 = image_color_depth;
-    f_b541((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    f_b57a(0x10, 0xda, g_e324.right, g_e324.bottom);
+    configure_text_renderer((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
+    set_text_clip_rect(0x10, 0xda, g_e324.right, g_e324.bottom);
     image_color_depth = 8;
     g_7b16 = g_7b20;
     copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
-    f_b1df(0x10, 0xda, a0);
+    draw_text(0x10, 0xda, a0);
     g_7b16 = g_7b22;
     copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
-    f_b1df(0x10, 0xda, a0);
+    draw_text(0x10, 0xda, a0);
     image_color_depth = (unsigned short)v_8;
     g_7b16 = (unsigned short)v_4;
 }
@@ -2109,7 +2109,7 @@ L_1b79:;
 
 void f_1b7e(void)
 {
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
     f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size));
     image_color_depth = 8;
 }
@@ -2119,9 +2119,9 @@ void f_1bc2(void)
     int v_4;
     int v_8;
     int v_c;
-    f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
-    f_b1df(0x32, 0x10, g_388e);
+    configure_text_renderer((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    draw_text(0x32, 0x10, g_388e);
     v_8 = 0x32;
     g_e141 = 1;
 L_1c29:;
@@ -2135,8 +2135,8 @@ L_1c3c:;
     itoa(g_e141, (char *)v_c, 0xa);
     strcat((char *)v_c, (char *)".");
     v_4 = 0xe;
-    f_b1df(v_4, v_8, v_c);
-    v_8 += g_e208.v20d;
+    draw_text(v_4, v_8, v_c);
+    v_8 += g_text_render_state.v20d;
     goto L_1c34;
 L_1c91:;
     v_8 = 0x32;
@@ -2150,8 +2150,8 @@ L_1caa:;
 L_1cb2:;
     v_4 = 0x36;
     v_c = (int)((unsigned char *)g_37f4 + (g_e141 * 0x19));
-    f_b1df(v_4, v_8, v_c);
-    v_8 += g_e208.v20d;
+    draw_text(v_4, v_8, v_c);
+    v_8 += g_text_render_state.v20d;
     goto L_1caa;
 L_1ceb:;
     v_8 = 0x32;
@@ -2167,8 +2167,8 @@ L_1d0c:;
     v_c = (int)g_6984;
     ltoa(g_8ddc, (char *)v_c, 0xa);
     v_4 = ((6 - strlen((char *)v_c)) * 0x11) + 0xd5;
-    f_b1df(v_4, v_8, v_c);
-    v_8 += g_e208.v20d;
+    draw_text(v_4, v_8, v_c);
+    v_8 += g_text_render_state.v20d;
     goto L_1d04;
 }
 
@@ -2248,12 +2248,12 @@ L_1fd0:;
     if (g_e13d == 0) goto L_202b;
     g_e13d = 0;
     copy_clipped_screen_rectangle(g_7b18, 0xe, 0x32, g_e324.right, 0xa5, g_7b16, 0xe, 0x32);
-    f_b1df(0x36, (g_e208.v20d * g_dedc) + 0x32, (int)g_6984);
+    draw_text(0x36, (g_text_render_state.v20d * g_dedc) + 0x32, (int)g_6984);
 L_202b:;
     if (g_dF68 != 0x23) goto L_2083;
     copy_clipped_screen_rectangle(g_7b18, 0x24, 0xae, g_e324.right, 0xc5, g_7b16, 0x24, 0xae);
     if (g_df64 >= 0) goto L_2083;
-    f_b1df(0x24, 0xae, g_3892);
+    draw_text(0x24, 0xae, g_3892);
 L_2083:;
     f_9d40(1);
     if (g_e48e_0g == 0x1c) goto L_20a7;
@@ -2263,7 +2263,7 @@ L_20a7:;
     g_dedc = 0xffffffff;
 L_20ce:;
     g_7b16 = g_7b18;
-    f_b1df(0x32, 0xae, g_3896);
+    draw_text(0x32, 0xae, g_3896);
 }
 
 void f_20f4(void)
@@ -2392,7 +2392,7 @@ L_2517:;
 
 void f_251c(void)
 {
-    f_a810(k_DD48_jbwjbqarofg, (short)g_7b18);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, (short)g_7b18);
     f_3beb((int)((k_DD48_jbwjbqarofg + g_e324.buffer_size) + 1536));
     image_color_depth = 8;
 }
@@ -2402,12 +2402,12 @@ void f_2565(int a0)
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b14;
-    f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
-    f_b1df(0x40, 0xa, g_389a);
-    f_b541((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 0xa, 0xd);
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
-    f_b1df(7, 0x1e, a0);
+    configure_text_renderer((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    draw_text(0x40, 0xa, g_389a);
+    configure_text_renderer((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 0xa, 0xd);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    draw_text(7, 0x1e, a0);
     if (image_buffer_error_code == 0) goto L_2675;
     shutdown_with_exit_message(image_buffer_error_code, 0);
 L_2675:;
@@ -2447,7 +2447,7 @@ L_2779:;
 
 void f_2796(void)
 {
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
     f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size + 0x900));
     image_color_depth = 8;
 }
@@ -2457,12 +2457,12 @@ void f_27df(int a)
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b14;
-    f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 17, 23);
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
-    f_b1df(0x40, 10, g_389a);
-    f_b541((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 10, 13);
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
-    f_b1df(7, 30, a);
+    configure_text_renderer((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 17, 23);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    draw_text(0x40, 10, g_389a);
+    configure_text_renderer((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 10, 13);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    draw_text(7, 30, a);
     if (image_buffer_error_code != 0)
         shutdown_with_exit_message(image_buffer_error_code, 0);
     g_df6c = 0x5208;
@@ -2491,7 +2491,7 @@ void f_2903(void)
     g_dd44 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6974);
     queue_audio(g_dd44, g_e4c8, 0x2ae4, -1);
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
 
@@ -2505,7 +2505,7 @@ void f_2903(void)
 
     k_DD48_jbwjbqarofg = old1;
     x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
@@ -2515,7 +2515,7 @@ void f_2903(void)
 
     k_DD48_jbwjbqarofg = old2;
     x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
-    f_a810(k_DD48_jbwjbqarofg, g_7b18);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);

@@ -1,20 +1,20 @@
 .386
-; Two empty handler stubs (same frame idiom as the neighbouring TASM modules); nothing calls them directly.
+; Empty renderer hooks retained as callable entry points by the original program.
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
-        PUBLIC a_a958
-a_a958 PROC NEAR
+        PUBLIC noop_renderer_hook_one
+noop_renderer_hook_one PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         popad
         ret
-a_a958 ENDP
-        PUBLIC a_a95f
-a_a95f PROC NEAR
+noop_renderer_hook_one ENDP
+        PUBLIC noop_renderer_hook_two
+noop_renderer_hook_two PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         popad
         ret
-a_a95f ENDP
+noop_renderer_hook_two ENDP
 _TEXT ENDS
         END

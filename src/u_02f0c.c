@@ -88,10 +88,10 @@ extern void f_843a(void);
 extern void f_9640(void *, void *);
 extern void f_9d40(unsigned char);
 extern int f_a574_wrvhrpegbz();
-extern void f_a810(void *, int);
-extern void f_b1df(int, int, int);
-extern void f_b541(int, int, unsigned char, int, int);
-extern void f_b57a(int, int, int, int);
+extern void plot_transformed_pixel(void *, int);
+extern void draw_text(int, int, int);
+extern void configure_text_renderer(int, int, unsigned char, int, int);
+extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
 extern void set_img_buffers(int, int, short, int, int);
 extern int f_e095_ughrsvpfh();
@@ -119,7 +119,7 @@ extern void f_13aa(void);
 extern void f_1416(void);
 extern void redraw_image_region(int, int);
 extern void f_ed38(void);
-extern int f_b17e(void *, void *);
+extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
 extern short g_e4c6;
@@ -284,7 +284,7 @@ extern unsigned char *g_dee4;
 void f_61a6_vby(void);
 void f_10502(int, int);
 extern char g_269c[];
-void f_b4a7(int, int, int, int, int);
+void draw_zero_padded_number(int, int, int, int, int);
 extern int g_8db0;
 void submit_audio_request(int);
 extern unsigned char g_8e24;
@@ -522,14 +522,14 @@ void f_35b5(void)
 
 void f_35e4_rqk(void)
 {
-    f_b541((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    configure_text_renderer((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     g_7b16 = g_7b18;
     r_dDDc_uzmlc[2] = -1;
     r_dDDc_uzmlc[6] = -1;
-    f_b4a7(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
-    f_b4a7(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
-    f_b4a7(0x108, 4, *(int *)g_37fd, 10, 6);
+    draw_zero_padded_number(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
+    draw_zero_padded_number(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
+    draw_zero_padded_number(0x108, 4, *(int *)g_37fd, 10, 6);
     copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
     copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b20;
@@ -550,14 +550,14 @@ void f_3702(void)
     }
 
     if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6] || r_dDDc_uzmlc[1] != r_dDDc_uzmlc[2]) {
-        f_b541((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
+        configure_text_renderer((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
     }
-    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
 
     if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6]) {
         r_dDDc_uzmlc[6] = r_dDDc_uzmlc[5];
         g_7b16 = g_7b18;
-        f_b4a7(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
+        draw_zero_padded_number(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
         copy_clipped_screen_rectangle(g_7b18, 0x38, 4, 0x66, 0xb, g_7b20, 0x38, 4);
         copy_clipped_screen_rectangle(g_7b18, 0x38, 4, 0x66, 0xb, g_7b22, 0x38, 4);
     }
@@ -565,7 +565,7 @@ void f_3702(void)
     if (r_dDDc_uzmlc[1] != r_dDDc_uzmlc[2]) {
         r_dDDc_uzmlc[2] = r_dDDc_uzmlc[1];
         g_7b16 = g_7b18;
-        f_b4a7(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
+        draw_zero_padded_number(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
         copy_clipped_screen_rectangle(g_7b18, 0x99, 4, 0xa6, 0xb, g_7b20, 0x99, 4);
         copy_clipped_screen_rectangle(g_7b18, 0x99, 4, 0xa6, 0xb, g_7b22, 0x99, 4);
     }

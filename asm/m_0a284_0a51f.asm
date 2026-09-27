@@ -9,26 +9,28 @@ _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC a_a284
-        PUBLIC f_a284
-f_a284 LABEL NEAR
-a_a284 PROC NEAR
+        PUBLIC decode_iff_ilbm_image
+; Legacy entry name retained for byte-sensitive T08 caller.
+a_a284 LABEL NEAR
+; Read FORM/BODY/BMHD/CMAP chunks, expand ByteRun1, then convert ILBM planes to indexed pixels.
+decode_iff_ilbm_image PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         mov     ebx,[ebp+0Ch]
         mov     esi,[ebp+8]
-        mov     dword ptr g_73e0,esi
-        mov     dword ptr g_73e4,ebx
+        mov     dword ptr g_iff_file,esi
+        mov     dword ptr g_iff_pixels,ebx
         cmp     dword ptr [esi],4D524F46h
         je      short L_A2B4
         mov     al,1
 L_A2A5:
         mov     ah,8
         movzx   eax,ax
-        mov     dword ptr g_73dc,eax
+        mov     dword ptr g_iff_error,eax
         jmp     near ptr L_A47E
 L_A2B4:
         mov     edx,424F4459h
-        call    a_a4e1
+        call    find_iff_chunk
         mov     al,2
         jb      short L_A2A5
         mov     eax,[ebx]
@@ -36,9 +38,9 @@ L_A2B4:
         rol     eax,10h
         xchg    al,ah
         lea     esi,[ebx+4]
-        mov     edi,dword ptr g_73e4
+        mov     edi,dword ptr g_iff_pixels
         mov     edx,424D4844h
-        call    a_a4e1
+        call    find_iff_chunk
         mov     al,3
         jb      short L_A2A5
         movzx   eax,word ptr [ebx+4]
@@ -48,9 +50,9 @@ L_A2B4:
         mov     dword ptr g_e2c4,eax
         mov     dword ptr g_e2c8,ecx
         mul     ecx
-        mov     dword ptr g_73e8,eax
+        mov     dword ptr g_iff_pixel_count,eax
         lea     ecx,[edi+eax]
-        mov     dword ptr g_73f0,ecx
+        mov     dword ptr g_iff_decoder_workspace,ecx
         cmp     byte ptr [ebx+0Eh],0
         je      short L_A34B
         sub     ecx,ecx
@@ -66,7 +68,7 @@ L_A31D:
         inc     cl
         lodsb
         rep     stosb
-        cmp     edi,dword ptr g_73f0
+        cmp     edi,dword ptr g_iff_decoder_workspace
         jl      short L_A311
         mov     al,5
         jne     near ptr L_A2A5
@@ -74,18 +76,18 @@ L_A31D:
 L_A336:
         inc     ecx
         rep     movsb
-        cmp     edi,dword ptr g_73f0
+        cmp     edi,dword ptr g_iff_decoder_workspace
         jl      short L_A311
         mov     al,5
         jne     near ptr L_A2A5
         jmp     short L_A356
 L_A34B:
-        mov     ecx,dword ptr g_73e8
+        mov     ecx,dword ptr g_iff_pixel_count
         shr     ecx,2
         rep     movsd
 L_A356:
         mov     edx,434D4150h
-        call    a_a4e1
+        call    find_iff_chunk
         mov     al,4
         jb      near ptr L_A2A5
         mov     esi,ebx
@@ -94,18 +96,18 @@ L_A356:
         xchg    cl,ch
         rol     ecx,10h
         xchg    cl,ch
-        mov     dword ptr g_73ec,ecx
+        mov     dword ptr g_iff_palette_bytes,ecx
 L_A37A:
         lodsb
         shr     al,2
         stosb
         loop    short L_A37A
-        sub     edi,dword ptr g_73e4
-        mov     esi,dword ptr g_73e0
+        sub     edi,dword ptr g_iff_pixels
+        mov     esi,dword ptr g_iff_file
         cmp     dword ptr [esi+8],4D424C49h
         jne     near ptr L_A47E
-        mov     esi,dword ptr g_73e4
-        mov     edi,dword ptr g_73e0
+        mov     esi,dword ptr g_iff_pixels
+        mov     edi,dword ptr g_iff_file
         mov     ecx,dword ptr g_e2c8
 L_A3AC:
         push    ecx
@@ -185,8 +187,8 @@ L_A453:
         mov     eax,dword ptr g_e2c4
         mul     dword ptr g_e2c8
         mov     ecx,eax
-        mov     edi,dword ptr g_73e4
-        mov     esi,dword ptr g_73e0
+        mov     edi,dword ptr g_iff_pixels
+        mov     esi,dword ptr g_iff_file
         std
         add     edi,ecx
         add     esi,ecx
@@ -195,10 +197,10 @@ L_A453:
         rep     movsb
         cld
         mov     edi,eax
-        add     edi,dword ptr g_73ec
+        add     edi,dword ptr g_iff_palette_bytes
 L_A47E:
         mov     dword ptr g_e2cc,edi
-        mov     edi,dword ptr g_73e8
+        mov     edi,dword ptr g_iff_pixel_count
         mov     dword ptr g_e2d0,edi
         mov     ebx,[ebp+10h]
         mov     eax,[ebp+0Ch]
@@ -219,19 +221,17 @@ L_A47E:
         mov     [ebx+18h],eax
         mov     dword ptr [ebx+10h],1
         popad
-        mov     eax,dword ptr g_73dc
+        mov     eax,dword ptr g_iff_error
         ret
-a_a284 ENDP
-        PUBLIC a_a4e1
-        PUBLIC f_a4e1
-f_a4e1 LABEL NEAR
-a_a4e1 PROC NEAR
+decode_iff_ilbm_image ENDP
+        PUBLIC find_iff_chunk
+find_iff_chunk PROC NEAR
         push    esi
         push    edi
         xchg    dl,dh
         rol     edx,10h
         xchg    dl,dh
-        mov     edi,dword ptr g_73e0
+        mov     edi,dword ptr g_iff_file
         mov     ecx,[edi+4]
         xchg    cl,ch
         rol     ecx,10h
@@ -260,20 +260,20 @@ L_A51C:
         pop     edi
         pop     esi
         ret
-a_a4e1 ENDP
+find_iff_chunk ENDP
 _TEXT ENDS
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-        PUBLIC g_73dc
-g_73dc	DD 0
-        PUBLIC g_73e0
-g_73e0	DD 0
-        PUBLIC g_73e4
-g_73e4	DD 0
-        PUBLIC g_73e8
-g_73e8	DD 0
-        PUBLIC g_73ec
-g_73ec	DD 0
-        PUBLIC g_73f0
-g_73f0	DD 5 DUP (0)
+        PUBLIC g_iff_error
+g_iff_error	DD 0
+        PUBLIC g_iff_file
+g_iff_file	DD 0
+        PUBLIC g_iff_pixels
+g_iff_pixels	DD 0
+        PUBLIC g_iff_pixel_count
+g_iff_pixel_count	DD 0
+        PUBLIC g_iff_palette_bytes
+g_iff_palette_bytes	DD 0
+        PUBLIC g_iff_decoder_workspace
+g_iff_decoder_workspace	DD 5 DUP (0)
 _DATA ENDS
         END

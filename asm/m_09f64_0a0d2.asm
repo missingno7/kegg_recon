@@ -5,18 +5,18 @@ EXTRN g_73a8:DWORD
 EXTRN g_e1b4_35:DWORD
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
         PUBLIC g_73d4
-        PUBLIC g_73d8
+        PUBLIC g_pit_elapsed_ticks
 g_73d4  DD 0
-g_73d8  DD 0
+g_pit_elapsed_ticks DD 0
 _DATA ENDS
 DGROUP GROUP _DATA
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_9f64
         PUBLIC f_9f64
+        PUBLIC measure_pit_channel0
 f_9f64 LABEL NEAR
-a_9f64 PROC NEAR
+measure_pit_channel0 PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         pushfd
@@ -103,7 +103,7 @@ L_A009:
         movzx   eax,ax
         mov     ebx,10000h
         sub     ebx,eax
-        mov     dword ptr g_73d8,ebx
+        mov     dword ptr g_pit_elapsed_ticks,ebx
         pop     eax
         out     0A1h,al
         mov     al,ah
@@ -121,14 +121,12 @@ L_A035:
         out     70h,al
         popfd
         popad
-        mov     eax,dword ptr g_73d8
+        mov     eax,dword ptr g_pit_elapsed_ticks
         ret
-a_9f64 ENDP
+measure_pit_channel0 ENDP
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_a03f
-        PUBLIC f_a03f
-f_a03f LABEL NEAR
-a_a03f PROC NEAR
+        PUBLIC set_pit_channel0_reload
+set_pit_channel0_reload PROC NEAR
         push    ebp
         lea     ebp,[esp]
         push    eax
@@ -159,12 +157,10 @@ L_A05E:
         pop     eax
         pop     ebp
         ret
-a_a03f ENDP
+set_pit_channel0_reload ENDP
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_a067
-        PUBLIC f_a067
-f_a067 LABEL NEAR
-a_a067 PROC NEAR
+        PUBLIC pit_channel0_interrupt
+pit_channel0_interrupt PROC NEAR
         push    eax
         push    edx
         mov     al,34h
@@ -225,6 +221,6 @@ L_A0B2:
         pop     edx
         pop     eax
         iretd
-a_a067 ENDP
+pit_channel0_interrupt ENDP
 _TEXT ENDS
         END
