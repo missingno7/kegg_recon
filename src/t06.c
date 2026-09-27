@@ -3,10 +3,7 @@
  */
 #include <i86.h>
 #include <conio.h>
-/* PORT: yield occasional CPU slices from the legacy memory-poll timer wait. */
-extern void vhw_cpu_poll_yield(void);
-extern void vhw_cpu_poll_begin(void);
-extern void vhw_cpu_poll_end(void);
+extern void vhw_cpu_poll_yield(void); /* PORT: host scheduling hook; virtual CPU state is unchanged */
 #define PIT_CONTROL_PORT 0x43
 #define PIT_CHANNEL0_DATA_PORT 0x40
 #define VGA_INPUT_STATUS_1_PORT 0x3da
@@ -176,7 +173,6 @@ int start_timer(int timer_options)
         irq_flags = timer_options;
         install_timer_irq();
         pit_rollover_value = timer_delta - 0x100;
-        pit_rollover_value -= 0x500; /* PORT: compensate host IRQ-to-retrace latency */
         clear_timer_events();
         timer_enabled09 = 1;
         retrace_count5 = 1;
@@ -248,16 +244,14 @@ void wait_for_tick(short wait_flags)
     }
     if (*(short *)tmr_rec == -1) {
         retrace_spin_count8 = 0;
-        vhw_cpu_poll_begin(); /* PORT: defer async delivery to CPU poll boundaries */
         while (retrace_count5 == starting_tick) {
+            vhw_cpu_poll_yield(); /* PORT: virtual-machine scheduler hook for the memory poll */
             ++retrace_spin_count8;
-            if ((retrace_spin_count8 & 0x0fff) == 0) vhw_cpu_poll_yield(); /* PORT: */
             if (*(unsigned char *)timer_sync_flag_ptr) {
                 ++retrace_count5;
                 *(unsigned char *)timer_sync_flag_ptr = 0;
             }
         }
-        vhw_cpu_poll_end(); /* PORT: */
     } else {
         retrace_spin_count8 = 0;
         wait_for_vsync();

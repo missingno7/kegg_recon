@@ -138,7 +138,7 @@ static void wake_pit_thread(void)
 static void pit_reprogram(PitChannel *c, uint32_t value)
 {
     c->reload = value ? value : 65536;
-    c->origin_ns = ke_now_ns();
+    c->origin_ns = vhw_clock_now_ns();
     c->gate_ticks = 0;
     c->null_count = 0;
     c->irq_fired = 0;
@@ -176,7 +176,7 @@ static uint32_t pit_in(void *ctx, uint16_t port, int size)
     if (port == 0x43)
         return 0xff;                /* reading the control port is not defined */
     EnterCriticalSection(&pit_lock);
-    now = ke_now_ns();
+    now = vhw_clock_now_ns();
     if (port == 0x61) {
         result = (uint32_t)((port61 & 0x0f) | (output_now(&ch[2], now) ? 0x20 : 0));
     } else {
@@ -255,7 +255,7 @@ static void pit_out(void *ctx, uint16_t port, uint32_t value, int size)
     (void)ctx; (void)size;
     value &= 0xff;
     EnterCriticalSection(&pit_lock);
-    now = ke_now_ns();
+    now = vhw_clock_now_ns();
     if (port == 0x61) {
         old_gate = port61 & 1;
         current_ticks = now <= ch[2].origin_ns ? 0 :
@@ -300,7 +300,7 @@ static void wait_pit_deadline(HANDLE timer, uint64_t deadline)
 {
     HANDLE waits[2] = { pit_wake, timer };
     for (;;) {
-        uint64_t now = ke_now_ns();
+        uint64_t now = vhw_clock_now_ns();
         uint64_t remain;
         LARGE_INTEGER due;
         if (pit_stop || now >= deadline)
@@ -334,7 +334,7 @@ static DWORD WINAPI pit_thread_main(LPVOID unused)
         timer = CreateWaitableTimerW(NULL, FALSE, NULL);
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
     while (!pit_stop) {
-        uint64_t now = ke_now_ns(), deadline;
+        uint64_t now = vhw_clock_now_ns(), deadline;
         uint32_t generation;
 #ifdef KE_ORACLE
         uint32_t event_reload;
@@ -353,7 +353,7 @@ static DWORD WINAPI pit_thread_main(LPVOID unused)
         wait_pit_deadline(timer, deadline);
         if (pit_stop)
             break;
-        now = ke_now_ns();
+        now = vhw_clock_now_ns();
         if (now < deadline)
             continue;               /* the timer woke because the channel was reprogrammed */
         EnterCriticalSection(&pit_lock);
@@ -372,7 +372,7 @@ static DWORD WINAPI pit_thread_main(LPVOID unused)
                 }
             }
 #endif
-            vpic_raise_irq(0);
+            vpic_raise_irq_at(0, deadline);
         } else {
             LeaveCriticalSection(&pit_lock);
         }
@@ -404,7 +404,7 @@ void vpit_init(void)
         ch[i].access = 3;
         ch[i].mode = 3;
         ch[i].gate = (uint8_t)(i != 2);
-        ch[i].origin_ns = ke_now_ns();
+        ch[i].origin_ns = vhw_clock_now_ns();
     }
     LeaveCriticalSection(&pit_lock);
     wake_pit_thread();
