@@ -39,6 +39,60 @@ void oracle_register(const char *name, oracle_test_fn fn)
     test_count++;
 }
 
+/* Match the game launcher: DOS memory must be reserved in a suspended child before the
+ * Windows loader creates its heaps, TLS and initial thread stack in that address range. */
+static int relaunch_with_low_memory_reserved(int *exit_code)
+{
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+    WCHAR path[MAX_PATH];
+    void *reserved;
+    DWORD code = 1;
+    char child[8];
+    if (GetEnvironmentVariableA("KE_ORACLE_CHILD", child, sizeof child) != 0)
+        return 0;
+    SetEnvironmentVariableA("KE_ORACLE_CHILD", "1");
+    if (!GetModuleFileNameW(NULL, path, MAX_PATH)) {
+        SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+        fprintf(stderr, "ke_oracle: cannot resolve executable path (%lu)\n",
+                (unsigned long)GetLastError());
+        return -1;
+    }
+    memset(&si, 0, sizeof si);
+    si.cb = sizeof si;
+    if (!CreateProcessW(path, GetCommandLineW(), NULL, NULL, TRUE, CREATE_SUSPENDED,
+                        NULL, NULL, &si, &pi)) {
+        DWORD error = GetLastError();
+        SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+        fprintf(stderr, "ke_oracle: cannot start reserved-memory child (%lu)\n",
+                (unsigned long)error);
+        return -1;
+    }
+    reserved = VirtualAllocEx(pi.hProcess, (void *)LOWMEM_BASE,
+                              LOWMEM_END - LOWMEM_BASE, MEM_RESERVE, PAGE_READWRITE);
+    if (reserved != (void *)LOWMEM_BASE) {
+        DWORD error = GetLastError();
+        fprintf(stderr, "ke_oracle: cannot reserve low memory in child (%lu)\n",
+                (unsigned long)error);
+        TerminateProcess(pi.hProcess, 1);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+        return -1;
+    }
+    ResumeThread(pi.hThread);
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+    if (code != 0)
+        fprintf(stderr, "ke_oracle: reserved-memory child exited with code %08lXh\n",
+                (unsigned long)code);
+    *exit_code = (int)code;
+    return 1;
+}
+
 /* The oracle links the whole port; the historical main() is never run here. */
 int main(int argc, char **argv)
 {
@@ -46,6 +100,9 @@ int main(int argc, char **argv)
     const char *dir = argc > 1 ? argv[1] : "build/port/oracle";
     const char *filter = argc > 2 ? argv[2] : NULL;
     int i, failed = 0, run = 0;
+    int child_exit, relaunch = relaunch_with_low_memory_reserved(&child_exit);
+    if (relaunch != 0)
+        return relaunch > 0 ? child_exit : 2;
     setvbuf(stdout, NULL, _IONBF, 0);
     ke_config_load(1, argv);
     ke_config.log_level = KE_LOG_WARN;
