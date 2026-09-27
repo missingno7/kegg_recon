@@ -15,6 +15,17 @@ toolchain rebuilds into the original bytes — ultimately a byte-identical execu
 | `docs/` | `evidence.md` (hypothesis register), `bootstrap.md` (lessons from earlier projects) |
 | `build/` | everything generated, worker scratch dirs (ignored) |
 
+## Reproduce
+
+```
+git clone <repo> && cd <repo>          # any path (compiles run in a short scratch dir, KEGG_TMP or <drive>:\kgtmp)
+# put the original game files into assets/ (KE.EXE sha256 5a465cc7...)
+python toolchain/install.py            # verify the pinned Watcom 10.0 GA / 10.0a / MASM installs under C:/tools
+python -m pip install --no-user --target build/pylib capstone==5.0.7
+python tools/validate.py --image       # every claimed function/unit EXACT + one WLINK run == KE.EXE
+python tools/status.py                 # progress and raw-debt accounting
+```
+
 ## Toolchain
 
 Historical installs live outside git under `C:/tools` (override `KEGG_TOOLS`), see
