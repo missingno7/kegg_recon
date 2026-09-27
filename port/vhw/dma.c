@@ -2,7 +2,8 @@
  *
  * Physical address == linear address: DMA buffers are DOS memory below 1 MiB, identity
  * mapped by lowmem.c, so a transfer reads host memory at (page << 16) | address.
- * Only memory->device (read) transfers are consumed (the Sound Blaster pulls them).
+ * The Sound Blaster pulls memory->device transfers for playback and supplies the virtual
+ * neutral sample for device->memory transfers used by its startup DMA probe.
  */
 #include <string.h>
 #include <windows.h>
@@ -18,6 +19,23 @@ static DmaChannel dch[4];
 static int flipflop;
 static CRITICAL_SECTION dma_lock;
 static const uint16_t page_ports[4] = {0x87, 0x83, 0x81, 0x82};
+
+static void advance_channel(DmaChannel *c)
+{
+    c->cur_addr = (uint16_t)(c->cur_addr + ((c->mode & 0x20) ? -1 : 1));
+}
+
+static void terminal_count(DmaChannel *c, int *terminal)
+{
+    *terminal = 1;
+    c->tc = 1;
+    if (c->mode & 0x10) {                  /* auto-initialize: reload address and count */
+        c->cur_addr = c->base_addr;
+        c->cur_count = c->base_count;
+    } else {
+        c->masked = 1;
+    }
+}
 
 static uint32_t dma_in(void *ctx, uint16_t port, int size)
 {
@@ -69,9 +87,15 @@ static void dma_out(void *ctx, uint16_t port, uint32_t value, int size)
     } else if (port == 0x0c) {             /* clear flip-flop */
         flipflop = 0;
     } else if (port == 0x0d) {             /* master clear */
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < 4; i++) {
             dch[i].masked = 1;
+            dch[i].mode = 0;
+            dch[i].tc = 0;
+        }
         flipflop = 0;
+    } else if (port == 0x0e) {             /* clear mask register */
+        for (i = 0; i < 4; i++)
+            dch[i].masked = 0;
     } else if (port == 0x0f) {             /* write all masks */
         for (i = 0; i < 4; i++)
             dch[i].masked = (uint8_t)((value >> i) & 1);
@@ -89,21 +113,44 @@ int vdma_read(int channel, uint8_t *dst, int len, int *terminal)
     int n = 0;
     *terminal = 0;
     EnterCriticalSection(&dma_lock);
-    if (!c->masked) {
+    if (!c->masked && ((c->mode >> 2) & 3) == 2) { /* read: memory to I/O */
         while (n < len) {
             uint32_t linear = ((uint32_t)c->page << 16) | c->cur_addr;
             dst[n++] = (linear >= LOWMEM_BASE && linear < LOWMEM_END) ? *(uint8_t *)(uintptr_t)linear
                                                                  : 0x80;
-            c->cur_addr++;
+            advance_channel(c);
             if (c->cur_count-- == 0) {     /* count register holds length-1 */
-                *terminal = 1;
-                c->tc = 1;
-                if (c->mode & 0x10) {      /* auto-initialize */
-                    c->cur_addr = c->base_addr;
-                    c->cur_count = c->base_count;
-                } else {
-                    c->masked = 1;
-                }
+                terminal_count(c, terminal);
+                break;
+            }
+        }
+    } else if (len > 0) {
+        ke_log_once("dma.read.not-ready", KE_LOG_WARN, "dma",
+                    "channel %d playback request blocked (masked=%u mode=%02X count=%04X)",
+                    channel & 3, c->masked, c->mode, c->cur_count);
+    }
+    LeaveCriticalSection(&dma_lock);
+    return n;
+}
+
+/* Device-to-memory data path. The virtual card has no microphone input; unsigned midpoint
+ * silence is supplied, which is enough for the original's DMA-channel probe and keeps the
+ * guest buffer in the same state an idle ADC would produce. */
+int vdma_write(int channel, uint8_t sample, int len, int *terminal)
+{
+    DmaChannel *c = &dch[channel & 3];
+    int n = 0;
+    *terminal = 0;
+    EnterCriticalSection(&dma_lock);
+    if (!c->masked && ((c->mode >> 2) & 3) == 1) { /* write: I/O to memory */
+        while (n < len) {
+            uint32_t linear = ((uint32_t)c->page << 16) | c->cur_addr;
+            if (linear >= LOWMEM_BASE && linear < LOWMEM_END)
+                *(uint8_t *)(uintptr_t)linear = sample;
+            n++;
+            advance_channel(c);
+            if (c->cur_count-- == 0) {
+                terminal_count(c, terminal);
                 break;
             }
         }

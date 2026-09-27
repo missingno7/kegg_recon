@@ -95,6 +95,8 @@ void vjoy_set(int axis, float value, int buttons); /* value -1..1               
 void vdma_init(void);
 /* Pull up to `len` bytes from an 8-bit channel; returns bytes read, *terminal set at TC.    */
 int vdma_read(int channel, uint8_t *dst, int len, int *terminal);
+/* Write `len` copies of a device sample to an 8-bit channel; returns bytes, *terminal at TC. */
+int vdma_write(int channel, uint8_t sample, int len, int *terminal);
 void vsb_init(void);
 void vsb_shutdown(void);
 
