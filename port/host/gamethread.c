@@ -8,12 +8,16 @@
  */
 #include <setjmp.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 #include "ke_port.h"
 #include "../vhw/vhw.h"
 
 #define MAX_ATEXIT 32
+extern short timer_ok;
+extern unsigned timer_delta;
+extern int timer_enabled09;
 static void (*atexit_fns[MAX_ATEXIT])(void);
 static int atexit_count;
 static jmp_buf exit_jump;
@@ -97,6 +101,9 @@ static DWORD WINAPI game_thread_main(LPVOID unused)
         ke_log(KE_LOG_INFO, "game", "historical main() returned");
         ke_exit(0);
     }
+    if (getenv("KE_TIMER_DIAG"))
+        ke_log(KE_LOG_INFO, "timer", "timer diagnostic: timer_ok=%d timer_delta=%u timer_enabled09=%d",
+               timer_ok, timer_delta, timer_enabled09);
     ke_log(KE_LOG_INFO, "game", "game thread finished (exit code %d)", exit_code);
     InterlockedExchange(&finished, 1);
     return 0;
