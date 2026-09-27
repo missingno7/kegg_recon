@@ -2571,7 +2571,7 @@ void load_return_screen_assets(void)
     g_e4d0_wfmxdlyju = file_mark;
 }
 
-void reset_lvl(void);
+void reset_level(void);
 
 void load_and_draw_level(void);
 

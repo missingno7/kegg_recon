@@ -115,7 +115,7 @@ extern void handle_s_key(void);
 extern int show_order_info(void);
 extern void return_to_main_menu(void);
 extern void load_assets(void);
-extern void reset_lvl(void);
+extern void reset_level(void);
 extern void load_and_draw_level(void);
 extern int wait_level(void);
 extern void entry_prompt(void);
@@ -639,7 +639,7 @@ void run_gameplay_session(void)
         g_e4d0_wfmxdlyju = file_error_state;
         load_palette();
         load_assets();
-        reset_lvl();
+        reset_level();
         load_and_draw_level();
         queue_audio(sfx_data_ptr, g_e4c8, 0x157c, 0);
         if (wait_level()) {
