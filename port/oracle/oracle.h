@@ -11,7 +11,8 @@
  *   CLI/STI                             -> recorded (virtual IF)
  *   INT nn (CD nn)                      -> vhw_int() with the register image
  *   MOV Sreg,r16 (8E /r, mod=11)        -> ignored (every selector is flat)
- *   accesses to the relocated, no-access VGA window -> the VGA byte API (MOV, MOVZX, string ops,
+ *   accesses to the relocated, no-access VGA window (or a legacy VGA effective address) ->
+ *                                        the VGA byte API (MOV, MOVZX, LODS/MOVS/STOS,
  *                                        AND/OR/XOR memory forms)
  * Emulated I/O, CLI/STI and INT events are appended to a trace for differential checks.
  */
@@ -55,6 +56,10 @@ uint32_t oracle_port_call(void *fn, int argc, const uint32_t *args);
 /* The oracle allocates a no-access host window, relocates original A0000h operands to it,
  * and emulates accesses through the virtual VGA. */
 int oracle_vga_window_reserved(void);
+/* Translate a canonical A0000h..BFFFFh fixture address to the guarded host alias. */
+uint32_t oracle_vga_host_address(uint32_t address);
+/* Translate a guarded host alias back to its canonical VGA address. */
+uint32_t oracle_vga_guest_address(uint32_t address);
 int oracle_vga_snapshot(OracleVgaSnapshot *snapshot);
 /* Return 0 when equal; otherwise print the first differing device block and return 1. */
 int oracle_vga_snapshot_equal(const OracleVgaSnapshot *a, const OracleVgaSnapshot *b,

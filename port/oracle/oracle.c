@@ -40,12 +40,16 @@ void oracle_trace_add(uint8_t kind, uint16_t port, uint32_t value, int size)
 static int is_vga_address(uint32_t address)
 {
     uintptr_t base = (uintptr_t)vga_guard;
-    return base && address >= base && address < base + 0x20000u;
+    return (address >= 0xA0000u && address < 0xC0000u) ||
+           (base && address >= base && address < base + 0x20000u);
 }
 
 static uint32_t canonical_vga_address(uint32_t address)
 {
-    return 0xA0000u + (address - (uint32_t)(uintptr_t)vga_guard);
+    uintptr_t base = (uintptr_t)vga_guard;
+    if (base && address >= base && address < base + 0x20000u)
+        return 0xA0000u + (address - (uint32_t)base);
+    return address;
 }
 
 static uint32_t relocate_vga_pointer(uint32_t address)
@@ -53,6 +57,16 @@ static uint32_t relocate_vga_pointer(uint32_t address)
     if (vga_guard && address >= 0xA0000u && address < 0xC0000u)
         return (uint32_t)(uintptr_t)vga_guard + (address - 0xA0000u);
     return address;
+}
+
+uint32_t oracle_vga_host_address(uint32_t address)
+{
+    return relocate_vga_pointer(address);
+}
+
+uint32_t oracle_vga_guest_address(uint32_t address)
+{
+    return canonical_vga_address(address);
 }
 
 static int virtual_range_is_free(uintptr_t address, SIZE_T size)
@@ -561,8 +575,31 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
     DWORD code = ep->ExceptionRecord->ExceptionCode;
     const uint8_t *p = (const uint8_t *)(uintptr_t)c->Eip;
     int opsize = 4, len = 0;
-    if (code == EXCEPTION_ACCESS_VIOLATION)
-        return oracle_emulate_vga_memory(ep) ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+    if (code == EXCEPTION_ACCESS_VIOLATION) {
+        if (oracle_emulate_vga_memory(ep))
+            return EXCEPTION_CONTINUE_EXECUTION;
+        if (ep->ExceptionRecord->NumberParameters >= 2) {
+            ULONG_PTR fault = ep->ExceptionRecord->ExceptionInformation[1];
+            if (is_vga_address((uint32_t)fault)) {
+                fprintf(stderr, "oracle: unhandled VGA access %s at %08lx from %08lx bytes",
+                        ep->ExceptionRecord->ExceptionInformation[0] ? "write" : "read",
+                        (unsigned long)fault, (unsigned long)c->Eip);
+                if (!IsBadReadPtr(p, 8)) {
+                    int i;
+                    for (i = 0; i < 8; i++)
+                        fprintf(stderr, " %02x", p[i]);
+                }
+                fprintf(stderr, " eax=%08lx ecx=%08lx edx=%08lx ebx=%08lx esi=%08lx edi=%08lx\n",
+                        (unsigned long)c->Eax, (unsigned long)c->Ecx,
+                        (unsigned long)c->Edx, (unsigned long)c->Ebx,
+                        (unsigned long)c->Esi, (unsigned long)c->Edi);
+            } else {
+                fprintf(stderr, "oracle: unhandled access violation at %08lx from %08lx\n",
+                        (unsigned long)fault, (unsigned long)c->Eip);
+            }
+        }
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
     if (code != EXCEPTION_PRIV_INSTRUCTION)
         return EXCEPTION_CONTINUE_SEARCH;
     if (IsBadReadPtr(p, 4))
