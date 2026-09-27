@@ -2,10 +2,13 @@
 EXTRN g_739c:WORD
 EXTRN g_739e:DWORD
 EXTRN g_73a2:WORD
-ASM_TEXT SEGMENT PARA PUBLIC USE32 'CODE'
-        ASSUME CS:ASM_TEXT
+_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT
         PUBLIC a_982c
-a_982c:
+        PUBLIC f_982c
+f_982c LABEL NEAR
+a_982c PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         mov     esi,[ebp+8]
@@ -89,5 +92,6 @@ L_994C:
         mov     dword ptr g_739e,0
         mov     eax,0
         ret
-ASM_TEXT ENDS
+a_982c ENDP
+_TEXT ENDS
         END

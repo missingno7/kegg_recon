@@ -1803,8 +1803,9 @@
    "kind": "asm",
    "profile": "game-asm",
    "status": "matching",
-   "src": "asm/a_982c.asm",
-   "src_sha256": "79eaeb85f05a5c729cb37ea8759171028428c447bcf01aa7da46c7578cf79269"
+   "src": "asm/m_0982c_0995c.asm",
+   "src_sha256": "d8c9c0f674e7a555b0937b98c5d46e8271fc46b7cc667e70cb4dfb0cd8888fd4",
+   "unit": "M_0982c"
   },
   {
    "name": "f_9960",
@@ -1933,8 +1934,9 @@
    "kind": "asm",
    "profile": "game-asm",
    "status": "matching",
-   "src": "asm/a_9f64.asm",
-   "src_sha256": "ed415873be2bd47dbecc0b9198c982ab30df8985edb34515d74e1408d1437480"
+   "src": "asm/m_09f64_0a0d2.asm",
+   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "unit": "M_09f64"
   },
   {
    "name": "a_a03f",
@@ -1943,8 +1945,9 @@
    "kind": "asm",
    "profile": "game-asm",
    "status": "matching",
-   "src": "asm/a_a03f.asm",
-   "src_sha256": "550053c2342472ccc84a896d26c287b6ff059acc1770b750f2ff904058df8e7b"
+   "src": "asm/m_09f64_0a0d2.asm",
+   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "unit": "M_09f64"
   },
   {
    "name": "a_a067",
@@ -1953,8 +1956,9 @@
    "kind": "asm",
    "profile": "game-asm",
    "status": "matching",
-   "src": "asm/a_a067.asm",
-   "src_sha256": "cb9000cfed428d16fe04a239886e19096f9c9bf160e145f6ac9e0def42206684"
+   "src": "asm/m_09f64_0a0d2.asm",
+   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "unit": "M_09f64"
   },
   {
    "name": "f_a0e0",
@@ -3805,8 +3809,9 @@
    "kind": "asm",
    "profile": "game-asm",
    "status": "matching",
-   "src": "asm/a_12f30.asm",
-   "src_sha256": "78e02ce12aacf14c8da175ac348511b0ed210cc8e7836e3bc0929508e2e1d8f0"
+   "src": "asm/m_12f30_12f9c.asm",
+   "src_sha256": "cf69a647a4707869583af2cd7bc29c32a9a6d808bf11c92fc2ab6d4bbef1a3ce",
+   "unit": "M_12f30"
   },
   {
    "name": "a_12f9c",
@@ -5123,7 +5128,9 @@
   "g_e48d": "3:e48d",
   "f_85a4": "1:85a4",
   "f_8f7e": "1:8f7e",
-  "f_91a3": "1:91a3"
+  "f_91a3": "1:91a3",
+  "f_9e10": "1:9e10",
+  "f_9e54": "1:9e54"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -6005,6 +6012,26 @@
    "note": "56 functions incl. f_5e2d (switch filler resolved in TU context); _DATA 0x61d0..0x68f8 verified"
   },
   {
+   "id": "M_0982c",
+   "src": "asm/m_0982c_0995c.asm",
+   "start": "0x0982c",
+   "end": "0x0995c",
+   "profile": "game-asm",
+   "src_sha256": "d8c9c0f674e7a555b0937b98c5d46e8271fc46b7cc667e70cb4dfb0cd8888fd4",
+   "data": [],
+   "note": "MASM module; accepted by the whole-image link (image.py)"
+  },
+  {
+   "id": "M_09f64",
+   "src": "asm/m_09f64_0a0d2.asm",
+   "start": "0x09f64",
+   "end": "0x0a0d2",
+   "profile": "game-asm",
+   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "data": [],
+   "note": "MASM module; accepted by the whole-image link (image.py)"
+  },
+  {
    "id": "T07",
    "src": "src/t07.c",
    "start": "0xa0e0",
@@ -6147,6 +6174,16 @@
     "_BSS@3:e4dc+0x8"
    ],
    "note": "sys/messages: CONST 0x126c..0x2452 (4582 B) + _DATA 0x7c18..0x7db0 verified; BSS exit_code/exit_msg (names chosen so Watcom's symbol-hash BSS order matches)"
+  },
+  {
+   "id": "M_12f30",
+   "src": "asm/m_12f30_12f9c.asm",
+   "start": "0x12f30",
+   "end": "0x12f9c",
+   "profile": "game-asm",
+   "src_sha256": "cf69a647a4707869583af2cd7bc29c32a9a6d808bf11c92fc2ab6d4bbef1a3ce",
+   "data": [],
+   "note": "MASM module; accepted by the whole-image link (image.py)"
   }
  ]
 }
