@@ -15,6 +15,8 @@
 
 /* every test module adds its register function here */
 void register_m_137a8_tests(void);
+void register_m_11258_tests(void);
+void register_m_11494_tests(void);
 void register_vhw_irq_tests(void);
 
 static struct { const char *name; oracle_test_fn fn; } tests[128];
@@ -46,7 +48,10 @@ int main(int argc, char **argv)
     vpic_init();
     vga_init();
     register_m_137a8_tests();
+    /* A9 trace fixtures replace PIC port callbacks, so run the live PIC test first. */
     register_vhw_irq_tests();
+    register_m_11258_tests();
+    register_m_11494_tests();
     for (i = 0; i < test_count; i++) {
         int f;
         if (filter && !strstr(tests[i].name, filter))
