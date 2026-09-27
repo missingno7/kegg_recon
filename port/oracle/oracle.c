@@ -424,6 +424,25 @@ prefixes_done:
         set_reg_part(c, m.reg, read_memory_width(m.address, source_size), width);
         break;
     }
+    case 0xac: case 0xad: {                              /* LODS */
+        uint32_t count = repeat ? string_index(c, 1, address16) : 1;
+        int index_size = address16 ? 2 : 4;
+        int step;
+        width = opcode == 0xac ? 1 : width;
+        step = (c->EFlags & 0x400u) ? -width : width;
+        while (count) {
+            uint32_t source = string_index(c, 6, address16);
+            set_reg_part(c, 0, read_memory_width(source, width), width);
+            advance_string_index(c, 6, address16, step);
+            if (repeat) {
+                count--;
+                set_reg_part(c, 1, count, index_size);
+            } else {
+                count = 0;
+            }
+        }
+        break;
+    }
     case 0xa4: case 0xa5: case 0xaa: case 0xab: {
         int movs = opcode == 0xa4 || opcode == 0xa5;
         int stos = opcode == 0xaa || opcode == 0xab;

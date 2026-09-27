@@ -25,10 +25,40 @@ def run(cmd):
     return r.returncode, (r.stdout + r.stderr).strip().splitlines()
 
 
+AUTO = {"port/oracle/oracle_main.c", "port/stubs/asm_data.S", "port/stubs/asm_stubs.c"}
+
+
+def auto_resolve():
+    """resolve conflicts limited to test registrations (union of both sides) and generated stubs (regenerate)"""
+    import re
+    rc, out = run(["git", "diff", "--name-only", "--diff-filter=U"])
+    files = set(out)
+    if not files or not files <= AUTO:
+        return False
+    if "port/oracle/oracle_main.c" in files:
+        p = ROOT / "port/oracle/oracle_main.c"
+
+        def union(m):
+            a, b = m.group(1).splitlines(True), m.group(2).splitlines(True)
+            return "".join(a + [l for l in b if l not in a])
+        p.write_text(re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n", union, p.read_text(), flags=re.S),
+                     newline="\n")
+    for f in files & {"port/stubs/asm_data.S", "port/stubs/asm_stubs.c"}:
+        run(["git", "checkout", "--theirs", f])
+    if run([sys.executable, "port/tools/gen_asm_stubs.py"])[0]:
+        return False
+    run(["git", "add", "-A", "port"])
+    print("  auto-resolved: " + ", ".join(sorted(files)))
+    return True
+
+
 def main(branches):
     for br in branches:
         head = run(["git", "rev-parse", "HEAD"])[1][0]
         rc, out = run(["git", "merge", "--no-ff", "--no-edit", br])
+        if rc and auto_resolve():
+            run(["git", "commit", "-q", "--no-edit"])
+            rc = 1 if (ROOT / ".git" / "MERGE_HEAD").exists() else 0
         if rc:
             run(["git", "merge", "--abort"])
             print(f"{br}: MERGE CONFLICT\n  " + "\n  ".join(out[-15:]))

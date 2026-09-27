@@ -40,6 +40,10 @@ if(NOT KE_GAME_COUNT EQUAL 49)
   message(WARNING "expected 49 historical units in src/, found ${KE_GAME_COUNT}")
 endif()
 add_library(ke_game OBJECT ${KE_GAME_SOURCES})
+# The launcher rewrites GCC's assembly before assembling each object. Make its edits a
+# compilation dependency so merged builds cannot silently keep pre-layout game objects.
+set_property(SOURCE ${KE_GAME_SOURCES} APPEND PROPERTY OBJECT_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tools/gcc_pack_data.py")
 target_include_directories(ke_game PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/watcom")
 target_compile_options(ke_game PRIVATE
   -std=gnu89 -O0 -g -funsigned-char -fpack-struct=1 -mms-bitfields -fno-common -fwrapv
@@ -100,6 +104,7 @@ set(KE_HOST_LIB_SOURCES host/gamethread.c host/log.c host/input.c host/present.c
 add_executable(ke_oracle oracle/oracle.c oracle/oracle_main.c ${KE_ORACLE_TESTS}
   ${KE_HOST_LIB_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES} ${KE_ASM_TRANSLATIONS}
   $<TARGET_OBJECTS:ke_game>)
+target_compile_definitions(ke_oracle PRIVATE KE_ORACLE=1)
 set_target_properties(ke_oracle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/oracle")
 target_include_directories(ke_oracle PRIVATE include)
 target_compile_options(ke_oracle PRIVATE

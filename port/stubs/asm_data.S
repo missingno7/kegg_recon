@@ -66,38 +66,9 @@ _g_pit_elapsed_ticks:
 
 /* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
 
-/* m_11258_11494.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_11258_11494_data:
-    .globl _sound_dma_block_length
-_sound_dma_block_length:
-    .short 0
-    .globl _sound_blaster_response_byte
-_sound_blaster_response_byte:
-    .byte 0
-    .globl _sound_blaster_command_byte
-_sound_blaster_command_byte:
-    .byte 0
-/* m_11258_11494 _DATA: 0x4 bytes */
+/* m_11258_11494: owned by port/asm/m_11258_11494.c */
 
-/* m_11494_11530.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_11494_11530_data:
-    .globl _sound_dma_buffer_address
-_sound_dma_buffer_address:
-    .long 0
-    .globl _sound_dma_transfer_count
-_sound_dma_transfer_count:
-    .short 0
-    .globl _sound_dma_mode_bits
-_sound_dma_mode_bits:
-    .byte 0
-    .globl _sound_dma_channel
-_sound_dma_channel:
-    .byte 0
-/* m_11494_11530 _DATA: 0x8 bytes */
+/* m_11494_11530: owned by port/asm/m_11494_11530.c */
 
 /* m_11530_11df8.asm _DATA */
     .data
@@ -244,111 +215,7 @@ _ke_asm_m_11530_11df8_text:
 _protracker_irq_handler:
 /* m_11530_11df8 _TEXT: 0x0 bytes */
 
-/* m_11df8_12288.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_11df8_12288_data:
-    .globl _gif_reserved_state
-_gif_reserved_state:
-    .short 0
-    .globl _gif_lzw_current_code
-_gif_lzw_current_code:
-    .short 0
-    .globl _gif_image_width
-_gif_image_width:
-    .short 0
-    .globl _gif_image_height
-_gif_image_height:
-    .short 0
-    .globl _gif_has_global_color_table
-_gif_has_global_color_table:
-    .byte 0
-    .globl _gif_color_resolution_bits
-_gif_color_resolution_bits:
-    .byte 0
-    .globl _gif_color_index_bits
-_gif_color_index_bits:
-    .short 0
-    .globl _gif_lzw_expansion_stack
-_gif_lzw_expansion_stack:
-    .byte 1
-    .byte 0
-    .byte 0
-    .byte 0
-    .globl _gif_lzw_prefix_table
-_gif_lzw_prefix_table:
-    .byte 1
-    .byte 0
-    .byte 0
-    .byte 0
-    .globl _gif_lzw_suffix_table
-_gif_lzw_suffix_table:
-    .byte 1
-    .byte 0
-    .byte 0
-    .byte 0
-    .globl _gif_lzw_code_width
-_gif_lzw_code_width:
-    .short 0
-    .globl _gif_lzw_next_code_width
-_gif_lzw_next_code_width:
-    .short 0
-    .globl _gif_lzw_first_available_code
-_gif_lzw_first_available_code:
-    .short 0
-    .globl _gif_lzw_next_code
-_gif_lzw_next_code:
-    .short 0
-    .globl _gif_lzw_code_limit
-_gif_lzw_code_limit:
-    .short 0
-    .globl _gif_lzw_code_limit_shadow
-_gif_lzw_code_limit_shadow:
-    .short 0
-    .globl _gif_lzw_code_mask
-_gif_lzw_code_mask:
-    .short 0
-    .globl _gif_color_index_mask
-_gif_color_index_mask:
-    .short 0
-    .globl _gif_previous_literal
-_gif_previous_literal:
-    .byte 0
-    .globl _gif_lzw_bit_buffer
-_gif_lzw_bit_buffer:
-    .long 0
-    .globl _gif_lzw_bits_buffered
-_gif_lzw_bits_buffered:
-    .short 0
-    .globl _gif_lzw_saved_codes
-_gif_lzw_saved_codes:
-    .fill 3, 2, 0
-    .globl _gif_lzw_clear_code
-_gif_lzw_clear_code:
-    .short 0
-    .globl _gif_lzw_end_code
-_gif_lzw_end_code:
-    .short 0
-    .globl _gif_pixel_output_start
-_gif_pixel_output_start:
-    .long 0
-    .globl _gif_compressed_data_cursor
-_gif_compressed_data_cursor:
-    .long 0
-    .globl _gif_decode_error_code
-_gif_decode_error_code:
-    .short 0
-    .globl _gif_global_color_table_bytes
-_gif_global_color_table_bytes:
-    .long 0
-    .globl _gif_global_color_table_source
-_gif_global_color_table_source:
-    .byte 0
-    .byte 0
-    .byte 0
-    .byte 0
-    .byte 0
-/* m_11df8_12288 _DATA: 0x4c bytes */
+/* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
 
 /* m_12680_12683: owned by port/asm/m_12680_12683.c */
 
@@ -444,14 +311,17 @@ _sprite_command_cursor:
     .fill 10, 1, 0
 /* m_12a9c_12f30 _DATA: 0xb8 bytes */
 
+/* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
+
+/* m_12f9c_13324: owned by port/asm/m_12f9c_13324.c */
+
+/* m_13324_13712: owned by port/asm/m_13324_13712.c */
+
+/* m_13712_137a8: owned by port/asm/m_13712_137a8.c */
+
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 
-/* m_13a48_13a95.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_13a48_13a95_data:
-    .globl _saved_ds
-_saved_ds:
-    .long 0
-/* m_13a48_13a95 _DATA: 0x4 bytes */
+/* m_13944_13a48: owned by port/asm/m_13944_13a48.c */
+
+/* m_13a48_13a95: owned by port/asm/m_13a48_13a95.c */
 
