@@ -21,6 +21,7 @@ import argparse
 import difflib
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -217,7 +218,19 @@ def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
         if (outdir / "CAND.OBJ").exists():
             (outdir / "CAND.OBJ").rename(obj)
     else:
-        r = dosrun.run(tool, args, install=prof["install"], cwd=src.parent)
+        # Watcom 10.0 overflows fixed-size path buffers on long paths (crash 0xC0000005 or bogus errors when the
+        # checkout lives deep in the file system): always compile a copy with short relative names in a short dir.
+        short_root = Path(os.environ.get("KEGG_TMP", Path(ROOT.anchor) / "kgtmp"))
+        short_root.mkdir(parents=True, exist_ok=True)
+        sd = Path(tempfile.mkdtemp(prefix="c", dir=short_root))
+        try:
+            shutil.copyfile(src, sd / "CAND.C")
+            args = [a for a in args if not a.startswith(("-fo=", "-i=")) and a != src.name] + ["-fo=CAND.OBJ", "CAND.C"]
+            r = dosrun.run(tool, args, install=prof["install"], cwd=sd)
+            if (sd / "CAND.OBJ").exists():
+                shutil.copyfile(sd / "CAND.OBJ", obj)
+        finally:
+            shutil.rmtree(sd, ignore_errors=True)
     (outdir / (src.stem + ".log")).write_text(r.out)
     if r.rc != 0 or not obj.exists():
         raise SystemExit(f"COMPILE FAILED rc={r.rc}\n{r.out}")
