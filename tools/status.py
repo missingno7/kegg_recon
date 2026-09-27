@@ -24,7 +24,7 @@ def main():
         print(f"{kind:12} {st:11} {n:4} functions {b:7} bytes")
     match = sum(v[1] for (k, s), v in by.items() if s == "matching")
     nmatch = sum(v[0] for (k, s), v in by.items() if s == "matching")
-    data_status(m)
+
     image_status()
     print(f"matching: {nmatch}/{tot_fn} functions, {match}/{tot_b} bytes of inventoried game code "
           f"({100 * match / max(1, tot_b):.1f}%); code object is {code} bytes (runtime library + asm tracked separately)")
