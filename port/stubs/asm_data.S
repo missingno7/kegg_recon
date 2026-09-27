@@ -446,12 +446,7 @@ _sprite_command_cursor:
 
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 
-/* m_13a48_13a95.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_13a48_13a95_data:
-    .globl _saved_ds
-_saved_ds:
-    .long 0
-/* m_13a48_13a95 _DATA: 0x4 bytes */
+/* m_13944_13a48: owned by port/asm/m_13944_13a48.c */
+
+/* m_13a48_13a95: owned by port/asm/m_13a48_13a95.c */
 

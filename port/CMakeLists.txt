@@ -100,6 +100,7 @@ set(KE_HOST_LIB_SOURCES host/gamethread.c host/log.c host/input.c host/present.c
 add_executable(ke_oracle oracle/oracle.c oracle/oracle_main.c ${KE_ORACLE_TESTS}
   ${KE_HOST_LIB_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES} ${KE_ASM_TRANSLATIONS}
   $<TARGET_OBJECTS:ke_game>)
+target_compile_definitions(ke_oracle PRIVATE KE_ORACLE=1)
 set_target_properties(ke_oracle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/oracle")
 target_include_directories(ke_oracle PRIVATE include)
 target_compile_options(ke_oracle PRIVATE
