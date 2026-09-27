@@ -16,6 +16,7 @@ volatile LONG vhw_in_isr;            /* an interrupt handler is running (either 
 volatile LONG vhw_cpu_polling;       /* game is in a memory-poll loop with explicit CPU yields */
 static DWORD game_tid;
 static DWORD irq_tid;
+static __thread HANDLE poll_timer;
 
 void vhw_bind_game_thread(void) { game_tid = GetCurrentThreadId(); }
 void vhw_bind_irq_thread(void) { irq_tid = GetCurrentThreadId(); }
@@ -56,13 +57,27 @@ void vcpu_sti(void) { InterlockedExchange(&vcpu_if_flag, 1); }
 void vhw_cpu_poll_yield(void)
 {
     if (GetCurrentThreadId() == game_tid) {
+        LARGE_INTEGER due;
         /* Honor quit before spending time delivering more pending virtual IRQs. */
         if (ke_quit_requested())
             ke_check_quit();
         /* Give pending IRQs the same instruction-boundary opportunity as a vhw access. */
         vhw_enter();
         vhw_leave();
-        SwitchToThread();
+        /* Polling remains on the virtual CPU boundary, but yields for 100 us so this
+         * legacy memory spin does not occupy a host core. PIT and VGA clocks keep running. */
+        if (!poll_timer)
+            poll_timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                                                TIMER_ALL_ACCESS);
+        if (poll_timer) {
+            due.QuadPart = -1000;       /* 100 us in 100 ns units */
+            if (SetWaitableTimer(poll_timer, &due, 0, NULL, NULL, FALSE))
+                WaitForSingleObject(poll_timer, INFINITE);
+            else
+                Sleep(1);
+        } else {
+            Sleep(1);
+        }
     }
 }
 
