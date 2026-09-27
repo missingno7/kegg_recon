@@ -1,4 +1,13 @@
-struct PaletteGradient { short first_index, last_index; unsigned char start_red, start_green, start_blue, end_red, end_green, end_blue; };
+struct PaletteGradient {
+    short first_index;
+    short last_index;
+    unsigned char start_red;
+    unsigned char start_green;
+    unsigned char start_blue;
+    unsigned char end_red;
+    unsigned char end_green;
+    unsigned char end_blue;
+};
 #define PALETTE_GRADIENT_END (-1)
 #define VGA_PALETTE_LAST_INDEX 255
 extern void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);

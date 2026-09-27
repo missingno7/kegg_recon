@@ -35,11 +35,11 @@ int detect_windows_environment(void);
 #define IMAGE_UPDATE_LIST_OVERFLOW_ERROR 0x407
 
 /* Observed at stride 10 in the sprite command writers: address, x/y, zeroed word. */
-struct SpriteUpdateListEntry {
-    unsigned char *sprite_frame;
+struct SpriteDrawCommand {
+    int sprite_or_frame;
     short x;
     short y;
-    short reserved;
+    short flags;
 };
 
 /* _DATA [0x746c,0x7474) */
@@ -72,7 +72,7 @@ void set_image_pages(unsigned char *sprite_update_list, int record_limit, int co
 }
 
 void clear_and_rotate_image_buffer(void) {
-    ((struct SpriteUpdateListEntry *)image_buffer_cursor)->sprite_frame = 0;
+    ((struct SpriteDrawCommand *)image_buffer_cursor)->sprite_or_frame = 0;
     replay_sprite_update_list_entry(rotate_image_buffer());
 }
 

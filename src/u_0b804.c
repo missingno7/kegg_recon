@@ -65,7 +65,7 @@ int sprite_rect_c_left;
 extern int dos_memory_error;
 struct DisplayModeInfo {
     short render_state;
-    unsigned char plane_addresses_or_transform_a[16];
+    int plane_addresses_or_transform_a[4];
     int page_offsets_or_transform_b[4];
     int page_adjustments_or_transform_c[4];
     unsigned char page_mode_classes[4];

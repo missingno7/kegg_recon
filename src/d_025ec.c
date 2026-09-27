@@ -1,5 +1,8 @@
 /* A negative terminal delta steps from the sentinel back into the frame sequence. */
-struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
+struct SpriteFrame {
+    unsigned image_offset;
+    int duration_or_delta;
+};
 
 #define COLLISION_ANIMATION_LOOP_BACK (-21)
 

@@ -2,23 +2,118 @@
 #include <string.h>
 #define DDA4 ((unsigned char *)falling_spell_cursor)
 #define DDB4 ((unsigned char *)current_ball_pointer)
-struct Racket { int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index, sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state, horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44, animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54, shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index, spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot, sprite_pointer; };
+struct Racket {
+    int x;
+    int y;
+    int previous_x;
+    int min_x;
+    int max_x;
+    int min_y;
+    int max_y;
+    int sprite_frame_index;
+    int sprite_height;
+    int reward_level;
+    int capture_timer;
+    int state_2c;
+    int state_30;
+    int effect_state;
+    int horizontal_recenter_timer;
+    int vertical_recenter_timer;
+    int effect_timer_40;
+    int effect_frame_44;
+    int animation_timer_48;
+    int animation_step_4c;
+    int animation_timer_50;
+    int animation_step_54;
+    int shield_frame_timer;
+    int shield_frame_index;
+    int spell_anim_timer;
+    int spell_anim_index;
+    int spell_parameter_68;
+    int spell_parameter_6c;
+    int spell_parameter_70;
+    int previous_x_snapshot;
+    unsigned char *sprite_pointer;
+};
 struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
-struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18, animation_sequence, hit_points; unsigned char flags, tail[3]; };
-struct SpriteFrame { int image_offset, duration_or_delta; };
-struct AudioRequestEntry { int source, byte_count, sample_rate, playback_mode; };
+/* Here animation_sequence is an 8-byte-frame byte cursor: subtracting 8 must stay byte-scaled. */
+struct EnemyProjectile {
+    int x;
+    int y;
+    int velocity_x;
+    int velocity_y;
+    int sprite_info;
+    int flight_phase;
+    int state_18;
+    int animation_sequence;
+    int hit_points;
+    unsigned char flags;
+    unsigned char tail[3];
+};
+struct SpriteFrame {
+    unsigned image_offset;
+    int duration_or_delta;
+};
+struct AudioRequest {
+    int source_address;
+    int byte_count;
+    int sample_rate;
+    int playback_mode;
+};
 struct GameProgressState { int progress_marker, life_balance, opaque_08, opaque_0c, opaque_10, score, tail; };
 typedef struct { unsigned char : 2; unsigned char f : 6; } BF1_2_6;
 typedef struct { unsigned char b[2]; } S2;
 typedef unsigned int size_t;
-typedef struct { unsigned f : 2; } BF4_0_2;
-struct BobFrameMetrics { short prefix, width, height; unsigned char opaque_06[4]; short x_offset, y_offset; unsigned char opaque_0e[4]; };
-struct Frame { unsigned img; int time; };
-struct Spr { int a, b, c, d; int e; int speed; struct Frame *f; unsigned b0 : 1, anim : 4, f5 : 1, f6 : 1, f7 : 1, f8 : 1; };
-struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
+struct PlayerShotKindBits {
+    unsigned f : 2;
+};
+struct BobFrameMetrics {
+    short prefix;
+    short width;
+    short height;
+    int opaque_06;
+    short x_offset;
+    short y_offset;
+    int opaque_0e;
+};
+struct SpriteFrame;
+struct AnimatedSprite {
+    int x;
+    int y;
+    int velocity_x;
+    int velocity_y;
+    int sprite_bank;
+    int frame_delay;
+    struct SpriteFrame *current_frame;
+    unsigned reserved_flag : 1;
+    unsigned animation_delay : 4;
+    unsigned follows_player : 1;
+    unsigned signals_bonus : 1;
+    unsigned check_screen_bounds : 1;
+    unsigned remove_after_animation : 1;
+};
+struct SpriteDrawCommand {
+    int sprite_or_frame;
+    short x;
+    short y;
+    short flags;
+};
 struct AuxiliaryProjectile { int target_type, x, y, velocity_x, velocity_y; unsigned char *sprite_data; void *frame_info; unsigned char *frame_offset; int damage; };
-struct PlayerShot { int x, y, vertical_speed, sprite_offset, flags; };
-struct FallingSpell { int x, y, frame_countdown, frame_sequence; unsigned char variant, spell_id; };
+struct PlayerShot {
+    int x;
+    int y;
+    int vertical_speed;
+    int sprite_offset;
+    unsigned flags;
+};
+struct FallingSpell {
+    int x;
+    int y;
+    int frame_countdown;
+    struct SpriteFrame *frame_sequence;
+    unsigned char variant;
+    unsigned char spell_id;
+};
 struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
 struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_interval, attack_delay; };
 #define INPUT_FLAGS ((struct PlayerInputFlags *)player_key_flags)
@@ -43,11 +138,63 @@ struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_inte
 #define PROJECTILE_ANIMATION_WITH_CAPTURE 2
 #define AUDIO_CUE_ENEMY_PROJECTILE_LAUNCH 0x22
 #define AUDIO_CUE_ENEMY_PROJECTILE_HIT 0x25
-struct DisplayModeInfo { short render_state; unsigned char plane_addresses_or_transform_a[16]; int page_offsets_or_transform_b[4]; int page_adjustments_or_transform_c[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
-struct Iter24 { int first, second, start, count, step, unused; };
-struct Iter48 { int pad0, pad4, box, pad12, pad16; char *at20; int pad24, pad28, pad32, pad36, pad40, pad44; };
-struct f85a4_edge { unsigned char active; unsigned char result; int x; int y; };
-struct f85a4_local { struct f85a4_edge rows[4]; };
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
+    int screen_width;
+    int screen_height;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
+    unsigned char mode_flags;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
+    unsigned char tail;
+};
+struct TransitionTrack {
+    int first_value;
+    int second_value;
+    int current_value;
+    int step_delta;
+    int duration_ticks;
+    int auxiliary;
+};
+struct TransitionSpritePath {
+    int x_first;
+    int x_target;
+    int x_current;
+    int x_step_delta;
+    int x_duration;
+    unsigned char *sprite_offset;
+    int y_first;
+    int y_target;
+    int y_current;
+    int y_step_delta;
+    int y_duration;
+    int y_auxiliary;
+};
+struct BallCollisionEdge {
+    unsigned char edge_mask;
+    unsigned char collision_result;
+    int x;
+    int y;
+};
+struct BallCollisionEdges {
+    struct BallCollisionEdge edges[4];
+};
 typedef struct { unsigned b0 : 1, b1 : 1, b2 : 1; } Flags;
 extern void submit_audio_request(int);
 extern void spawn_game_ball(int, int);
@@ -145,7 +292,7 @@ extern struct GameProgressState *score_state;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
-extern struct AudioRequestEntry level_audio_requests[];
+extern struct AudioRequest level_audio_requests[];
 extern int g_68f8;
 extern int g_6940;
 extern int g_6944;
@@ -268,7 +415,7 @@ extern int last_displayed_time;
 extern int sprite_instance_count;
 extern int sprite_removal_index;
 extern struct AuxiliaryProjectile *bolt_cursor;
-extern struct Spr *sprite_current;
+extern struct AnimatedSprite *sprite_current;
 extern void move_auxiliary_projectiles(void);
 extern void draw_animated_sprites(void);
 extern void update_game_balls(void);
@@ -285,7 +432,7 @@ extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void spawn_auxiliary_projectile(int, int, int, int, int, int, int);
 extern struct AuxiliaryProjectile auxiliary_projectiles[];
 extern int frames_intersect_inset(struct BobFrameMetrics, int, int, struct BobFrameMetrics, int, int, int, int, int, int);
-extern struct Spr sprite_animations[];
+extern struct AnimatedSprite sprite_animations[];
 extern int tileid;
 extern unsigned char *tile_art_base;
 extern int background_tile_offsets[];
@@ -295,7 +442,7 @@ extern short x_delta;
 extern short y_offset;
 extern short width;
 extern short height;
-extern struct Iter24 *transition_track_data;
+extern struct TransitionTrack *transition_track_data;
 extern int path_count;
 extern int tick;
 extern int sprite_base;

@@ -5,22 +5,137 @@
 #pragma pack(1)
 #pragma pack()
 struct SpriteFrame;
-struct HighScoreRecord { unsigned char name[9]; int score; int factor_a; int factor_b; int checksum; };
+struct HighScoreName { unsigned char bytes[9]; };
+struct HighScoreRecord {
+    struct HighScoreName name;
+    unsigned score;
+    unsigned factor_a;
+    unsigned factor_b;
+    unsigned checksum;
+};
 struct BrickCell { unsigned char drop_kind : 2; unsigned char drop_value : 6; unsigned char tile_code; };
 struct GlyphRecord { int offset; int count; };
-struct DigitSpriteRecord { int sprite_offset; int opaque_04; };
-struct PaletteGradient { short first_index, last_index; unsigned char start_red, start_green, start_blue, end_red, end_green, end_blue; };
-struct TransitionTrack { int first_value, second_value, current_value, step_delta, duration_ticks, auxiliary; };
-struct Racket { int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index, sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state, horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44, animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54, shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index, spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot; unsigned char *sprite_pointer; };
+struct DigitSpriteRecord {
+    int sprite_offset;
+    int opaque_04;
+};
+struct PaletteGradient {
+    short first_index;
+    short last_index;
+    unsigned char start_red;
+    unsigned char start_green;
+    unsigned char start_blue;
+    unsigned char end_red;
+    unsigned char end_green;
+    unsigned char end_blue;
+};
+struct TransitionTrack {
+    int first_value;
+    int second_value;
+    int current_value;
+    int step_delta;
+    int duration_ticks;
+    int auxiliary;
+};
+struct Racket {
+    int x;
+    int y;
+    int previous_x;
+    int min_x;
+    int max_x;
+    int min_y;
+    int max_y;
+    int sprite_frame_index;
+    int sprite_height;
+    int reward_level;
+    int capture_timer;
+    int state_2c;
+    int state_30;
+    int effect_state;
+    int horizontal_recenter_timer;
+    int vertical_recenter_timer;
+    int effect_timer_40;
+    int effect_frame_44;
+    int animation_timer_48;
+    int animation_step_4c;
+    int animation_timer_50;
+    int animation_step_54;
+    int shield_frame_timer;
+    int shield_frame_index;
+    int spell_anim_timer;
+    int spell_anim_index;
+    int spell_parameter_68;
+    int spell_parameter_6c;
+    int spell_parameter_70;
+    int previous_x_snapshot;
+    unsigned char *sprite_pointer;
+};
 struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
-struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18; struct SpriteFrame *animation_sequence; int hit_points; unsigned char flags; unsigned char tail[3]; };
-struct FallingSpell { int x, y, frame_countdown; struct SpriteFrame *frame_sequence; unsigned char variant, spell_id; };
-struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
-struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
+struct EnemyProjectile {
+    int x;
+    int y;
+    int velocity_x;
+    int velocity_y;
+    int sprite_info;
+    int flight_phase;
+    int state_18;
+    struct SpriteFrame *animation_sequence;
+    int hit_points;
+    unsigned char flags;
+    unsigned char tail[3];
+};
+struct FallingSpell {
+    int x;
+    int y;
+    int frame_countdown;
+    struct SpriteFrame *frame_sequence;
+    unsigned char variant;
+    unsigned char spell_id;
+};
+struct SpriteFrame {
+    unsigned image_offset;
+    int duration_or_delta;
+};
+struct SpriteDrawCommand {
+    int sprite_or_frame;
+    short x;
+    short y;
+    short flags;
+};
 struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
-struct AudioRequestEntry { int source, byte_count, sample_rate, playback_mode; };
+struct AudioRequest {
+    int source_address;
+    int byte_count;
+    int sample_rate;
+    int playback_mode;
+};
 struct TimedLevelChange { int cell_index, ticks_remaining; unsigned char replacement_tile; };
-struct DisplayModeInfo { short render_state; unsigned char plane_addresses_or_transform_a[16]; int page_offsets_or_transform_b[4]; int page_adjustments_or_transform_c[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
+    int screen_width;
+    int screen_height;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
+    unsigned char mode_flags;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
+    unsigned char tail;
+};
 extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
 extern unsigned char level_number;

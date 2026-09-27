@@ -37,7 +37,7 @@ typedef struct GlyphRecord GlyphRecord;
 #pragma pack(1)
 #pragma pack()
 typedef struct { unsigned char b[5]; } RestartCodeBuffer;
-typedef struct { unsigned char bytes[9]; } HighScoreName;
+struct HighScoreName { unsigned char bytes[9]; };
 
 #pragma pack(1)
 typedef struct GameBall {
@@ -81,7 +81,7 @@ typedef struct Racket {
     int spell_parameter_6c;
     int spell_parameter_70;
     int previous_x_snapshot;
-    int sprite_pointer;
+    unsigned char *sprite_pointer;
 } Racket;
 
 typedef struct GameProgressState {
@@ -111,9 +111,9 @@ typedef struct TimedLevelChange {
 
 typedef struct DisplayModeInfo {
     short render_state;
-    unsigned char plane_addresses_or_transform_a[16];
-    unsigned char page_offsets_or_transform_b[16];
-    unsigned char page_adjustments_or_transform_c[16];
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
     unsigned char page_mode_classes[4];
     int buffer_size_or_draw_parameter;
     int row_stride;
@@ -158,7 +158,7 @@ typedef struct SpriteDrawCommand {
 } SpriteDrawCommand;
 
 typedef struct HighScoreRecord {
-    HighScoreName name;
+    struct HighScoreName name;
     unsigned score;
     unsigned factor_a;
     unsigned factor_b;
@@ -1374,8 +1374,11 @@ GlyphRecord small_text_glyph_metrics[305] = {
     {2, 1},
 };
 
-struct digit_entry { int value; int other; };
-struct digit_entry level_digit_sprite_records[10] = {
+struct DigitSpriteRecord {
+    int sprite_offset;
+    int opaque_04;
+};
+struct DigitSpriteRecord level_digit_sprite_records[10] = {
     {10626, 0},
     {12054, 0},
     {12764, 0},
@@ -1589,8 +1592,17 @@ GlyphRecord glyph_metrics_198[198] = {
     {0, -256},
 };
 
-struct Grad { short x, y; unsigned char r0, g0, b0, r1, g1, b1; };
-struct Grad order_info_palette_gradient[8] = {
+struct PaletteGradient {
+    short first_index;
+    short last_index;
+    unsigned char start_red;
+    unsigned char start_green;
+    unsigned char start_blue;
+    unsigned char end_red;
+    unsigned char end_green;
+    unsigned char end_blue;
+};
+struct PaletteGradient order_info_palette_gradient[8] = {
     {0, 63, 0, 0, 63, 0, 0, 0},
     {0, 63, 0, 0, 0, 63, 0, 0},
     {0, 63, 63, 0, 0, 0, 0, 0},
@@ -2223,7 +2235,7 @@ void insert_high_score(void)
                 high_score_records[high_score_cursor + 1].score = high_score_records[high_score_cursor].score;
             }
         } while (high_score_cursor > 0);
-        high_score_records[input_char].name = *(HighScoreName *)"        ";
+        high_score_records[input_char].name = *(struct HighScoreName *)"        ";
         high_score_records[input_char].score = points;
         points = input_char;
         return;

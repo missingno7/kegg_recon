@@ -48,33 +48,33 @@ extern unsigned int mouse_driver_version;
 extern unsigned int file_error;
 extern int (*decode_hook)();
 /* VGA mode geometry, page bookkeeping, and the register state restored by the video layer. */
-struct DisplayState {
-    short uses_chunky_scanlines;
-    unsigned char plane_addresses[16];
-    int page_offsets[4];
-    int page_adjustments[4];
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
     unsigned char page_mode_classes[4];
-    int buffer_size;
-    int row_stride_bytes;
+    int buffer_size_or_draw_parameter;
+    int row_stride;
     int resolution_height;
     int screen_width;
     int screen_height;
-    int playfield_left;
-    int playfield_top;
-    int playfield_right;
-    int playfield_bottom;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
     unsigned char mode_flags;
     unsigned char sequencer_plane_mask;
     unsigned char graphics_read_map;
     unsigned char reserved_vga_byte;
     unsigned char saved_video_mode;
     unsigned char graphics_controller_mode;
-    unsigned char initial_graphics_controller_mode;
-    unsigned char initial_sequencer_plane_mask;
-    unsigned char initial_graphics_read_map;
-    unsigned char reserved_tail;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
+    unsigned char tail;
 };
-extern struct DisplayState vga_state;
+extern struct DisplayModeInfo vga_state;
 extern unsigned long keyboard_hook_flags;
 extern unsigned long irq_flags;
 extern short page_idx;
@@ -460,8 +460,8 @@ void sysinit(int vbl_manager_mode,int keyboard_manager_mode,int debug_compatibil
     }
     if(mouse_setup_mode!=-1) {
         set_display_mode(mouse_setup_mode);
-        set_mouse_bounds(vga_state.playfield_left,vga_state.playfield_top,vga_state.playfield_right,vga_state.playfield_bottom);
-        move_mouse_to((vga_state.playfield_left+vga_state.playfield_right)/2,(vga_state.playfield_top+vga_state.playfield_bottom)/2);
+        set_mouse_bounds(vga_state.viewport_left,vga_state.viewport_top,vga_state.viewport_right_or_width,vga_state.viewport_bottom_or_height);
+        move_mouse_to((vga_state.viewport_left+vga_state.viewport_right_or_width)/2,(vga_state.viewport_top+vga_state.viewport_bottom_or_height)/2);
     }
 }
 

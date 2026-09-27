@@ -12,9 +12,17 @@
 #define SPRITE_CULL_BOTTOM_LIMIT 0xd8
 #define SPRITE_CULL_MARGIN 0x10
 
-struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
+struct SpriteFrame {
+    unsigned image_offset;
+    int duration_or_delta;
+};
 struct AnimatedSprite {
-    int x, y, velocity_x, velocity_y, sprite_bank, frame_delay;
+    int x;
+    int y;
+    int velocity_x;
+    int velocity_y;
+    int sprite_bank;
+    int frame_delay;
     struct SpriteFrame *current_frame;
     unsigned reserved_flag : 1;
     unsigned animation_delay : 4;
@@ -24,25 +32,74 @@ struct AnimatedSprite {
     unsigned remove_after_animation : 1;
 };
 struct Racket {
-    int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index;
-    int sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state;
-    int horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44;
-    int animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54;
-    int shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index;
-    int spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot;
+    int x;
+    int y;
+    int previous_x;
+    int min_x;
+    int max_x;
+    int min_y;
+    int max_y;
+    int sprite_frame_index;
+    int sprite_height;
+    int reward_level;
+    int capture_timer;
+    int state_2c;
+    int state_30;
+    int effect_state;
+    int horizontal_recenter_timer;
+    int vertical_recenter_timer;
+    int effect_timer_40;
+    int effect_frame_44;
+    int animation_timer_48;
+    int animation_step_4c;
+    int animation_timer_50;
+    int animation_step_54;
+    int shield_frame_timer;
+    int shield_frame_index;
+    int spell_anim_timer;
+    int spell_anim_index;
+    int spell_parameter_68;
+    int spell_parameter_6c;
+    int spell_parameter_70;
+    int previous_x_snapshot;
     unsigned char *sprite_pointer;
 };
 struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
-struct FallingSpell { int x, y, frame_countdown; struct SpriteFrame *frame_sequence; unsigned char variant, spell_id; };
+struct FallingSpell {
+    int x;
+    int y;
+    int frame_countdown;
+    struct SpriteFrame *frame_sequence;
+    unsigned char variant;
+    unsigned char spell_id;
+};
 struct BrickCell { unsigned char drop_kind : 2; unsigned char drop_value : 6; unsigned char tile_code; };
-struct PlayerShot { int x, y, vertical_speed, sprite_offset; unsigned flags; };
+struct PlayerShot {
+    int x;
+    int y;
+    int vertical_speed;
+    int sprite_offset;
+    unsigned flags;
+};
 struct EnemyProjectile {
-    int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18;
+    int x;
+    int y;
+    int velocity_x;
+    int velocity_y;
+    int sprite_info;
+    int flight_phase;
+    int state_18;
     struct SpriteFrame *animation_sequence;
     int hit_points;
-    unsigned char flags, tail[3];
+    unsigned char flags;
+    unsigned char tail[3];
 };
-struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
+struct SpriteDrawCommand {
+    int sprite_or_frame;
+    short x;
+    short y;
+    short flags;
+};
 struct TimedLevelChange { int cell_index, ticks_remaining; unsigned char replacement_tile; };
 struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
 

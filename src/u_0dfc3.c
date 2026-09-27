@@ -88,30 +88,30 @@ struct VideoModeInfo {
     int page_buffer_bytes;
 };
 /* U0A810 views the same first 100 bytes as mode-specific transform terms. */
-struct VgaDisplayState {
-    short render_mode;
-    int framebuffer_base[4];
-    int page_start[4];
-    int page_display[4];
-    unsigned char storage_class[4];
-    int page_buffer_bytes;
-    int scanline_bytes;
-    int page_height;
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
     int screen_width;
     int screen_height;
     int viewport_left;
     int viewport_top;
-    int viewport_right;
-    int viewport_bottom;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
     unsigned char mode_flags;
-    unsigned char saved_seq_plane_mask;
-    unsigned char saved_gc_read_map;
-    unsigned char bios_mode;
-    unsigned char original_bios_mode;
-    unsigned char saved_gc_mode;
-    unsigned char current_gc_mode;
-    unsigned char current_seq_plane_mask;
-    unsigned char current_gc_read_map;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
     unsigned char tail;
 };
 struct VgaRegisterPreset {
@@ -126,7 +126,7 @@ struct BiosVideoModeRequest {
     short bx;
     unsigned char reserved_6_to_27[22];
 };
-struct VgaDisplayState vga_state;
+struct DisplayModeInfo vga_state;
 /* Timer callbacks and retrace waits bracket BIOS mode changes. */
 extern void reset_timer(void);
 extern void start_timer(int);
@@ -237,7 +237,7 @@ void save_bios(void) {
     if (bios_video_mode_saved != -1) {
         regs.h.ah = BIOS_VIDEO_GET_MODE;
         int386(BIOS_VIDEO_INTERRUPT, &regs, &regs);
-        vga_state.original_bios_mode = regs.h.al;
+        vga_state.saved_video_mode = regs.h.al;
         if (video_restore_registered == 0) {
             atexit(restore_bios);
             video_restore_registered = -1;
@@ -252,8 +252,8 @@ void restore_bios(void) {
     if (bios_video_mode_saved == -1) {
         reset_timer();
         regs.h.ah = BIOS_VIDEO_SET_MODE;
-        vga_state.bios_mode = vga_state.original_bios_mode;
-        regs.h.al = vga_state.bios_mode;
+        vga_state.reserved_vga_byte = vga_state.saved_video_mode;
+        regs.h.al = vga_state.reserved_vga_byte;
         int386(BIOS_VIDEO_INTERRUPT, &regs, &regs);
         bios_video_mode_saved = 1;
         if (timer_was_active == -1)
@@ -283,8 +283,8 @@ int set_display_mode(int requested_mode_id)
         reset_timer();
         clear_vga_palette();
         clear_video_bytes_entry(VGA_STANDARD_APERTURE, VGA_STANDARD_APERTURE_SIZE);
-        if (vga_state.bios_mode != video_mode_table[mode_index].bios_mode_data.raw) {
-            vga_state.bios_mode = video_mode_table[mode_index].bios_mode_data.bytes[0];
+        if (vga_state.reserved_vga_byte != video_mode_table[mode_index].bios_mode_data.raw) {
+            vga_state.reserved_vga_byte = video_mode_table[mode_index].bios_mode_data.bytes[0];
             bios_register_block.ax = video_mode_table[mode_index].bios_mode_data.word;
             bios_register_block.bx = video_mode_table[mode_index].bios_mode_number;
             int386(BIOS_VIDEO_INTERRUPT, (void *)&bios_register_block, (void *)&bios_register_block);
@@ -292,13 +292,13 @@ int set_display_mode(int requested_mode_id)
         clear_video_bytes_entry(VGA_STANDARD_APERTURE, VGA_STANDARD_APERTURE_SIZE);
         vga_state.screen_width = video_mode_table[mode_index].pixel_width;
         vga_state.screen_height = video_mode_table[mode_index].pixel_height;
-        vga_state.scanline_bytes = video_mode_table[mode_index].scanline_bytes;
-        vga_state.page_height = vga_state.screen_height;
+        vga_state.row_stride = video_mode_table[mode_index].scanline_bytes;
+        vga_state.resolution_height = vga_state.screen_height;
         vga_state.viewport_left = 0;
         vga_state.viewport_top = 0;
-        vga_state.viewport_right = vga_state.screen_width - 1;
-        vga_state.viewport_bottom = vga_state.screen_height - 1;
-        vga_state.page_buffer_bytes = video_mode_table[mode_index].page_buffer_bytes;
+        vga_state.viewport_right_or_width = vga_state.screen_width - 1;
+        vga_state.viewport_bottom_or_height = vga_state.screen_height - 1;
+        vga_state.buffer_size_or_draw_parameter = video_mode_table[mode_index].page_buffer_bytes;
         switch (video_mode_table[mode_index].storage_class) {
         case VIDEO_STORAGE_CLASS_STANDARD:
             video_memory_limit = VGA_STANDARD_APERTURE_LAST_OFFSET;
@@ -314,17 +314,17 @@ int set_display_mode(int requested_mode_id)
             video_memory_limit = VGA_STANDARD_APERTURE_LAST_OFFSET;
             frame_buffer_base = VGA_STANDARD_APERTURE;
             set_vga_memory_layout(VGA_MEMORY_LAYOUT_CHAINED);
-            vga_state.render_mode = 0;
+            vga_state.render_state = 0;
         }
         vga_state.mode_flags = video_mode_table[mode_index].mode_flags;
         page_offset = 0;
         for (page_index = 0; page_index < VIDEO_PAGE_COUNT; page_index++) {
-            vga_state.framebuffer_base[page_index] = frame_buffer_base;
-            vga_state.page_start[page_index] = page_offset;
-            vga_state.page_display[page_index] = 0;
-            vga_state.storage_class[page_index] = video_mode_table[mode_index].storage_class;
+            vga_state.plane_addresses_or_transform_a[page_index] = frame_buffer_base;
+            vga_state.page_offsets_or_transform_b[page_index] = page_offset;
+            vga_state.page_adjustments_or_transform_c[page_index] = 0;
+            vga_state.page_mode_classes[page_index] = video_mode_table[mode_index].storage_class;
             page_offset += video_mode_table[mode_index].image_bytes;
-            if ((page_offset + vga_state.page_buffer_bytes) > video_memory_limit) {
+            if ((page_offset + vga_state.buffer_size_or_draw_parameter) > video_memory_limit) {
                 page_offset -= video_mode_table[mode_index].image_bytes;
             }
             clear_draw_page((short)page_index);
@@ -343,7 +343,7 @@ int set_display_mode(int requested_mode_id)
                     break;
                 case VIDEO_STORAGE_CLASS_8:
                     set_vga_memory_layout(VGA_MEMORY_LAYOUT_CHAINED);
-                    vga_state.render_mode = 0;
+                    vga_state.render_state = 0;
                 }
             }
             ++preset_index;
@@ -360,9 +360,9 @@ int set_display_mode(int requested_mode_id)
 }
 
 void save_vga_state(void) {
-    vga_state.saved_gc_read_map = vga_state.current_gc_read_map;
-    vga_state.saved_seq_plane_mask = vga_state.current_seq_plane_mask;
-    vga_state.saved_gc_mode = vga_state.current_gc_mode;
+    vga_state.graphics_read_map = vga_state.render_cache_62;
+    vga_state.sequencer_plane_mask = vga_state.render_cache_61;
+    vga_state.graphics_controller_mode = vga_state.render_cache_60;
     vga_register_state_saved = -1;
 }
 
@@ -371,9 +371,9 @@ void restore_vga_register_state(void) {
     extern void set_seq_plane_mask(unsigned int);
     extern void set_gc_mode(unsigned int);
     if (vga_register_state_saved == -1) {
-        set_gc_read_map(vga_state.saved_gc_read_map);
-        set_seq_plane_mask(vga_state.saved_seq_plane_mask);
-        set_gc_mode(vga_state.saved_gc_mode);
+        set_gc_read_map(vga_state.graphics_read_map);
+        set_seq_plane_mask(vga_state.sequencer_plane_mask);
+        set_gc_mode(vga_state.graphics_controller_mode);
         vga_register_state_saved = 1;
     }
 }
@@ -413,7 +413,7 @@ void set_vga_memory_layout(int chain4_enabled)
     set_gc_read_map(0);
     set_seq_plane_mask(0xf);
     set_gc_mode(0x40);
-    vga_state.render_mode = (unsigned short)chain4_enabled;
+    vga_state.render_state = (unsigned short)chain4_enabled;
 }
 
 void restore_vga_register_preset(struct VgaRegisterPreset *preset) {
@@ -454,7 +454,7 @@ void initialize_vga_map_mask(void)
 
 void clear_draw_page(short page_index)
 {
-    fill_clipped_vga_rectangle((short)page_index, vga_state.viewport_left, vga_state.viewport_top, vga_state.viewport_right, vga_state.viewport_bottom, 0);
+    fill_clipped_vga_rectangle((short)page_index, vga_state.viewport_left, vga_state.viewport_top, vga_state.viewport_right_or_width, vga_state.viewport_bottom_or_height, 0);
 }
 
 void set_video_viewport(int left, int top, int right, int bottom) {
@@ -462,9 +462,9 @@ void set_video_viewport(int left, int top, int right, int bottom) {
     if (left > right) { t = left; left = right; right = t; }
     if (top > bottom) { t = top; top = bottom; bottom = t; }
     vga_state.viewport_left = left;
-    vga_state.viewport_right = right;
+    vga_state.viewport_right_or_width = right;
     vga_state.viewport_top = top;
-    vga_state.viewport_bottom = bottom;
-    vga_state.screen_height = vga_state.viewport_bottom - vga_state.viewport_top + 1;
-    vga_state.screen_width = vga_state.viewport_right - vga_state.viewport_left + 1;
+    vga_state.viewport_bottom_or_height = bottom;
+    vga_state.screen_height = vga_state.viewport_bottom_or_height - vga_state.viewport_top + 1;
+    vga_state.screen_width = vga_state.viewport_right_or_width - vga_state.viewport_left + 1;
 }

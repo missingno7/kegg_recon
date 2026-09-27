@@ -21,30 +21,30 @@ struct VideoModeInfo {
     int image_bytes;
     int page_buffer_bytes;
 };
-struct VgaDisplayState {
-    short render_mode;
-    int framebuffer_base[4];
-    int page_start[4];
-    int page_display[4];
-    unsigned char storage_class[4];
-    int page_buffer_bytes;
-    int scanline_bytes;
-    int page_height;
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
     int screen_width;
     int screen_height;
     int viewport_left;
     int viewport_top;
-    int viewport_right;
-    int viewport_bottom;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
     unsigned char mode_flags;
-    unsigned char saved_seq_plane_mask;
-    unsigned char saved_gc_read_map;
-    unsigned char bios_mode;
-    unsigned char original_bios_mode;
-    unsigned char saved_gc_mode;
-    unsigned char current_gc_mode;
-    unsigned char current_seq_plane_mask;
-    unsigned char current_gc_read_map;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
     unsigned char tail;
 };
 struct VgaRegisterPreset {
@@ -53,7 +53,7 @@ struct VgaRegisterPreset {
     unsigned char register_bytes[48];
     int mode_id;
 };
-extern struct VgaDisplayState vga_state;
+extern struct DisplayModeInfo vga_state;
 extern short bios_video_mode_saved;
 extern short video_restore_registered;
 /* Timer callbacks and retrace waits bracket BIOS mode changes. */
@@ -126,8 +126,8 @@ short page_3 = 3;
 
 void show_page(void) {
     page_idx = drawpage;
-    if (vga_state.storage_class[page_idx] == VIDEO_STORAGE_CLASS_8) set_vga_display_start(vga_state.page_start[page_idx] << VGA_CRTC_START_ADDRESS_QUARTER_SHIFT);
-    else set_vga_display_start(vga_state.page_start[page_idx]);
+    if (vga_state.page_mode_classes[page_idx] == VIDEO_STORAGE_CLASS_8) set_vga_display_start(vga_state.page_offsets_or_transform_b[page_idx] << VGA_CRTC_START_ADDRESS_QUARTER_SHIFT);
+    else set_vga_display_start(vga_state.page_offsets_or_transform_b[page_idx]);
     advance_video_page_indices();
 }
 
@@ -138,14 +138,14 @@ void advance_video_page_indices(void) {
 }
 
 void display_next_video_page(void) {
-    set_vga_display_start(vga_state.page_start[page_idx] + vga_state.page_display[page_idx]);
+    set_vga_display_start(vga_state.page_offsets_or_transform_b[page_idx] + vga_state.page_adjustments_or_transform_c[page_idx]);
     page_idx = src_page;
     src_page = dst_page;
     dst_page = page_idx;
 }
 
 void draw_page(int page_index) {
-    set_vga_display_start(vga_state.page_start[page_index] + vga_state.page_display[page_index]);
+    set_vga_display_start(vga_state.page_offsets_or_transform_b[page_index] + vga_state.page_adjustments_or_transform_c[page_index]);
 }
 
 void set_vga_display_start(int start_address) {

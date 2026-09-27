@@ -23,12 +23,36 @@
 #define RACKET_STICKY_EFFECT 3
 
 struct Racket {
-    int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index;
-    int sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state;
-    int horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44;
-    int animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54;
-    int shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index;
-    int spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot;
+    int x;
+    int y;
+    int previous_x;
+    int min_x;
+    int max_x;
+    int min_y;
+    int max_y;
+    int sprite_frame_index;
+    int sprite_height;
+    int reward_level;
+    int capture_timer;
+    int state_2c;
+    int state_30;
+    int effect_state;
+    int horizontal_recenter_timer;
+    int vertical_recenter_timer;
+    int effect_timer_40;
+    int effect_frame_44;
+    int animation_timer_48;
+    int animation_step_4c;
+    int animation_timer_50;
+    int animation_step_54;
+    int shield_frame_timer;
+    int shield_frame_index;
+    int spell_anim_timer;
+    int spell_anim_index;
+    int spell_parameter_68;
+    int spell_parameter_6c;
+    int spell_parameter_70;
+    int previous_x_snapshot;
     unsigned char *sprite_pointer;
 };
 struct GameProgressState { int progress_marker, life_balance, opaque_08, opaque_0c, opaque_10, score, tail; };

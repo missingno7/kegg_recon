@@ -7,7 +7,7 @@
 #define VGA_ATTRIBUTE_PAN_PRESERVE_MASK 0xf0
 #define VGA_ATTRIBUTE_PAN_BITS 3
 #define VGA_ATTRIBUTE_PAN_SHIFT 1
-extern struct VgaDisplayState vga_state;
+extern struct DisplayModeInfo vga_state;
 struct VideoModeInfo {
     int mode_id;
     short bios_mode_number;
@@ -22,30 +22,30 @@ struct VideoModeInfo {
     int page_buffer_bytes;
 };
 
-struct VgaDisplayState {
-    short render_mode;
-    int framebuffer_base[4];
-    int page_start[4];
-    int page_display[4];
-    unsigned char storage_class[4];
-    int page_buffer_bytes;
-    int scanline_bytes;
-    int page_height;
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
     int screen_width;
     int screen_height;
     int viewport_left;
     int viewport_top;
-    int viewport_right;
-    int viewport_bottom;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
     unsigned char mode_flags;
-    unsigned char saved_seq_plane_mask;
-    unsigned char saved_gc_read_map;
-    unsigned char bios_mode;
-    unsigned char original_bios_mode;
-    unsigned char saved_gc_mode;
-    unsigned char current_gc_mode;
-    unsigned char current_seq_plane_mask;
-    unsigned char current_gc_read_map;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
     unsigned char tail;
 };
 struct VgaRegisterPreset {
@@ -159,7 +159,7 @@ int pending_horizontal_pan = 0;
 
 void set_video_display_address(int screen_x, int screen_y) {
     page_idx = drawpage;
-    set_vga_display_start(screen_y * vga_state.scanline_bytes + vga_state.page_start[page_idx] + screen_x);
+    set_vga_display_start(screen_y * vga_state.row_stride + vga_state.page_offsets_or_transform_b[page_idx] + screen_x);
     advance_video_page_indices();
 }
 
@@ -228,4 +228,4 @@ extern short flip_source_page_index;
 extern short flip_destination_page_index;
 extern short stored_page_2_index;
 extern short page_3;
-extern struct VgaDisplayState vga_state;
+extern struct DisplayModeInfo vga_state;

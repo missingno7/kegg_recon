@@ -16,7 +16,7 @@ struct TextRenderState {
     int clip_right;
     int clip_top;
     int clip_bottom;
-    unsigned char reserved[3];
+    unsigned char reserved_tail[3];
 };
 
 unsigned char *font_bitmap_data;

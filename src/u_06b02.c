@@ -1,14 +1,79 @@
 struct AuxiliaryProjectile { int target_type, x, y, velocity_x, velocity_y; unsigned char *sprite_data; void *frame_info; unsigned char *frame_offset; int damage; };
 struct GameProgressState { int progress_marker, life_balance, opaque_08, opaque_0c, opaque_10, score, tail; };
-struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
-struct BobFrameMetrics { short prefix, width, height; int opaque_06; short x_offset, y_offset; int opaque_0e; };
-struct DisplayModeInfo { short render_state; unsigned char plane_addresses_or_transform_a[16]; int page_offsets_or_transform_b[4]; int page_adjustments_or_transform_c[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
+struct SpriteDrawCommand {
+    int sprite_or_frame;
+    short x;
+    short y;
+    short flags;
+};
+struct BobFrameMetrics {
+    short prefix;
+    short width;
+    short height;
+    int opaque_06;
+    short x_offset;
+    short y_offset;
+    int opaque_0e;
+};
+struct DisplayModeInfo {
+    short render_state;
+    int plane_addresses_or_transform_a[4];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
+    int screen_width;
+    int screen_height;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
+    unsigned char mode_flags;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
+    unsigned char tail;
+};
 struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
-struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
+struct SpriteFrame {
+    unsigned image_offset;
+    int duration_or_delta;
+};
 struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
-struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18; struct SpriteFrame *animation_sequence; int hit_points; unsigned char flags, tail[3]; };
-struct FallingSpell { int x, y, frame_countdown; struct SpriteFrame *frame_sequence; unsigned char variant, spell_id; };
-struct AudioRequestEntry { int source, byte_count, sample_rate, playback_mode; };
+struct EnemyProjectile {
+    int x;
+    int y;
+    int velocity_x;
+    int velocity_y;
+    int sprite_info;
+    int flight_phase;
+    int state_18;
+    struct SpriteFrame *animation_sequence;
+    int hit_points;
+    unsigned char flags;
+    unsigned char tail[3];
+};
+struct FallingSpell {
+    int x;
+    int y;
+    int frame_countdown;
+    struct SpriteFrame *frame_sequence;
+    unsigned char variant;
+    unsigned char spell_id;
+};
+struct AudioRequest {
+    int source_address;
+    int byte_count;
+    int sample_rate;
+    int playback_mode;
+};
 struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_interval, attack_delay; };
 #define LEVEL_INTRO_GRACE_TICKS 0x118
 #define LEVEL_TIME_LIMIT_SECONDS 100
