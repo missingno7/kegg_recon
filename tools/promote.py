@@ -24,6 +24,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dosrun  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 MAN = ROOT / "manifest.json"
 LOCK = ROOT / "build" / "promote.lock"
@@ -104,7 +107,11 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
     frozen_dir = ROOT / "build" / "promote" / f"{uid}-{stamp}"
     frozen_dir.mkdir(parents=True, exist_ok=True)
     frozen = frozen_dir / Path(dest_rel).name
-    frozen.write_bytes(cand.read_bytes().replace(bytes([13, 10]), bytes([10])))
+    verbatim = bool(dosrun.config()["profiles"].get(profile, {}).get("host"))
+    raw = cand.read_bytes()
+    # host-pinned profiles (e.g. -ot literal padding = stale source-buffer bytes) depend on the exact file bytes,
+    # CRLF included: keep them verbatim (and mark the file -text in .gitattributes)
+    frozen.write_bytes(raw if verbatim else raw.replace(bytes([13, 10]), bytes([10])))
     jpath = frozen_dir / "result.json"
     placeargs = [a for pl in places for a in ("--place", pl)]
     p = subprocess.run([sys.executable, str(ROOT / "tools" / "check.py"), str(frozen), "--all", "--at", start,

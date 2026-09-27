@@ -179,6 +179,8 @@ def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
     if obj.exists():
         obj.unlink()
     tool = prof.get("tool", "wcc386")
+    if tool == "wcc386" and prof.get("host"):
+        host = prof["host"]  # a pinned host is part of the profile (e.g. -ot literal padding leaks host memory)
     if tool in ("masm", "ml", "tasm"):
         # MASM/TASM are real-mode DOS tools and use positional source/object
         # arguments rather than Watcom's -fo switch.  Compile an isolated,

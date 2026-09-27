@@ -212,3 +212,30 @@ every layout predicted exactly; supervisor probes `build/workers/sup/probe/bss*.
   object's idx with prefix probes, compares prediction with the compiler), `--src TU.c --want A,B,.. --rename
   A=PAT --verify` (solve + recompile). Avoid suffixes that make `g_<hex>` names (check.py reads them as addresses):
   use `g_e1d0_{}`.
+
+## `-ot` CONST literal padding = stale source-buffer bytes  (worker `otpad`, probes in `build/workers/otpad/`)
+
+- Only `-ot` 4-aligns each CONST string literal (`-od`, `-ox`, `-os` pack them). The pad bytes after a literal's NUL
+  are never written by the compiler: pad byte at CONST offset `k` = stale byte `buf[BASE+k]` of the cfe's 4 KiB
+  source-file read buffer, whose memory the CONST data buffer reuses. `buf[i]` = byte `i` of the LAST 4 KiB chunk
+  of the main source file that reached index `i` (`file[4096*m+i]`, largest `m` with `4096*m+i < len(file)`; a
+  short final read overwrites only the start of the buffer). Beyond EOF of a small file: zeros. Exception:
+  `buf[BASE+2]` always reads `01` (overwritten by the compiler; KE's T06 has it too: `00 00 01 DB`).
+  The LAST literal of the object gets no pad bytes in the OMF (segment ends at its NUL; the linker pads with 00).
+  PROVEN: every pad byte of every probe/TU located in the source text; T06/T08 reproduced byte-exactly.
+- `BASE` does not depend on code, comments, literal count/length, identifiers, `#define`s, line count, CRLF/LF or
+  environment variables (INCLUDE/WATCOM length included). It moves -32 per `#include` (string.h) and -4 per 4 bytes
+  of the compiler's full source path (`roundup4(len)`), and it differs by host: DOS/4GW(DOSBox-X) BASE = NT BASE
+  + 104 + (roundup4(NT path) - roundup4(DOS path)); e.g. no-include probe NT 2029/2033 (depends on the checkout
+  path), DOS `C:\CAND.C` 2173. Measure it for a TU with `python build/workers/otpad/findbase.py TU.c dosbox`
+  (appends position-coded comment text; comments do not move BASE).
+- So the pads are deterministic from (source text, source path, #includes, host). The original machine's path and
+  file layout are unknown; reconstructions put plausible CP437 comment banners (`█` = 0xDB, CRLF lines) where
+  `buf[BASE+k]` must hold the original pad bytes. T08 (`.VGA DB DB DB ... .LBM DB 0D 0A ...`) = two full-width
+  banner rows with the row end (CRLF) at `BASE+22`; T06 (`00 00 01 DB`) = one `█` at `buf[BASE+3]`.
+- Host rule: only the DOS host (check.py `--host dosbox`: fixed `C:\CAND.C`, `INCLUDE=D:\H`) gives a
+  location-independent BASE. The NT host compiles at the real path (check.py: the file's own directory; image.py:
+  `src/`), so its BASE changes with the checkout directory and file name; NT cannot even reach the DOS BASE (fixed
+  +104 offset). -ot units whose CONST has pad bytes are EXACT only with `--host dosbox`; the canonical build
+  (image.py `cache_compile`, validate.py default `nt`) must compile such units on the DOS host with the
+  `C:\CAND.C` layout (supervisor: add a per-profile/unit `host` for C in `check.compile_candidate`).

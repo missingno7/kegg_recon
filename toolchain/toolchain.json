@@ -378,6 +378,19 @@
    "host": "msdos",
    "status": "experimental",
    "evidence": "build/workers/asm/REPORT.md"
+  },
+  "game-c-ot-dos": {
+   "install": "wc100",
+   "tool": "wcc386",
+   "flags": [
+    "-3s",
+    "-ot",
+    "-d2",
+    "-s"
+   ],
+   "host": "dosbox",
+   "status": "strong",
+   "evidence": "docs/compiler-notes.md: -ot pads CONST literals with stale bytes of the freed 4 KiB source-read buffer at BASE+k; BASE depends on includes, source path length and host; only the DOS host (C:\\CAND.C) is checkout-independent"
   }
  }
 }
