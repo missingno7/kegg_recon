@@ -1,8 +1,8 @@
 /* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
-extern int (* g_73b8)();
-extern int (* g_73bc)();
-extern int (* g_73c0)();
-extern int (* g_73c4)();
+extern int (* kbd_irq_hook)();
+extern int (* kbd_poll_hook)();
+extern int (* mouse_update_hook)();
+extern int (* sprite_update_hook)();
 extern unsigned char *g_73c8;
 extern unsigned char g_756f[];
 extern int g_e1a8;
@@ -15,16 +15,16 @@ void f_9d40(short a0)
     int v_4;
     v_4 = g_e1be;
     if ((unsigned short)(a0 & 1) != 1) goto L_9d6a;
-    (*g_73b8)();
+    (*kbd_irq_hook)();
 L_9d6a:;
     if ((unsigned short)(a0 & 1) != 1) goto L_9d7e;
-    (*g_73bc)();
+    (*kbd_poll_hook)();
 L_9d7e:;
     if ((a0 & 2) == 0) goto L_9d8c;
-    (*g_73c0)();
+    (*mouse_update_hook)();
 L_9d8c:;
     if ((a0 & 4) == 0) goto L_9d9a;
-    (*g_73c4)();
+    (*sprite_update_hook)();
 L_9d9a:;
     if (*(short *)g_756f != -1) goto L_9ddf;
     g_e1a8 = 0;

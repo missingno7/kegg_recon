@@ -1,5 +1,5 @@
 .386
-EXTRN g_746c:WORD
+EXTRN g_746c_mmw:WORD
 EXTRN g_746e:WORD
 EXTRN g_7b16:WORD
 EXTRN g_7b18:WORD
@@ -290,8 +290,8 @@ L_12CBC:
 a_12b94 ENDP
         ASSUME CS:_TEXT
         PUBLIC a_12cbd
-        PUBLIC f_12cbd
-f_12cbd LABEL NEAR
+        PUBLIC f_12cbd_pzyovjt
+f_12cbd_pzyovjt LABEL NEAR
 a_12cbd PROC NEAR
         pushad
 L_12CBE:
@@ -459,27 +459,27 @@ L_12E08:
 L_12E0C:
         jmp dword ptr [edi]
 L_12E0E:
-        mov word ptr [g_746c], 401h
+        mov word ptr [g_746c_mmw], 401h
 L_12E17:
         jmp short L_12E50
 L_12E19:
-        mov word ptr [g_746c], 402h
+        mov word ptr [g_746c_mmw], 402h
 L_12E22:
         jmp short L_12E50
 L_12E24:
-        mov word ptr [g_746c], 403h
+        mov word ptr [g_746c_mmw], 403h
 L_12E2D:
         jmp short L_12E50
 L_12E2F:
-        mov word ptr [g_746c], 404h
+        mov word ptr [g_746c_mmw], 404h
 L_12E38:
         jmp short L_12E50
 L_12E3A:
-        mov word ptr [g_746c], 405h
+        mov word ptr [g_746c_mmw], 405h
 L_12E43:
         jmp short L_12E50
 L_12E45:
-        mov word ptr [g_746c], 406h
+        mov word ptr [g_746c_mmw], 406h
 L_12E4E:
         jmp short L_12E50
 L_12E50:

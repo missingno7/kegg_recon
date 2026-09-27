@@ -25,6 +25,7 @@ def main():
     match = sum(v[1] for (k, s), v in by.items() if s == "matching")
     nmatch = sum(v[0] for (k, s), v in by.items() if s == "matching")
     data_status(m)
+    image_status()
     print(f"matching: {nmatch}/{tot_fn} functions, {match}/{tot_b} bytes of inventoried game code "
           f"({100 * match / max(1, tot_b):.1f}%); code object is {code} bytes (runtime library + asm tracked separately)")
 
@@ -43,6 +44,17 @@ def data_status(m):
     init = int(m.get("runtime", {}).get("data_layout", {}).get("init_end", "0x886f"), 16)
     print(f"units: {len(m.get('units', []))}; verified initialised data: " +
           ", ".join(f"{k} {v} bytes" for k, v in sorted(by.items())) + f" (obj3 initialised size {init})")
+
+
+def image_status():
+    rep = ROOT / "build" / "image" / "canonical" / "report.json"
+    if not rep.exists():
+        print("image: run python tools/image.py --mode canonical")
+        return
+    r = json.loads(rep.read_text())
+    b = r.get("bytes") or r.get("accounting") or {}
+    print("whole image (last canonical link): " + ("IDENTICAL" if r.get("identical") else "NOT identical") +
+          "; bytes by owner: " + ", ".join(f"{k} {v}" for k, v in b.items()))
 
 
 if __name__ == "__main__":

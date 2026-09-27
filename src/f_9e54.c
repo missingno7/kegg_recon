@@ -1,6 +1,6 @@
 /* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
 extern unsigned g_73ac;
-extern unsigned char *g_73b4;
+extern unsigned char *kbd_state_ptr;
 extern short g_73cc;
 extern unsigned char g_e168[];
 extern unsigned char g_e16c[];
@@ -9,7 +9,7 @@ extern short g_e1be;
 void f_9e54(void)
 {
     unsigned short v_4;
-    if (*(short *)g_73b4 != 0) goto L_9e72;
+    if (*(short *)kbd_state_ptr != 0) goto L_9e72;
     ++g_e1be;
 L_9e72:;
     v_4 = 0;

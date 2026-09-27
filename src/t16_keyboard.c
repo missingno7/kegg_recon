@@ -41,19 +41,19 @@ extern void f_fb92(void);
 extern void f_fd3b(void);
 extern void f_fd7b(void);
 extern void f_fcab(void);
-extern void (*g_7b3f)(void);
+extern void (*g_7b3f_gng)(void);
 extern void (*g_7b43)(void);
 extern void (*g_7b47)(int, int);
 int f_ff0d(void);
 
 extern void f_f690(void);
-union FlagWord g_7b34 = {0x003c};
+union FlagWord g_7b34_cbzosabe = {0x003c};
 unsigned char g_7b36 = 0;
 unsigned char g_7b37_reserved[2] = {0, 0};
 short g_7b39 = 0;
 short g_7b3b = 0;
-short g_7b3d = 0;
-void (*g_7b3f)(void) = f_f690;
+short g_7b3d_yrsiuxxd = 0;
+void (*g_7b3f_gng)(void) = f_f690;
 void (*g_7b43)(void) = f_f690;
 void (*g_7b47)(int, int) = (void (*)(int, int))f_f690;
 unsigned int g_7b4b[9] = {
@@ -194,23 +194,23 @@ finish:
 }
 
 void f_fb17(void) {
-    if (g_7b34.word & 0x80) f_fe6a();
-    if ((g_7b34.word & 1) == 1) f_fbc0();
-    if (g_7b34.word & 2) f_fc1e();
-    if (g_7b34.word & 4) f_fb92();
-    if (g_7b34.word & 0x10) f_fd3b();
-    if (g_7b34.word & 0x20) f_fd7b();
-    if (g_7b34.word & 0x40) f_fcab();
+    if (g_7b34_cbzosabe.word & 0x80) f_fe6a();
+    if ((g_7b34_cbzosabe.word & 1) == 1) f_fbc0();
+    if (g_7b34_cbzosabe.word & 2) f_fc1e();
+    if (g_7b34_cbzosabe.word & 4) f_fb92();
+    if (g_7b34_cbzosabe.word & 0x10) f_fd3b();
+    if (g_7b34_cbzosabe.word & 0x20) f_fd7b();
+    if (g_7b34_cbzosabe.word & 0x40) f_fcab();
 }
 
-void f_fb92(void) { if (g_e48d_c != 0x20 && g_e48f == 0x20) g_7b3d = -1; }
+void f_fb92(void) { if (g_e48d_c != 0x20 && g_e48f == 0x20) g_7b3d_yrsiuxxd = -1; }
 
-void f_fbc0(void) { while ((g_e468[3].bytes.lo & 0x40) && (g_e468[0].bytes.hi & 0x40)) { f_fa42(); if (g_7b39 == 0) { g_7b3f(); g_7b39 = -1; } } if (g_7b39 != 0) { g_7b43(); g_7b39 = 0; } }
+void f_fbc0(void) { while ((g_e468[3].bytes.lo & 0x40) && (g_e468[0].bytes.hi & 0x40)) { f_fa42(); if (g_7b39 == 0) { g_7b3f_gng(); g_7b39 = -1; } } if (g_7b39 != 0) { g_7b43(); g_7b39 = 0; } }
 
 void f_fc1e(void)
 {
     if (g_e48e_0g != 25) goto L_fc81;
-    g_7b3f();
+    g_7b3f_gng();
     g_7b39 = -1;
 L_fc42:;
     while (g_e48e_0g == 25) {
@@ -230,7 +230,7 @@ L_fc72:;
 L_fc81:;
 }
 
-void f_fc86(void) { g_7b3f = f_f690; g_7b43 = f_f690; }
+void f_fc86(void) { g_7b3f_gng = f_f690; g_7b43 = f_f690; }
 
 void f_fcab(void) { if ((g_e468[2].bytes.hi & 4) && (g_e468[2].bytes.hi & 2)) g_7b3b = 1; else g_7b3b = 0; }
 
@@ -250,7 +250,7 @@ void __interrupt f_ff5c(void) {
     f_13a88();
     f_f8bb();
     outp(0x20, 0x20);
-    if (g_7b34.bytes[0] & 8)
+    if (g_7b34_cbzosabe.bytes[0] & 8)
         f_fce4();
 }
 

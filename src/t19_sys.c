@@ -26,7 +26,7 @@ extern void f_df49(unsigned int);
 extern void f_11209(int);
 extern void f_100fa(int, int, int, int);
 extern void f_10502(int, int);
-extern int f_e095(int);
+extern int f_e095_ughrsvpfh(int);
 extern long g_8418;
 extern unsigned long g_841c;
 extern unsigned long g_8420;
@@ -36,7 +36,7 @@ extern unsigned int g_75bc;
 extern unsigned int g_e31c;
 extern unsigned int g_e314;
 extern unsigned int g_7c02;
-extern unsigned int g_7c08;
+extern unsigned int g_7c08_orxezsknd;
 extern unsigned int g_7c10;
 extern long g_e36e;
 extern long g_e372;
@@ -49,7 +49,8 @@ extern unsigned int g_747e;
 extern short g_7536;
 extern unsigned char g_7486;
 extern unsigned char g_7487;
-extern unsigned char g_e482;
+union KeyWord { unsigned short word; struct { unsigned char lo, hi; } bytes; };
+extern union KeyWord g_e478_6[8];
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48f;
 extern unsigned long g_7492;
@@ -62,10 +63,10 @@ extern unsigned long g_74b6;
 extern unsigned long g_7482;
 extern short g_e2fc;
 extern short g_73a6;
-extern void f_11146(void);
-extern void f_111de(unsigned long, unsigned long);
+extern void restore_system_interrupt_vectors(void);
+extern void shutdown_with_exit_message(unsigned long, unsigned long);
 extern void f_fb17(void);
-extern void f_10137(void);
+extern void f_10137_squghx(void);
 extern void f_efa0(void);
 extern int f_ee65(int);
 extern int f_f6f8(int);
@@ -73,11 +74,11 @@ extern int f_9b44(int);
 extern void f_9d40(unsigned char);
 extern short g_7b39;
 extern void (*g_7b47)(unsigned long, unsigned long);
-extern short *g_73b4;
-extern void (*g_73b8)(void);
-extern void (*g_73bc)(void);
-extern void (*g_73c0)(void);
-extern void (*g_73c4)(void);
+extern short *kbd_state_ptr;
+extern void (*kbd_irq_hook)(void);
+extern void (*kbd_poll_hook)(void);
+extern void (*mouse_update_hook)(void);
+extern void (*sprite_update_hook)(void);
 extern short g_7bfc;
 extern short g_7498;
 extern short g_747c;
@@ -289,11 +290,11 @@ unsigned exit_msg;
 
 int f_108a9(int a,int b,unsigned long flags,int d) { int result=0; if((flags&1)==1) { f_137a8(); printf(g_7c60,g_8418); printf((char*)g_7c54[g_841c],g_8420); } if((flags&2)!=0) if(f_d288()==-1) { printf(g_7c64); f_11209(g_7492); } if((flags&4)!=0) if(f_ca6a()==-1) { printf(g_7c68); f_11209(g_7476); } if((flags&8)!=0) if(f_d2f0()==-1) printf(g_7c6c,g_749e); if((flags&0x10)!=0) if(f_d36c()==-1) { printf(g_7c70); f_11209(g_74a6); } if((flags&0x20)!=0) if(f_d408()==-1) { printf(g_7c74); f_11209(g_74ae); } if((flags&0x40)!=0) if(f_d5d0()==-1) { printf(g_7c78); f_11209(g_74be); } if((flags&0x80)!=0) if(f_d4ba()==-1) { printf(g_7c7c); f_11209(g_74b6); } if((flags&0x100)!=0) { if(f_dea6(a)==0) { result=-1; printf(g_7c40,a/1024); } if(g_75c4==0) f_df49(g_e31c); printf(g_7c9c,a/1024,f_df7f()/1024); } if((flags&0x200)!=0) { if(f_ddb9(b)==0) { result=-1; printf(g_7c44,b/1024); } if(g_75bc==0) f_de21(g_e314); f_dea6(a); printf(g_7ca0,b/1024,(int)f_de3e()/1024,(g_75c0-a)/1024); if(g_75c4==0) f_df49(g_e31c); } if((flags&0x400)!=0) if(f_ffbe()==-1) { printf(g_7c84); f_11209(g_7c02); } if((flags&0x800)!=0) if(f_eeac()==-1) printf(g_7c80,0x201); if((flags&0x2000)!=0) { if(f_cb3f()==-1) { if(g_747e==0) printf(g_7c88,(int)g_e2fc,g_7486,g_7487); else printf(g_7c8c,(int)g_e2fc,g_7486,g_7487); printf(g_7c90); f_11209(g_7482); } else if(g_e2fc>=0x200 && g_e2fc<0x300) { if(g_7486==0xff) printf(g_7c94,(int)g_e2fc,g_7486,g_7487); else if(g_7487==0xff) printf(g_7c98,(int)g_e2fc,g_7486,g_7487); printf(g_7c50); if(g_7536==-1) { do { f_fa42(); } while (g_e48d_c==g_e48f || g_e48f!=0x20); } else while(getch()!=0x20) {} } } if(flags&0x1000) if(f_9974()==-1) printf(g_7ca4,f_9f64()); return result; }
 
-void f_10d72(int a,int b,int c,int d) { int x; int y; int i; atexit(f_11146); g_7b47=f_111de; g_73b4=&g_7b39; g_73b8=f_fb17; g_73bc=f_fa42; g_73c0=f_10137; g_73c4=f_efa0; f_ee65(g_7b14); outp(0x21,inp(0x21)|1); if(c==-1) printf(g_7cb0); if(b==-1) { if(c==-1) x=2; else x=4; y=f_f6f8(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_754f) { printf(g_7cac); if((g_754f&1)==1) printf("(REAL) "); if(g_754f&2) printf("(DPMI) "); if(g_754f&4) printf("(D4GW) "); printf("\n"); } } if(a==-1 && g_73a6==-1) { if(c==-1) x=2; else x=4; y=f_9b44(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_7588) { printf(g_7ca8); if((g_7588&1)==1) printf("(REAL) "); if(g_7588&2) printf("(DPMI) "); if(g_7588&4) printf("(D4GW) "); printf("\n"); } } for(i=0;i<50;i++) { f_9d40((int)1); if(g_e482&0x80) i--; } if(d!=-1) { f_e095(d); f_100fa(g_e36e,g_e372,g_e376,g_e37a); f_10502((g_e36e+g_e376)/2,(g_e372+g_e37a)/2); } }
+void f_10d72(int a,int b,int c,int d) { int x; int y; int i; atexit(restore_system_interrupt_vectors); g_7b47=shutdown_with_exit_message; kbd_state_ptr=&g_7b39; kbd_irq_hook=f_fb17; kbd_poll_hook=f_fa42; mouse_update_hook=f_10137_squghx; sprite_update_hook=f_efa0; f_ee65(g_7b14); outp(0x21,inp(0x21)|1); if(c==-1) printf(g_7cb0); if(b==-1) { if(c==-1) x=2; else x=4; y=f_f6f8(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_754f) { printf(g_7cac); if((g_754f&1)==1) printf("(REAL) "); if(g_754f&2) printf("(DPMI) "); if(g_754f&4) printf("(D4GW) "); printf("\n"); } } if(a==-1 && g_73a6==-1) { if(c==-1) x=2; else x=4; y=f_9b44(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_7588) { printf(g_7ca8); if((g_7588&1)==1) printf("(REAL) "); if(g_7588&2) printf("(DPMI) "); if(g_7588&4) printf("(D4GW) "); printf("\n"); } } for(i=0;i<50;i++) { f_9d40((int)1); if(g_e478_6[5].bytes.lo&0x80) i--; } if(d!=-1) { f_e095_ughrsvpfh(d); f_100fa(g_e36e,g_e372,g_e376,g_e37a); f_10502((g_e36e+g_e376)/2,(g_e372+g_e37a)/2); } }
 
 int f_11051(unsigned long flags) { int result=0; if(flags&2) { if(g_7bfc!=-1) { printf(g_7c24); result=-1; } } if((flags&1)==1) { if(g_7498!=-1) { printf(g_7c1c); result=-1; } } if(flags&4) { if(g_8418<0x386) { printf(g_7c20); result=-1; } } if(flags&0x10) { if(g_747c!=-1) { printf(g_7c2c); result=-1; } } if(flags&0x20) { if(g_7b28!=-1) { printf(g_7c28); result=-1; } } return result; }
 
-void f_11146(void)
+void restore_system_interrupt_vectors(void)
 {
     outp(0x21, inp(0x21) & -2);
     if (exit_code == 0) goto L_111d4;
@@ -307,6 +308,6 @@ L_111d4:;
     _enable();
 }
 
-void f_111de(unsigned long a,unsigned long b) { exit_code=a; exit_msg=b; exit(0); }
+void shutdown_with_exit_message(unsigned long a,unsigned long b) { exit_code=a; exit_msg=b; exit(0); }
 
 void f_11209(int v) { if (v != -1) printf("(Version %x.%x%x)\n", v >> 8, (v >> 4) & 0xf, v & 0xf); else printf("\n"); }

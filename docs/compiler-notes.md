@@ -167,8 +167,17 @@ descending; `image.Original.chains`).  A chunk is flushed:
 - Original evidence: 11 of the original's short chunks are import flushes (each after 11-16 first-referenced
   symbols, i.e. names averaging ~10-15 chars); every other short chunk ends at an object start.  The object list
   derived from this (DP over function starts, `build/workers/objects/objscan2.py`, `optpart.py`) is in
-  `build/workers/objects/REPORT.md`.  A TU reproduces the original fixup order iff its compiled chunks satisfy the
+  `build/workers/objects/objects_final.json`.  A TU reproduces the original fixup order iff its compiled chunks satisfy the
   run constraints: `python build/workers/objects/chunkfit.py SRC.c START END` (fast check before image.py).
+- Without `-d2` (`-3s -od -s`) both rules are the same (`probe/cc.py -3s,-od,-s ext_short.c ext_long.c dbg1.c`: 172-byte
+  chunks, import cuts); `-d2` debug flushes do not cut code chunks, they only restart the import count (`dbg1.c`
+  under `-d2`: code chunks 180/175/175/172 while `$$SYMBOLS` flushes every function).  This refines the "`-d2`
+  splits code LEDATA where debug records are flushed" remark in the _BSS section below.
+- Reproducing an original import flush therefore means choosing identifier lengths (and, through local/parameter
+  names, where `$$SYMBOLS` flushes fall): `build/workers/objects/lenfit.py` lengthens `f_`/`g_` names with a
+  suffix until every compiled TU chunks like the original (58 suffixes + 7 descriptive names make U00010, U00708,
+  U02f0c, U0608a, U06b02 and T19 link identically).  Names of `_BSS` objects must also satisfy the `_BSS` hash
+  order in the TU that defines them (tools/bssorder.py).
 
 ## _BSS order (worker `bss`, probes + random tests in `build/workers/bss/`, tool `tools/bssorder.py`)
 PROVEN (≈470 random TUs up to 300 objects, mixed sizes/statics/functions/strings, `-d2`/`-od`/`-ot`/`-ox` alike,

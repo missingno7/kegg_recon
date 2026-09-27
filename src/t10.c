@@ -14,7 +14,7 @@ extern int g_744c;
 extern short g_7db8;
 extern int g_7db4;
 extern int f_dd53(int, int);
-extern void f_c14b(int, int, int, int);
+extern void f_c14b_lmdi(int, int, int, int);
 extern void f_c20d(int);
 extern void f_c3fb(void);
 extern void f_c621(void);

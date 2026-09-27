@@ -50,7 +50,7 @@ void f_100ab(void) { if (g_7c06 == -1) { g_e4a8=g_e494; g_e4c2=g_e492; g_e4a6=g_
 
 void f_100fa(int a,int b,int c,int d) { if (g_7bfc == -1) { f_1040c(a,c); f_10487(b,d); } }
 
-void f_10137(void) { if(g_7bfc==-1) { union REGS r; g_7c00=g_7bfe; g_e49c=g_e49e; g_e49e=g_e496; g_e496=g_e4a2; g_e4a2=g_e4ac; g_e49a=g_e4a0; g_e4a0=g_e498; g_e498=g_e4a4; g_e4a4=g_e4aa; g_e4ac=g_e4ae; g_e4ae=g_e4b8; g_e4b8=g_e4ba; g_e4aa=g_e4b0; g_e4b0=g_e4b4; g_e4b4=g_e4bc; r.w.ax=3; int386(0x33,&r,&r); g_7bfe=r.x.ebx; g_e4ba=r.w.cx>>1; g_e4bc=r.w.dx>>1; g_e4be=g_e4c6; g_e4c0=g_e4c4; g_e4c6=(g_e4ba+g_e4b8+g_e4ae+g_e4ac)>>2; g_e4b2=g_e4c6; g_e4c4=(g_e4bc+g_e4b4+g_e4b0+g_e4aa)>>2; g_e4b2=g_e4c4; g_e4b2=(g_e4ba+g_e4b8+g_e4ae+g_e4ac+g_e4a2+g_e496+g_e49e+g_e49c)>>3; g_e4b6=(g_e4bc+g_e4b4+g_e4b0+g_e4aa+g_e4a4+g_e498+g_e4a0+g_e49a)>>3; } }
+void f_10137_squghx(void) { if(g_7bfc==-1) { union REGS r; g_7c00=g_7bfe; g_e49c=g_e49e; g_e49e=g_e496; g_e496=g_e4a2; g_e4a2=g_e4ac; g_e49a=g_e4a0; g_e4a0=g_e498; g_e498=g_e4a4; g_e4a4=g_e4aa; g_e4ac=g_e4ae; g_e4ae=g_e4b8; g_e4b8=g_e4ba; g_e4aa=g_e4b0; g_e4b0=g_e4b4; g_e4b4=g_e4bc; r.w.ax=3; int386(0x33,&r,&r); g_7bfe=r.x.ebx; g_e4ba=r.w.cx>>1; g_e4bc=r.w.dx>>1; g_e4be=g_e4c6; g_e4c0=g_e4c4; g_e4c6=(g_e4ba+g_e4b8+g_e4ae+g_e4ac)>>2; g_e4b2=g_e4c6; g_e4c4=(g_e4bc+g_e4b4+g_e4b0+g_e4aa)>>2; g_e4b2=g_e4c4; g_e4b2=(g_e4ba+g_e4b8+g_e4ae+g_e4ac+g_e4a2+g_e496+g_e49e+g_e49c)>>3; g_e4b6=(g_e4bc+g_e4b4+g_e4b0+g_e4aa+g_e4a4+g_e498+g_e4a0+g_e49a)>>3; } }
 
 void f_10369(void) { if (g_7bfc == -1) { union REGS r; r.w.ax=0x1b; int386(0x33,&r,&r); g_e4a8=r.x.ebx; g_e4c2=r.x.ecx; g_e4a6=r.x.edx; } }
 
