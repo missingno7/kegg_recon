@@ -15,6 +15,16 @@ typedef struct PortDevice {
 static PortDevice devices[32];
 static int device_count;
 static uint8_t port_map[0x10000];   /* 0 = unclaimed, else device index + 1 */
+static uint8_t port_logged[0x10000 / 8]; /* unclaimed ports already reported */
+
+static int first_report(uint16_t port)
+{
+    uint8_t bit = (uint8_t)(1u << (port & 7));
+    if (port_logged[port >> 3] & bit)
+        return 0;
+    port_logged[port >> 3] |= bit;
+    return 1;
+}
 
 void vhw_register_ports(uint16_t first, uint16_t last, vhw_in_fn in, vhw_out_fn out, void *ctx,
                         const char *device)
@@ -34,24 +44,22 @@ void vhw_register_ports(uint16_t first, uint16_t last, vhw_in_fn in, vhw_out_fn 
 uint32_t vhw_port_in(uint16_t port, int size)
 {
     int d = port_map[port];
-    char key[32];
     if (d && devices[d - 1].in)
         return devices[d - 1].in(devices[d - 1].ctx, port, size);
-    snprintf(key, sizeof key, "in.%04x", port);
-    ke_log_once(key, KE_LOG_DEBUG, "port", "read from unclaimed port %04Xh", port);
+    if (first_report(port))
+        ke_log(KE_LOG_DEBUG, "port", "read from unclaimed port %04Xh", port);
     return size == 1 ? 0xff : 0xffff;
 }
 
 void vhw_port_out(uint16_t port, uint32_t value, int size)
 {
     int d = port_map[port];
-    char key[32];
     if (d && devices[d - 1].out) {
         devices[d - 1].out(devices[d - 1].ctx, port, value, size);
         return;
     }
-    snprintf(key, sizeof key, "out.%04x", port);
-    ke_log_once(key, KE_LOG_DEBUG, "port", "write %02Xh to unclaimed port %04Xh", value, port);
+    if (first_report(port))
+        ke_log(KE_LOG_DEBUG, "port", "write %02Xh to unclaimed port %04Xh", value, port);
 }
 
 /* ---- Watcom clib (conio.h) ------------------------------------------------------------- */

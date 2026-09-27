@@ -18,6 +18,7 @@ docs/types.md; remaining historical oddities: docs/unresolved.md; SDL3 migration
 | `toolchain/` | `toolchain.json` (pinned installs, hashes, provenance, profiles), `install.py` |
 | `docs/` | `evidence.md` (hypothesis register), `bootstrap.md` (lessons from earlier projects) |
 | `build/` | everything generated, worker scratch dirs (ignored) |
+| `port/` | branch `portable-sdl3`: Windows/SDL3 port over a small virtual PC - docs/port/architecture.md, docs/port/workpackages.md |
 
 ## Reproduce
 
