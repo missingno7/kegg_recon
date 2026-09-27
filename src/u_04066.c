@@ -45,10 +45,10 @@ extern void remove_keyboard_input_handler(void);
 extern int initialize_keyboard_manager(int);
 void launch_print_order_form(void);
 extern int ordering_information_text;
-extern int g_68f8_jwwqkwr;
-extern int g_6910;
-extern int g_6914;
-extern int g_693c;
+extern int main_palette_fn;
+extern int order_image_filename;
+extern int order_sprite_filename;
+extern int information_data_filename;
 extern short image_color_depth;
 extern short sound_blaster_detected;
 extern int fade_start;
@@ -65,10 +65,10 @@ extern unsigned char screen_palette_buffer[];
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
-extern int x_dd40_xbukycw;
+extern int vga_buffer_base;
 extern int g_dd44;
-extern int k_DD48_jbwjbqarofg;
-extern int g_dd4c_ilunphmaok;
+extern int sprite_memory_base;
+extern int game_sprite_data_base_j;
 extern int g_df48;
 extern int g_df4c;
 extern int g_df54;
@@ -89,9 +89,9 @@ extern void fatal_exit(unsigned, unsigned);
 extern void write_dac_palette(void *, int, int, int);
 extern void handle_s_key(void);
 extern void refresh_video_pages(int);
-extern void f_80d8(void);
+extern void rkt_mv(void);
 extern void f_843a(void);
-extern void f_9640(void *, void *);
+extern void set_pal(void *, void *);
 extern void f_9d40(unsigned char);
 extern void f_a574_wrvhrpegbz(int);
 extern void plot_transformed_pixel(void *, int);
@@ -106,9 +106,9 @@ void run_title_screen_loop(void);
 extern void stop_audio_stream(void);
 void load_title_screen_assets(void);
 void draw_title_screen(void);
-extern int g_6904;
-extern int g_6908;
-extern int g_690c;
+extern int menu_image_filename;
+extern int menu_sprite_filename;
+extern int menu_data_filename;
 extern int version_text;
 extern char *last_code_prompt;
 extern int g_dF58;
@@ -153,7 +153,7 @@ extern unsigned int g_8dfc;
 extern unsigned int g_8e00;
 extern unsigned char g_e13c;
 extern unsigned char g_e140;
-extern int *r_dDDc_uzmlc;
+extern int *racket_state;
 extern unsigned char g_e143_eayxx;
 char *itoa(int, char *, int);
 extern int g_df6c;
@@ -165,14 +165,14 @@ void insert_high_score(void);
 void enter_high_score_name(void);
 void wait_for_key_or_click(void);
 extern int draw_page();
-extern int g_6918;
-extern int g_691c;
-extern int g_6920;
-extern int g_df24_krqpxkj;
-extern int g_df34_nnyybtp;
-extern int g_df2c_hwkico;
-extern int g_df20_rusvejgsscn;
-extern int g_dDc8;
+extern int score_image_filename;
+extern int font_sprite_filename;
+extern int score_data_filename;
+extern int brick_art_start;
+extern int spell_art_base;
+extern int enemy_picture;
+extern int monster_art;
+extern int player_shot_total;
 extern Row high_score_records[];
 extern unsigned char high_score_values[];
 extern int hall_of_fame_text;
@@ -189,7 +189,7 @@ extern int g_dF68;
 extern unsigned char g_e13d;
 extern void update_mouse(void);
 extern int saved_high_score_state;
-extern char *g_6924;
+extern char *high_score_filename;
 extern int f_1065b(char *, void *);
 extern void validate_high_score_records(void);
 void write_file_buffer(int a, int b, int c);
@@ -207,16 +207,16 @@ extern int programming_credits_page;
 void load_instruction_assets(void);
 void prepare_instruction_background(void);
 void show_instruction_page(int a0);
-extern int g_6940_hqhettu;
-extern int g_6944_bdcftta;
-extern int g_6948_kxwrlv;
-extern int g_694c_wjufexbevsk;
-extern int g_6958_vghgxtjirow;
-extern int g_695c_qurvlwasjp;
-extern int g_6960_juobaluykyr;
-extern int g_6964;
-extern int g_6934;
-extern int g_6938;
+extern int brick_sprite_fn;
+extern int spell_sprite_fn;
+extern int foe_sprite_fn;
+extern int racket_sprite_filename;
+extern int digit_sprite_filename;
+extern int monster_sprite_filename;
+extern int monster_anim_fname;
+extern int main_screen_data_filename;
+extern int scoref;
+extern int end_fn;
 extern int game_title_text;
 extern short disp_idx;
 extern int ending_page_one;
@@ -227,13 +227,13 @@ extern int ending_page_five;
 void load_ending_assets(void);
 void prepare_ending_background(void);
 void show_ending_page(int a);
-extern int g_6928;
-extern int g_692c;
-extern int g_6930;
-extern int g_6974;
-extern int g_6978;
-extern int g_697c;
-extern int g_6980;
+extern int score_background_filename;
+extern int score_font_filename;
+extern int end_screen_data_filename;
+extern int publisher_data_filename;
+extern int publisher_image_one_filename;
+extern int publisher_image_two_filename;
+extern int publisher_image_three_filename;
 void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int v_DF30;
 void load_shared_game_assets(void);
@@ -244,17 +244,17 @@ void load_return_screen_assets(void);
 void prepare_game_asset_read(void);
 void f_84a0(int);
 extern int b_DF40_omuefnnbqp;
-extern int g_Ddd8;
-extern int g_6950;
-extern int g_6954;
+extern int tile_art_base;
+extern int fill_sprite_filename;
+extern int game_font_filename;
 extern int g_df28;
-extern int g_6968;
-extern int g_6970;
-extern int g_696c;
+extern int level_screen_data_filename;
+extern int pause_screen_data_filename;
+extern int game_over_data_filename;
 extern short page3;
 extern int g_df38;
 void set_draw_page(int);
-void f_7f8a(void);
+void draw_background_tiles(void);
 extern unsigned char g_e142_baun;
 extern int g_ddb0;
 extern int g_dd78;
@@ -267,7 +267,7 @@ extern int b_DD70;
 extern int g_e158_tpotbrbk;
 extern int g_6c64[];
 extern int g_6c7c[];
-extern unsigned char g_a608;
+extern unsigned char brick_code_map;
 extern unsigned char q_A988[];
 extern unsigned char g_6b9e[];
 extern unsigned char g_2fe4[];
@@ -286,8 +286,8 @@ void write_pal(int);
 extern int g_6ae8;
 extern int g_6b78;
 void write_level_number_glyphs(void);
-extern State *g_dee4;
-void f_61a6_vby(void);
+extern State *racket_object;
+void prep_brick(void);
 void move_mouse_to(int, int);
 extern char g_269c[];
 void draw_zero_padded_number(int, int, int, int, int);
@@ -295,7 +295,7 @@ extern int g_8db0;
 void submit_audio_request(int);
 extern char g_2fec[];
 void copy_tile_to_page(int, int);
-void f_7e62(int, int, int, int, int, int, int);
+void spawn_animated_sprite(int, int, int, int, int, int, int);
 void spawn_falling_spell(unsigned char, unsigned char, int, int);
 void draw_level_tile_on_pages(int a, int b, int c);
 extern int g_dd74_ntd;
@@ -306,7 +306,7 @@ extern int g_dd54;
 void apply_timed_level_change(void);
 extern int g_68b7[];
 extern int g_ddc0;
-extern unsigned char *m_de5c;
+extern unsigned char *player_key_flags;
 void update_racket_movement_bounds(void);
 void move_falling_spells(void);
 extern unsigned char g_390a[2];
@@ -360,33 +360,33 @@ extern int g_e230;
 extern int g_8db4;
 extern void (*g_8db8)(void);
 extern unsigned char p_A990[];
-void f_8004(int *, int);
+void get_sprite_bounds(int *, int);
 int rectangles_intersect(void *, void *);
 void remove_falling_spell(void);
 extern short windows_environment_detected;
 void resize_racket(void);
 void start_racket_release_animation(void);
 void adjust_active_bonuses(void);
-extern void f_8fce(int, int);
-extern void f_9053(void);
-extern int c_DDAC;
-extern int g_dDa8;
-extern Rec12 *g_ddb4;
-extern Rec12 g_df78[];
-extern int g_ddc4;
-extern int g_ddcc;
-extern Rec28 *g_dd94;
-extern Rec28 g_a848[];
+extern void spawn_game_ball(int, int);
+extern void adjust_game_ball_velocity(void);
+extern int game_ball_slot;
+extern int current_ball_count;
+extern Rec12 *current_ball_pointer;
+extern Rec12 game_balls[];
+extern int moving_target_number;
+extern int moving_target_count;
+extern Rec28 *moving_target_cursor;
+extern Rec28 moving_target_records[];
 extern int get_racket_sprite_height(void);
-extern void f_6a1d(unsigned char, int, int, int);
-extern void f_6327(void);
+extern void spawn_player_shot(unsigned char, int, int, int);
+extern void update_player_shots(void);
 extern void set_mouse_horizontal_bounds(int, int);
 extern void set_mouse_vertical_bounds(int, int);
-extern int g_dee0;
+extern int game_art_base;
 extern int g_67b0;
 extern int audio_request_table_8;
 extern int g_df3c;
-extern int g_8e48;
+extern int level_art_base;
 extern Row16 g_6cbb[];
 extern int g_8dc8;
 extern Pair8 racket_sprite_frames[];
@@ -505,16 +505,16 @@ void move_falling_spells(void)
 {
     int unused_stack_slot;
 
-    g_e24c = g_dee4->at_00;
-    r_e250 = g_dee4->at_04;
-    f_8004(&g_e24c, g_dee4->at_78);
+    g_e24c = racket_object->at_00;
+    r_e250 = racket_object->at_04;
+    get_sprite_bounds(&g_e24c, racket_object->at_78);
     g_dda4 = p_A990;
     for (g_ddbc = 0; g_ddbc < g_ddc0; ++g_ddbc) {
         *(int *)g_dda4 = *(int *)g_dda4;
         ++*(int *)(g_dda4 + 4);
         if (g_e142_baun != 0)
             ++*(int *)(g_dda4 + 4);
-        g_8db4 = next_packed_table_value(g_dda4 + 8, g_dda4 + 0xc) + g_df34_nnyybtp;
+        g_8db4 = next_packed_table_value(g_dda4 + 8, g_dda4 + 0xc) + spell_art_base;
         if (*(int *)g_dda4 > 0x140 || *(int *)g_dda4 < 0 ||
             *(int *)(g_dda4 + 4) > 0xd8 || *(int *)(g_dda4 + 4) < 0) {
             remove_falling_spell();
@@ -523,7 +523,7 @@ void move_falling_spells(void)
         if (*(int *)(g_dda4 + 4) < 0xc3) {
             g_e22c = *(int *)g_dda4;
             g_e230 = *(int *)(g_dda4 + 4);
-            f_8004(&g_e22c, g_8db4);
+            get_sprite_bounds(&g_e22c, g_8db4);
             if (rectangles_intersect(&g_e24c, &g_e22c) != 0) {
                 g_dDb8 = ((unsigned char *)g_dda4)[0x10] + 1;
                 g_8e20 = ((unsigned char *)g_dda4)[0x11];
@@ -531,7 +531,7 @@ void move_falling_spells(void)
                     g_8e20 -= 0x1c;
                 g_8db8 = spell_effect_handlers[g_8e20];
                 g_8db8();
-                r_dDDc_uzmlc[5] += 2 << g_dee4->at_24;
+                racket_state[5] += 2 << racket_object->at_24;
                 remove_falling_spell();
                 continue;
             }
@@ -575,23 +575,23 @@ void resize_racket(void)
 {
     if (g_dDb8 > 0)
         submit_audio_request(0x29);
-    *m_de5c |= 0x20;
-    g_dee4->at_58 = 3;
-    g_8e20 = g_dee4->at_1c + g_dDb8;
+    *player_key_flags |= 0x20;
+    racket_object->at_58 = 3;
+    g_8e20 = racket_object->at_1c + g_dDb8;
     if (g_8e20 > 12) g_8e20 = 12;
     if (g_8e20 < 0) g_8e20 = 0;
-    g_dee4->at_5c = g_8e20;
+    racket_object->at_5c = g_8e20;
 }
 
 void tick_racket_capture(void)
 {
     int racket_unshielded;
     int has_active_timer;
-    if (g_dee4->at_28 > 0) has_active_timer = 1; else has_active_timer = 0;
-    if ((*m_de5c & 8) == 0) racket_unshielded = 1; else racket_unshielded = 0;
+    if (racket_object->at_28 > 0) has_active_timer = 1; else has_active_timer = 0;
+    if ((*player_key_flags & 8) == 0) racket_unshielded = 1; else racket_unshielded = 0;
     if (racket_unshielded | has_active_timer) {
         submit_audio_request(0x27);
-        if (--g_dee4->at_28 < 0)
+        if (--racket_object->at_28 < 0)
             start_racket_release_animation();
     }
 }
@@ -599,21 +599,21 @@ void tick_racket_capture(void)
 void update_racket_effect(void)
 {
     submit_audio_request(0x4c);
-    g_dee4->at_24 += g_dDb8;
+    racket_object->at_24 += g_dDb8;
 }
 
 void attach_ball_to_racket(void)
 {
     submit_audio_request(0x5b);
-    if ((*m_de5c & 8) == 0) {
-        if ((*m_de5c & 0x10) == 0) {
-            *m_de5c |= 0x10;
-            g_dee4->at_00 = g_dee4->at_10 + g_dee4->at_0c - mouse_x_recent_average_1c;
-            g_dee4->at_04 = mouse_y_recent_average_g;
-            move_mouse_to(g_dee4->at_00, g_dee4->at_04);
-            g_dee4->at_38 = g_dDb8 << 6;
+    if ((*player_key_flags & 8) == 0) {
+        if ((*player_key_flags & 0x10) == 0) {
+            *player_key_flags |= 0x10;
+            racket_object->at_00 = racket_object->at_10 + racket_object->at_0c - mouse_x_recent_average_1c;
+            racket_object->at_04 = mouse_y_recent_average_g;
+            move_mouse_to(racket_object->at_00, racket_object->at_04);
+            racket_object->at_38 = g_dDb8 << 6;
         } else {
-            g_dee4->at_38 += g_dDb8 << 6;
+            racket_object->at_38 += g_dDb8 << 6;
         }
     }
 }
@@ -627,46 +627,46 @@ void reverse_bonus_motion(void)
 void play_bonus_effect(void)
 {
     submit_audio_request(0x1f);
-    f_7e62(0, 0, 0, 0, g_df34_nnyybtp, (int)g_5ec0, 13);
+    spawn_animated_sprite(0, 0, 0, 0, spell_art_base, (int)g_5ec0, 13);
 }
 
 void award_bonus_score(void)
 {
     submit_audio_request(0x3c);
-    r_dDDc_uzmlc[1] += g_dDb8 * 0x71;
+    racket_state[1] += g_dDb8 * 0x71;
 }
 
 void spawn_side_bonus(void) {
     submit_audio_request(0x3c);
-    f_8fce(g_dee4->at_00, g_dee4->at_04);
+    spawn_game_ball(racket_object->at_00, racket_object->at_04);
 }
 
 void adjust_active_bonuses(void) {
     submit_audio_request(0x5c);
-    g_ddb4 = g_df78;
-    for (c_DDAC = 0; c_DDAC < g_dDa8; ++c_DDAC) {
-        g_8e20 = g_ddb4->b[0x10] + g_dDb8;
+    current_ball_pointer = game_balls;
+    for (game_ball_slot = 0; game_ball_slot < current_ball_count; ++game_ball_slot) {
+        g_8e20 = current_ball_pointer->b[0x10] + g_dDb8;
         if (g_8e20 > 5) g_8e20 = 5;
         if (g_8e20 < 0) g_8e20 = 0;
-        g_ddb4->b[0x10] = (unsigned char)g_8e20;
-        ++g_ddb4;
+        current_ball_pointer->b[0x10] = (unsigned char)g_8e20;
+        ++current_ball_pointer;
     }
 }
 
 void animate_racket_shield(void) {
     submit_audio_request(0x56);
-    m_de5c[1] |= 8;
+    player_key_flags[1] |= 8;
     write_dac_palette(g_ddd4_eoraaik, 0, 0x100, 0x20);
-    g_dee4->at_30 += g_dDb8 << 7;
+    racket_object->at_30 += g_dDb8 << 7;
 }
 
 void update_all_bonus_effects(void) {
     submit_audio_request(0x4c);
     g_8e1c = 3;
-    g_ddb4 = g_df78;
-    for (c_DDAC = 0; c_DDAC < g_dDa8; ++c_DDAC) {
-        f_9053();
-        g_ddb4++;
+    current_ball_pointer = game_balls;
+    for (game_ball_slot = 0; game_ball_slot < current_ball_count; ++game_ball_slot) {
+        adjust_game_ball_velocity();
+        current_ball_pointer++;
     }
 }
 
@@ -677,84 +677,84 @@ void reverse_all_bonuses(void) {
 
 void trigger_racket_slide(void) {
     submit_audio_request(0x33);
-    m_de5c[1] &= 0xfe;
-    m_de5c[0] |= 8;
-    g_dee4->at_34 = g_dDb8 << 10;
-    m_de5c[1] &= 0xfe;
-    if (m_de5c[0] & 0x10) {
-        m_de5c[0] &= 0xef;
-        g_dee4->at_00 = g_dee4->at_10 + g_dee4->at_0c - (short)mouse_x_recent_average_1c;
-        g_dee4->at_04 = (short)mouse_y_recent_average_g;
-        move_mouse_to(g_dee4->at_00, g_dee4->at_04);
+    player_key_flags[1] &= 0xfe;
+    player_key_flags[0] |= 8;
+    racket_object->at_34 = g_dDb8 << 10;
+    player_key_flags[1] &= 0xfe;
+    if (player_key_flags[0] & 0x10) {
+        player_key_flags[0] &= 0xef;
+        racket_object->at_00 = racket_object->at_10 + racket_object->at_0c - (short)mouse_x_recent_average_1c;
+        racket_object->at_04 = (short)mouse_y_recent_average_g;
+        move_mouse_to(racket_object->at_00, racket_object->at_04);
     }
 }
 
 void shrink_racket(void) {
     submit_audio_request(0x68);
-    if (!(m_de5c[1] & 4)) {
-        g_dee4->at_04 = g_dee4->at_18;
-        m_de5c[1] |= 4;
+    if (!(player_key_flags[1] & 4)) {
+        racket_object->at_04 = racket_object->at_18;
+        player_key_flags[1] |= 4;
         update_racket_movement_bounds();
     }
 }
 
 void extend_racket(void) {
     submit_audio_request(0x5b);
-    if (!(m_de5c[0] & 8)) {
-        m_de5c[1] |= 1;
-        g_dee4->at_3c += g_dDb8 << 5;
+    if (!(player_key_flags[0] & 8)) {
+        player_key_flags[1] |= 1;
+        racket_object->at_3c += g_dDb8 << 5;
     }
 }
 
 void advance_racket_anim(void) {
     submit_audio_request(0x3c);
-    if (!g_dee4->at_28) {
-        g_dee4->at_44 = 0;
-        g_dee4->at_40 = 3;
+    if (!racket_object->at_28) {
+        racket_object->at_44 = 0;
+        racket_object->at_40 = 3;
     }
-    g_dee4->at_28 += g_dDb8;
+    racket_object->at_28 += g_dDb8;
 }
 
 void start_spell_anim_a(void) {
     submit_audio_request(0x3c);
-    m_de5c[0] |= 0x80;
-    g_dee4->at_60 = 0xf;
-    g_dee4->at_64 = 0xf;
-    g_dee4->at_68 = 1;
-    g_dee4->at_6c = 2;
-    g_dee4->at_70 = -2;
+    player_key_flags[0] |= 0x80;
+    racket_object->at_60 = 0xf;
+    racket_object->at_64 = 0xf;
+    racket_object->at_68 = 1;
+    racket_object->at_6c = 2;
+    racket_object->at_70 = -2;
 }
 
 void enable_spell_anim(void) {
     submit_audio_request(0x3c);
-    m_de5c[1] |= 0x10;
+    player_key_flags[1] |= 0x10;
 }
 
 void apply_area_spell(void) {
     submit_audio_request(0x67);
-    m_de5c[1] |= 0x20;
-    g_dee4->at_2c += g_dDb8 << 9;
-    g_ddb4 = g_df78;
-    for (c_DDAC = 0; c_DDAC < g_dDa8; ++c_DDAC) {
-        g_ddb4->b[0x11] |= 2;
-        ++g_ddb4;
+    player_key_flags[1] |= 0x20;
+    racket_object->at_2c += g_dDb8 << 9;
+    current_ball_pointer = game_balls;
+    for (game_ball_slot = 0; game_ball_slot < current_ball_count; ++game_ball_slot) {
+        current_ball_pointer->b[0x11] |= 2;
+        ++current_ball_pointer;
     }
 }
 
 void remember_racket_pos(void) {
     submit_audio_request(0x1f);
-    m_de5c[1] |= 2;
-    g_dee4->at_74 = g_dee4->at_00;
+    player_key_flags[1] |= 2;
+    racket_object->at_74 = racket_object->at_00;
 }
 
 void start_spell_animation_b(void) {
     submit_audio_request(0x3c);
-    m_de5c[0] |= 0x80;
-    g_dee4->at_60 = 0xf;
-    g_dee4->at_64 = 0xf;
-    g_dee4->at_68 = 5;
-    g_dee4->at_6c = 2;
-    g_dee4->at_70 = -2;
+    player_key_flags[0] |= 0x80;
+    racket_object->at_60 = 0xf;
+    racket_object->at_64 = 0xf;
+    racket_object->at_68 = 5;
+    racket_object->at_6c = 2;
+    racket_object->at_70 = -2;
 }
 
 void dispatch_spell_effect(void) {
@@ -777,51 +777,51 @@ void reverse_racket_effect(void) {
 
 void start_spell_animation_c(void) {
     submit_audio_request(0x3c);
-    m_de5c[0] |= 0x80;
-    g_dee4->at_60 = 4;
-    g_dee4->at_64 = 4;
-    g_dee4->at_68 = 1;
-    g_dee4->at_6c = 0;
-    g_dee4->at_70 = -5;
+    player_key_flags[0] |= 0x80;
+    racket_object->at_60 = 4;
+    racket_object->at_64 = 4;
+    racket_object->at_68 = 1;
+    racket_object->at_6c = 0;
+    racket_object->at_70 = -5;
 }
 
 void start_spell_animation_d(void) {
     submit_audio_request(0x3c);
-    m_de5c[0] |= 0x80;
-    g_dee4->at_60 = 6;
-    g_dee4->at_64 = 6;
-    g_dee4->at_68 = 1;
-    g_dee4->at_6c = 1;
-    g_dee4->at_70 = -4;
+    player_key_flags[0] |= 0x80;
+    racket_object->at_60 = 6;
+    racket_object->at_64 = 6;
+    racket_object->at_68 = 1;
+    racket_object->at_6c = 1;
+    racket_object->at_70 = -4;
 }
 
 void start_spell_animation_e(void) {
     submit_audio_request(0x3c);
-    m_de5c[0] |= 0x80;
-    g_dee4->at_60 = 4;
-    g_dee4->at_64 = 4;
-    g_dee4->at_68 = 5;
-    g_dee4->at_6c = 0;
-    g_dee4->at_70 = -5;
+    player_key_flags[0] |= 0x80;
+    racket_object->at_60 = 4;
+    racket_object->at_64 = 4;
+    racket_object->at_68 = 5;
+    racket_object->at_6c = 0;
+    racket_object->at_70 = -5;
 }
 
 void start_spell_animation_f(void) {
     submit_audio_request(0x3c);
-    m_de5c[0] |= 0x80;
-    g_dee4->at_60 = 6;
-    g_dee4->at_64 = 6;
-    g_dee4->at_68 = 3;
-    g_dee4->at_6c = 1;
-    g_dee4->at_70 = -4;
+    player_key_flags[0] |= 0x80;
+    racket_object->at_60 = 6;
+    racket_object->at_64 = 6;
+    racket_object->at_68 = 3;
+    racket_object->at_6c = 1;
+    racket_object->at_70 = -4;
 }
 
 void clear_projectile_spell_flags(void) {
     submit_audio_request(0x57);
-    g_dd94 = g_a848;
-    for (g_ddc4 = 0; g_ddc4 < g_ddcc; ++g_ddc4) {
-        g_dd94->b[0x24] |= 2;
-        *(int *)&g_dd94->b[0x20] = 0;
-        ++g_dd94;
+    moving_target_cursor = moving_target_records;
+    for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
+        moving_target_cursor->b[0x24] |= 2;
+        *(int *)&moving_target_cursor->b[0x20] = 0;
+        ++moving_target_cursor;
     }
 }
 

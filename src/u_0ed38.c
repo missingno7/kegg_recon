@@ -25,7 +25,7 @@ extern short vga_register_state_saved;
 extern void _disable(void);
 extern void _enable(void);
 extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
-extern int g_947c;
+extern int old_display_mode;
 extern int fill_clipped_vga_rectangle();
 extern void set_vga_display_start(int);
 extern void advance_video_page_indices(void);

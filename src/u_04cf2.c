@@ -15,17 +15,17 @@ extern int file_error_state;
 extern int g_8e1c;
 extern int g_8e20;
 extern int g_dda4;
-extern int g_dDa8;
-extern int c_DDAC;
+extern int current_ball_count;
+extern int game_ball_slot;
 extern int g_dDb8;
-extern Rec12 *g_ddb4;
+extern Rec12 *current_ball_pointer;
 extern int g_ddbc;
 extern int g_ddc0;
 extern char p_A990[];
-extern Rec12 g_df78[];
+extern Rec12 game_balls[];
 extern void *g_ddd4_eoraaik;
-extern unsigned char *m_de5c;
-extern State *g_dee4;
+extern unsigned char *player_key_flags;
+extern State *racket_object;
 extern char g_e13a;
 extern unsigned char g_e13b;
 extern unsigned char g_e46b;
@@ -47,61 +47,61 @@ extern Pair8 racket_effect_frames_c[];
 extern int g_8dc8;
 extern int g_8ddc;
 extern int g_8e24;
-extern unsigned char *g_dee0;
-extern unsigned char *g_df34_nnyybtp;
+extern unsigned char *game_art_base;
+extern unsigned char *spell_art_base;
 extern unsigned char *image_buffer_cursor;
 extern void submit_audio_request(int);
-extern void f_8fce(int, int);
-extern void f_9053(void);
+extern void spawn_game_ball(int, int);
+extern void adjust_game_ball_velocity(void);
 extern void update_racket_movement_bounds(void);
 extern void resize_racket(void);
 extern int get_racket_sprite_height(void);
 extern void load_next_file(int);
 extern void f_a574_wrvhrpegbz(int);
 extern void stop_audio_stream(void);
-extern void f_6a1d(unsigned char, int, int, int);
-extern void f_6327(void);
+extern void spawn_player_shot(unsigned char, int, int, int);
+extern void update_player_shots(void);
 extern void set_mouse_horizontal_bounds(int, int);
 extern void set_mouse_vertical_bounds(int, int);
 extern int g_e4d0_wfmxdlyju;
 extern int g_67b0;
 extern int audio_request_table_8;
 extern int g_df3c;
-extern int g_8e48;
+extern int level_art_base;
 extern int g_e4c8;
-extern int x_dd40_xbukycw;
-extern int g_df24_krqpxkj;
-extern int g_df2c_hwkico;
-extern int g_df20_rusvejgsscn;
-extern int k_DD48_jbwjbqarofg;
-extern int g_dd4c_ilunphmaok;
-extern int g_dDc8;
+extern int vga_buffer_base;
+extern int brick_art_start;
+extern int enemy_picture;
+extern int monster_art;
+extern int sprite_memory_base;
+extern int game_sprite_data_base_j;
+extern int player_shot_total;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
 extern Row16 g_6cbb[];
-extern int g_68f8_jwwqkwr;
-extern int g_6940_hqhettu;
-extern int g_6944_bdcftta;
-extern int g_6948_kxwrlv;
-extern int g_694c_wjufexbevsk;
-extern int g_6958_vghgxtjirow;
-extern int g_695c_qurvlwasjp;
-extern int g_6960_juobaluykyr;
-extern int g_6964;
+extern int main_palette_fn;
+extern int brick_sprite_fn;
+extern int spell_sprite_fn;
+extern int foe_sprite_fn;
+extern int racket_sprite_filename;
+extern int digit_sprite_filename;
+extern int monster_sprite_filename;
+extern int monster_anim_fname;
+extern int main_screen_data_filename;
 extern int (*g_8db8)(void);
 extern int (*spell_effect_handlers[])(void);
-extern int g_ddc4;
-extern int g_ddcc;
-extern Rec28 *g_dd94;
-extern Rec28 g_a848[];
-extern void f_8066(int *, int);
+extern int moving_target_number;
+extern int moving_target_count;
+extern Rec28 *moving_target_cursor;
+extern Rec28 moving_target_records[];
+extern void get_sprite_collision_bounds(int *, int);
 extern int next_packed_table_value(int *, int *);
-extern void f_8004(int *, int);
+extern void get_sprite_bounds(int *, int);
 extern int rectangles_intersect(int *, int *);
 extern void tick_racket_capture(void);
 extern void spawn_falling_spell(int, int, int, int);
-extern void f_7e62(int, int, int, int, int, int, int);
+extern void spawn_animated_sprite(int, int, int, int, int, int, int);
 extern int next_random_value();
 extern void spawn_enemy_projectile(int, int, int, int);
 extern void move_enemy_projectiles(void);
@@ -124,7 +124,7 @@ extern int g_8e04;
 extern int g_8e10;
 extern int bonus_animations_by_type[];
 extern unsigned char q_A988[];
-extern Rec20 *r_dDDc_uzmlc;
+extern Rec20 *racket_state;
 
 void update_racket_state(void)
 {
@@ -134,11 +134,11 @@ void update_racket_state(void)
     v_4 = (int *)(best_of_the_bests_text + 4);
     v_8 = (int *)g_38fe;
     v_c = (*(v_4 - 1));
-    g_dee4->at_08 = g_dee4->at_00;
-    if (m_de5c[0] & 2) {
-    if (--g_dee4->at_50 <= 0) {
-    g_dee4->at_50 = 4;
-    if ((g_dee4->at_1c + 8) <= ++g_dee4->at_54) {
+    racket_object->at_08 = racket_object->at_00;
+    if (player_key_flags[0] & 2) {
+    if (--racket_object->at_50 <= 0) {
+    racket_object->at_50 = 4;
+    if ((racket_object->at_1c + 8) <= ++racket_object->at_54) {
     if (v_c) {
 L_4d74:;
     v_c = (v_c ^ (*v_4++));
@@ -146,109 +146,109 @@ L_4d74:;
     if (v_c) {
     v_c = 0;
     file_error_state = 0;
-    g_dDa8 = 5000;
+    current_ball_count = 5000;
     }
     }
 L_4da9:;
-    m_de5c[0] &= 0xfd;
-    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
+    player_key_flags[0] &= 0xfd;
+    move_mouse_to(racket_object->at_00, racket_object->at_04);
     }
     }
     } else {
-    if (m_de5c[0] & 1) {
-    if (--g_dee4->at_48 <= 0) {
-    g_dee4->at_48 = 4;
-    g_dee4->at_4c++;
-    g_8e20 = (g_dee4->at_4c - 12);
+    if (player_key_flags[0] & 1) {
+    if (--racket_object->at_48 <= 0) {
+    racket_object->at_48 = 4;
+    racket_object->at_4c++;
+    g_8e20 = (racket_object->at_4c - 12);
     if (g_8e20 >= 0) {
     if (bonus_sprite_animations[g_8e20].pad < 0) {
-    g_dee4->at_4c--;
+    racket_object->at_4c--;
     g_e13a = 255;
     } else {
-    m_de5c[1] &= 0xfe;
-    m_de5c[1] &= 0xfb;
-    m_de5c[0] &= 0xbf;
+    player_key_flags[1] &= 0xfe;
+    player_key_flags[1] &= 0xfb;
+    player_key_flags[0] &= 0xbf;
     }
     }
     }
     } else {
-    if (m_de5c[0] & 0x20) {
-    if (--g_dee4->at_58 == 0) {
-    g_dee4->at_58 = 3;
-    if (g_dee4->at_1c > g_dee4->at_5c) {
-    g_dee4->at_1c--;
+    if (player_key_flags[0] & 0x20) {
+    if (--racket_object->at_58 == 0) {
+    racket_object->at_58 = 3;
+    if (racket_object->at_1c > racket_object->at_5c) {
+    racket_object->at_1c--;
     update_racket_dimensions();
     } else {
-    if (g_dee4->at_1c < g_dee4->at_5c) {
-    g_dee4->at_1c++;
+    if (racket_object->at_1c < racket_object->at_5c) {
+    racket_object->at_1c++;
     update_racket_dimensions();
     } else {
-    m_de5c[0] &= 0xdf;
+    player_key_flags[0] &= 0xdf;
     }
     }
     }
     }
 L_4ec7:;
-    if (m_de5c[1] & 8) {
-    g_8e20 = --g_dee4->at_30;
+    if (player_key_flags[1] & 8) {
+    g_8e20 = --racket_object->at_30;
     if (g_8e20 < 32) {
     write_dac_palette(g_ddd4_eoraaik, 0, 256, g_8e20);
     }
 L_4f06:;
     if (g_8e20 <= 0) {
-    m_de5c[1] &= 0xf7;
+    player_key_flags[1] &= 0xf7;
     }
     }
 L_4f18:;
-    if (m_de5c[1] & 0x20) {
-    if (--g_dee4->at_2c <= 0) {
-    m_de5c[1] &= 0xdf;
-    g_ddb4 = g_df78;
-    c_DDAC = 0;
+    if (player_key_flags[1] & 0x20) {
+    if (--racket_object->at_2c <= 0) {
+    player_key_flags[1] &= 0xdf;
+    current_ball_pointer = game_balls;
+    game_ball_slot = 0;
 L_4f4e:;
-    for (; c_DDAC < g_dDa8; c_DDAC++) {
-    if (*(int *)(g_ddb4->b + 4) > 2432) {
-    g_ddb4->b[0x11] &= 0xfd;
+    for (; game_ball_slot < current_ball_count; game_ball_slot++) {
+    if (*(int *)(current_ball_pointer->b + 4) > 2432) {
+    current_ball_pointer->b[0x11] &= 0xfd;
     }
 L_4f7c:;
-    g_ddb4++;
+    current_ball_pointer++;
     }
     }
     }
 L_4f85:;
     if (g_e13b) {
-    if (m_de5c[1] & 1) goto L_5377;
+    if (player_key_flags[1] & 1) goto L_5377;
     } else {
-    if (!(m_de5c[0] & 8)) goto L_5241;
-    if (--g_dee4->at_34 <= 0) {
-    m_de5c[0] &= 0xf7;
-    m_de5c[0] &= 0xfb;
-    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
+    if (!(player_key_flags[0] & 8)) goto L_5241;
+    if (--racket_object->at_34 <= 0) {
+    player_key_flags[0] &= 0xf7;
+    player_key_flags[0] &= 0xfb;
+    move_mouse_to(racket_object->at_00, racket_object->at_04);
     } else {
-    if (g_dee4->at_34 < 140) {
-    ((Flags *)m_de5c)->b2 = (g_dee4->at_34 >> 3) & 1;
+    if (racket_object->at_34 < 140) {
+    ((Flags *)player_key_flags)->b2 = (racket_object->at_34 >> 3) & 1;
     }
     }
     }
 L_501a:;
     g_8e20 = 0;
-    g_ddb4 = g_df78;
-    c_DDAC = 0;
+    current_ball_pointer = game_balls;
+    game_ball_slot = 0;
 L_5038:;
-    for (; c_DDAC < g_dDa8; c_DDAC++) {
-    if (!(g_ddb4->b[0x11] & 1)) {
-    if (*(int *)(g_ddb4->b + 4) > g_8e20) goto L_506c;
+    for (; game_ball_slot < current_ball_count; game_ball_slot++) {
+    if (!(current_ball_pointer->b[0x11] & 1)) {
+    if (*(int *)(current_ball_pointer->b + 4) > g_8e20) goto L_506c;
     }
     goto L_508b;
 L_506c:;
-    g_8e20 = ((int)*(int *)(g_ddb4->b + 4) >> (int)4);
-    g_8e1c = ((int)*(int *)g_ddb4->b >> (int)4);
+    g_8e20 = ((int)*(int *)(current_ball_pointer->b + 4) >> (int)4);
+    g_8e1c = ((int)*(int *)current_ball_pointer->b >> (int)4);
 L_508b:;
-    g_ddb4++;
+    current_ball_pointer++;
     }
 L_5094:;
-    g_ddb4 = g_df78;
-    if (*(int *)(g_ddb4->b + 0xc) < 0) {
+    current_ball_pointer = game_balls;
+    if (*(int *)(current_ball_pointer->b + 0xc) < 0) {
     g_dda4 = (int)p_A990;
     g_ddbc = 0;
 L_50c1:;
@@ -286,59 +286,59 @@ L_5153:;
     }
     }
 L_515f:;
-    if (g_dee4->at_04 < 188) {
-    g_dee4->at_04 += 5;
-    if (g_dee4->at_04 > 188) {
-    g_dee4->at_04 = 188;
+    if (racket_object->at_04 < 188) {
+    racket_object->at_04 += 5;
+    if (racket_object->at_04 > 188) {
+    racket_object->at_04 = 188;
     }
     }
 L_5190:;
-    if (g_dee4->at_00 < g_8e1c) {
-    g_dee4->at_00 += 8;
-    if (g_dee4->at_00 > g_8e1c) {
-    g_dee4->at_00 = g_8e1c;
+    if (racket_object->at_00 < g_8e1c) {
+    racket_object->at_00 += 8;
+    if (racket_object->at_00 > g_8e1c) {
+    racket_object->at_00 = g_8e1c;
     }
     } else {
-    if (g_dee4->at_00 > g_8e1c) {
-    g_dee4->at_00 -= 8;
-    if (g_dee4->at_00 < g_8e1c) {
-    g_dee4->at_00 = g_8e1c;
+    if (racket_object->at_00 > g_8e1c) {
+    racket_object->at_00 -= 8;
+    if (racket_object->at_00 < g_8e1c) {
+    racket_object->at_00 = g_8e1c;
     }
     }
     }
 L_51f8:;
-    if (g_dee4->at_00 < g_dee4->at_0c) {
-    g_dee4->at_00 = g_dee4->at_0c;
+    if (racket_object->at_00 < racket_object->at_0c) {
+    racket_object->at_00 = racket_object->at_0c;
     }
 L_521a:;
-    if (g_dee4->at_00 > g_dee4->at_10) {
-    g_dee4->at_00 = g_dee4->at_10;
+    if (racket_object->at_00 > racket_object->at_10) {
+    racket_object->at_00 = racket_object->at_10;
     }
     goto L_5377;
 L_5241:;
-    if (m_de5c[1] & 1) {
-    if (--g_dee4->at_3c <= 0) {
-    m_de5c[1] &= 0xfe;
-    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
+    if (player_key_flags[1] & 1) {
+    if (--racket_object->at_3c <= 0) {
+    player_key_flags[1] &= 0xfe;
+    move_mouse_to(racket_object->at_00, racket_object->at_04);
     }
     } else {
-    if (m_de5c[0] & 0x10) {
-    if (--g_dee4->at_38 <= 0) {
-    m_de5c[0] &= 0xef;
-    m_de5c[0] &= 0xfb;
-    g_dee4->at_00 = ((g_dee4->at_10 + g_dee4->at_0c) - (short)mouse_x_recent_average_1c);
-    g_dee4->at_04 = (short)mouse_y_recent_average_g;
-    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
+    if (player_key_flags[0] & 0x10) {
+    if (--racket_object->at_38 <= 0) {
+    player_key_flags[0] &= 0xef;
+    player_key_flags[0] &= 0xfb;
+    racket_object->at_00 = ((racket_object->at_10 + racket_object->at_0c) - (short)mouse_x_recent_average_1c);
+    racket_object->at_04 = (short)mouse_y_recent_average_g;
+    move_mouse_to(racket_object->at_00, racket_object->at_04);
     } else {
-    g_dee4->at_00 = ((g_dee4->at_10 + g_dee4->at_0c) - (short)mouse_x_recent_average_1c);
-    g_dee4->at_04 = (short)mouse_y_recent_average_g;
-    if (g_dee4->at_38 < 32) {
-    ((Flags *)m_de5c)->b2 = (g_dee4->at_38 >> 2) & 1;
+    racket_object->at_00 = ((racket_object->at_10 + racket_object->at_0c) - (short)mouse_x_recent_average_1c);
+    racket_object->at_04 = (short)mouse_y_recent_average_g;
+    if (racket_object->at_38 < 32) {
+    ((Flags *)player_key_flags)->b2 = (racket_object->at_38 >> 2) & 1;
     }
     }
     } else {
-    g_dee4->at_00 = (short)mouse_x_recent_average_1c;
-    g_dee4->at_04 = (short)mouse_y_recent_average_g;
+    racket_object->at_00 = (short)mouse_x_recent_average_1c;
+    racket_object->at_04 = (short)mouse_y_recent_average_g;
     }
     }
     }
@@ -349,15 +349,15 @@ L_5377:;
 
 void draw_racket_and_effects(void)
 {
-    if ((*(unsigned char *)(m_de5c + 1) & 2) == 0) goto L_53e3;
-    *(int *)image_buffer_cursor = (int)(g_dee0 + 0x7536);
-    *(short *)(image_buffer_cursor + 4) = (short)g_dee4->at_74;
-    *(short *)(image_buffer_cursor + 6) = (short)g_dee4->at_04;
+    if ((*(unsigned char *)(player_key_flags + 1) & 2) == 0) goto L_53e3;
+    *(int *)image_buffer_cursor = (int)(game_art_base + 0x7536);
+    *(short *)(image_buffer_cursor + 4) = (short)racket_object->at_74;
+    *(short *)(image_buffer_cursor + 6) = (short)racket_object->at_04;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 0xa;
 L_53e3:;
-    if ((*(unsigned char *)m_de5c & 1) == 0) goto L_542d;
-    g_8e20 = g_dee4->at_4c;
+    if ((*(unsigned char *)player_key_flags & 1) == 0) goto L_542d;
+    g_8e20 = racket_object->at_4c;
     if (g_8e20 >= 0xc) goto L_5415;
     g_8e20 = 0xc - g_8e20;
     goto L_5478;
@@ -365,8 +365,8 @@ L_5415:;
     g_8dc8 = racket_effect_frames_c[g_8e20].value;
     goto L_54aa;
 L_542d:;
-    if ((*(unsigned char *)m_de5c & 2) == 0) goto L_546b;
-    g_8e20 = g_dee4->at_54;
+    if ((*(unsigned char *)player_key_flags & 2) == 0) goto L_546b;
+    g_8e20 = racket_object->at_54;
     if (g_8e20 < 8) goto L_5456;
     g_8e20 -= 8;
     goto L_5478;
@@ -374,113 +374,113 @@ L_5456:;
     g_8dc8 = g_61d0[g_8e20].value;
     goto L_54aa;
 L_546b:;
-    g_8e20 = g_dee4->at_1c;
+    g_8e20 = racket_object->at_1c;
 L_5478:;
-    if ((*(unsigned char *)m_de5c & 0x80) == 0) goto L_5497;
+    if ((*(unsigned char *)player_key_flags & 0x80) == 0) goto L_5497;
     g_8dc8 = racket_effect_frames_a[g_8e20].value;
     goto L_54aa;
 L_5497:;
     g_8dc8 = racket_sprite_frames[g_8e20].value;
 L_54aa:;
-    if ((*(unsigned char *)m_de5c & 4) != 0) goto L_5703;
-    *(int *)image_buffer_cursor = (int)(g_8dc8 + g_dee0);
-    *(short *)(image_buffer_cursor + 4) = (short)g_dee4->at_00;
-    *(short *)(image_buffer_cursor + 6) = (short)g_dee4->at_04;
+    if ((*(unsigned char *)player_key_flags & 4) != 0) goto L_5703;
+    *(int *)image_buffer_cursor = (int)(g_8dc8 + game_art_base);
+    *(short *)(image_buffer_cursor + 4) = (short)racket_object->at_00;
+    *(short *)(image_buffer_cursor + 6) = (short)racket_object->at_04;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 0xa;
-    g_dee4->at_78 = *(int *)(image_buffer_cursor + -0xa);
-    if ((*(unsigned char *)m_de5c & 0x40) == 0) goto L_557c;
+    racket_object->at_78 = *(int *)(image_buffer_cursor + -0xa);
+    if ((*(unsigned char *)player_key_flags & 0x40) == 0) goto L_557c;
     g_8ddc = g_6368[g_8e20].value;
-    *(int *)image_buffer_cursor = (int)(g_8ddc + g_dee0);
-    *(short *)(image_buffer_cursor + 4) = (short)g_dee4->at_00;
-    *(short *)(image_buffer_cursor + 6) = (short)g_dee4->at_04;
+    *(int *)image_buffer_cursor = (int)(g_8ddc + game_art_base);
+    *(short *)(image_buffer_cursor + 4) = (short)racket_object->at_00;
+    *(short *)(image_buffer_cursor + 6) = (short)racket_object->at_04;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 0xa;
 L_557c:;
-    if ((*(unsigned char *)(m_de5c + 1) & 4) == 0) goto L_55ea;
+    if ((*(unsigned char *)(player_key_flags + 1) & 4) == 0) goto L_55ea;
     g_8ddc = g_5ef0[((g_8e24 >> 2) & 1)].value;
-    *(int *)image_buffer_cursor = (int)(g_df34_nnyybtp + g_8ddc);
-    *(short *)(image_buffer_cursor + 4) = (short)g_dee4->at_00;
-    *(short *)(image_buffer_cursor + 6) = (short)g_dee4->at_04;
+    *(int *)image_buffer_cursor = (int)(spell_art_base + g_8ddc);
+    *(short *)(image_buffer_cursor + 4) = (short)racket_object->at_00;
+    *(short *)(image_buffer_cursor + 6) = (short)racket_object->at_04;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 0xa;
 L_55ea:;
-    if (g_dee4->at_28 > 0) goto L_55ff;
-    if ((*(unsigned char *)m_de5c & 8) == 0) goto L_5609;
+    if (racket_object->at_28 > 0) goto L_55ff;
+    if ((*(unsigned char *)player_key_flags & 8) == 0) goto L_5609;
 L_55ff:;
-    if ((*(unsigned char *)m_de5c & 1) == 0) goto L_560e;
+    if ((*(unsigned char *)player_key_flags & 1) == 0) goto L_560e;
 L_5609:;
     goto L_5703;
 L_560e:;
-    if (--g_dee4->at_40 > 0) goto L_5670;
-    g_8e1c = g_5e68[++g_dee4->at_44].pad;
+    if (--racket_object->at_40 > 0) goto L_5670;
+    g_8e1c = g_5e68[++racket_object->at_44].pad;
     if (g_8e1c >= 0) goto L_5662;
-    g_dee4->at_44 += g_8e1c;
-    g_8e1c = g_5e68[g_dee4->at_44].pad;
+    racket_object->at_44 += g_8e1c;
+    g_8e1c = g_5e68[racket_object->at_44].pad;
 L_5662:;
-    g_dee4->at_40 = g_8e1c;
+    racket_object->at_40 = g_8e1c;
 L_5670:;
-    if (g_dee4->at_28 != 1) goto L_5693;
-    g_8ddc = g_5e68[g_dee4->at_44].value;
+    if (racket_object->at_28 != 1) goto L_5693;
+    g_8ddc = g_5e68[racket_object->at_44].value;
     goto L_56a9;
 L_5693:;
-    g_8ddc = g_6098[g_dee4->at_44].value;
+    g_8ddc = g_6098[racket_object->at_44].value;
 L_56a9:;
-    *(int *)image_buffer_cursor = (int)(g_8ddc + g_df34_nnyybtp);
-    *(short *)(image_buffer_cursor + 4) = (unsigned short)((g_dee4->at_00 - (g_dee4->at_20 >> 1)) + 4);
-    *(short *)(image_buffer_cursor + 6) = (short)g_dee4->at_04;
+    *(int *)image_buffer_cursor = (int)(g_8ddc + spell_art_base);
+    *(short *)(image_buffer_cursor + 4) = (unsigned short)((racket_object->at_00 - (racket_object->at_20 >> 1)) + 4);
+    *(short *)(image_buffer_cursor + 6) = (short)racket_object->at_04;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 0xa;
 L_5703:;
-    if ((*(unsigned char *)(m_de5c + 1) & 1) == 0) goto L_576c;
+    if ((*(unsigned char *)(player_key_flags + 1) & 1) == 0) goto L_576c;
     g_8ddc = racket_effect_frames_b[g_8e20].value;
-    *(int *)image_buffer_cursor = (int)(g_8ddc + g_dee0);
-    *(short *)(image_buffer_cursor + 4) = (short)g_dee4->at_00;
-    *(short *)(image_buffer_cursor + 6) = (short)g_dee4->at_04;
+    *(int *)image_buffer_cursor = (int)(g_8ddc + game_art_base);
+    *(short *)(image_buffer_cursor + 4) = (short)racket_object->at_00;
+    *(short *)(image_buffer_cursor + 6) = (short)racket_object->at_04;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 0xa;
 L_576c:;
 }
 
 void start_racket_release_animation(void) {
-    if (!(m_de5c[0] & 1)) {
+    if (!(player_key_flags[0] & 1)) {
         submit_audio_request(0xb);
-        m_de5c[0] |= 1;
-        g_dee4->at_48 = 4;
-        g_dee4->at_4c = 0xd - g_dee4->at_1c;
+        player_key_flags[0] |= 1;
+        racket_object->at_48 = 4;
+        racket_object->at_4c = 0xd - racket_object->at_1c;
     }
 }
 
 void start_racket_movement_animation(void) {
     submit_audio_request(0x26);
-    m_de5c[0] |= 2;
-    g_dee4->at_50 = 4;
-    g_dee4->at_54 = 0;
+    player_key_flags[0] |= 2;
+    racket_object->at_50 = 4;
+    racket_object->at_54 = 0;
 }
 
 void update_racket_dimensions(void) {
-    g_dee4->at_20 = get_racket_sprite_height() - 2;
-    g_8e20 = g_dee4->at_20 >> 1;
-    g_dee4->at_0c = g_8e20 + 0x10;
-    g_dee4->at_10 = 0x130 - g_8e20;
-    set_mouse_horizontal_bounds(g_dee4->at_0c, g_dee4->at_10);
-    g_8e20 = g_dee4->at_00;
-    if (m_de5c[0] & 0x10)
-        g_8e20 = g_dee4->at_10 + g_dee4->at_0c - g_8e20;
+    racket_object->at_20 = get_racket_sprite_height() - 2;
+    g_8e20 = racket_object->at_20 >> 1;
+    racket_object->at_0c = g_8e20 + 0x10;
+    racket_object->at_10 = 0x130 - g_8e20;
+    set_mouse_horizontal_bounds(racket_object->at_0c, racket_object->at_10);
+    g_8e20 = racket_object->at_00;
+    if (player_key_flags[0] & 0x10)
+        g_8e20 = racket_object->at_10 + racket_object->at_0c - g_8e20;
     move_mouse_to(g_8e20, mouse_y_recent_average_g);
 }
 
 void update_racket_movement_bounds(void) {
-    if (m_de5c[1] & 4) g_8e20 = 0x18;
+    if (player_key_flags[1] & 4) g_8e20 = 0x18;
     else g_8e20 = 0xbc;
-    g_dee4->at_14 = g_8e20;
-    g_dee4->at_18 = 0xbc;
-    set_mouse_vertical_bounds(g_dee4->at_14, g_dee4->at_18);
-    move_mouse_to(mouse_x_recent_average_1c, g_dee4->at_04);
+    racket_object->at_14 = g_8e20;
+    racket_object->at_18 = 0xbc;
+    set_mouse_vertical_bounds(racket_object->at_14, racket_object->at_18);
+    move_mouse_to(mouse_x_recent_average_1c, racket_object->at_04);
 }
 
 int get_racket_sprite_height(void) {
     unsigned char *address;
-    address = g_dee0 + racket_sprite_frames[g_dee4->at_1c].value;
+    address = game_art_base + racket_sprite_frames[racket_object->at_1c].value;
     return *(short *)(address + 2);
 }

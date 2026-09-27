@@ -20,7 +20,7 @@ extern void clear_pal(void);
 extern void _disable(void);
 extern void _enable(void);
 extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
-extern int g_947c;
+extern int old_display_mode;
 extern int fill_clipped_vga_rectangle();
 extern short disp_idx;
 extern short draw_idx;

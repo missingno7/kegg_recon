@@ -39,10 +39,10 @@ extern void remove_keyboard_input_handler(void);
 extern int initialize_keyboard_manager(int);
 void launch_print_order_form(void);
 extern int ordering_information_text;
-extern int g_68f8_jwwqkwr;
-extern int g_6910;
-extern int g_6914;
-extern int g_693c;
+extern int main_palette_fn;
+extern int order_image_filename;
+extern int order_sprite_filename;
+extern int information_data_filename;
 extern short image_color_depth;
 extern short sound_blaster_detected;
 extern int fade_start;
@@ -59,10 +59,10 @@ extern unsigned char screen_palette_buffer[];
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
-extern unsigned char *x_dd40_xbukycw;
+extern unsigned char *vga_buffer_base;
 extern int g_dd44;
-extern char *k_DD48_jbwjbqarofg;
-extern unsigned char *g_dd4c_ilunphmaok;
+extern char *sprite_memory_base;
+extern unsigned char *game_sprite_data_base_j;
 extern int g_df48;
 extern int g_df4c;
 extern int g_df54;
@@ -83,9 +83,9 @@ extern void fatal_exit(unsigned, unsigned);
 extern void write_dac_palette(void *, int, int, int);
 extern void handle_s_key(void);
 extern void refresh_video_pages(int);
-extern void f_80d8(void);
+extern void rkt_mv(void);
 extern void f_843a(void);
-extern void f_9640(void *, void *);
+extern void set_pal(void *, void *);
 extern void f_9d40(unsigned char);
 extern int f_a574_wrvhrpegbz();
 extern void plot_transformed_pixel(void *, int);
@@ -100,9 +100,9 @@ void run_title_screen_loop(void);
 extern int stop_audio_stream();
 void load_title_screen_assets(void);
 void draw_title_screen(void);
-extern int g_6904;
-extern int g_6908;
-extern int g_690c;
+extern int menu_image_filename;
+extern int menu_sprite_filename;
+extern int menu_data_filename;
 extern int version_text;
 extern char *last_code_prompt;
 extern int g_dF58;
@@ -148,7 +148,7 @@ extern void copy_clipped_screen_rectangle(int, int, int, int, int, int, int, int
 extern unsigned int g_8e08;
 extern unsigned char g_e13c;
 extern unsigned char g_e140;
-extern int *r_dDDc_uzmlc;
+extern int *racket_state;
 extern unsigned char g_e143_eayxx;
 char *itoa(int, char *, int);
 extern int g_df6c;
@@ -160,14 +160,14 @@ void insert_high_score(void);
 void enter_high_score_name(void);
 void wait_for_key_or_click(void);
 extern int draw_page();
-extern int g_6918;
-extern int g_691c;
-extern int g_6920;
-extern int g_df24_krqpxkj;
-extern int g_df34_nnyybtp;
-extern int g_df2c_hwkico;
-extern int g_df20_rusvejgsscn;
-extern int g_dDc8;
+extern int score_image_filename;
+extern int font_sprite_filename;
+extern int score_data_filename;
+extern int brick_art_start;
+extern int spell_art_base;
+extern int enemy_picture;
+extern int monster_art;
+extern int player_shot_total;
 extern Row high_score_records[];
 extern unsigned char high_score_values[];
 extern int hall_of_fame_text;
@@ -183,7 +183,7 @@ extern int g_dF68;
 extern unsigned char g_e13d;
 extern void update_mouse(void);
 extern int saved_high_score_state;
-extern char *g_6924;
+extern char *high_score_filename;
 extern int f_1065b(char *, void *);
 extern void validate_high_score_records(void);
 void write_file_buffer(int a, int b, int c);
@@ -201,16 +201,16 @@ extern int programming_credits_page;
 void load_instruction_assets(void);
 void prepare_instruction_background(void);
 void show_instruction_page(int a0);
-extern int g_6940_hqhettu;
-extern int g_6944_bdcftta;
-extern int g_6948_kxwrlv;
-extern int g_694c_wjufexbevsk;
-extern int g_6958_vghgxtjirow;
-extern int g_695c_qurvlwasjp;
-extern int g_6960_juobaluykyr;
-extern int g_6964;
-extern int g_6934;
-extern int g_6938;
+extern int brick_sprite_fn;
+extern int spell_sprite_fn;
+extern int foe_sprite_fn;
+extern int racket_sprite_filename;
+extern int digit_sprite_filename;
+extern int monster_sprite_filename;
+extern int monster_anim_fname;
+extern int main_screen_data_filename;
+extern int scoref;
+extern int end_fn;
 extern int game_title_text;
 extern short disp_idx;
 extern int ending_page_one;
@@ -221,13 +221,13 @@ extern int ending_page_five;
 void load_ending_assets(void);
 void prepare_ending_background(void);
 void show_ending_page(int a);
-extern int g_6928;
-extern int g_692c;
-extern int g_6930;
-extern int g_6974;
-extern int g_6978;
-extern int g_697c;
-extern int g_6980;
+extern int score_background_filename;
+extern int score_font_filename;
+extern int end_screen_data_filename;
+extern int publisher_data_filename;
+extern int publisher_image_one_filename;
+extern int publisher_image_two_filename;
+extern int publisher_image_three_filename;
 void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int v_DF30;
 void load_shared_game_assets(void);
@@ -238,17 +238,17 @@ void load_return_screen_assets(void);
 void prepare_game_asset_read(void);
 void f_84a0(int);
 extern int b_DF40_omuefnnbqp;
-extern int g_Ddd8;
-extern int g_6950;
-extern int g_6954;
+extern int tile_art_base;
+extern int fill_sprite_filename;
+extern int game_font_filename;
 extern int g_df28;
-extern int g_6968;
-extern int g_6970;
-extern int g_696c;
+extern int level_screen_data_filename;
+extern int pause_screen_data_filename;
+extern int game_over_data_filename;
 extern short page3;
 extern int g_df38;
 void set_draw_page(int);
-void f_7f8a(void);
+void draw_background_tiles(void);
 extern unsigned char g_e142_baun;
 extern int g_ddb0;
 extern int g_dd78;
@@ -261,7 +261,7 @@ extern int b_DD70;
 extern int g_e158_tpotbrbk;
 extern int g_6c64[];
 extern int g_6c7c[];
-extern unsigned char g_a608;
+extern unsigned char brick_code_map;
 extern unsigned char q_A988[];
 extern unsigned char g_6b9e[];
 extern unsigned char g_2fe4[];
@@ -280,8 +280,8 @@ void write_pal(int);
 extern int g_6ae8;
 extern int g_6b78;
 void write_level_number_glyphs(void);
-extern unsigned char *g_dee4;
-void f_61a6_vby(void);
+extern unsigned char *racket_object;
+void prep_brick(void);
 void move_mouse_to(int, int);
 extern char g_269c[];
 void draw_zero_padded_number(int, int, int, int, int);
@@ -290,7 +290,7 @@ void submit_audio_request(int);
 extern unsigned char g_8e24;
 extern char g_2fec[];
 void copy_tile_to_page(int, int);
-void f_7e62(int, int, int, int, int, int, int);
+void spawn_animated_sprite(int, int, int, int, int, int, int);
 void spawn_falling_spell(unsigned char, unsigned char, int, int);
 void draw_level_tile_on_pages(int a, int b, int c);
 extern int g_dd74_ntd;
@@ -302,7 +302,7 @@ void apply_timed_level_change(void);
 extern int g_8e1c;
 extern int g_68b7[];
 extern int g_ddc0;
-extern unsigned char *m_de5c;
+extern unsigned char *player_key_flags;
 void update_racket_movement_bounds(void);
 void move_falling_spells(void);
 extern unsigned char g_390a[2];
@@ -356,7 +356,7 @@ void reset_lvl(void)
     ++g_df38;
     if (g_df38 >= 0x29)
         g_df38 = 0;
-    f_7f8a();
+    draw_background_tiles();
     copy_screen_span_entry(page3, 0, page2, 0, vga_state.buffer_size);
     if (image_buffer_error_code != 0)
         fatal_exit(image_buffer_error_code, 0);
@@ -369,7 +369,7 @@ void load_and_draw_level(void)
 
     image_color_depth = 8;
     draw_idx = page2;
-    g_dd80 = (unsigned short *)&g_a608;
+    g_dd80 = (unsigned short *)&brick_code_map;
     g_dd78 = 0;
     if (g_e142_baun != 0) {
         for (g_8e04 = 0; g_8e04 < 0x120; ++g_8e04) {
@@ -381,7 +381,7 @@ void load_and_draw_level(void)
         g_df28 += g_e143_eayxx * 0x24a;
         f_13889(g_df28, (int)&g_ddb0, 2);
         f_13889(g_df28 + 2, (int)q_A988, 8);
-        f_13889(g_df28 + 10, (int)&g_a608, 0x240);
+        f_13889(g_df28 + 10, (int)&brick_code_map, 0x240);
         for (row = 0; row < 0x10; row++) {
             for (column = 0; column < 0x12; column++) {
                 g_dd50 = ((unsigned char *)g_dd80)[1];
@@ -403,7 +403,7 @@ void load_and_draw_level(void)
                     b_DD70 = row * 8 + 24;
                 }
                 if (g_dd50 != 0) {
-                    g_e158_tpotbrbk = g_df24_krqpxkj + *(int *)(g_2fe4 + g_dd50 * 8);
+                    g_e158_tpotbrbk = brick_art_start + *(int *)(g_2fe4 + g_dd50 * 8);
                     draw_bob_sprite(g_e158_tpotbrbk, column * 16 + 16, row * 8 + 24);
                 }
                 ++g_dd80;
@@ -468,7 +468,7 @@ loop_done:
 void init_stage_palette(void)
 {
     f_843a();
-    g_e154 = g_Ddd8;
+    g_e154 = tile_art_base;
     u_e150 = (unsigned char *)&g_69c8;
     g_e148 = 12;
     f_82cc();
@@ -506,10 +506,10 @@ void write_level_number_glyphs(void)
 void redraw_level_state(void)
 {
     stop_audio_stream();
-    f_61a6_vby();
+    prep_brick();
     copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
     copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    move_mouse_to(((int *)g_dee4)[0], ((int *)g_dee4)[1]);
+    move_mouse_to(((int *)racket_object)[0], ((int *)racket_object)[1]);
 }
 
 void prepare_game_asset_read(void)
@@ -522,13 +522,13 @@ void prepare_game_asset_read(void)
 
 void draw_status(void)
 {
-    configure_text_renderer((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
+    configure_text_renderer((int)g_269c, monster_art, 0, 8, 8);
     set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_idx = page2;
-    r_dDDc_uzmlc[2] = -1;
-    r_dDDc_uzmlc[6] = -1;
-    draw_zero_padded_number(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
-    draw_zero_padded_number(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
+    racket_state[2] = -1;
+    racket_state[6] = -1;
+    draw_zero_padded_number(0x38, 4, racket_state[5], 10, 6);
+    draw_zero_padded_number(0x99, 4, racket_state[1] / 0x71, 10, 2);
     draw_zero_padded_number(0x108, 4, *(int *)high_score_values, 10, 6);
     copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
     copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
@@ -543,29 +543,29 @@ void update_game_status_panel(void)
     saved_video_page = (unsigned char)draw_idx;
     saved_palette_state = image_color_depth;
     image_color_depth = 8;
-    if (g_8db0 < r_dDDc_uzmlc[5]) {
-        r_dDDc_uzmlc[1] += 0x71;
+    if (g_8db0 < racket_state[5]) {
+        racket_state[1] += 0x71;
         g_8db0 += 0x7d0;
         submit_audio_request(0x3c);
     }
 
-    if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6] || r_dDDc_uzmlc[1] != r_dDDc_uzmlc[2]) {
-        configure_text_renderer((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
+    if (racket_state[5] != racket_state[6] || racket_state[1] != racket_state[2]) {
+        configure_text_renderer((int)g_269c, monster_art, 0, 8, 8);
     }
     set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
 
-    if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6]) {
-        r_dDDc_uzmlc[6] = r_dDDc_uzmlc[5];
+    if (racket_state[5] != racket_state[6]) {
+        racket_state[6] = racket_state[5];
         draw_idx = page2;
-        draw_zero_padded_number(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
+        draw_zero_padded_number(0x38, 4, racket_state[5], 10, 6);
         copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, flip_src, 0x38, 4);
         copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, flip_dst, 0x38, 4);
     }
 
-    if (r_dDDc_uzmlc[1] != r_dDDc_uzmlc[2]) {
-        r_dDDc_uzmlc[2] = r_dDDc_uzmlc[1];
+    if (racket_state[1] != racket_state[2]) {
+        racket_state[2] = racket_state[1];
         draw_idx = page2;
-        draw_zero_padded_number(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
+        draw_zero_padded_number(0x99, 4, racket_state[1] / 0x71, 10, 2);
         copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, flip_src, 0x99, 4);
         copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, flip_dst, 0x99, 4);
     }
@@ -583,7 +583,7 @@ void process_brick_hit(int column, int cell_index, int velocity_x, int velocity_
     saved_video_page = (unsigned char)draw_idx;
     pixel_x = column * 16 + 16;
     pixel_y = cell_index / 18 * 8 + 24;
-    r_dDDc_uzmlc[5] += 1 << *(int *)(g_dee4 + 0x24);
+    racket_state[5] += 1 << *(int *)(racket_object + 0x24);
     draw_idx = page2;
     copy_tile_to_page(pixel_x, pixel_y);
     draw_idx = flip_src;
@@ -598,7 +598,7 @@ void process_brick_hit(int column, int cell_index, int velocity_x, int velocity_
             velocity_x = -velocity_x;
     }
 
-    f_7e62(pixel_x, pixel_y, velocity_x, velocity_y, g_df24_krqpxkj,
+    spawn_animated_sprite(pixel_x, pixel_y, velocity_x, velocity_y, brick_art_start,
            (int)(g_2fec + (g_dd50 - 1) * 8), 0x12);
     if (g_dd50 >= 0x31 && g_dd50 <= 0x60) {
         if (((struct Cell *)g_dd80)[column].hi) {
@@ -623,7 +623,7 @@ void draw_level_tile_on_pages(int column, int row_offset, int tile_id)
     image_color_depth = 8;
     pixel_x = column * 16 + 16;
     pixel_y = row_offset / 18 * 8 + 24;
-    g_e158_tpotbrbk = g_df24_krqpxkj + *(int *)(g_2fe4 + tile_id * 8);
+    g_e158_tpotbrbk = brick_art_start + *(int *)(g_2fe4 + tile_id * 8);
     draw_idx = page2;
     draw_bob_sprite(g_e158_tpotbrbk, pixel_x, pixel_y);
     draw_idx = flip_src;
