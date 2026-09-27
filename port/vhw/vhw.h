@@ -32,6 +32,8 @@ void vhw_idle(uint64_t max_ns);  /* game thread waits for devices (blocking BIOS
 uint64_t vhw_clock_now_ns(void); /* shared PIT/VGA clock, with IRQ0 edge-time scope        */
 void vhw_clock_irq0_enter(uint64_t edge_ns);
 void vhw_clock_irq0_leave(void);
+void vhw_clock_begin_calibration(uint64_t start_ns);
+int vhw_clock_calibration_active(void);
 void vhw_bind_game_thread(void);
 void vhw_bind_irq_thread(void);
 int vhw_on_irq_thread(void);

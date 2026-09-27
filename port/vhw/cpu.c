@@ -17,17 +17,107 @@ static DWORD game_tid;
 static DWORD irq_tid;
 static __thread HANDLE poll_timer;
 volatile LONG vhw_cpu_poll_waiting;
+static INIT_ONCE machine_clock_once = INIT_ONCE_STATIC_INIT;
+static CRITICAL_SECTION machine_clock_lock;
+static uint64_t machine_clock_ns;
+static uint64_t machine_wall_ns;
+static int calibration_clock_active;
+static DWORD calibration_clock_owner;
+static uint64_t calibration_clock_ns;
+static volatile LONG if_owner_tid;
+#define CALIBRATION_CLOCK_STEP_NS 5000ull
 static __thread uint64_t irq_clock_ns;
 static __thread uint64_t irq_wall_ns;
 static __thread int irq_clock_active;
 static __thread unsigned poll_yield_count;
 
-/* IRQ0 is entered from a host thread after the device edge. Start VHW time at that edge,
- * then let it advance with ISR execution; the scheduler delay before dispatch is excluded. */
+/* One monotonic machine clock feeds both the PIT and VGA raster. A calibration entered by
+ * programming channel 0 in mode 2 while IF=0 gets a per-CPU clock: device-time observations
+ * advance by fixed steps, so host preemption cannot change a 3DA/PIT poll. Outside calibration
+ * the clock follows wall time. IRQ0 retains its edge-time scope. */
+static BOOL CALLBACK machine_clock_init(PINIT_ONCE once, PVOID parameter, PVOID *context)
+{
+    (void)once;
+    (void)parameter;
+    (void)context;
+    InitializeCriticalSection(&machine_clock_lock);
+    machine_clock_ns = ke_now_ns();
+    machine_wall_ns = machine_clock_ns;
+    return TRUE;
+}
+
+static void ensure_machine_clock(void)
+{
+    InitOnceExecuteOnce(&machine_clock_once, machine_clock_init, NULL, NULL);
+}
+
+static void machine_clock_sync_wall(uint64_t now)
+{
+    if (now >= machine_wall_ns)
+        machine_clock_ns += now - machine_wall_ns;
+    machine_wall_ns = now;
+}
+
 uint64_t vhw_clock_now_ns(void)
 {
+    uint64_t now = ke_now_ns(), result;
+    DWORD tid = GetCurrentThreadId();
+    if (irq_clock_active)
+        return now >= irq_wall_ns ? irq_clock_ns + (now - irq_wall_ns) : irq_clock_ns;
+
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (calibration_clock_active && tid == calibration_clock_owner && !vcpu_if_flag) {
+        calibration_clock_ns += CALIBRATION_CLOCK_STEP_NS;
+        result = calibration_clock_ns;
+    } else {
+        machine_clock_sync_wall(now);
+        result = machine_clock_ns;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
+    return result;
+}
+
+void vhw_clock_begin_calibration(uint64_t start_ns)
+{
+    DWORD tid = GetCurrentThreadId();
     uint64_t now = ke_now_ns();
-    return irq_clock_active && now >= irq_wall_ns ? irq_clock_ns + (now - irq_wall_ns) : now;
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (!vcpu_if_flag && tid == (DWORD)InterlockedCompareExchange(&if_owner_tid, 0, 0)) {
+        machine_clock_sync_wall(now);
+        calibration_clock_ns = start_ns;
+        calibration_clock_owner = tid;
+        calibration_clock_active = 1;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
+}
+
+int vhw_clock_calibration_active(void)
+{
+    int active;
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    active = calibration_clock_active && GetCurrentThreadId() == calibration_clock_owner &&
+             !vcpu_if_flag;
+    LeaveCriticalSection(&machine_clock_lock);
+    return active;
+}
+
+static void vhw_clock_end_calibration(DWORD tid)
+{
+    uint64_t now = ke_now_ns();
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (calibration_clock_active && calibration_clock_owner == tid) {
+        machine_clock_sync_wall(now);
+        if (calibration_clock_ns > machine_clock_ns)
+            machine_clock_ns = calibration_clock_ns;
+        calibration_clock_active = 0;
+        calibration_clock_owner = 0;
+        machine_wall_ns = now;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
 }
 
 void vhw_clock_irq0_enter(uint64_t edge_ns)
@@ -73,8 +163,20 @@ void vhw_reset_nesting(void)
     InterlockedExchange(&vhw_in_isr, 0);
 }
 
-void vcpu_cli(void) { InterlockedExchange(&vcpu_if_flag, 0); }
-void vcpu_sti(void) { InterlockedExchange(&vcpu_if_flag, 1); }
+void vcpu_cli(void)
+{
+    DWORD tid = GetCurrentThreadId();
+    InterlockedExchange(&if_owner_tid, (LONG)tid);
+    InterlockedExchange(&vcpu_if_flag, 0);
+}
+
+void vcpu_sti(void)
+{
+    DWORD tid = GetCurrentThreadId();
+    vhw_clock_end_calibration(tid);
+    InterlockedExchange(&if_owner_tid, 0);
+    InterlockedExchange(&vcpu_if_flag, 1);
+}
 
 /* The original wait_for_tick path polls a memory flag without entering the vhw. */
 void vhw_cpu_poll_yield(void)

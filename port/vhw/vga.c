@@ -151,7 +151,7 @@ static uint8_t vga_status_poll(void)
         /* Busy polling far from the retrace edge: give the host CPU back. */
         int total = vertical_total_lines();
         int distance = (vrs - line + total) % total;
-        if (distance > 64 && !vhw_on_irq_thread()) {
+        if (distance > 64 && !vhw_on_irq_thread() && !vhw_clock_calibration_active()) {
             uint64_t wait_dots = (uint64_t)(distance - 48) * horizontal_total_dots();
             /* Avoid host sleep in IRQ0: the handler must poll closely enough not to miss the
              * retrace edge while servicing its scheduled PIT interrupt. */

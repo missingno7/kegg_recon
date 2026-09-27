@@ -149,6 +149,8 @@ def main() -> int:
     ap.add_argument("--shots", default="", help="comma-separated ms=name screenshots, compatible with refshot.py")
     ap.add_argument("--shot", default=None, help="save one frame at --ms minus 500 ms (legacy smoke option)")
     ap.add_argument("--shot-dir", default=None, help="directory for --shots BMP files")
+    ap.add_argument("--timer-diag", action="store_true",
+                    help="report and validate the game's timer calibration at shutdown")
     ap.add_argument("--replay", default=None, help="input-only PF JSON replay or legacy input script to convert and run")
     ap.add_argument("--replay-start-ms", type=int, default=None, help="arm occurrence zero at this process time (default 11500 ms)")
     ap.add_argument("--build", default=str(ROOT / "build" / "port"))
@@ -172,7 +174,8 @@ def main() -> int:
     exe = (Path(a.build) / "ke_sdl3.exe").resolve()
     env = dict(os.environ)
     for name in ("KE_AUTOKEYS", "KE_AUTOMOUSE", "KE_AUTOCLICKS", "KE_SCREENSHOT",
-                 "KE_SCREENSHOTS", "KE_REPLAY", "KE_REPLAY_START_MS", "KE_EXIT_AFTER_MS"):
+                 "KE_SCREENSHOTS", "KE_REPLAY", "KE_REPLAY_START_MS", "KE_EXIT_AFTER_MS",
+                 "KE_TIMER_DIAG"):
         env.pop(name, None)
     env["KE_AUTOKEYS"] = ",".join(f"{ms}:{code:x}" for ms, code in keys)
     if mouse_moves:
@@ -217,6 +220,8 @@ def main() -> int:
     if a.ms is None:
         a.ms = 6000
     env["KE_EXIT_AFTER_MS"] = str(a.ms)
+    if a.timer_diag:
+        env["KE_TIMER_DIAG"] = "1"
     for kv in a.env:
         k, v = kv.split("=", 1)
         env[k] = v
@@ -229,6 +234,7 @@ def main() -> int:
         return 1
     out = r.stdout.decode("cp437", "replace") + r.stderr.decode("cp437", "replace")
     log = [line for line in out.splitlines() if line.startswith("[")]
+    timer_diag = re.search(r"timer diagnostic: timer_ok=(-?\d+) timer_delta=(\d+) timer_enabled09=(-?\d+)", out)
     stubs = sorted({m.group(1) for line in log for m in [re.search(r"STUB (\w+) \(", line)] if m})
     faults = [line for line in log if "fault" in line and "ERROR" in line]
     bt = next((line for line in log if "game thread (" in line), None)
@@ -252,7 +258,19 @@ def main() -> int:
         print(line)
     if omitted:
         print(f"... {omitted} additional automation log lines omitted")
-    ok = r.returncode == 0 and not faults and any("game thread finished" in line for line in log)
+    timer_valid = True
+    if a.timer_diag:
+        if timer_diag:
+            timer_ok, timer_delta, timer_enabled = map(int, timer_diag.groups())
+            expected_period = min(abs(timer_delta - 17024), abs(timer_delta - 19904)) <= 512
+            timer_valid = timer_ok == -1 and timer_enabled > 0 and expected_period
+            print(f"timer diagnostic: timer_ok={timer_ok} timer_delta={timer_delta} "
+                  f"timer_enabled09={timer_enabled} ({'valid' if timer_valid else 'INVALID'})")
+        else:
+            timer_valid = False
+            print("timer diagnostic missing")
+    ok = (r.returncode == 0 and not faults and any("game thread finished" in line for line in log)
+          and timer_valid)
     print("SMOKE OK" if ok else "SMOKE FAILED")
     return 0 if ok else 1
 

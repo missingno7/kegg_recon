@@ -145,6 +145,9 @@ static void pit_reprogram(PitChannel *c, uint32_t value)
     c->count_latched = 0;
     c->read_hi_next = 0;
     c->generation++;
+    if (c == &ch[0] && mode_number(c) == 2 && c->reload == 65536u &&
+        !vcpu_interrupts_enabled())
+        vhw_clock_begin_calibration(c->origin_ns);
     wake_pit_thread();
     if (c == &ch[0])
         ke_log(KE_LOG_DEBUG, "pit", "channel 0 reload %u (%.3f Hz)", c->reload,

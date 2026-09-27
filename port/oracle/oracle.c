@@ -663,10 +663,12 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
         break;
     }
     case 0xfa:
+        vcpu_cli();
         oracle_trace_add('C', 0, 0, 0);
         len += 1;
         break;
     case 0xfb:
+        vcpu_sti();
         oracle_trace_add('S', 0, 0, 0);
         len += 1;
         break;
