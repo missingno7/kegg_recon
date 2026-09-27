@@ -2011,10 +2011,10 @@
    "end": "0xa572",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/u_0a520.c",
-   "src_sha256": "23cc90635d17ee4050771f592d1e57569780781a02eb3ba4616d77024eae67b9",
-   "unit": "U0a520"
+   "profile": "game-c-ot-dos",
+   "src": "src/t08.c",
+   "src_sha256": "cef102507efc1634c863a028ca3362ba6b5c3d8c6f1f2c4a6b32951e6d4acf1a",
+   "unit": "T08"
   },
   {
    "name": "f_a574_wrvhrpegbz",
@@ -2022,10 +2022,10 @@
    "end": "0xa656",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/u_0a520.c",
-   "src_sha256": "23cc90635d17ee4050771f592d1e57569780781a02eb3ba4616d77024eae67b9",
-   "unit": "U0a520"
+   "profile": "game-c-ot-dos",
+   "src": "src/t08.c",
+   "src_sha256": "cef102507efc1634c863a028ca3362ba6b5c3d8c6f1f2c4a6b32951e6d4acf1a",
+   "unit": "T08"
   },
   {
    "name": "f_a658",
@@ -2033,10 +2033,10 @@
    "end": "0xa80b",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/u_0a520.c",
-   "src_sha256": "23cc90635d17ee4050771f592d1e57569780781a02eb3ba4616d77024eae67b9",
-   "unit": "U0a520"
+   "profile": "game-c-ot-dos",
+   "src": "src/t08.c",
+   "src_sha256": "cef102507efc1634c863a028ca3362ba6b5c3d8c6f1f2c4a6b32951e6d4acf1a",
+   "unit": "T08"
   },
   {
    "name": "f_a810",
@@ -4875,10 +4875,6 @@
   "g_e1d4": "3:e1d4",
   "g_e1d8": "3:e1d8",
   "g_e1dc": "3:e1dc",
-  "g_e1e0": "3:e1e0",
-  "g_e1e4": "3:e1e4",
-  "g_e1e8": "3:e1e8",
-  "g_e1ec": "3:e1ec",
   "g_e1f8": "3:e1f8",
   "g_e1fc": "3:e1fc",
   "g_e200": "3:e200",
@@ -5190,7 +5186,11 @@
   "g_e1b0_2": "3:e1b0",
   "g_e1b4_35": "3:e1b4",
   "g_e1be_9": "3:e1be",
-  "g_e1a4_g": "3:e1a4"
+  "g_e1a4_g": "3:e1a4",
+  "g_e1e0_3": "3:e1e0",
+  "g_e1e4_n": "3:e1e4",
+  "g_e1e8_1p": "3:e1e8",
+  "g_e1ec_f": "3:e1ec"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -6213,13 +6213,13 @@
    "note": "MASM module, check EXACT; image link keeps it raw (fixup record order within page differs: LEDATA/FIXUPP chunking open)"
   },
   {
-   "id": "U0a520",
-   "src": "src/u_0a520.c",
+   "id": "T08",
+   "src": "src/t08.c",
    "start": "0xa520",
    "end": "0xa80b",
-   "profile": "game-c-ot",
-   "src_sha256": "23cc90635d17ee4050771f592d1e57569780781a02eb3ba4616d77024eae67b9",
-   "note": "object plan (build/workers/objects)"
+   "profile": "game-c-ot-dos",
+   "src_sha256": "cef102507efc1634c863a028ca3362ba6b5c3d8c6f1f2c4a6b32951e6d4acf1a",
+   "note": "-ot object; CONST 0x11ec..0x1219 incl. leaked source-buffer padding reproduced on the DOS host (banner positions reconstructed); plain hash-ordered BSS 0xe1d4..0xe1f0; CRLF bytes significant"
   },
   {
    "id": "U0a810",
