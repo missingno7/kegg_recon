@@ -11,6 +11,7 @@ struct TransitionSpritePath {
 };
 struct BobFrameMetrics { short prefix, width, height; int opaque_06; short x_offset, y_offset; int opaque_0e; };
 struct IntRect { int left, top, right, bottom; };
+struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_interval, attack_delay; };
 struct DisplayModeInfo {
     short render_state;
     unsigned char plane_addresses_or_transform_a[16];
@@ -26,10 +27,12 @@ struct DisplayModeInfo {
 struct GameProgressState { int progress_marker, life_balance, opaque_08, opaque_0c, opaque_10, score, tail; };
 struct PlayerShot { int x, y, vertical_speed, sprite_offset; unsigned flags; };
 struct EnemyProjectile {
-    int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18, animation_sequence, hit_points;
+    int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18;
+    struct SpriteFrame *animation_sequence;
+    int hit_points;
     unsigned char flags, tail[3];
 };
-struct SpriteDrawCommand { unsigned sprite_or_frame; short x, y, flags; };
+struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
 extern struct DisplayModeInfo vga_state;
 int spell_count;
 int moving_target_number;
@@ -91,7 +94,7 @@ int enemy_cursor;
 
 extern int attack_frame_count;
 extern int enemy_fire_acceleration;
-extern int gameplay_tuning_by_stage[];
+extern struct EnemyStageTuning gameplay_tuning_by_stage[];
 /* Retained cross-TU table imports are not directly read by this unit. */
 extern int g_6888[];
 extern int g_688c[];

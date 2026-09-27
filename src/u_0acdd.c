@@ -11,8 +11,8 @@ extern void fill_clipped_vga_rectangle();
 extern void write_vga_pixel_entry();
 extern unsigned char read_vga_pixel_entry(short, short);
 /* Address-named context imports retained from the original unit; these are unused here. */
-extern int glyph_metrics_offsets;
-extern int g_font_bitmap_data;
+extern int font_glyph_metric_table;
+extern int font_bitmap_data;
 extern unsigned char text_render_state;
 extern int g_e209;
 extern int g_e20d;

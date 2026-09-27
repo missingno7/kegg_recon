@@ -145,7 +145,7 @@ extern struct GameProgressState *score_state;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
-extern struct AudioRequestEntry level_layout_records[];
+extern struct AudioRequestEntry level_audio_requests[];
 extern int g_68f8;
 extern int g_6940;
 extern int g_6944;

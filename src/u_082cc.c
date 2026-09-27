@@ -7,7 +7,7 @@ struct TransitionSpritePath {
 };
 struct BobFrameMetrics { short prefix, width, height; int opaque_06; short x_offset, y_offset; int opaque_0e; };
 struct IntRect { int left, top, right, bottom; };
-struct SpriteDrawCommand { unsigned sprite_or_frame; short x, y, flags; };
+struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
 extern struct BobFrameMetrics *sprite_metadata;
 extern short x_delta;
 extern short y_offset;

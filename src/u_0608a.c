@@ -115,7 +115,7 @@ extern int player_shot_total;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
-extern struct AudioRequestEntry level_layout_records[];
+extern struct AudioRequestEntry level_audio_requests[];
 extern int main_palette_fn;
 extern int brick_sprite_fn;
 extern int spell_sprite_fn;
@@ -221,15 +221,15 @@ void load_monster_art(void) {
 
 void prep_level(void) {
     file_mark = file_buf_ptr;
-    audio_request_entries = (int)level_layout_records;
+    audio_request_entries = (int)level_audio_requests;
     stop_audio_stream();
     for (temp = 0; temp < 0x6e; ++temp)
-        level_layout_records[temp].source -= previous_level_art_base;
+        level_audio_requests[temp].source -= previous_level_art_base;
     level_art_load_base = file_buf_ptr;
     level_art_base = level_art_load_base;
     if (sound_blaster_detected == -1) load_next_file(main_screen_data_filename);
     for (temp = 0; temp < 0x6e; ++temp)
-        level_layout_records[temp].source += level_art_base;
+        level_audio_requests[temp].source += level_art_base;
     previous_level_art_base = level_art_base;
     file_buf_ptr = file_mark;
 }
@@ -251,7 +251,7 @@ void shot_cd(void) {
     if (player_shot_total != 0) update_player_shots();
 }
 
-/* Move the player's shots, damage bricks, and queue their draw records. */
+/* Move the player's shots, damage bonus_stage_brick_counts, and queue their draw records. */
 void update_player_shots(void)
 {
     int row_y;
@@ -304,7 +304,7 @@ void update_player_shots(void)
         tile_hit = 0;
         row_y = (collision_box_a_top + sprite_bounds_a_bottom) >> 1;
         if (row_y >= BRICK_FIELD_TOP && row_y <= BRICK_FIELD_BOTTOM) {
-            if (sprite_rect_a_right < BRICK_TILE_WIDTH || collision_box_a_left > BRICK_FIELD_RIGHT_EDGE) goto queue_player_shot_draw; /* Queue the shot draw without checking bricks. */
+            if (sprite_rect_a_right < BRICK_TILE_WIDTH || collision_box_a_left > BRICK_FIELD_RIGHT_EDGE) goto queue_player_shot_draw; /* Queue the shot draw without checking bonus_stage_brick_counts. */
             cell_cursor = (struct BrickCell *)brick_code_map;
             first_column = (collision_box_a_left - BRICK_TILE_WIDTH) >> BRICK_COLUMN_SHIFT;
             last_column = (sprite_rect_a_right - BRICK_TILE_WIDTH) >> BRICK_COLUMN_SHIFT;

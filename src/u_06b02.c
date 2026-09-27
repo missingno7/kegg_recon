@@ -1,13 +1,13 @@
 struct AuxiliaryProjectile { int target_type, x, y, velocity_x, velocity_y; unsigned char *sprite_data; void *frame_info; unsigned char *frame_offset; int damage; };
 struct GameProgressState { int progress_marker, life_balance, opaque_08, opaque_0c, opaque_10, score, tail; };
 struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
-struct BobFrameMetrics { short prefix, width, height; unsigned char opaque_06[4]; short x_offset, y_offset; unsigned char opaque_0e[4]; };
+struct BobFrameMetrics { short prefix, width, height; int opaque_06; short x_offset, y_offset; int opaque_0e; };
 struct DisplayModeInfo { short render_state; unsigned char plane_addresses_or_transform_a[16]; int page_offsets_or_transform_b[4]; int page_adjustments_or_transform_c[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
 struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
-struct SpriteFrame { int image_offset, duration_or_delta; };
+struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
 struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
-struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18, animation_sequence, hit_points; unsigned char flags, tail[3]; };
-struct FallingSpell { int x, y, frame_countdown, frame_sequence; unsigned char variant, spell_id; };
+struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18; struct SpriteFrame *animation_sequence; int hit_points; unsigned char flags, tail[3]; };
+struct FallingSpell { int x, y, frame_countdown; struct SpriteFrame *frame_sequence; unsigned char variant, spell_id; };
 struct AudioRequestEntry { int source, byte_count, sample_rate, playback_mode; };
 struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_interval, attack_delay; };
 #define LEVEL_INTRO_GRACE_TICKS 0x118
@@ -136,7 +136,7 @@ void save_vga_state(void);
 int level_intro_ticks;
 int enemy_attack_interval;
 
-extern unsigned char gameplay_tuning_by_stage[];
+extern struct EnemyStageTuning gameplay_tuning_by_stage[];
 extern short stored_page_2_index;
 extern short page_3;
 extern short drawpage;
@@ -353,13 +353,13 @@ void sprclr(void) { sprite_instance_count = 0; }
 
 void aitune(void)
 {
-    enemy_max_health = ((struct EnemyStageTuning *)(gameplay_tuning_by_stage + (difficulty_tier_index << 4)))->enemy_health_max;
+    enemy_max_health = ((struct EnemyStageTuning *)((unsigned char *)gameplay_tuning_by_stage + (difficulty_tier_index << 4)))->enemy_health_max;
     enemy_health_current = enemy_max_health;
     last_displayed_enemy_health = enemy_health_current;
-    enemy_pattern = ((struct EnemyStageTuning *)(gameplay_tuning_by_stage + ((difficulty_tier_index << 2) << 2)))->enemy_pattern;
-    enemy_attack_interval = ((struct EnemyStageTuning *)(gameplay_tuning_by_stage + ((difficulty_tier_index << 2) << 2)))->enemy_attack_interval;
+    enemy_pattern = ((struct EnemyStageTuning *)((unsigned char *)gameplay_tuning_by_stage + ((difficulty_tier_index << 2) << 2)))->enemy_pattern;
+    enemy_attack_interval = ((struct EnemyStageTuning *)((unsigned char *)gameplay_tuning_by_stage + ((difficulty_tier_index << 2) << 2)))->enemy_attack_interval;
     attack_cooldown = enemy_attack_interval;
-    attack_delay = ((struct EnemyStageTuning *)(gameplay_tuning_by_stage + ((difficulty_tier_index << 2) << 2)))->attack_delay;
+    attack_delay = ((struct EnemyStageTuning *)((unsigned char *)gameplay_tuning_by_stage + ((difficulty_tier_index << 2) << 2)))->attack_delay;
     enemy_attack_timer = 0;
     attack_frame_count = 7;
     enemy_fire_acceleration = 0xf;

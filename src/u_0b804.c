@@ -11,7 +11,7 @@ int collision_box_a_left;
 #include <string.h>
 #define SCREENSHOT_FORMAT_IFF_PBM 1
 #define SCREENSHOT_FORMAT_COMPACT_BITMAP 5
-#define IFF_FORM_ID 0x464f524d
+#define IFF_FORM_ID_BE32 0x464f524d
 #define IFF_PBM_FORM_TYPE 0x50424d20
 #define IFF_BMHD_CHUNK_ID 0x424d4844
 #define IFF_CMAP_CHUNK_ID 0x434d4150
@@ -63,7 +63,32 @@ int collision_rect_b_bottom;
 int sprite_rect_c_left;
 
 extern int dos_memory_error;
-struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+struct DisplayModeInfo {
+    short render_state;
+    unsigned char plane_addresses_or_transform_a[16];
+    int page_offsets_or_transform_b[4];
+    int page_adjustments_or_transform_c[4];
+    unsigned char page_mode_classes[4];
+    int buffer_size_or_draw_parameter;
+    int row_stride;
+    int resolution_height;
+    int screen_width;
+    int screen_height;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right_or_width;
+    int viewport_bottom_or_height;
+    unsigned char mode_flags;
+    unsigned char sequencer_plane_mask;
+    unsigned char graphics_read_map;
+    unsigned char reserved_vga_byte;
+    unsigned char saved_video_mode;
+    unsigned char graphics_controller_mode;
+    unsigned char render_cache_60;
+    unsigned char render_cache_61;
+    unsigned char render_cache_62;
+    unsigned char tail;
+};
 extern struct DisplayModeInfo vga_state;
 void save_bios(void);
 void restore_bios(void);
@@ -126,9 +151,9 @@ int save_screen_image(char *filename)
     chunk_header_bytes = 4;
     bitmap_header_bytes = IFF_BITMAP_HEADER_BYTES;
     palette_bytes = IFF_PALETTE_BYTES;
-    pixel_bytes = vga_state.height * ((vga_state.width + EVEN_ROW_ROUNDUP) & EVEN_ROW_MASK);
+    pixel_bytes = vga_state.screen_height * ((vga_state.screen_width + EVEN_ROW_ROUNDUP) & EVEN_ROW_MASK);
     file_bytes = ((((((pixel_bytes + IFF_CHUNK_HEADER_BYTES) + palette_bytes) + IFF_CHUNK_HEADER_BYTES) + bitmap_header_bytes) + IFF_CHUNK_HEADER_BYTES) + chunk_header_bytes) + IFF_CHUNK_HEADER_BYTES;
-    compact_image_bytes = vga_state.width * vga_state.height + COMPACT_BITMAP_PIXELS_OFFSET;
+    compact_image_bytes = vga_state.screen_width * vga_state.screen_height + COMPACT_BITMAP_PIXELS_OFFSET;
     /* Format 1 writes an IFF PBM; format 5 writes the game's compact bitmap form. */
     switch (screenshot_format) {
     case SCREENSHOT_FORMAT_COMPACT_BITMAP:
@@ -141,7 +166,7 @@ int save_screen_image(char *filename)
         compact_image_buffer->header.prefix.fields.terminator = 0;
         compact_image_buffer->header.prefix.fields.version = 4;
         write_be32((int)compact_image_buffer->header.prefix.fields.dimensions_be,
-                   (vga_state.width << DIMENSION_WORD_SHIFT) | vga_state.height);
+                (vga_state.screen_width << DIMENSION_WORD_SHIFT) | vga_state.screen_height);
         write_be32((int)&compact_image_buffer->header.mode_and_tail.palette_mode, COMPACT_BITMAP_PALETTE_MODE);
         memset((unsigned char *)&compact_image_buffer->header.mode_and_tail + 2, 0,
                COMPACT_BITMAP_HEADER_BYTES - 0xe);
@@ -151,8 +176,8 @@ int save_screen_image(char *filename)
             pixel[x] = pixel[x] << VGA_DAC_TO_8BIT_SHIFT;
         }
         pixel = compact_image_buffer->palette_and_pixels + COMPACT_BITMAP_PALETTE_BYTES;
-        for (y = 0; y < vga_state.height; y++) {
-            for (x = 0; x < vga_state.width; x++) {
+        for (y = 0; y < vga_state.screen_height; y++) {
+            for (x = 0; x < vga_state.screen_width; x++) {
                 *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
             }
         }
@@ -169,12 +194,12 @@ int save_screen_image(char *filename)
         bitmap_header = file_data + chunk_header_bytes + IFF_CHUNK_HEADER_BYTES;
         palette_chunk = bitmap_header + bitmap_header_bytes + IFF_CHUNK_HEADER_BYTES;
         pixel_chunk = palette_chunk + palette_bytes + IFF_CHUNK_HEADER_BYTES;
-        write_be32((int)file_data, IFF_FORM_ID);
+        write_be32((int)file_data, IFF_FORM_ID_BE32);
         write_be32((int)(file_data + 4), file_bytes - 8);
         write_be32((int)(file_data + 8), IFF_PBM_FORM_TYPE);
         write_be32((int)bitmap_header, IFF_BMHD_CHUNK_ID);
         write_be32((int)(bitmap_header + 4), bitmap_header_bytes);
-        write_be32((int)(bitmap_header + 8), (vga_state.width << 0x10) | vga_state.height);
+        write_be32((int)(bitmap_header + 8), (vga_state.screen_width << 0x10) | vga_state.screen_height);
         *(int *)(bitmap_header + 0xc) = 0;
         bitmap_header[0x11] = 0;
         bitmap_header[0x13] = 0;
@@ -183,7 +208,7 @@ int save_screen_image(char *filename)
         bitmap_header[0x12] = 0;
         /* The original writes this dword into the eight-byte gap before CMAP. */
         *(int *)(bitmap_header + IFF_BITMAP_HEADER_BYTES) = IFF_BMHD_FOLLOWING_DWORD;
-        write_be32((int)(bitmap_header + 0x18), (vga_state.row_stride_bytes << 0x10) | vga_state.resolution_height);
+        write_be32((int)(bitmap_header + 0x18), (vga_state.row_stride << 0x10) | vga_state.resolution_height);
         write_be32((int)palette_chunk, IFF_CMAP_CHUNK_ID);
         write_be32((int)(palette_chunk + 4), palette_bytes);
         read_vga_palette(palette_chunk + 8);
@@ -193,8 +218,8 @@ int save_screen_image(char *filename)
         write_be32((int)pixel_chunk, IFF_BODY_CHUNK_ID);
         write_be32((int)(pixel_chunk + 4), pixel_bytes);
         pixel = pixel_chunk + 8;
-        for (y = 0; y < vga_state.height; y++) {
-            for (x = 0; x < ((vga_state.width + EVEN_ROW_ROUNDUP) & EVEN_ROW_MASK); x++) {
+        for (y = 0; y < vga_state.screen_height; y++) {
+            for (x = 0; x < ((vga_state.screen_width + EVEN_ROW_ROUNDUP) & EVEN_ROW_MASK); x++) {
                 *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
             }
         }

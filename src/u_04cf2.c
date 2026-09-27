@@ -117,7 +117,7 @@ extern int player_shot_total;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
-extern struct AudioRequestEntry level_layout_records[];
+extern struct AudioRequestEntry level_audio_requests[];
 extern int main_palette_fn;
 extern int brick_sprite_fn;
 extern int spell_sprite_fn;

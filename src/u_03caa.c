@@ -11,16 +11,17 @@ struct GlyphRecord { int offset; int count; };
 struct DigitSpriteRecord { int sprite_offset; int opaque_04; };
 struct PaletteGradient { short first_index, last_index; unsigned char start_red, start_green, start_blue, end_red, end_green, end_blue; };
 struct TransitionTrack { int first_value, second_value, current_value, step_delta, duration_ticks, auxiliary; };
-struct Racket { int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index, sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state, horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44, animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54, shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index, spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot, sprite_pointer; };
+struct Racket { int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index, sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state, horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44, animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54, shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index, spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot; unsigned char *sprite_pointer; };
 struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
 struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18; struct SpriteFrame *animation_sequence; int hit_points; unsigned char flags; unsigned char tail[3]; };
 struct FallingSpell { int x, y, frame_countdown; struct SpriteFrame *frame_sequence; unsigned char variant, spell_id; };
-struct SpriteFrame { int image_offset, duration_or_delta; };
+struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
 struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
 struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
 struct AudioRequestEntry { int source, byte_count, sample_rate, playback_mode; };
 struct TimedLevelChange { int cell_index, ticks_remaining; unsigned char replacement_tile; };
-struct DisplayModeInfo { short render_state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
+struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_interval, attack_delay; };
+struct DisplayModeInfo { short render_state; unsigned char plane_addresses_or_transform_a[16]; int page_offsets_or_transform_b[4]; int page_adjustments_or_transform_c[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
 extern int temp;
 extern struct BrickCell *cell_cursor;
 extern struct BrickCell brick_code_map[];
@@ -33,7 +34,7 @@ extern struct TimedLevelChange timed_change_records[];
 extern int timed_event_cursor;
 void apply_timed_level_change(void);
 extern int work_value;
-extern unsigned char gameplay_tuning_by_stage[];
+extern struct EnemyStageTuning gameplay_tuning_by_stage[];
 void process_timed_level_changes(void);
 void queue_timed_level_change(int replacement_tile, int cell_index);
 
@@ -80,7 +81,7 @@ void queue_timed_level_change(int replacement_tile, int cell_index)
     if (timed_change_count < TIMED_CHANGE_CAPACITY) {
         timed_change_cursor = timed_change_records;
         timed_change_cursor += timed_change_count;
-        timed_change_cursor->ticks_remaining = ((int *)(gameplay_tuning_by_stage + 0x33))[replacement_tile];
+        timed_change_cursor->ticks_remaining = ((int *)((unsigned char *)gameplay_tuning_by_stage + 0x33))[replacement_tile];
         timed_change_cursor->cell_index = cell_index;
         timed_change_cursor->replacement_tile = (unsigned char)replacement_tile;
         ++timed_change_count;
