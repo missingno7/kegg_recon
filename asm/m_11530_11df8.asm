@@ -1,6 +1,140 @@
 .386P
 DGROUP GROUP _DATA
+; ProTracker MOD and Sound Blaster constants used by this module.
+MOD_MAGIC_MK                         EQU 2E4B2E4Dh ; 'M.K.'
+MOD_MAGIC_FLT4                       EQU 34544C46h ; 'FLT4'
+MOD_MAGIC_8CHN                       EQU 4E484338h ; '8CHN'
+MOD_TAG_OFFSET                       EQU 438h
+MOD_PATTERN_DATA_OFFSET              EQU 43Ch
+MOD_SONG_LENGTH_OFFSET               EQU 3B6h
+MOD_ORDER_TABLE_OFFSET                EQU 3B8h
+MOD_PATTERN_COUNT                     EQU 80h
+MOD_PATTERN_ROWS                      EQU 40h
+MOD_SAMPLE_COUNT                      EQU 1Fh
+MOD_SAMPLE_HEADER_BYTES               EQU 1Eh
+MOD_TITLE_BYTES                       EQU 14h
+MOD_SAMPLE_SLOTS                      EQU 20h
+TRACKER_CHANNEL_STATE_BYTES           EQU 16h
+MOD_ORDER_POSITION_UNINITIALIZED      EQU 0FFh
+MOD_NIBBLE_SHIFT                      EQU 4
+MOD_SAMPLE_NIBBLE_MASK                EQU 0F0h
+TRACKER_FIXED_POINT_SHIFT             EQU 10h
+SEGMENT_PAIR_ROTATE_BITS              EQU 10h
+TRACKER_SAMPLE_AREA_OFFSET            EQU 4200h
+TRACKER_MEMORY_ALIGN_BIAS             EQU 0FFh
+TRACKER_MEMORY_ALIGN_MASK             EQU 0FFFFFF00h
+TRACKER_RENDER_CHUNK_MASK             EQU 3Fh
+TRACKER_RENDER_CHUNK_BOUNDARY         EQU -40h
+TRACKER_MIX_GROUP_MASK                EQU 7
+TRACKER_MIX_GROUP_SHIFT               EQU 3
+TRACKER_CHANNEL_MIXER_VOLUME_MASK     EQU 0FF00h
+MOD_FOUR_CHANNELS                     EQU 4
+MOD_EIGHT_CHANNELS                    EQU 8
+MOD_DEFAULT_TICKS_PER_ROW              EQU 6
+MOD_DEFAULT_TEMPO_BPM                  EQU 7Dh
+MOD_MAX_VOLUME                        EQU 40h
+MOD_TEMPO_THRESHOLD_BPM                EQU 20h
+MOD_PERIOD_MASK                       EQU 0FFFh
+MOD_SAMPLE_CLOCK_HZ                   EQU 372C00h
+MOD_TICK_TIME_NUMERATOR               EQU 280h
+MILLISECONDS_PER_SECOND               EQU 3E8h
+MOD_SAMPLE_RATE_ARG                   EQU 0Ch
+MOD_FILE_IMAGE_ARG                    EQU 8
+SOUND_BLASTER_BASE_ARG                EQU 10h
+SOUND_IRQ_NUMBER_ARG                  EQU 14h
+SOUND_DMA_CHANNEL_ARG                 EQU 18h
+MOD_MIN_LOOP_WORDS                    EQU 2
+MOD_EFFECT_SET_VOLUME                 EQU 0Ch
+MOD_EFFECT_SET_SPEED_OR_TEMPO          EQU 0Fh
+MOD_EFFECT_POSITION_JUMP              EQU 0Bh
+MOD_EFFECT_PATTERN_BREAK              EQU 0Dh
+MOD_EFFECT_SAMPLE_OFFSET              EQU 9
+MOD_EFFECT_VOLUME_SLIDE               EQU 0Ah
+
+PLAYER_ERROR_BAD_MOD                   EQU 602h
+PLAYER_ERROR_DPMI_ALLOC                EQU 603h
+PLAYER_ERROR_DSP_START                 EQU 604h
+DPMI_ALLOCATE_DOS_MEMORY               EQU 100h
+DPMI_FREE_DOS_MEMORY                   EQU 101h
+DOS_SET_INTERRUPT_VECTOR                EQU 25h
+DOS_GET_INTERRUPT_VECTOR                EQU 35h
+DOS_SERVICES_INTERRUPT                  EQU 21h
+DPMI_SERVICES_INTERRUPT                 EQU 31h
+DOS_IRQ_MASTER_VECTOR_BASE              EQU 8
+DOS_IRQ_SLAVE_VECTOR_BASE               EQU 60h
+TRACKER_DOS_MEMORY_PARAGRAPHS           EQU 434h
+TRACKER_DMA_BUFFER_BYTES                EQU 120h
+TRACKER_MIX_TABLE_CLEAR_BYTES           EQU 140h
+TRACKER_MAX_POLL_COUNT                  EQU 10000h
+PCM_UNSIGNED_SILENCE                    EQU 80h
+SB_DSP_BUSY_MASK                        EQU 80h
+SAMPLE_LOOP_END_PATCH_VALUE             EQU 12345678h
+SAMPLE_LOOP_LENGTH_PATCH_VALUE          EQU 12345678h
+
+; Sound Blaster DSP register offsets are relative to module_sound_io_base.
+SB_DSP_RESET_OFFSET                     EQU 6
+SB_DSP_READ_DATA_OFFSET                 EQU 0Ah
+SB_DSP_WRITE_DATA_OFFSET                EQU 0Ch
+SB_DSP_READ_STATUS_OFFSET               EQU 0Eh
+SB_DSP_STATUS_TO_WRITE_DELTA            EQU -2
+SB_DSP_STATUS_TO_READ_DATA_DELTA        EQU 4
+SB_DSP_RESET_TO_STATUS_DELTA            EQU 8
+SB_DSP_CMD_SPEAKER_ON                   EQU 0D1h
+SB_DSP_CMD_SET_TIME_CONSTANT            EQU 40h
+SB_DSP_CMD_SINGLE_CYCLE_DMA             EQU 14h
+SB_DSP_CMD_SPEAKER_OFF                  EQU 0D3h
+SB_DSP_DMA_SINGLE_CYCLE_MODE            EQU 58h
+SB_DSP_RESET_ACK                        EQU 0AAh
+
+; 8237 DMA controller and cascaded 8259 PIC ports.
+DMA_CHANNEL_MASK_PORT                   EQU 0Ah
+DMA_MODE_PORT                           EQU 0Bh
+DMA_CLEAR_FLIP_FLOP_PORT                EQU 0Ch
+DMA_CHANNEL_MASK_BIT                    EQU 4
+DMA_PAGE_PORTS_PACKED                   EQU 82818387h
+DMA_COUNT_STABILITY_TOLERANCE            EQU 10h
+DMA_COUNT_STABILITY_TOLERANCE_NEGATIVE   EQU -10h
+PIC_MASTER_MASK_PORT                    EQU 21h
+PIC_SLAVE_MASK_PORT                     EQU 0A1h
+PIC_MASTER_EOI_PORT                     EQU 20h
+PIC_SLAVE_EOI_PORT                      EQU 0A0h
+PIC_END_OF_INTERRUPT_COMMAND            EQU 20h
+PIC_IRQ_BIT_BASE                        EQU 1
+
+; Packed on-disk and in-memory records. Structure fields are offsets only.
+MODSampleHeader STRUC
+    sample_name                         DB 22 DUP (?)
+    sample_length_words                 DW ?
+    sample_finetune                     DB ?
+    sample_volume                       DB ?
+    sample_repeat_start_words           DW ?
+    sample_repeat_length_words          DW ?
+MODSampleHeader ENDS
+
+MODPatternEvent STRUC
+    note_and_instrument_word            DW ?
+    instrument_effect_word              DW ?
+MODPatternEvent ENDS
+
+ChannelRowEvent STRUC
+    note_period                         DW ?
+    sample_number                       DB ?
+    volume                              DB ?
+    effect_and_parameter                DW ?
+ChannelRowEvent ENDS
+
+TrackerChannelState STRUC
+    sample_position                     DD ?
+    sample_fraction                     DD ?
+    sample_loop_start                   DD ?
+    sample_loop_end                     DD ?
+    sample_period                       DD ?
+    channel_volume                      DB ?
+    reserved                            DB ?
+TrackerChannelState ENDS
+
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+; Sound Blaster configuration and DPMI/IRQ bookkeeping.
         PUBLIC module_sound_io_base
 module_sound_io_base	DW 0
         PUBLIC module_sound_irq_number
@@ -9,47 +143,51 @@ module_sound_irq_number	DB 0
 module_sound_dma_channel	DB 0
         PUBLIC module_sample_rate
 module_sample_rate	DW 0
-        PUBLIC module_sample_period
-module_sample_period	DD 0
-        PUBLIC module_reserved_bytes
-module_reserved_bytes LABEL DWORD
+        ; Saved DOS IRQ vector and DPMI selector for the allocated tracker buffers.
+        PUBLIC module_saved_irq_vector_offset
+module_saved_irq_vector_offset	DD 0
+        PUBLIC module_saved_irq_vector_segment
+module_saved_irq_vector_segment LABEL DWORD
         DB 0h, 0h
-        PUBLIC module_pattern_order_count
-module_pattern_order_count	DW 0
-        PUBLIC module_song_data_pointer
-module_song_data_pointer	DD 0
-        PUBLIC module_sample_data_pointer
-module_sample_data_pointer	DD 0
-        PUBLIC module_pattern_count
-module_pattern_count	DW 0
-        PUBLIC module_pattern_index
-module_pattern_index	DW 0
-        PUBLIC module_sample_index
-module_sample_index	DW 0
-        PUBLIC module_row_index
-module_row_index	DW 0
-        PUBLIC module_tick_index
-module_tick_index	DW 0
-        PUBLIC module_tick_period
-module_tick_period	DD 0
+        PUBLIC tracker_dos_memory_selector
+tracker_dos_memory_selector	DW 0
+        ; Pointers to the generated volume table and the DMA output buffer.
+        PUBLIC module_volume_mix_table
+module_volume_mix_table	DD 0
+        PUBLIC module_audio_buffer
+module_audio_buffer	DD 0
+        PUBLIC module_audio_buffer_bytes
+module_audio_buffer_bytes	DW 0
+        PUBLIC module_audio_buffer_half_offset
+module_audio_buffer_half_offset	DW 0
+        PUBLIC module_audio_buffer_remaining_bytes
+module_audio_buffer_remaining_bytes	DW 0
+        PUBLIC samples_until_next_tracker_tick
+samples_until_next_tracker_tick	DW 0
+        PUBLIC samples_per_tracker_tick
+samples_per_tracker_tick	DW 0
+        PUBLIC tracker_sample_period_scale
+tracker_sample_period_scale	DD 0
         PUBLIC module_channel_count
 module_channel_count	DW 0
+        ; Eight packed mixer states: sample position, fraction, loop bounds, period, volume.
         PUBLIC module_channel_0_state
-module_channel_0_state	DB 22 DUP (0)
+module_channel_0_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_1_state
-module_channel_1_state	DB 22 DUP (0)
+module_channel_1_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_2_state
-module_channel_2_state	DB 22 DUP (0)
+module_channel_2_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_3_state
-module_channel_3_state	DB 22 DUP (0)
+module_channel_3_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_4_state
-module_channel_4_state	DB 22 DUP (0)
+module_channel_4_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_5_state
-module_channel_5_state	DB 22 DUP (0)
+module_channel_5_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_6_state
-module_channel_6_state	DB 22 DUP (0)
+module_channel_6_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
         PUBLIC module_channel_7_state
-module_channel_7_state	DB 22 DUP (0)
+module_channel_7_state	DB TRACKER_CHANNEL_STATE_BYTES DUP (0)
+        ; Pointer table used by the per-channel row parser and sample mixer.
         PUBLIC module_channel_state_table
 module_channel_state_table	DD module_channel_0_state
         DD module_channel_1_state
@@ -65,8 +203,9 @@ module_order_position	DB 0
 module_song_length	DB 0
         PUBLIC module_tick_counter
 module_tick_counter	DB 0
+        ; MOD order list, followed by the current row and its tempo/tick state.
         PUBLIC module_pattern_order_table
-module_pattern_order_table	DB 128 DUP (0)
+module_pattern_order_table	DB MOD_PATTERN_COUNT DUP (0)
         PUBLIC module_current_pattern_row
 module_current_pattern_row	DD 0
         PUBLIC module_ticks_per_row
@@ -75,1527 +214,882 @@ module_ticks_per_row	DB 0
 module_row_tick_countdown	DB 0
         PUBLIC module_tempo_bpm
 module_tempo_bpm	DB 0
+        ; One cached six-byte event per possible output channel.
         PUBLIC module_channel_row_events
 module_channel_row_events	DB 48 DUP (0)
+        ; Parsed pattern addresses and per-sample start/loop/volume tables.
         PUBLIC module_pattern_addresses
-module_pattern_addresses	DD 128 DUP (0)
+module_pattern_addresses	DD MOD_PATTERN_COUNT DUP (0)
         PUBLIC module_sample_addresses
-module_sample_addresses	DD 32 DUP (0)
+module_sample_addresses	DD MOD_SAMPLE_SLOTS DUP (0)
         PUBLIC module_sample_loop_starts
-module_sample_loop_starts	DD 32 DUP (0)
+module_sample_loop_starts	DD MOD_SAMPLE_SLOTS DUP (0)
         PUBLIC module_sample_loop_ends
-module_sample_loop_ends	DD 32 DUP (0)
+module_sample_loop_ends	DD MOD_SAMPLE_SLOTS DUP (0)
         PUBLIC module_sample_volumes
-module_sample_volumes	DB 32 DUP (0)
+module_sample_volumes	DB MOD_SAMPLE_SLOTS DUP (0)
         PUBLIC module_player_error_code
 module_player_error_code	DD 0
-        PUBLIC module_player_timing_state
-module_player_timing_state	DD 0
+        PUBLIC module_saved_es_segment
+module_saved_es_segment	DD 0
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-; Parse ProTracker MOD headers, sample tables, orders, and patterns.
+; Entry: edi points to a loaded MOD image; the remaining arguments are rate, DSP base, IRQ, and DMA.
+; Accepts the four-channel M.K./FLT4 tags and the eight-channel 8CHN tag.
         PUBLIC load_protracker_module
 load_protracker_module LABEL NEAR
 parse_protracker_module PROC NEAR
-L_11530:
         enter 0, 0
-L_11534:
         pushad
-L_11535:
-        mov edi, dword ptr [ebp + 8]
-L_11538:
-        mov ax, word ptr [ebp + 0Ch]
-L_1153C:
-        mov dx, word ptr [ebp + 10h]
-L_11540:
-        mov cl, byte ptr [ebp + 14h]
-L_11543:
-        mov ch, byte ptr [ebp + 18h]
-L_11546:
+        mov edi, dword ptr [ebp + MOD_FILE_IMAGE_ARG]
+        mov ax, word ptr [ebp + MOD_SAMPLE_RATE_ARG]
+        mov dx, word ptr [ebp + SOUND_BLASTER_BASE_ARG]
+        mov cl, byte ptr [ebp + SOUND_IRQ_NUMBER_ARG]
+        mov ch, byte ptr [ebp + SOUND_DMA_CHANNEL_ARG]
         mov word ptr [module_sound_io_base], dx
-L_1154D:
         mov byte ptr [module_sound_irq_number], cl
-L_11553:
         mov byte ptr [module_sound_dma_channel], ch
-L_11559:
         mov word ptr [module_sample_rate], ax
-L_1155F:
-        mov eax, 372C00h
-L_11564:
+        mov eax, MOD_SAMPLE_CLOCK_HZ
         xor edx, edx
-L_11566:
-        shld edx, eax, 10h
-L_1156A:
-        shl eax, 10h
-L_1156D:
+        shld edx, eax, TRACKER_FIXED_POINT_SHIFT
+        shl eax, TRACKER_FIXED_POINT_SHIFT
         movzx ebx, word ptr [module_sample_rate]
-L_11574:
         div ebx
-L_11576:
-        mov dword ptr [module_tick_period], eax
-L_1157B:
-        mov dword ptr [module_player_error_code], 602h
-L_11585:
-        call L_115F1
-L_1158A:
-        jb short L_115D2
-L_1158C:
-        mov dword ptr [module_player_error_code], 603h
-L_11596:
-        call L_118B6
-L_1159B:
-        jb short L_115D2
-L_1159D:
+        mov dword ptr [tracker_sample_period_scale], eax
+        mov dword ptr [module_player_error_code], PLAYER_ERROR_BAD_MOD
+        call parse_mod_header
+        jb short load_error_exit
+        mov dword ptr [module_player_error_code], PLAYER_ERROR_DPMI_ALLOC
+        call allocate_tracker_memory
+        jb short load_error_exit
         mov dl, byte ptr [module_tempo_bpm]
-L_115A3:
-        call L_119D7
-L_115A8:
-        call L_11C36
-L_115AD:
-        call L_11D12
-L_115B2:
+        call update_tick_period_for_tempo
+        call program_dma_audio_buffer
+        call uninstall_protracker_irq
         mov dword ptr [module_player_error_code], 0
-L_115BC:
-        call L_11BCE
-L_115C1:
-        jae short L_115D2
-L_115C3:
-        mov dword ptr [module_player_error_code], 604h
-L_115CD:
-        call L_115DA
-L_115D2:
+        call start_sound_blaster_playback
+        jae short load_error_exit
+        mov dword ptr [module_player_error_code], PLAYER_ERROR_DSP_START
+        call stop_playback_entry
+load_error_exit:
         popad
-L_115D3:
         mov eax, dword ptr [module_player_error_code]
-L_115D8:
         leave
-L_115D9:
         ret
+; Stop playback, mask the DMA channel, stop the DSP, and release the DPMI buffer.
         PUBLIC stop_protracker_module
 stop_protracker_module LABEL NEAR
-L_115DA:
+stop_playback_entry:
         pushad
-L_115DB:
-        call L_11C1B
-L_115E0:
-        call L_11CBE
-L_115E5:
-        call L_11C2A
-L_115EA:
-        call L_1197E
-L_115EF:
+        call stop_sound_blaster_playback
+        call install_protracker_irq
+        call mask_dma_channel
+        call free_tracker_memory
         popad
-L_115F0:
         ret
-L_115F1:
+; Decode the MOD order table and 31 sample headers, then derive sample pointers.
+parse_mod_header:
         pushad
-L_115F2:
-        mov word ptr [module_channel_count], 4
-L_115FB:
-        cmp dword ptr [edi + 438h], 2E4B2E4Dh
-L_11605:
-        je short L_1162E
-L_11607:
-        cmp dword ptr [edi + 438h], 34544C46h
-L_11611:
-        je short L_1162E
-L_11613:
-        mov word ptr [module_channel_count], 8
-L_1161C:
-        cmp dword ptr [edi + 438h], 4E484338h
-L_11626:
-        je short L_1162E
-L_11628:
+        mov word ptr [module_channel_count], MOD_FOUR_CHANNELS
+        cmp dword ptr [edi + MOD_TAG_OFFSET], MOD_MAGIC_MK
+        je short recognized_mod_signature
+        cmp dword ptr [edi + MOD_TAG_OFFSET], MOD_MAGIC_FLT4
+        je short recognized_mod_signature
+        mov word ptr [module_channel_count], MOD_EIGHT_CHANNELS
+        cmp dword ptr [edi + MOD_TAG_OFFSET], MOD_MAGIC_8CHN
+        je short recognized_mod_signature
         stc
-L_11629:
-        jmp near ptr L_116FE
-L_1162E:
-        mov byte ptr [module_order_position], 0FFh
-L_11635:
-        mov byte ptr [module_tick_counter], 40h
-L_1163C:
-        mov byte ptr [module_ticks_per_row], 6
-L_11643:
+        jmp near ptr parse_mod_header_return
+recognized_mod_signature:
+        mov byte ptr [module_order_position], MOD_ORDER_POSITION_UNINITIALIZED
+        mov byte ptr [module_tick_counter], MOD_PATTERN_ROWS
+        mov byte ptr [module_ticks_per_row], MOD_DEFAULT_TICKS_PER_ROW
         mov byte ptr [module_row_tick_countdown], 0
-L_1164A:
-        mov byte ptr [module_tempo_bpm], 7Dh
-L_11651:
-        mov al, byte ptr [edi + 3B6h]
-L_11657:
+        mov byte ptr [module_tempo_bpm], MOD_DEFAULT_TEMPO_BPM
+        mov al, byte ptr [edi + MOD_SONG_LENGTH_OFFSET]
         mov byte ptr [module_song_length], al
-L_1165C:
-        mov ecx, 80h
-L_11661:
+        mov ecx, MOD_PATTERN_COUNT
         xor ebx, ebx
-L_11663:
         xor ah, ah
-L_11665:
-        mov al, byte ptr [edi + ebx + 3B8h]
-L_1166C:
+scan_pattern_order_table:
+        mov al, byte ptr [edi + ebx + MOD_ORDER_TABLE_OFFSET]
         mov byte ptr [ebx + module_pattern_order_table], al
-L_11672:
         cmp al, ah
-L_11674:
-        jb short L_11678
-L_11676:
+        jb short next_order_table_entry
         mov ah, al
-L_11678:
+next_order_table_entry:
         inc ebx
-L_11679:
-        loop L_11665
-L_1167B:
+        loop scan_pattern_order_table
         movzx ecx, ah
-L_1167E:
         inc ecx
-L_1167F:
         xor ebx, ebx
-L_11681:
         movzx eax, word ptr [module_channel_count]
-L_11688:
         shl eax, 8
-L_1168B:
         mov esi, edi
-L_1168D:
-        add esi, 43Ch
-L_11693:
+        add esi, MOD_PATTERN_DATA_OFFSET
+store_pattern_address:
         mov dword ptr [ebx*4 + module_pattern_addresses], esi
-L_1169A:
         add esi, eax
-L_1169C:
         inc ebx
-L_1169D:
-        loop L_11693
-L_1169F:
-        mov ecx, 1Fh
-L_116A4:
-        lea edi, [edi + 14h]
-L_116A7:
+        loop store_pattern_address
+        mov ecx, MOD_SAMPLE_COUNT
+        lea edi, [edi + MOD_TITLE_BYTES]
         xor ebx, ebx
-L_116A9:
         inc ebx
-L_116AA:
-        mov al, byte ptr [edi + 19h]
-L_116AD:
+next_sample_header:
+        mov al, byte ptr [edi + sample_volume]
         mov byte ptr [ebx + module_sample_volumes], al
-L_116B3:
-        movzx eax, word ptr [edi + 16h]
-L_116B7:
-        movzx edx, word ptr [edi + 1Ch]
-L_116BB:
-        movzx ebp, word ptr [edi + 1Ah]
-L_116BF:
+        movzx eax, word ptr [edi + sample_length_words]
+        movzx edx, word ptr [edi + sample_repeat_length_words]
+        movzx ebp, word ptr [edi + sample_repeat_start_words]
         xchg al, ah
-L_116C1:
         xchg dl, dh
-L_116C3:
         xchg ax, bp
-L_116C5:
         xchg al, ah
-L_116C7:
         xchg ax, bp
-L_116C9:
         add eax, eax
-L_116CB:
         add edx, edx
-L_116CD:
         add ebp, ebp
-L_116CF:
-        cmp edx, 2
-L_116D2:
-        ja short L_116D8
-L_116D4:
+        cmp edx, MOD_MIN_LOOP_WORDS
+        ja short normalize_sample_loop
         xor edx, edx
-L_116D6:
         mov ebp, eax
-L_116D8:
+normalize_sample_loop:
         add edx, ebp
-L_116DA:
         add eax, esi
-L_116DC:
         add edx, esi
-L_116DE:
         add ebp, esi
-L_116E0:
         mov dword ptr [ebx*4 + module_sample_addresses], esi
-L_116E7:
         mov dword ptr [ebx*4 + module_sample_loop_ends], edx
-L_116EE:
         mov dword ptr [ebx*4 + module_sample_loop_starts], ebp
-L_116F5:
         mov esi, eax
-L_116F7:
-        add edi, 1Eh
-L_116FA:
+        add edi, MOD_SAMPLE_HEADER_BYTES
         inc ebx
-L_116FB:
-        loop L_116AA
-L_116FD:
+        loop next_sample_header
         clc
-L_116FE:
+parse_mod_header_return:
         popad
-L_116FF:
         ret
-L_11700:
+; Called by the IRQ-side renderer; advance rows and apply per-channel effects.
+advance_protracker_tick:
         pushad
-L_11701:
         dec byte ptr [module_row_tick_countdown]
-L_11707:
-        jle short L_11724
-L_11709:
+        jle short begin_pattern_row
         mov esi, OFFSET module_channel_row_events
-L_1170E:
         xor ebx, ebx
-L_11710:
-        call L_11822
-L_11715:
+process_channel_tick_effects:
+        call apply_channel_tick_effect
         add esi, 6
-L_11718:
         inc ebx
-L_11719:
         cmp bx, word ptr [module_channel_count]
-L_11720:
-        jb short L_11710
-L_11722:
+        jb short process_channel_tick_effects
         popad
-L_11723:
         ret
-L_11724:
+begin_pattern_row:
         mov al, byte ptr [module_ticks_per_row]
-L_11729:
         mov byte ptr [module_row_tick_countdown], al
-L_1172E:
         inc byte ptr [module_tick_counter]
-L_11734:
-        cmp byte ptr [module_tick_counter], 40h
-L_1173B:
-        jb short L_11770
-L_1173D:
+        cmp byte ptr [module_tick_counter], MOD_PATTERN_ROWS
+        jb short process_pattern_row
         xor ebx, ebx
-L_1173F:
         mov byte ptr [module_tick_counter], bl
-L_11745:
         mov bl, byte ptr [module_order_position]
-L_1174B:
         inc bl
-L_1174D:
         cmp bl, byte ptr [module_song_length]
-L_11753:
-        jb short L_11757
-L_11755:
+        jb short advance_order_position
         xor bl, bl
-L_11757:
+advance_order_position:
         mov byte ptr [module_order_position], bl
-L_1175D:
         mov bl, byte ptr [ebx + module_pattern_order_table]
-L_11763:
         mov edi, dword ptr [ebx*4 + module_pattern_addresses]
-L_1176A:
         mov dword ptr [module_current_pattern_row], edi
-L_11770:
+process_pattern_row:
         mov edi, dword ptr [module_current_pattern_row]
-L_11776:
         mov esi, OFFSET module_channel_row_events
-L_1177B:
         xor ebx, ebx
-L_1177D:
-        call L_1179A
-L_11782:
+decode_next_channel_event:
+        call decode_channel_pattern_event
         add esi, 6
-L_11785:
         add edi, 4
-L_11788:
         inc ebx
-L_11789:
         cmp bx, word ptr [module_channel_count]
-L_11790:
-        jb short L_1177D
-L_11792:
+        jb short decode_next_channel_event
         mov dword ptr [module_current_pattern_row], edi
-L_11798:
         popad
-L_11799:
         ret
-L_1179A:
-        mov al, byte ptr [edi + 2]
-L_1179D:
-        shr al, 4
-L_117A0:
+; Decode one four-byte MOD event into the six-byte cached channel-row record.
+decode_channel_pattern_event:
+        mov al, byte ptr [edi + instrument_effect_word]
+        shr al, MOD_NIBBLE_SHIFT
         mov ah, byte ptr [edi]
-L_117A2:
-        and ah, 0F0h
-L_117A5:
+        and ah, MOD_SAMPLE_NIBBLE_MASK
         or al, ah
-L_117A7:
         test al, al
-L_117A9:
-        je short L_117BF
-L_117AB:
-        mov byte ptr [esi + 2], al
-L_117AE:
+        je short finish_note_event
+        mov byte ptr [esi + sample_number], al
         movzx eax, al
-L_117B1:
         mov al, byte ptr [eax + module_sample_volumes]
-L_117B7:
-        mov byte ptr [esi + 3], al
-L_117BA:
-        call L_119CA
-L_117BF:
-        mov ax, word ptr [edi]
-L_117C2:
+        mov byte ptr [esi + volume], al
+        call set_channel_volume
+finish_note_event:
+        mov ax, word ptr [edi + note_and_instrument_word]
         xchg al, ah
-L_117C4:
-        and ax, 0FFFh
-L_117C8:
+        and ax, MOD_PERIOD_MASK
         test ax, ax
-L_117CB:
-        je short L_117FA
-L_117CD:
+        je short decode_pattern_effect
         mov word ptr [esi], ax
-L_117D0:
         movzx ecx, ax
-L_117D3:
-        call L_119AE
-L_117D8:
+        call calculate_channel_sample_period
         push esi
-L_117D9:
         push edi
-L_117DA:
-        movzx eax, byte ptr [esi + 2]
-L_117DE:
+        movzx eax, byte ptr [esi + sample_number]
         mov edx, dword ptr [eax*4 + module_sample_addresses]
-L_117E5:
         mov esi, dword ptr [eax*4 + module_sample_loop_starts]
-L_117EC:
         mov edi, dword ptr [eax*4 + module_sample_loop_ends]
-L_117F3:
-        call L_1199C
-L_117F8:
+        call set_channel_sample_bounds
         pop edi
-L_117F9:
         pop esi
-L_117FA:
-        mov ax, word ptr [edi + 2]
-L_117FE:
+decode_pattern_effect:
+        mov ax, word ptr [edi + instrument_effect_word]
         xchg al, ah
-L_11800:
-        and ax, 0FFFh
-L_11804:
-        mov word ptr [esi + 4], ax
-L_11808:
-        cmp ah, 0Ch
-L_1180B:
-        je short L_1182C
-L_1180D:
-        cmp ah, 0Fh
-L_11810:
-        je short L_11832
-L_11812:
-        cmp ah, 0Bh
-L_11815:
-        je short L_11852
-L_11817:
-        cmp ah, 0Dh
-L_1181A:
-        je short L_11861
-L_1181C:
-        cmp ah, 9
-L_1181F:
-        je short L_1188F
-L_11821:
+        and ax, MOD_PERIOD_MASK
+        mov word ptr [esi + effect_and_parameter], ax
+        cmp ah, MOD_EFFECT_SET_VOLUME
+        je short effect_set_volume
+        cmp ah, MOD_EFFECT_SET_SPEED_OR_TEMPO
+        je short effect_set_speed_or_tempo
+        cmp ah, MOD_EFFECT_POSITION_JUMP
+        je short effect_pattern_position_jump
+        cmp ah, MOD_EFFECT_PATTERN_BREAK
+        je short effect_pattern_break
+        cmp ah, MOD_EFFECT_SAMPLE_OFFSET
+        je short effect_sample_offset
         ret
-L_11822:
-        mov ax, word ptr [esi + 4]
-L_11826:
-        cmp ah, 0Ah
-L_11829:
-        je short L_11869
-L_1182B:
+; Apply the supported tick effects: volume, speed/tempo, order jump, break, and offset.
+apply_channel_tick_effect:
+        mov ax, word ptr [esi + effect_and_parameter]
+        cmp ah, MOD_EFFECT_VOLUME_SLIDE
+        je short effect_volume_slide
         ret
-L_1182C:
-        call L_119CA
-L_11831:
+effect_set_volume:
+        call set_channel_volume
+effect_ignore_zero_speed:
         ret
-L_11832:
+effect_set_speed_or_tempo:
         test al, al
-L_11834:
-        je short L_11831
-L_11836:
-        cmp al, 20h
-L_11838:
-        jae short L_11845
-L_1183A:
+        je short effect_ignore_zero_speed
+        cmp al, MOD_TEMPO_THRESHOLD_BPM
+        jae short effect_set_tempo_bpm
         mov byte ptr [module_ticks_per_row], al
-L_1183F:
         mov byte ptr [module_row_tick_countdown], al
-L_11844:
         ret
-L_11845:
+effect_set_tempo_bpm:
         mov byte ptr [module_tempo_bpm], al
-L_1184A:
         mov dl, al
-L_1184C:
-        call L_119D7
-L_11851:
+        call update_tick_period_for_tempo
         ret
-L_11852:
+effect_pattern_position_jump:
         dec al
-L_11854:
         mov byte ptr [module_order_position], al
-L_11859:
-        mov byte ptr [module_tick_counter], 40h
-L_11860:
+        mov byte ptr [module_tick_counter], MOD_PATTERN_ROWS
         ret
-L_11861:
-        mov byte ptr [module_tick_counter], 40h
-L_11868:
+effect_pattern_break:
+        mov byte ptr [module_tick_counter], MOD_PATTERN_ROWS
         ret
-L_11869:
+effect_volume_slide:
         mov ah, al
-L_1186B:
-        mov al, byte ptr [esi + 3]
-L_1186E:
-        test ah, 0F0h
-L_11871:
-        je short L_11887
-L_11873:
-        shr ah, 4
-L_11876:
+        mov al, byte ptr [esi + volume]
+        test ah, MOD_SAMPLE_NIBBLE_MASK
+        je short slide_volume_down
+        shr ah, MOD_NIBBLE_SHIFT
         add al, ah
-L_11878:
-        cmp al, 40h
-L_1187A:
-        jbe short L_1187E
-L_1187C:
-        mov al, 40h
-L_1187E:
-        mov byte ptr [esi + 3], al
-L_11881:
-        call L_119CA
-L_11886:
+        cmp al, MOD_MAX_VOLUME
+        jbe short store_clamped_channel_volume
+        mov al, SB_DSP_CMD_SET_TIME_CONSTANT
+store_clamped_channel_volume:
+        mov byte ptr [esi + volume], al
+        call set_channel_volume
         ret
-L_11887:
+slide_volume_down:
         sub al, ah
-L_11889:
-        jge short L_1187E
-L_1188B:
+        jge short store_clamped_channel_volume
         xor al, al
-L_1188D:
-        jmp short L_1187E
-L_1188F:
+        jmp short store_clamped_channel_volume
+effect_sample_offset:
         xor edx, edx
-L_11891:
         mov dh, al
-L_11893:
         push esi
-L_11894:
         push edi
-L_11895:
-        movzx eax, byte ptr [esi + 2]
-L_11899:
+        movzx eax, byte ptr [esi + sample_number]
         add edx, dword ptr [eax*4 + module_sample_addresses]
-L_118A0:
         mov esi, dword ptr [eax*4 + module_sample_loop_starts]
-L_118A7:
         mov edi, dword ptr [eax*4 + module_sample_loop_ends]
-L_118AE:
-        call L_1199C
-L_118B3:
+        call set_channel_sample_bounds
         pop edi
-L_118B4:
         pop esi
-L_118B5:
         ret
-L_118B6:
+; Allocate DOS memory through DPMI and build the unsigned-sample volume lookup table.
+allocate_tracker_memory:
         pushad
-L_118B7:
         xor ax, ax
-L_118BA:
-        mov word ptr [module_pattern_index], ax
-L_118C0:
-        mov word ptr [module_row_index], ax
-L_118C6:
-        mov word ptr [module_tick_index], ax
-L_118CC:
-        mov word ptr [module_pattern_order_count], ax
-L_118D2:
-        mov ax, 100h
-L_118D6:
-        mov bx, 434h
-L_118DA:
-        int 31h
-L_118DC:
-        jb near ptr L_1197C
-L_118E2:
-        mov word ptr [module_pattern_order_count], dx
-L_118E9:
-        mov ecx, 140h
-L_118EE:
+        mov word ptr [module_audio_buffer_half_offset], ax
+        mov word ptr [samples_until_next_tracker_tick], ax
+        mov word ptr [samples_per_tracker_tick], ax
+        mov word ptr [tracker_dos_memory_selector], ax
+        mov ax, DPMI_ALLOCATE_DOS_MEMORY
+        mov bx, TRACKER_DOS_MEMORY_PARAGRAPHS
+        int DPMI_SERVICES_INTERRUPT
+        jb near ptr allocate_tracker_memory_return
+        mov word ptr [tracker_dos_memory_selector], dx
+        mov ecx, TRACKER_MIX_TABLE_CLEAR_BYTES
         movzx edi, ax
-L_118F1:
         shl edi, 4
-L_118F4:
         mov esi, edi
-L_118F6:
         add esi, ecx
-L_118F8:
         shl ax, 4
-L_118FC:
         neg ax
-L_118FF:
         cmp ax, cx
-L_11902:
-        jae short L_1190C
-L_11904:
+        jae short align_tracker_buffer_pointers
         mov esi, edi
-L_11906:
-        add edi, 4200h
-L_1190C:
-        add esi, 0FFh
-L_11912:
-        and esi, 0FFFFFF00h
-L_11918:
-        mov dword ptr [module_song_data_pointer], esi
-L_1191E:
-        mov dword ptr [module_sample_data_pointer], edi
-L_11924:
-        mov ecx, 120h
-L_11929:
-        mov word ptr [module_pattern_count], cx
-L_11930:
-        mov [module_player_timing_state], es
-L_11936:
-        push dword ptr [module_player_timing_state]
-L_1193C:
+        add edi, TRACKER_SAMPLE_AREA_OFFSET
+align_tracker_buffer_pointers:
+        add esi, TRACKER_MEMORY_ALIGN_BIAS
+        and esi, TRACKER_MEMORY_ALIGN_MASK
+        mov dword ptr [module_volume_mix_table], esi
+        mov dword ptr [module_audio_buffer], edi
+        mov ecx, TRACKER_DMA_BUFFER_BYTES
+        mov word ptr [module_audio_buffer_bytes], cx
+        mov [module_saved_es_segment], es
+        push dword ptr [module_saved_es_segment]
         mov ax, ds
-L_1193F:
         mov es, eax
-L_11941:
         cld
-L_11942:
-        mov al, 80h
-L_11944:
+        mov al, PCM_UNSIGNED_SILENCE
         rep stosb
-L_11946:
-        pop dword ptr [module_player_timing_state]
-L_1194C:
-        mov es, [module_player_timing_state]
-L_11952:
-        mov edi, dword ptr [module_song_data_pointer]
-L_11958:
+        pop dword ptr [module_saved_es_segment]
+        mov es, [module_saved_es_segment]
+        mov edi, dword ptr [module_volume_mix_table]
         mov cx, word ptr [module_channel_count]
-L_1195F:
         shr cx, 3
-L_11963:
         xor bx, bx
-L_11966:
+build_volume_mix_table:
         mov al, bl
-L_11968:
         imul bh
-L_1196A:
         sar ax, cl
-L_1196D:
         mov byte ptr [edi], ah
-L_1196F:
         inc edi
-L_11970:
         inc bl
-L_11972:
-        jne short L_11966
-L_11974:
+        jne short build_volume_mix_table
         inc bh
-L_11976:
-        cmp bh, 40h
-L_11979:
-        jbe short L_11966
-L_1197B:
+        cmp bh, MOD_MAX_VOLUME
+        jbe short build_volume_mix_table
         clc
-L_1197C:
+allocate_tracker_memory_return:
         popad
-L_1197D:
         ret
-L_1197E:
+; Release the real-mode DOS memory block only when allocation succeeded.
+free_tracker_memory:
         pushad
-L_1197F:
-        mov ax, 101h
-L_11983:
-        mov dx, word ptr [module_pattern_order_count]
-L_1198A:
+        mov ax, DPMI_FREE_DOS_MEMORY
+        mov dx, word ptr [tracker_dos_memory_selector]
         test dx, dx
-L_1198D:
-        je short L_1199A
-L_1198F:
-        int 31h
-L_11991:
-        mov word ptr [module_pattern_order_count], 0
-L_1199A:
+        je short free_tracker_memory_return
+        int DPMI_SERVICES_INTERRUPT
+        mov word ptr [tracker_dos_memory_selector], 0
+free_tracker_memory_return:
         popad
-L_1199B:
         ret
-L_1199C:
+; Select the channel's sample start and loop bounds from the parsed MOD tables.
+set_channel_sample_bounds:
         push ebx
-L_1199D:
         mov ebx, dword ptr [ebx*4 + module_channel_state_table]
-L_119A4:
         mov dword ptr [ebx], edx
-L_119A6:
-        mov dword ptr [ebx + 8], esi
-L_119A9:
-        mov dword ptr [ebx + 0Ch], edi
-L_119AC:
+        mov dword ptr [ebx + sample_loop_start], esi
+        mov dword ptr [ebx + sample_loop_end], edi
         pop ebx
-L_119AD:
         ret
-L_119AE:
+; Convert the MOD note period to the fixed-point sample-advance value.
+calculate_channel_sample_period:
         push eax
-L_119AF:
         push ebx
-L_119B0:
         push edx
-L_119B1:
-        jecxz L_119C6
-L_119B3:
+        jecxz sample_period_ready
         mov ebx, dword ptr [ebx*4 + module_channel_state_table]
-L_119BA:
-        mov eax, dword ptr [module_tick_period]
-L_119BF:
+        mov eax, dword ptr [tracker_sample_period_scale]
         xor edx, edx
-L_119C1:
         div ecx
-L_119C3:
-        mov dword ptr [ebx + 10h], eax
-L_119C6:
+        mov dword ptr [ebx + sample_period], eax
+sample_period_ready:
         pop edx
-L_119C7:
         pop ebx
-L_119C8:
         pop eax
-L_119C9:
         ret
-L_119CA:
+; Store the four-bit MOD sample volume in this channel's mixer state.
+set_channel_volume:
         push ebx
-L_119CB:
         mov ebx, dword ptr [ebx*4 + module_channel_state_table]
-L_119D2:
-        mov byte ptr [ebx + 14h], al
-L_119D5:
+        mov byte ptr [ebx + channel_volume], al
         pop ebx
-L_119D6:
         ret
-L_119D7:
+; Recompute the number of output samples generated per tracker tick.
+update_tick_period_for_tempo:
         push eax
-L_119D8:
         push ecx
-L_119D9:
         push edx
-L_119DA:
         mov ch, dl
-L_119DC:
         xor cl, cl
-L_119DE:
         mov ax, word ptr [module_sample_rate]
-L_119E4:
-        mov dx, 280h
-L_119E8:
+        mov dx, MOD_TICK_TIME_NUMERATOR
         mul dx
-L_119EB:
         div cx
-L_119EE:
-        mov word ptr [module_tick_index], ax
-L_119F4:
+        mov word ptr [samples_per_tracker_tick], ax
         pop edx
-L_119F5:
         pop ecx
-L_119F6:
         pop eax
-L_119F7:
         ret
-L_119F8:
-        movzx edi, word ptr [module_pattern_index]
-L_119FF:
-        add edi, dword ptr [module_sample_data_pointer]
-L_11A05:
-        movzx ecx, word ptr [module_pattern_count]
-L_11A0C:
+; Refill the DMA buffer and advance the track when a tracker row is due.
+render_sample_buffer:
+        movzx edi, word ptr [module_audio_buffer_half_offset]
+        add edi, dword ptr [module_audio_buffer]
+        movzx ecx, word ptr [module_audio_buffer_bytes]
         shr ecx, 1
-L_11A0E:
-        mov word ptr [module_sample_index], cx
-L_11A15:
-        xor word ptr [module_pattern_index], cx
-L_11A1C:
+        mov word ptr [module_audio_buffer_remaining_bytes], cx
+        xor word ptr [module_audio_buffer_half_offset], cx
         push edi
-L_11A1D:
-        mov [module_player_timing_state], es
-L_11A23:
-        push dword ptr [module_player_timing_state]
-L_11A29:
+        mov [module_saved_es_segment], es
+        push dword ptr [module_saved_es_segment]
         mov ax, ds
-L_11A2C:
         mov es, eax
-L_11A2E:
-        mov al, 80h
-L_11A30:
+        mov al, PCM_UNSIGNED_SILENCE
         cld
-L_11A31:
         rep stosb
-L_11A33:
-        pop dword ptr [module_player_timing_state]
-L_11A39:
-        mov es, [module_player_timing_state]
-L_11A3F:
+        pop dword ptr [module_saved_es_segment]
+        mov es, [module_saved_es_segment]
         pop edi
-L_11A40:
-        cmp word ptr [module_row_index], 0
-L_11A48:
-        jg short L_11A5C
-L_11A4A:
-        call L_11700
-L_11A4F:
-        mov ax, word ptr [module_tick_index]
-L_11A55:
-        add word ptr [module_row_index], ax
-L_11A5C:
-        mov ax, word ptr [module_sample_index]
-L_11A62:
-        mov cx, word ptr [module_row_index]
-L_11A69:
-        add cx, 3Fh
-L_11A6D:
-        and cx, -40h
-L_11A71:
+render_row_when_due:
+        cmp word ptr [samples_until_next_tracker_tick], 0
+        jg short limit_render_chunk_to_row
+        call advance_protracker_tick
+        mov ax, word ptr [samples_per_tracker_tick]
+        add word ptr [samples_until_next_tracker_tick], ax
+limit_render_chunk_to_row:
+        mov ax, word ptr [module_audio_buffer_remaining_bytes]
+        mov cx, word ptr [samples_until_next_tracker_tick]
+        add cx, TRACKER_RENDER_CHUNK_MASK
+        and cx, TRACKER_RENDER_CHUNK_BOUNDARY
         cmp ax, cx
-L_11A74:
-        jle short L_11A79
-L_11A76:
+        jle short mix_render_chunk_channels
         mov ax, cx
-L_11A79:
-        sub word ptr [module_sample_index], ax
-L_11A80:
-        sub word ptr [module_row_index], ax
-L_11A87:
+mix_render_chunk_channels:
+        sub word ptr [module_audio_buffer_remaining_bytes], ax
+        sub word ptr [samples_until_next_tracker_tick], ax
         movzx ecx, ax
-L_11A8A:
         mov ebx, OFFSET module_channel_0_state
-L_11A8F:
         mov dx, word ptr [module_channel_count]
-L_11A96:
+mix_next_channel:
         push ebx
-L_11A97:
         push ecx
-L_11A98:
         push edx
-L_11A99:
         push edi
-L_11A9A:
-        call L_11AB7
-L_11A9F:
+        call mix_channel_samples
         pop edi
-L_11AA0:
         pop edx
-L_11AA1:
         pop ecx
-L_11AA2:
         pop ebx
-L_11AA3:
-        add ebx, 16h
-L_11AA6:
+        add ebx, TRACKER_CHANNEL_STATE_BYTES
         dec dx
-L_11AA8:
-        jg short L_11A96
-L_11AAA:
+        jg short mix_next_channel
         add edi, ecx
-L_11AAC:
-        cmp word ptr [module_sample_index], 0
-L_11AB4:
-        jg short L_11A40
-L_11AB6:
+        cmp word ptr [module_audio_buffer_remaining_bytes], 0
+        jg short render_row_when_due
         ret
-L_11AB7:
+; Mix one channel through self-modified loop bounds; eight samples are unrolled below.
+mix_channel_samples:
         push ebx
-L_11AB8:
-        mov eax, dword ptr [ebx + 0Ch]
+        mov eax, dword ptr [ebx + sample_loop_end]
         ASSUME DS:_TEXT ; keep: self-modifying stores into the code
-L_11ABB:
-        mov dword ptr ds:[L_11B02+2], eax
-L_11AC0:
-        mov dword ptr ds:[L_11B72+2], eax
-L_11AC5:
-        sub eax, dword ptr [ebx + 8]
-L_11AC8:
-        mov dword ptr ds:[L_11B6C+2], eax
+        mov dword ptr ds:[mix_eight_sample_group+2], eax
+        mov dword ptr ds:[check_wrapped_sample_position+2], eax
+        sub eax, dword ptr [ebx + sample_loop_start]
+        mov dword ptr ds:[wrap_sample_loop_position+2], eax
         ASSUME DS:DGROUP ; keep
-L_11ACD:
         mov esi, dword ptr [ebx]
-L_11ACF:
-        mov ebp, dword ptr [ebx + 4]
-L_11AD2:
-        mov eax, dword ptr [ebx + 10h]
-L_11AD5:
+        mov ebp, dword ptr [ebx + sample_fraction]
+        mov eax, dword ptr [ebx + sample_period]
         xor edx, edx
-L_11AD7:
-        shld edx, eax, 10h
-L_11ADB:
-        shl eax, 10h
-L_11ADE:
-        mov bh, byte ptr [ebx + 14h]
-L_11AE1:
-        and ebx, 0FF00h
-L_11AE7:
-        add ebx, dword ptr [module_song_data_pointer]
-L_11AED:
-        test ecx, 7
-L_11AF3:
-        jne short L_11AED
-L_11AF5:
-        shr ecx, 3
-L_11AF8:
-        jecxz L_11B65
-L_11AFA:
+        shld edx, eax, TRACKER_FIXED_POINT_SHIFT
+        shl eax, TRACKER_FIXED_POINT_SHIFT
+        mov bh, byte ptr [ebx + channel_volume]
+        and ebx, TRACKER_CHANNEL_MIXER_VOLUME_MASK
+        add ebx, dword ptr [module_volume_mix_table]
+lookup_volume_scaled_sample:
+        test ecx, TRACKER_MIX_GROUP_MASK
+        jne short lookup_volume_scaled_sample
+        shr ecx, TRACKER_MIX_GROUP_SHIFT
+        jecxz finish_channel_sample_mix
         neg ecx
-L_11AFC:
-        jmp short L_11B02
+        jmp short mix_eight_sample_group
         ALIGN 4
-L_11B00:
         nop
-L_11B01:
         nop
-L_11B02:
-        cmp esi, 12345678h
-L_11B08:
-        jae short L_11B6C
-L_11B0A:
+mix_eight_sample_group:
+        cmp esi, SAMPLE_LOOP_END_PATCH_VALUE
+        jae short wrap_sample_loop_position
+mix_sample_if_before_loop_end:
         mov bl, byte ptr [esi]
-L_11B0C:
         add ebp, eax
-L_11B0E:
         mov bl, byte ptr [ebx]
-L_11B10:
         adc esi, edx
-L_11B12:
         add byte ptr [edi], bl
-L_11B14:
         inc edi
-L_11B15:
         mov bl, byte ptr [esi]
-L_11B17:
         add ebp, eax
-L_11B19:
         mov bl, byte ptr [ebx]
-L_11B1B:
         adc esi, edx
-L_11B1D:
         add byte ptr [edi], bl
-L_11B1F:
         inc edi
-L_11B20:
         mov bl, byte ptr [esi]
-L_11B22:
         add ebp, eax
-L_11B24:
         mov bl, byte ptr [ebx]
-L_11B26:
         adc esi, edx
-L_11B28:
         add byte ptr [edi], bl
-L_11B2A:
         inc edi
-L_11B2B:
         mov bl, byte ptr [esi]
-L_11B2D:
         add ebp, eax
-L_11B2F:
         mov bl, byte ptr [ebx]
-L_11B31:
         adc esi, edx
-L_11B33:
         add byte ptr [edi], bl
-L_11B35:
         inc edi
-L_11B36:
         mov bl, byte ptr [esi]
-L_11B38:
         add ebp, eax
-L_11B3A:
         mov bl, byte ptr [ebx]
-L_11B3C:
         adc esi, edx
-L_11B3E:
         add byte ptr [edi], bl
-L_11B40:
         inc edi
-L_11B41:
         mov bl, byte ptr [esi]
-L_11B43:
         add ebp, eax
-L_11B45:
         mov bl, byte ptr [ebx]
-L_11B47:
         adc esi, edx
-L_11B49:
         add byte ptr [edi], bl
-L_11B4B:
         inc edi
-L_11B4C:
         mov bl, byte ptr [esi]
-L_11B4E:
         add ebp, eax
-L_11B50:
         mov bl, byte ptr [ebx]
-L_11B52:
         adc esi, edx
-L_11B54:
         add byte ptr [edi], bl
-L_11B56:
         inc edi
-L_11B57:
         mov bl, byte ptr [esi]
-L_11B59:
         add ebp, eax
-L_11B5B:
         mov bl, byte ptr [ebx]
-L_11B5D:
         adc esi, edx
-L_11B5F:
         add byte ptr [edi], bl
-L_11B61:
         inc edi
-L_11B62:
         inc ecx
-L_11B63:
-        jne short L_11B02
-L_11B65:
+        jne short mix_eight_sample_group
+finish_channel_sample_mix:
         pop ebx
-L_11B66:
         mov dword ptr [ebx], esi
-L_11B68:
-        mov dword ptr [ebx + 4], ebp
-L_11B6B:
+        mov dword ptr [ebx + sample_fraction], ebp
         ret
-L_11B6C:
-        sub esi, 12345678h
-L_11B72:
-        cmp esi, 12345678h
-L_11B78:
-        jb short L_11B0A
-L_11B7A:
-        jmp short L_11B65
-L_11B7C:
+wrap_sample_loop_position:
+        sub esi, SAMPLE_LOOP_LENGTH_PATCH_VALUE
+check_wrapped_sample_position:
+        cmp esi, SAMPLE_LOOP_END_PATCH_VALUE
+        jb short mix_sample_if_before_loop_end
+        jmp short finish_channel_sample_mix
+; Wait for DSP write-ready at base+0Ch before sending a command or parameter.
+write_sound_blaster_dsp_byte:
         push eax
-L_11B7D:
         push ecx
-L_11B7E:
         push edx
-L_11B7F:
         mov dx, word ptr [module_sound_io_base]
-L_11B86:
-        add dx, 0Ch
-L_11B8A:
-        mov ecx, 10000h
-L_11B8F:
+        add dx, SB_DSP_WRITE_DATA_OFFSET
+        mov ecx, TRACKER_MAX_POLL_COUNT
         mov ah, al
-L_11B91:
+wait_for_dsp_write_ready:
         in al, dx
-L_11B92:
-        and al, 80h
-L_11B94:
-        loopne L_11B91
-L_11B96:
+        and al, SB_DSP_BUSY_MASK
+        loopne wait_for_dsp_write_ready
         mov al, ah
-L_11B98:
         out dx, al
-L_11B99:
         pop edx
-L_11B9A:
         pop ecx
-L_11B9B:
         pop eax
-L_11B9C:
         ret
-L_11B9D:
+; Pulse the DSP reset register and wait for its 0AAh acknowledgement.
+reset_sound_blaster_dsp:
         pushad
-L_11B9E:
         mov dx, word ptr [module_sound_io_base]
-L_11BA5:
-        add dx, 6
-L_11BA9:
+        add dx, SB_DSP_RESET_OFFSET
         mov al, 1
-L_11BAB:
         out dx, al
-L_11BAC:
         in al, dx
-L_11BAD:
         in al, dx
-L_11BAE:
         in al, dx
-L_11BAF:
         in al, dx
-L_11BB0:
         mov al, 0
-L_11BB2:
         out dx, al
-L_11BB3:
-        add dx, 8
-L_11BB7:
-        mov ecx, 10000h
-L_11BBC:
+        add dx, SB_DSP_RESET_TO_STATUS_DELTA
+        mov ecx, TRACKER_MAX_POLL_COUNT
+wait_for_dsp_read_ready:
         in al, dx
-L_11BBD:
-        and al, 80h
-L_11BBF:
-        loope L_11BBC
-L_11BC1:
-        sub dx, 4
-L_11BC5:
+        and al, SB_DSP_BUSY_MASK
+        loope wait_for_dsp_read_ready
+        sub dx, SB_DSP_STATUS_TO_READ_DATA_DELTA
         in al, dx
-L_11BC6:
-        cmp al, 0AAh
-L_11BC8:
+        cmp al, SB_DSP_RESET_ACK
         clc
-L_11BC9:
-        je short L_11BCC
-L_11BCB:
+        je short finish_dsp_reset
         stc
-L_11BCC:
+finish_dsp_reset:
         popad
-L_11BCD:
         ret
-L_11BCE:
+; Program the DSP block length after the DMA channel is configured.
+start_sound_blaster_playback:
         pushad
-L_11BCF:
-        call L_11B9D
-L_11BD4:
-        jb short L_11C19
-L_11BD6:
-        mov al, 0D1h
-L_11BD8:
-        call L_11B7C
-L_11BDD:
-        mov al, 40h
-L_11BDF:
-        call L_11B7C
-L_11BE4:
-        mov ax, 3E8h
-L_11BE8:
+        call reset_sound_blaster_dsp
+        jb short start_playback_return
+        mov al, SB_DSP_CMD_SPEAKER_ON
+        call write_sound_blaster_dsp_byte
+        mov al, SB_DSP_CMD_SET_TIME_CONSTANT
+        call write_sound_blaster_dsp_byte
+        mov ax, MILLISECONDS_PER_SECOND
         mul ax
-L_11BEB:
         div word ptr [module_sample_rate]
-L_11BF2:
         neg ax
-L_11BF5:
-        call L_11B7C
-L_11BFA:
-        mov al, 14h
-L_11BFC:
-        call L_11B7C
-L_11C01:
-        mov ax, word ptr [module_pattern_count]
-L_11C07:
+        call write_sound_blaster_dsp_byte
+        mov al, SB_DSP_CMD_SINGLE_CYCLE_DMA
+        call write_sound_blaster_dsp_byte
+        mov ax, word ptr [module_audio_buffer_bytes]
         shr ax, 1
-L_11C0A:
         dec ax
-L_11C0C:
-        call L_11B7C
-L_11C11:
+        call write_sound_blaster_dsp_byte
         mov al, ah
-L_11C13:
-        call L_11B7C
-L_11C18:
+        call write_sound_blaster_dsp_byte
         clc
-L_11C19:
+start_playback_return:
         popad
-L_11C1A:
         ret
-L_11C1B:
+; Send the DSP speaker-off command before unhooking the IRQ.
+stop_sound_blaster_playback:
         pushad
-L_11C1C:
-        call L_11B9D
-L_11C21:
-        mov al, 0D3h
-L_11C23:
-        call L_11B7C
-L_11C28:
+        call reset_sound_blaster_dsp
+        mov al, SB_DSP_CMD_SPEAKER_OFF
+        call write_sound_blaster_dsp_byte
         popad
-L_11C29:
         ret
-L_11C2A:
+; Mask the configured 8237 channel while playback is stopped.
+mask_dma_channel:
         pushad
-L_11C2B:
         mov al, byte ptr [module_sound_dma_channel]
-L_11C30:
-        or al, 4
-L_11C32:
-        out 0Ah, al
-L_11C34:
+        or al, DMA_CHANNEL_MASK_BIT
+        out DMA_CHANNEL_MASK_PORT, al
         popad
-L_11C35:
         ret
-L_11C36:
+; Program the 8237 channel address/count registers for the unsigned PCM buffer.
+program_dma_audio_buffer:
         pushad
-L_11C37:
         mov cl, byte ptr [module_sound_dma_channel]
-L_11C3D:
         mov al, cl
-L_11C3F:
-        or al, 4
-L_11C41:
-        out 0Ah, al
-L_11C43:
-        out 0Ch, al
-L_11C45:
+        or al, DMA_CHANNEL_MASK_BIT
+        out DMA_CHANNEL_MASK_PORT, al
+        out DMA_CLEAR_FLIP_FLOP_PORT, al
         mov al, cl
-L_11C47:
-        or al, 58h
-L_11C49:
-        out 0Bh, al
-L_11C4B:
+        or al, SB_DSP_DMA_SINGLE_CYCLE_MODE
+        out DMA_MODE_PORT, al
         movzx dx, cl
-L_11C4F:
         add dx, dx
-L_11C52:
-        mov eax, dword ptr [module_sample_data_pointer]
-L_11C57:
+        mov eax, dword ptr [module_audio_buffer]
         out dx, al
-L_11C58:
         mov al, ah
-L_11C5A:
         out dx, al
-L_11C5B:
         inc dx
-L_11C5D:
-        mov ax, word ptr [module_pattern_count]
-L_11C63:
+        mov ax, word ptr [module_audio_buffer_bytes]
         dec ax
-L_11C65:
         out dx, al
-L_11C66:
         mov al, ah
-L_11C68:
         out dx, al
-L_11C69:
-        mov edx, 82818387h
-L_11C6E:
-        shl cl, 3
-L_11C71:
+        mov edx, DMA_PAGE_PORTS_PACKED
+        shl cl, TRACKER_MIX_GROUP_SHIFT
         shr edx, cl
-L_11C73:
         xor dh, dh
-L_11C75:
-        shr cl, 3
-L_11C78:
-        shr eax, 10h
-L_11C7B:
+        shr cl, TRACKER_MIX_GROUP_SHIFT
+        shr eax, TRACKER_FIXED_POINT_SHIFT
         out dx, al
-L_11C7C:
         mov al, cl
-L_11C7E:
-        out 0Ah, al
-L_11C80:
+        out DMA_CHANNEL_MASK_PORT, al
         popad
-L_11C81:
         ret
-L_11C82:
+; Read the active 8237 byte count until two consecutive samples agree.
+read_current_dma_byte_count:
         push ecx
-L_11C83:
         push edx
-L_11C84:
         movzx dx, byte ptr [module_sound_dma_channel]
-L_11C8C:
         add dx, dx
-L_11C8F:
         inc dx
-L_11C91:
         in al, dx
-L_11C92:
         mov ah, al
-L_11C94:
         in al, dx
-L_11C95:
         xchg al, ah
-L_11C97:
+read_dma_counter_again:
         mov cx, ax
-L_11C9A:
         in al, dx
-L_11C9B:
         mov ah, al
-L_11C9D:
         in al, dx
-L_11C9E:
         xchg al, ah
-L_11CA0:
         sub cx, ax
-L_11CA3:
-        cmp cx, 10h
-L_11CA7:
-        jg short L_11C97
-L_11CA9:
-        cmp cx, -10h
-L_11CAD:
-        jl short L_11C97
-L_11CAF:
+        cmp cx, DMA_COUNT_STABILITY_TOLERANCE
+        jg short read_dma_counter_again
+        cmp cx, DMA_COUNT_STABILITY_TOLERANCE_NEGATIVE
+        jl short read_dma_counter_again
         neg ax
-L_11CB2:
-        add ax, word ptr [module_pattern_count]
-L_11CB9:
+        add ax, word ptr [module_audio_buffer_bytes]
         dec ax
-L_11CBB:
         pop edx
-L_11CBC:
         pop ecx
-L_11CBD:
         ret
-L_11CBE:
+; Save and replace the DOS IRQ vector, then unmask this IRQ on the PIC.
+install_protracker_irq:
         pushad
-L_11CBF:
         mov ax, ds
-L_11CC2:
         push eax
-L_11CC3:
-        in al, 0A1h
-L_11CC5:
+        in al, PIC_SLAVE_MASK_PORT
         mov ah, al
-L_11CC7:
-        in al, 21h
-L_11CC9:
-        mov dx, 1
-L_11CCD:
+        in al, PIC_MASTER_MASK_PORT
+        mov dx, PIC_IRQ_BIT_BASE
         mov cl, byte ptr [module_sound_irq_number]
-L_11CD3:
         shl dx, cl
-L_11CD6:
         or ax, dx
-L_11CD9:
-        out 21h, al
-L_11CDB:
+        out PIC_MASTER_MASK_PORT, al
         mov al, ah
-L_11CDD:
-        out 0A1h, al
-L_11CDF:
-        mov ah, 25h
-L_11CE1:
+        out PIC_SLAVE_MASK_PORT, al
+        mov ah, DOS_SET_INTERRUPT_VECTOR
         mov al, cl
-L_11CE3:
         cmp al, 8
-L_11CE5:
-        jb short L_11CE9
-L_11CE7:
-        add al, 60h
-L_11CE9:
-        add al, 8
-L_11CEB:
-        lds edx, fword ptr [module_sample_period]
-L_11CF1:
+        jb short select_dos_irq_vector
+        add al, DOS_IRQ_SLAVE_VECTOR_BASE
+select_dos_irq_vector:
+        add al, DOS_IRQ_MASTER_VECTOR_BASE
+        lds edx, fword ptr [module_saved_irq_vector_offset]
         xor ebx, ebx
-L_11CF3:
         mov bx, ds
-L_11CF6:
         or ebx, edx
-L_11CF8:
         test ebx, ebx
-L_11CFA:
-        je short L_11CFE
-L_11CFC:
-        int 21h
-L_11CFE:
+        je short restore_module_data_segment
+        int DOS_SERVICES_INTERRUPT
+restore_module_data_segment:
         pop eax
-L_11CFF:
         mov ds, eax
-L_11D01:
         xor ebx, ebx
-L_11D03:
-        mov dword ptr [module_sample_period], ebx
-L_11D09:
-        mov word ptr [module_reserved_bytes], bx
-L_11D10:
+        mov dword ptr [module_saved_irq_vector_offset], ebx
+        mov word ptr [module_saved_irq_vector_segment], bx
         popad
-L_11D11:
         ret
-L_11D12:
+; Restore the original DOS IRQ vector and mask state.
+uninstall_protracker_irq:
         pushad
-L_11D13:
         mov ax, ds
-L_11D16:
-        rol eax, 10h
-L_11D19:
+        rol eax, SEGMENT_PAIR_ROTATE_BITS
         mov ax, es
-L_11D1C:
         push eax
-L_11D1D:
-        mov ah, 35h
-L_11D1F:
+        mov ah, DOS_GET_INTERRUPT_VECTOR
         mov al, byte ptr [module_sound_irq_number]
-L_11D24:
         cmp al, 8
-L_11D26:
-        jb short L_11D2A
-L_11D28:
-        add al, 60h
-L_11D2A:
-        add al, 8
-L_11D2C:
-        int 21h
-L_11D2E:
-        mov dword ptr [module_sample_period], ebx
-L_11D34:
-        mov [module_reserved_bytes], es
-L_11D3A:
-        mov ah, 25h
-L_11D3C:
+        jb short restore_irq_vector_number
+        add al, DOS_IRQ_SLAVE_VECTOR_BASE
+restore_irq_vector_number:
+        add al, DOS_IRQ_MASTER_VECTOR_BASE
+        int DOS_SERVICES_INTERRUPT
+        mov dword ptr [module_saved_irq_vector_offset], ebx
+        mov [module_saved_irq_vector_segment], es
+        mov ah, DOS_SET_INTERRUPT_VECTOR
         mov al, byte ptr [module_sound_irq_number]
-L_11D41:
         cmp al, 8
-L_11D43:
-        jb short L_11D47
-L_11D45:
-        add al, 60h
-L_11D47:
-        add al, 8
-L_11D49:
+        jb short set_irq_vector_number
+        add al, DOS_IRQ_SLAVE_VECTOR_BASE
+set_irq_vector_number:
+        add al, DOS_IRQ_MASTER_VECTOR_BASE
         mov dx, cs
-L_11D4C:
         mov ds, edx
-L_11D4E:
         mov edx, OFFSET protracker_irq_handler
-L_11D53:
-        int 21h
-L_11D55:
+        int DOS_SERVICES_INTERRUPT
         pop eax
-L_11D56:
         mov es, eax
-L_11D58:
-        rol eax, 10h
-L_11D5B:
+        rol eax, SEGMENT_PAIR_ROTATE_BITS
         mov ds, eax
-L_11D5D:
-        in al, 0A1h
-L_11D5F:
+        in al, PIC_SLAVE_MASK_PORT
         mov al, ah
-L_11D61:
-        in al, 21h
-L_11D63:
-        mov dx, 1
-L_11D67:
+        in al, PIC_MASTER_MASK_PORT
+        mov dx, PIC_IRQ_BIT_BASE
         mov cl, byte ptr [module_sound_irq_number]
-L_11D6D:
         shl dx, cl
-L_11D70:
         not dx
-L_11D73:
         and ax, dx
-L_11D76:
-        out 21h, al
-L_11D78:
+        out PIC_MASTER_MASK_PORT, al
         mov al, ah
-L_11D7A:
-        out 0A1h, al
-L_11D7C:
+        out PIC_SLAVE_MASK_PORT, al
         popad
-L_11D7D:
         ret
         PUBLIC protracker_irq_handler
+; SB IRQ: acknowledge the DSP, restart its block, mix the next buffer, then EOI.
 protracker_irq_handler LABEL DWORD
-L_11D7E:
         push eax
-L_11D7F:
         mov ax, ds
-L_11D82:
         push eax
-L_11D83:
         mov ax, SEG DGROUP
-L_11D87:
         mov ds, eax
-L_11D89:
         push eax
-L_11D8A:
         push ecx
-L_11D8B:
         push edx
-L_11D8C:
         mov dx, word ptr [module_sound_io_base]
-L_11D93:
-        add dx, 0Eh
-L_11D97:
+        add dx, SB_DSP_READ_STATUS_OFFSET
         in al, dx
-L_11D98:
-        add dx, -2
-L_11D9C:
-        mov ecx, 10000h
-L_11DA1:
+        add dx, SB_DSP_STATUS_TO_WRITE_DELTA
+        mov ecx, TRACKER_MAX_POLL_COUNT
         mov ah, al
-L_11DA3:
+wait_for_irq_dsp_command_ready:
         in al, dx
-L_11DA4:
-        and al, 80h
-L_11DA6:
-        loopne L_11DA3
-L_11DA8:
-        mov al, 14h
-L_11DAA:
+        and al, SB_DSP_BUSY_MASK
+        loopne wait_for_irq_dsp_command_ready
+        mov al, SB_DSP_CMD_SINGLE_CYCLE_DMA
         out dx, al
-L_11DAB:
-        mov ecx, 10000h
-L_11DB0:
+        mov ecx, TRACKER_MAX_POLL_COUNT
+wait_for_irq_dsp_length_ready:
         in al, dx
-L_11DB1:
-        and al, 80h
-L_11DB3:
-        loopne L_11DB0
-L_11DB5:
-        mov ax, word ptr [module_pattern_count]
-L_11DBB:
+        and al, SB_DSP_BUSY_MASK
+        loopne wait_for_irq_dsp_length_ready
+        mov ax, word ptr [module_audio_buffer_bytes]
         shr ax, 1
-L_11DBE:
         dec ax
-L_11DC0:
         out dx, al
-L_11DC1:
-        mov ecx, 10000h
-L_11DC6:
+        mov ecx, TRACKER_MAX_POLL_COUNT
+wait_for_irq_dsp_high_byte_ready:
         in al, dx
-L_11DC7:
-        and al, 80h
-L_11DC9:
-        loopne L_11DC6
-L_11DCB:
-        mov ax, word ptr [module_pattern_count]
-L_11DD1:
+        and al, SB_DSP_BUSY_MASK
+        loopne wait_for_irq_dsp_high_byte_ready
+        mov ax, word ptr [module_audio_buffer_bytes]
         shr ax, 1
-L_11DD4:
         dec ax
-L_11DD6:
         mov al, ah
-L_11DD8:
         out dx, al
-L_11DD9:
         pop edx
-L_11DDA:
         pop ecx
-L_11DDB:
         pop eax
-L_11DDC:
-        mov al, 20h
-L_11DDE:
+        mov al, PIC_END_OF_INTERRUPT_COMMAND
         cmp byte ptr [module_sound_irq_number], 8
-L_11DE5:
-        jl short L_11DE9
-L_11DE7:
-        out 0A0h, al
-L_11DE9:
-        out 20h, al
-L_11DEB:
+        jl short send_master_pic_end_of_interrupt
+        out PIC_SLAVE_EOI_PORT, al
+send_master_pic_end_of_interrupt:
+        out PIC_MASTER_EOI_PORT, al
         sti
-L_11DEC:
         pushad
-L_11DED:
-        call L_119F8
-L_11DF2:
+        call render_sample_buffer
         popad
-L_11DF3:
         pop eax
-L_11DF4:
         mov ds, eax
-L_11DF6:
         pop eax
-L_11DF7:
         iretd
 
 parse_protracker_module ENDP
