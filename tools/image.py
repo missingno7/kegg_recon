@@ -13,6 +13,10 @@ per-function objects and asm modules where admitted, RAW DEBT objects elsewhere;
 each DGROUP class concatenates to the original layout), the obj2 IRQ module, then clib3s/math387s/emu387 from the
 pinned 10.0 GA install; `system dos4g`, `option stub=` 10.0 GA BINB/wstub.exe, `option heapsize=20000`,
 `name ke.exe`.  WLINK places BEGTEXT (cstrt386) first.  Nothing is copied into or patched in the linked file.
+A data-only unit (manifest range start == end, e.g. 0x10..0x10) has no code: the range is its position in the link
+order (before the code unit starting there) and its data segments are placed by name/fixups/`place`.
+A gap in a data class that is shorter than the next contribution's SEGDEF alignment, ends at the aligned address
+and is zero is WLINK alignment fill: it gets no raw carrier and is accounted as `padding`, not raw debt.
 
 RAW DEBT objects (tools/omfwrite.py) hold the original bytes, one FIXUPP per LE fixup of their range (targets:
 own segment, or EXTDEF of the public that owns the target address), self-relative fixups for calls to known
@@ -200,6 +204,22 @@ class Ctx:
             self._libmods = (mods, pubs)
         return self._libmods
 
+    def runtime_first_data(self, cls):
+        """('lib:module', SEGDEF alignment) of the first runtime contribution to data segment `cls`: library
+        modules follow every object file, in load order (self.lib_order = the all-raw reference link's order,
+        set by run()); None when unknown."""
+        order = getattr(self, "lib_order", None)
+        if not order:
+            return None
+        mods, _ = self.libmods()
+        index = {(lib, n): m for lib, lst in mods.items() for n, m, _ in lst}
+        for lib, name in order:
+            m = index.get((lib, name))
+            for s in (m.segments if m else []):
+                if s and s.name == cls and s.size:
+                    return f"{lib}:{name}", ALIGN_BYTES.get(s.align, 1)
+        return None
+
     def main_addr(self):
         """Address of `main`, decoded from cmain386's call (the runtime needs the game to define it)."""
         mods, _ = self.libmods()
@@ -254,6 +274,7 @@ class Item:
     raw_mod: bytes | None = None
     segbase: dict = field(default_factory=dict)     # seg index -> (LE obj, base) for placed segments
     data: dict = field(default_factory=dict)        # class -> (base, size) for non-empty game data pieces
+    data_align: dict = field(default_factory=dict)  # class -> SEGDEF alignment (bytes) of that data piece
     problems: list = field(default_factory=list)
     notes: list = field(default_factory=list)
     publics: dict = field(default_factory=dict)     # name -> (obj, addr)
@@ -300,8 +321,9 @@ def apply_plan(ctx, plan_path):
         a, b = p["range"]
         cands.append({"id": p["id"], "src": Path(p["file"]).resolve().relative_to(ROOT).as_posix(),
                       "start": a, "end": b, "profile": p.get("profile", "game-c"), "data": p.get("data", []),
-                      "note": "plan candidate"})
-    ov = lambda u, c: int(u["start"], 16) < int(c["end"], 16) and int(c["start"], 16) < int(u["end"], 16)
+                      "place": p.get("place", []), "note": "plan candidate"})
+    ov = lambda u, c: (int(u["start"], 16) < int(c["end"], 16) and int(c["start"], 16) < int(u["end"], 16)) \
+        or u["id"] == c["id"]
     kept = [u for u in man.get("units", []) if not any(ov(u, c) for c in cands)]
     kept_src = {u["src"] for u in kept}
     fns = []
@@ -313,7 +335,7 @@ def apply_plan(ctx, plan_path):
         elif f.get("unit") and f.get("src") not in kept_src:
             f = dict(f, src=None, status="identified")
         fns.append(f)
-    man["units"] = sorted(kept + cands, key=lambda u: int(u["start"], 16))
+    man["units"] = sorted(kept + cands, key=lambda u: (int(u["start"], 16), int(u["end"], 16)))
     man["functions"] = fns
     ctx.man = man
     ctx.funcs = sorted(fns, key=lambda f: (f.get("object", 1), int(f["start"], 16)))
@@ -430,7 +452,12 @@ def place_real(ctx, it):
     if m is None:
         return
     code = [i for i, s in enumerate(m.segments) if s and s.cls.upper() == "CODE" and s.size]
-    if it.obj == 1:
+    if it.obj == 1 and it.kind == "unit" and it.start == it.end:
+        # data-only unit (empty code range = its position in link order): no code bytes, data placed below
+        if code:
+            it.problems.append(f"data-only unit (empty range at {h(it.start)}) has code {[m.segments[i].name for i in code]}")
+            return
+    elif it.obj == 1:
         if len(code) != 1:
             it.problems.append(f"expected one non-empty CODE segment, got {[m.segments[i].name for i in code]}")
             return
@@ -492,8 +519,14 @@ def place_real(ctx, it):
             if i not in it.segbase and len(bases[i]) == 1:
                 it.segbase[i] = (3, next(iter(bases[i])))
                 progress = True
+    placed = {}   # the unit's asserted segment places (check.py --place, verified there by contents)
+    for pl in (unit or {}).get("place", []):
+        k, v = pl.split("=")
+        placed[k] = int(v, 16)
     for i in todo:
         s = m.segments[i]
+        if s.name in placed:
+            bases[i].add(placed[s.name])   # must agree with the bases derived from names/fixups
         if not bases[i] and s.name in declared and declared[s.name][1] == s.size:
             bases[i].add(declared[s.name][0])
             it.notes.append(f"{s.name} base from the manifest unit data record")
@@ -510,6 +543,7 @@ def place_real(ctx, it):
             it.problems.append(f"CONST2 contribution at {h(base)}: the original has no game CONST2 bytes")
         else:
             it.data[s.name] = (base, s.size)
+            it.data_align[s.name] = al
     for n, si, o, loc in m.publics:
         if si in it.segbase and not loc:
             ob, base = it.segbase[si]
@@ -529,7 +563,8 @@ class Plan:
     def build(self):
         ctx = self.ctx
         o = ctx.orig
-        self.real_code = sorted((r for r in self.reals if r.obj == 1), key=lambda r: r.start)
+        # (start, end): a data-only unit (empty range) links before the code unit starting at the same address
+        self.real_code = sorted((r for r in self.reals if r.obj == 1), key=lambda r: (r.start, r.end))
         for a, b in zip(self.real_code, self.real_code[1:]):
             if a.end > b.start:
                 raise SystemExit(f"overlapping real items {a.key} {b.key}")
@@ -560,7 +595,7 @@ class Plan:
         irq = next((r for r in self.reals if r.obj == 2), None)
         self.raw16 = None if irq else Item("raw:2:00000", "raw", 2, 0, len(o.bytes[2]))
         # link order: code items by address, then the obj2 module
-        seq = sorted(self.real_code + raws, key=lambda r: r.start)
+        seq = sorted(self.real_code + raws, key=lambda r: (r.start, r.end))
         for i, it in enumerate(seq):
             it.order = float(i)
         tail = irq or self.raw16
@@ -604,6 +639,16 @@ class Plan:
                 carriers[pos] = it
             return carriers[pos]
 
+        def linker_padding(cls, a, b, align):
+            """[a, b) is the fill WLINK itself emits in front of a contribution whose SEGDEF is `align`-aligned:
+            shorter than the alignment, ending at align_up(a), and zero (WLINK's image buffer is zero-filled; the
+            -ot 'last literal gets no pad bytes, the linker pads with 00' case in docs/compiler-notes.md).  Such a
+            gap needs no object: dropping its carrier links to the same address."""
+            if not align or align < 2 or not 0 < b - a < align or (a + align - 1) // align * align != b:
+                return False
+            return cls == "_BSS" or not any(ctx.orig.bytes[3][a:b])
+
+        self.padding = []   # [(class, start, end, contribution it aligns)]: linker fill, not raw debt
         for cls in GAME_DATA_CLASSES:
             lo, hi = ctx.classes[cls]
             reals = sorted(((r.data[cls], r) for r in self.reals if cls in r.data), key=lambda x: x[1].order)
@@ -615,10 +660,17 @@ class Plan:
                     r.problems.append(f"{cls} at {h(base)} out of class order")
                     continue
                 if base > cur:
-                    carrier(pos).pieces.append((cls, cur, base))
+                    if linker_padding(cls, cur, base, r.data_align.get(cls)):
+                        self.padding.append((cls, cur, base, r.key))
+                    else:
+                        carrier(pos).pieces.append((cls, cur, base))
                 cur, pos = base + size, r.order
             if hi > cur:
-                carrier(pos).pieces.append((cls, cur, hi))
+                first = ctx.runtime_first_data(cls)
+                if first and linker_padding(cls, cur, hi, first[1]):
+                    self.padding.append((cls, cur, hi, f"runtime {first[0]}"))
+                else:
+                    carrier(pos).pieces.append((cls, cur, hi))
         self.carriers = list(carriers.values())
 
     # --- names --------------------------------------------------------------
@@ -1059,6 +1111,8 @@ class Owners:
         for it in plan.carriers:
             for cls, a, b in it.pieces:
                 self.iv[3].append((a, b, f"{it.key} {cls}"))
+        for cls, a, b, nxt in getattr(plan, "padding", []):
+            self.iv[3].append((a, b, f"linker alignment padding {cls} before {nxt}"))
         for v in self.iv.values():
             v.sort()
 
@@ -1144,6 +1198,9 @@ def accounting(ctx, plan):
         for cls, a, b in it.pieces:
             add("obj3_bss" if cls == "_BSS" else "obj3_init", "raw", b - a)
             game3 += b - a
+    for cls, a, b, _ in getattr(plan, "padding", []):
+        add("obj3_bss" if cls == "_BSS" else "obj3_init", "padding", b - a)   # WLINK alignment fill
+        game3 += b - a
     g_init = sum(v for k, v in acc["obj3_init"].items())
     g_bss = sum(v for k, v in acc["obj3_bss"].items())
     add("obj3_init", "library", init_end - g_init)
@@ -1250,6 +1307,7 @@ def run(args):
             if r.key in args.exclude:
                 r.problems.append("excluded on the command line")
     ref_order = reference_runtime_order(ctx, out)
+    ctx.lib_order = ref_order   # locates the first runtime data contributions (linker padding before them)
     excluded_log, readmitted = [], []
     rounds = 0
 
@@ -1450,6 +1508,7 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
         e["bytes"] += r.end - r.start
     report["rejection_categories"] = cats
     report["rejected_split_points"] = [h(c) for c in plan.rejected_cuts]
+    report["linker_padding"] = [f"{c} {h(a)}..{h(b)} before {n}" for c, a, b, n in getattr(plan, "padding", [])]
     (out / "report.json").write_text(json.dumps(report, indent=1))
     print(summary(report, out))
 

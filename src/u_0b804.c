@@ -16,10 +16,11 @@ int g_e238;
 int g_e23c;
 
 extern int g_75bc;
-extern int g_e366;
-extern int g_e36a;
-extern int g_e35e;
-extern int g_e362;
+struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct VideoState g_e324;
+void f_dfc3(void);
+void f_e028(void);
+void f_e3e5(void);
 extern unsigned char f_13324(int, int);
 extern int f_107b6(char *, void *, unsigned int);
 extern void *f_ddb9(int);
@@ -76,9 +77,9 @@ int f_b804(char *name)
     four = 4;
     twenty = 0x14;
     palette_bytes = 0x300;
-    pixel_bytes = g_e36a * ((g_e366 + 1) & -2);
+    pixel_bytes = g_e324.e36a * ((g_e324.e366 + 1) & -2);
     total_bytes = ((((((pixel_bytes + 8) + palette_bytes) + 8) + twenty) + 8) + four) + 8;
-    raw_bytes = g_e366 * g_e36a + 0x320;
+    raw_bytes = g_e324.e366 * g_e324.e36a + 0x320;
     {
     unsigned int mode;
     mode = g_7418;
@@ -102,7 +103,7 @@ L_b89a:
     *(struct header9 *)raw = *(struct header9 *)"mhwanh\0\4";
     raw[6] = 0;
     raw[7] = 4;
-    f_bc42((int)(raw + 8), (g_e366 << 0x10) | g_e36a);
+    f_bc42((int)(raw + 8), (g_e324.e366 << 0x10) | g_e324.e36a);
     f_bc42((int)(raw + 0xc), 0x1000000);
     memset(raw + 0xe, 0, 0x12);
     p = raw + 0x20;
@@ -111,8 +112,8 @@ L_b89a:
         p[x] = p[x] << 2;
 
     p = raw + 0x320;
-    for (y = 0; y < g_e36a; y++)
-        for (x = 0; x < g_e366; x++)
+    for (y = 0; y < g_e324.e36a; y++)
+        for (x = 0; x < g_e324.e366; x++)
             *p++ = (unsigned char)f_13324(x, y);
 
     result = f_107b6(name, raw, raw_bytes);
@@ -133,7 +134,7 @@ L_b9f9:
     f_bc42((int)(allocated + 8), 0x50424d20);
     f_bc42((int)header, 0x424d4844);
     f_bc42((int)(header + 4), twenty);
-    f_bc42((int)(header + 8), (g_e366 << 0x10) | g_e36a);
+    f_bc42((int)(header + 8), (g_e324.e366 << 0x10) | g_e324.e36a);
     *(int *)(header + 0xc) = 0;
     header[0x11] = 0;
     header[0x13] = 0;
@@ -141,7 +142,7 @@ L_b9f9:
     header[0x10] = 8;
     header[0x12] = 0;
     *(int *)(header + 0x14) = 0x605ff00;
-    f_bc42((int)(header + 0x18), (g_e35e << 0x10) | g_e362);
+    f_bc42((int)(header + 0x18), (g_e324.e35e << 0x10) | g_e324.e362);
     f_bc42((int)map, 0x434d4150);
     f_bc42((int)(map + 4), palette_bytes);
     f_ebcd(map + 8);
@@ -150,8 +151,8 @@ L_b9f9:
     f_bc42((int)body, 0x424f4459);
     f_bc42((int)(body + 4), pixel_bytes);
     p = body + 8;
-    for (y = 0; y < g_e36a; y++)
-        for (x = 0; x < ((g_e366 + 1) & -2); x++)
+    for (y = 0; y < g_e324.e36a; y++)
+        for (x = 0; x < ((g_e324.e366 + 1) & -2); x++)
             *p++ = (unsigned char)f_13324(x, y);
 
     result = f_107b6(name, allocated, (total_bytes + 3) & -4);

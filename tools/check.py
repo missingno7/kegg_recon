@@ -2,6 +2,9 @@
 
     python tools/check.py CAND.c FUNC [--at 0x1234] [--end 0x1300] [--profile game-c] [--json OUT]
     python tools/check.py CAND.c --all --at 0x1234      # whole _TEXT of CAND vs original from 0x1234
+    python tools/check.py DATA.c --all --at 0x10 --end 0x10 --place _DATA=0x25ec   # data-only object (empty
+        # code range = link position): every data segment needs --place; contents, pointer fixups and the
+        # addresses of its publics (names / manifest symbols) are verified
 
 FUNC is the symbol in the candidate object (public or static); the original extent comes from
 manifest.json (entry with that name) unless --at/--end are given.  Output: one summary line plus
@@ -79,6 +82,8 @@ def check_data(mod, si, res):
                     bases.setdefault(f"{ob}:{(int(off, 16) - o) & 0xFFFFFFFF:x}", []).append(n)
             if f"seg:{seg.name}" in binds:
                 bases.setdefault(binds[f"seg:{seg.name}"], []).append(f"seg:{seg.name}")
+            if seg.name in PLACE:
+                bases.setdefault(f"3:{PLACE[seg.name]:x}", []).append(f"--place {seg.name}")
             if len(bases) > 1:
                 probs.append(f"_BSS symbols imply different segment bases: {bases}")
             elif bases:
@@ -237,8 +242,15 @@ def compile_candidate(src: Path, profile: str, outdir: Path, host: str = "nt"):
     return obj, r
 
 
-def code_segment(mod, func=None):
+def code_segment(mod, func=None, data_only=False):
     segs = [i for i, s in enumerate(mod.segments) if s and s.cls.upper() == "CODE" and s.size]
+    if data_only:  # data-only object (empty code range): its CODE segment must be empty
+        if segs:
+            raise SystemExit(f"data-only check (empty range) but the object has code: {[mod.segments[i].name for i in segs]}")
+        empty = [i for i, s in enumerate(mod.segments) if s and s.cls.upper() == "CODE"]
+        if not empty:
+            raise SystemExit("data-only check: the object has no CODE segment")
+        return empty[0]
     if func and len(segs) > 1:  # e.g. several paragraph-aligned USE16 template segments: take the one defining func
         own = [s for n, s, o, _ in mod.publics if n == func and s in segs]
         if own:
@@ -301,7 +313,7 @@ def link_constant16(mod, f, si, rel, orig, a0, ofix, probs):
 
 def compare(mod, si, c0, c1, a0, orig_len=None):
     L, code, ofix = original()
-    cand = bytes(mod.segments[si].data[c0:c1])
+    cand = bytes((mod.segments[si].data or b"")[c0:c1])
     n = c1 - c0
     olen = orig_len if orig_len is not None else n
     orig = code[a0:a0 + olen]
@@ -463,7 +475,10 @@ def main(argv):
             mod = omf.load(objp)[0]
         finally:
             shutil.rmtree(work, ignore_errors=True)
-    si = code_segment(mod, None if a.all else a.func)
+    # data-only unit: --all with an empty range (--at X --end X = its link position); every data segment must be
+    # placed with --place and is verified by contents and pointer fixups; its publics bind to where they lie
+    data_only = bool(a.all and a.at and a.end and int(a.at, 16) == int(a.end, 16))
+    si = code_segment(mod, None if a.all else a.func, data_only)
     ext = symbol_extents(mod, si)
     seg_end = mod.segments[si].size
     if a.all:
@@ -488,6 +503,15 @@ def main(argv):
         olen = c1 - c0
     res, cand, orig, masked = compare(mod, si, c0, c1, a0, olen)
     check_data(mod, si, res)
+    if data_only:
+        placed = {d["seg"]: int(d["base"].split(":")[1], 16) for d in res["data"] if "base" in d}
+        for di, seg in enumerate(mod.segments):
+            if seg and di != si and seg.size and seg.cls.upper() not in ("CODE", "DEBSYM", "DEBTYP")                     and seg.frame is None and seg.name not in placed:
+                res["problems"].append(f"data-only unit: segment {seg.name} ({seg.size} bytes) not placed (--place)")
+        for n, s_, o, loc in mod.publics:
+            seg = mod.segments[s_]
+            if seg and seg.name in placed and not loc:
+                res["bindings"][n] = f"3:{placed[seg.name] + o:x}"   # checked against names/manifest below
     if dosrun.config()["profiles"][a.profile].get("tool", "wcc386") == "wcc386":
         std = {"_TEXT", "CONST", "CONST2", "_DATA", "_BSS", "$$SYMBOLS", "$$TYPES"}
         odd = sorted({x.name for x in mod.segments if x and x.name not in std})

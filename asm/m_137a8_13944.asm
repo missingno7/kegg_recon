@@ -1,6 +1,4 @@
 .386P
-EXTRN g_e384:BYTE
-EXTRN g_e385:BYTE
 EXTRN g_e324:WORD
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
         PUBLIC g_8418
@@ -128,11 +126,11 @@ L_13838:
 L_1383E:
         jl short L_13874
 L_13840:
-        cmp byte ptr [g_e385], 0Fh
+        cmp byte ptr [g_e324+61h], 0Fh
 L_13847:
         je short L_1385A
 L_13849:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_13850:
         mov ax, 0F02h
 L_13854:
@@ -140,11 +138,11 @@ L_13854:
 L_13858:
         out dx, ax
 L_1385A:
-        cmp byte ptr [g_e384], 40h
+        cmp byte ptr [g_e324+60h], 40h
 L_13861:
         je short L_13874
 L_13863:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_1386A:
         mov ax, 4005h
 L_1386E:
@@ -232,11 +230,11 @@ L_138C5:
 L_138CD:
         jne short L_138E9
 L_138CF:
-        cmp byte ptr [g_e384], 41h
+        cmp byte ptr [g_e324+60h], 41h
 L_138D6:
         je short L_138E9
 L_138D8:
-        mov byte ptr [g_e384], 41h
+        mov byte ptr [g_e324+60h], 41h
 L_138DF:
         mov ax, 4105h
 L_138E3:
@@ -254,11 +252,11 @@ L_138F3:
 L_138F9:
         jl short L_1392F
 L_138FB:
-        cmp byte ptr [g_e385], 0Fh
+        cmp byte ptr [g_e324+61h], 0Fh
 L_13902:
         je short L_13915
 L_13904:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_1390B:
         mov ax, 0F02h
 L_1390F:
@@ -266,11 +264,11 @@ L_1390F:
 L_13913:
         out dx, ax
 L_13915:
-        cmp byte ptr [g_e384], 40h
+        cmp byte ptr [g_e324+60h], 40h
 L_1391C:
         je short L_1392F
 L_1391E:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_13925:
         mov ax, 4005h
 L_13929:

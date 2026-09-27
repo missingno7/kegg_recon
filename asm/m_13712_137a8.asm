@@ -1,27 +1,16 @@
 .386
 EXTRN g_7b14:WORD
 EXTRN g_e324:WORD
-EXTRN g_e326:DWORD
-EXTRN g_e336:DWORD
-EXTRN g_e346:DWORD
-EXTRN g_e35e:DWORD
-EXTRN g_e36e:DWORD
-EXTRN g_e372:DWORD
-EXTRN g_e376:DWORD
-EXTRN g_e37a:DWORD
-EXTRN g_e386:BYTE
 EXTRN g_7b16:WORD
-EXTRN g_e384:BYTE
-EXTRN g_e385:BYTE
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         PUBLIC L_13712
 L_13712:
-        cmp byte ptr [g_e385], 0Fh
+        cmp byte ptr [g_e324+61h], 0Fh
 L_13719:
         je short L_1372C
 L_1371B:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_13722:
         mov ax, 0F02h
 L_13726:
@@ -29,11 +18,11 @@ L_13726:
 L_1372A:
         out dx, ax
 L_1372C:
-        cmp byte ptr [g_e384], 40h
+        cmp byte ptr [g_e324+60h], 40h
 L_13733:
         je short L_13746
 L_13735:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_1373C:
         mov ax, 4005h
 L_13740:
@@ -41,7 +30,7 @@ L_13740:
 L_13744:
         out dx, ax
 L_13746:
-        mov ecx, dword ptr [g_e35e]
+        mov ecx, dword ptr [g_e324+3Ah]
 L_1374C:
         mov eax, dword ptr [ebp + 10h]
 L_1374F:
@@ -55,11 +44,11 @@ L_13756:
 L_13759:
         shl ebx, 2
 L_1375C:
-        add edi, dword ptr [ebx + g_e326]
+        add edi, dword ptr [ebx + g_e324+2h]
 L_13762:
-        add edi, dword ptr [ebx + g_e336]
+        add edi, dword ptr [ebx + g_e324+12h]
 L_13768:
-        add edi, dword ptr [ebx + g_e346]
+        add edi, dword ptr [ebx + g_e324+22h]
 L_1376E:
         mov edx, dword ptr [ebp - 10h]
 L_13771:

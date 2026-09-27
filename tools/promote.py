@@ -101,7 +101,10 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
     man = load_manifest()
     s0, e0 = int(start, 16), int(end, 16)
     members = [f for f in man["functions"] if f.get("object", 1) == 1 and s0 <= int(f["start"], 16) < e0]
-    if not members or int(members[0]["start"], 16) != s0 or int(members[-1]["end"], 16) > e0:
+    data_only = s0 == e0   # data-only unit: empty code range = its link position; data verified via --place
+    if data_only and not places:
+        raise SystemExit("a data-only unit (empty range) needs --place for its data segments")
+    if not data_only and (not members or int(members[0]["start"], 16) != s0 or int(members[-1]["end"], 16) > e0):
         raise SystemExit("range does not start at a manifest function or cuts one")
     stamp = time.strftime("%Y%m%d-%H%M%S")
     frozen_dir = ROOT / "build" / "promote" / f"{uid}-{stamp}"
@@ -142,7 +145,7 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
                 f.update({"status": "matching", "src": dest_rel, "unit": uid, "profile": profile, "src_sha256": sha})
                 for k in ("draft", "mismatch", "note"):
                     f.pop(k, None)
-        overl = lambda u: int(u["start"], 16) < e0 and s0 < int(u["end"], 16)
+        overl = lambda u: (int(u["start"], 16) < e0 and s0 < int(u["end"], 16)) or             (data_only and (u["start"], u["end"]) == (start, end) and u["src"] == dest_rel)
         superseded = [u for u in man.setdefault("units", []) if u["id"] != uid and overl(u)]
         for u in superseded:  # a new unit covering an older one replaces it; members outside the new range revert
             us, ue = int(u["start"], 16), int(u["end"], 16)
@@ -156,7 +159,7 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
                       "src_sha256": sha, "data": [f"{d['seg']}@{d['base']}+{d['size']:#x}" for d in res.get("data", [])],
                       **({"place": list(places)} if places else {}),
                       **({"note": note} if note else {})})
-        man["units"] = sorted(units, key=lambda u: int(u["start"], 16))
+        man["units"] = sorted(units, key=lambda u: (int(u["start"], 16), int(u["end"], 16)))
         for k, v in res["bindings"].items():
             if not k.startswith(("seg:", "grp:", "sel:")) and k not in man.get("symbols", {}):
                 man.setdefault("symbols", {})[k] = v

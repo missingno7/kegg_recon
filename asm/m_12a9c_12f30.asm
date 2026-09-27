@@ -21,17 +21,6 @@ EXTRN g_e2e4:DWORD
 EXTRN g_e2e8:DWORD
 EXTRN g_e2ec:DWORD
 EXTRN g_e324:WORD
-EXTRN g_e326:DWORD
-EXTRN g_e336:DWORD
-EXTRN g_e346:DWORD
-EXTRN g_e35e:DWORD
-EXTRN g_e362:WORD
-EXTRN g_e36e:DWORD
-EXTRN g_e372:DWORD
-EXTRN g_e376:DWORD
-EXTRN g_e37a:DWORD
-EXTRN g_e384:BYTE
-EXTRN g_e385:BYTE
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
@@ -43,11 +32,11 @@ a_12a9c PROC NEAR
 L_12A9D:
         lea ebp, [esp + 1Ch]
 L_12AA1:
-        cmp byte ptr [g_e384], 40h
+        cmp byte ptr [g_e324+60h], 40h
 L_12AA8:
         je short L_12ABB
 L_12AAA:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_12AB1:
         mov ax, 4005h
 L_12AB5:
@@ -59,21 +48,21 @@ L_12ABB:
 L_12AC2:
         shl ebx, 2
 L_12AC5:
-        mov edi, dword ptr [ebx + g_e326]
+        mov edi, dword ptr [ebx + g_e324+2h]
 L_12ACB:
-        add edi, dword ptr [ebx + g_e336]
+        add edi, dword ptr [ebx + g_e324+12h]
 L_12AD1:
-        add edi, dword ptr [ebx + g_e346]
+        add edi, dword ptr [ebx + g_e324+22h]
 L_12AD7:
         movzx ebx, word ptr [g_7b18]
 L_12ADE:
         shl ebx, 2
 L_12AE1:
-        mov esi, dword ptr [ebx + g_e326]
+        mov esi, dword ptr [ebx + g_e324+2h]
 L_12AE7:
-        add esi, dword ptr [ebx + g_e336]
+        add esi, dword ptr [ebx + g_e324+12h]
 L_12AED:
-        add esi, dword ptr [ebx + g_e346]
+        add esi, dword ptr [ebx + g_e324+22h]
 L_12AF3:
         mov dword ptr [g_e2e4], edi
 L_12AF9:
@@ -81,7 +70,7 @@ L_12AF9:
 L_12AFF:
         add edi, dword ptr [ebp + 8]
 L_12B02:
-        mov eax, dword ptr [g_e35e]
+        mov eax, dword ptr [g_e324+3Ah]
 L_12B07:
         mul dword ptr [ebp + 0Ch]
 L_12B0A:
@@ -131,7 +120,7 @@ L_12B68:
 L_12B6B:
         jne short L_12B36
 L_12B6D:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_12B74:
         mov ax, 0F02h
 L_12B78:
@@ -164,31 +153,31 @@ L_12B99:
 L_12BA0:
         shl ebx, 2
 L_12BA3:
-        mov edi, dword ptr [ebx + g_e326]
+        mov edi, dword ptr [ebx + g_e324+2h]
 L_12BA9:
-        add edi, dword ptr [ebx + g_e336]
+        add edi, dword ptr [ebx + g_e324+12h]
 L_12BAF:
-        add edi, dword ptr [ebx + g_e346]
+        add edi, dword ptr [ebx + g_e324+22h]
 L_12BB5:
         movzx ebx, word ptr [g_7b18]
 L_12BBC:
         shl ebx, 2
 L_12BBF:
-        mov esi, dword ptr [ebx + g_e326]
+        mov esi, dword ptr [ebx + g_e324+2h]
 L_12BC5:
-        add esi, dword ptr [ebx + g_e336]
+        add esi, dword ptr [ebx + g_e324+12h]
 L_12BCB:
-        add esi, dword ptr [ebx + g_e346]
+        add esi, dword ptr [ebx + g_e324+22h]
 L_12BD1:
         cmp word ptr [g_e324], 1
 L_12BD9:
         jne short L_12C1B
 L_12BDB:
-        cmp byte ptr [g_e385], 0Fh
+        cmp byte ptr [g_e324+61h], 0Fh
 L_12BE2:
         je short L_12BF5
 L_12BE4:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_12BEB:
         mov ax, 0F02h
 L_12BEF:
@@ -200,11 +189,11 @@ L_12BF5:
 L_12BFD:
         jne short L_12C19
 L_12BFF:
-        cmp byte ptr [g_e384], 41h
+        cmp byte ptr [g_e324+60h], 41h
 L_12C06:
         je short L_12C19
 L_12C08:
-        mov byte ptr [g_e384], 41h
+        mov byte ptr [g_e324+60h], 41h
 L_12C0F:
         mov ax, 4105h
 L_12C13:
@@ -214,11 +203,11 @@ L_12C17:
 L_12C19:
         jmp short L_12C4F
 L_12C1B:
-        cmp byte ptr [g_e385], 0Fh
+        cmp byte ptr [g_e324+61h], 0Fh
 L_12C22:
         je short L_12C35
 L_12C24:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_12C2B:
         mov ax, 0F02h
 L_12C2F:
@@ -226,11 +215,11 @@ L_12C2F:
 L_12C33:
         out dx, ax
 L_12C35:
-        cmp byte ptr [g_e384], 40h
+        cmp byte ptr [g_e324+60h], 40h
 L_12C3C:
         je short L_12C4F
 L_12C3E:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_12C45:
         mov ax, 4005h
 L_12C49:
@@ -268,7 +257,7 @@ L_12C8F:
 L_12C97:
         je short L_12CBB
 L_12C99:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_12CA0:
         mov ax, 0F02h
 L_12CA4:
@@ -276,7 +265,7 @@ L_12CA4:
 L_12CA8:
         out dx, ax
 L_12CAA:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_12CB1:
         mov ax, 4005h
 L_12CB5:
@@ -297,11 +286,11 @@ a_12cbd PROC NEAR
 L_12CBE:
         lea ebp, [esp + 1Ch]
 L_12CC2:
-        cmp byte ptr [g_e384], 40h
+        cmp byte ptr [g_e324+60h], 40h
 L_12CC9:
         je short L_12CDC
 L_12CCB:
-        mov byte ptr [g_e384], 40h
+        mov byte ptr [g_e324+60h], 40h
 L_12CD2:
         mov ax, 4005h
 L_12CD6:
@@ -313,21 +302,21 @@ L_12CDC:
 L_12CE3:
         shl ebx, 2
 L_12CE6:
-        mov esi, dword ptr [ebx + g_e326]
+        mov esi, dword ptr [ebx + g_e324+2h]
 L_12CEC:
-        add esi, dword ptr [ebx + g_e336]
+        add esi, dword ptr [ebx + g_e324+12h]
 L_12CF2:
-        add esi, dword ptr [ebx + g_e346]
+        add esi, dword ptr [ebx + g_e324+22h]
 L_12CF8:
         movzx ebx, word ptr [g_7b18]
 L_12CFF:
         shl ebx, 2
 L_12D02:
-        mov edi, dword ptr [ebx + g_e326]
+        mov edi, dword ptr [ebx + g_e324+2h]
 L_12D08:
-        add edi, dword ptr [ebx + g_e336]
+        add edi, dword ptr [ebx + g_e324+12h]
 L_12D0E:
-        add edi, dword ptr [ebx + g_e346]
+        add edi, dword ptr [ebx + g_e324+22h]
 L_12D14:
         mov dword ptr [g_e2e4], esi
 L_12D1A:
@@ -351,7 +340,7 @@ L_12D40:
 L_12D46:
         mov dword ptr [g_e2e8], ebx
 L_12D4C:
-        mov byte ptr [g_e385], 0Fh
+        mov byte ptr [g_e324+61h], 0Fh
 L_12D53:
         mov ax, 0F02h
 L_12D57:
@@ -367,7 +356,7 @@ f_12d5f LABEL NEAR
 L_12D5F:
         mov cx, word ptr [esi + 2]
 L_12D63:
-        mov bp, word ptr [g_e35e]
+        mov bp, word ptr [g_e324+3Ah]
 L_12D6A:
         add bp, bp
 L_12D6D:
@@ -379,7 +368,7 @@ L_12D76:
 L_12D79:
         mov cx, word ptr [esi + 4]
 L_12D7D:
-        mov bp, word ptr [g_e362]
+        mov bp, word ptr [g_e324+3Eh]
 L_12D84:
         add bp, bp
 L_12D87:
@@ -503,11 +492,11 @@ L_12E6F:
 L_12E74:
         mov dword ptr [g_8388], eax
 L_12E79:
-        cmp edx, dword ptr [g_e372]
+        cmp edx, dword ptr [g_e324+4Eh]
 L_12E7F:
         jge short L_12E9C
 L_12E81:
-        mov eax, dword ptr [g_e372]
+        mov eax, dword ptr [g_e324+4Eh]
 L_12E86:
         sub eax, edx
 L_12E88:
@@ -515,7 +504,7 @@ L_12E88:
 L_12E8B:
         jle near ptr L_12F2E
 L_12E91:
-        mov edx, dword ptr [g_e372]
+        mov edx, dword ptr [g_e324+4Eh]
 L_12E97:
         mov dword ptr [g_8378], eax
 L_12E9C:
@@ -525,11 +514,11 @@ L_12E9F:
 L_12EA1:
         dec eax
 L_12EA2:
-        cmp eax, dword ptr [g_e37a]
+        cmp eax, dword ptr [g_e324+56h]
 L_12EA8:
         jle short L_12EBA
 L_12EAA:
-        sub eax, dword ptr [g_e37a]
+        sub eax, dword ptr [g_e324+56h]
 L_12EB0:
         sub cx, ax
 L_12EB3:
@@ -537,11 +526,11 @@ L_12EB3:
 L_12EB5:
         mov dword ptr [g_837c], eax
 L_12EBA:
-        cmp ebx, dword ptr [g_e36e]
+        cmp ebx, dword ptr [g_e324+4Ah]
 L_12EC0:
         jge short L_12EE1
 L_12EC2:
-        mov eax, dword ptr [g_e36e]
+        mov eax, dword ptr [g_e324+4Ah]
 L_12EC7:
         sub eax, ebx
 L_12EC9:
@@ -555,7 +544,7 @@ L_12ED1:
 L_12ED4:
         mov dword ptr [g_8380], eax
 L_12ED9:
-        mov ebx, dword ptr [g_e36e]
+        mov ebx, dword ptr [g_e324+4Ah]
 L_12EDF:
         jmp short L_12F0F
 L_12EE1:
@@ -567,11 +556,11 @@ L_12EE6:
 L_12EE8:
         dec eax
 L_12EE9:
-        cmp eax, dword ptr [g_e376]
+        cmp eax, dword ptr [g_e324+52h]
 L_12EEF:
         jle short L_12F0F
 L_12EF1:
-        sub eax, dword ptr [g_e376]
+        sub eax, dword ptr [g_e324+52h]
 L_12EF7:
         rol ecx, 10h
 L_12EFA:
@@ -589,7 +578,7 @@ L_12F0C:
 L_12F0F:
         jmp short L_12F11
 L_12F11:
-        mov eax, dword ptr [g_e35e]
+        mov eax, dword ptr [g_e324+3Ah]
 L_12F16:
         mul edx
 L_12F18:

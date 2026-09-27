@@ -90,7 +90,9 @@ def main(argv):
         # 3. units
         covered = lambda a: any(rng(u)[0] <= a < rng(u)[1] for u in units)
         old_units = man.get("units", [])
-        removed = [u for u in old_units if any(int(u["start"], 16) < rng(p)[1] and rng(p)[0] < int(u["end"], 16) for p in units)]
+        # a data-only unit (empty range) overlaps nothing: it replaces the unit with its id
+        removed = [u for u in old_units if any((int(u["start"], 16) < rng(p)[1] and rng(p)[0] < int(u["end"], 16))
+                                               or u["id"] == p["id"] for p in units)]
         keep_units = [u for u in old_units if u not in removed]
         removed_ids = {u["id"] for u in removed}
         leftovers = {}
@@ -118,7 +120,7 @@ def main(argv):
                               "profile": u.get("profile", "game-c"), "src_sha256": h,
                               **({"place": u["place"]} if u.get("place") else {}),
                               "note": u.get("note", "object plan (build/workers/objects)")})
-        man["units"] = sorted(keep_units + new_units, key=lambda u: int(u["start"], 16))
+        man["units"] = sorted(keep_units + new_units, key=lambda u: (int(u["start"], 16), int(u["end"], 16)))
         # refresh hashes of every source (renames changed some)
         for f in man["functions"]:
             if f.get("status") == "matching" and (ROOT / f["src"]).exists():

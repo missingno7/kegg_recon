@@ -4,7 +4,7 @@
 struct VideoModeRecord { int mode_id; short bios_mode; short reserved; union { int dword; short word; unsigned char bytes[4]; } video_mode; unsigned char mode_flags; unsigned char mode_class; int width; int height; int row_bytes; int image_size; int buffer_size; };
 struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 struct VideoPresetRecord { unsigned char flags; unsigned char reserved[3]; unsigned char regs[48]; int mode_id; };
-extern struct VideoState g_e324;
+struct VideoState g_e324;
 extern void f_9afc(void);
 extern void f_9b44(int);
 extern void f_e028(void);

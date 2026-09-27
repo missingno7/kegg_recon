@@ -68,10 +68,8 @@ extern int g_df4c;
 extern int g_df54;
 extern int h_df5c;
 extern int g_e1d8;
-extern int g_e36e;
-extern int g_e372;
-extern int g_e376;
-extern int g_e37a;
+struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct VideoState g_e324;
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48e_0g;
@@ -112,7 +110,6 @@ extern int g_df60;
 extern unsigned char *g_df70;
 extern int g_df74;
 extern unsigned char g_e144;
-extern int g_e35a;
 extern void f_16bb(int);
 extern short g_746c_mmw;
 extern void f_1202(void);
@@ -360,7 +357,7 @@ void f_2f0c_cdhyn(void)
     if (g_df38 >= 0x29)
         g_df38 = 0;
     f_7f8a();
-    f_12f9c(g_7b1a, 0, g_7b18, 0, g_e35a);
+    f_12f9c(g_7b1a, 0, g_7b18, 0, g_e324.e35a);
     if (g_746c_mmw != 0)
         shutdown_with_exit_message(g_746c_mmw, 0);
 }
@@ -462,8 +459,8 @@ loop_done:
     f_8345_wsdytbf();
     f_83b1();
     f_c9ce(0, 0);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     return result;
 }
@@ -493,8 +490,8 @@ void f_3406_qruj(void)
             shutdown_with_exit_message(g_746c_mmw, 0);
         f_84a0(0x32);
     }
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
 }
 
 void f_34b7(void)
@@ -510,8 +507,8 @@ void f_353f(void)
 {
     f_c3ab_euckgzihaj();
     f_61a6_vby();
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     f_10502(((int *)g_dee4)[0], ((int *)g_dee4)[1]);
 }
 
@@ -526,15 +523,15 @@ void f_35b5(void)
 void f_35e4_rqk(void)
 {
     f_b541((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
-    f_b57a(g_e36e, g_e372, g_e376, g_e37a);
+    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
     g_7b16 = g_7b18;
     r_dDDc_uzmlc[2] = -1;
     r_dDDc_uzmlc[6] = -1;
     f_b4a7(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
     f_b4a7(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
     f_b4a7(0x108, 4, *(int *)g_37fd, 10, 6);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     g_7b16 = g_7b20;
 }
 
@@ -555,7 +552,7 @@ void f_3702(void)
     if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6] || r_dDDc_uzmlc[1] != r_dDDc_uzmlc[2]) {
         f_b541((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
     }
-    f_b57a(g_e36e, g_e372, g_e376, g_e37a);
+    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
 
     if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6]) {
         r_dDDc_uzmlc[6] = r_dDDc_uzmlc[5];
@@ -650,10 +647,10 @@ void f_3beb(int a)
     else
         value = g_7b22;
     g_7b16 = value;
-    f_12f9c(g_7b18, 0, g_7b16, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b16, 0, g_e324.e35a);
     f_ed38();
     f_9d40(0);
     f_ec76(a);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
 }

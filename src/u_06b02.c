@@ -24,8 +24,9 @@ extern unsigned char g_d340_schtgisj[];
 extern int x_dd40_xbukycw;
 extern int k_DD48_jbwjbqarofg;
 extern unsigned char *g_dd4c_ilunphmaok;
-extern int g_e35a;
-extern int g_e37a;
+struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct VideoState g_e324;
+void f_dfc3(void);
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48e_0g;
 extern short m_E4c4;
@@ -80,8 +81,8 @@ extern unsigned char g_e13e;
 extern unsigned char g_e13b;
 extern unsigned char g_e46b;
 extern void *r_dDDc_uzmlc;
-extern int g_e36a;
-extern int g_e366;
+void f_e028(void);
+void f_e3e5(void);
 int g_9468;
 int g_946c;
 
@@ -175,8 +176,8 @@ int f_6b02(void)
 {
     g_9468 = 0x118;
     g_9484 = 0;
-    g_947c = g_e37a;
-    g_e37a = 0xa6;
+    g_947c = g_e324.e37a;
+    g_e324.e37a = 0xa6;
     f_ea9f((void *)x_dd40_xbukycw, 0, 0x3f, 8);
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
     f_6156();
@@ -190,8 +191,8 @@ int f_6b02(void)
     f_9d40(0);
     f_9d40(0);
     f_a810((void *)k_DD48_jbwjbqarofg, g_7b18);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e35a);
+    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     g_7b14 = g_7b18;
     f_6f66();
     f_798c();
@@ -258,7 +259,7 @@ L_6dfe:;
     return f_6e2e();
 }
 
-void f_6e13(void) { g_e37a = g_947c; }
+void f_6e13(void) { g_e324.e37a = g_947c; }
 
 int f_6e2e(void)
 {
@@ -392,10 +393,10 @@ void f_7184(void)
 L_71cb:;
     if (g_9490 == g_94b0) goto L_72c0;
     g_94b0 = g_9490;
-    g_e37a = g_947c;
+    g_e324.e37a = g_947c;
     f_135e8(g_7b16, ((g_9490 * 0x6f) / g_94a0) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
     f_135e8(g_7b14, ((g_9490 * 0x6f) / g_94a0) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
-    g_e37a = 0xa6;
+    g_e324.e37a = 0xa6;
     g_8e20 = 0;
 L_7272:;
     if (g_8e20 < 0x300) goto L_7289;
@@ -418,10 +419,10 @@ L_72c0:;
     g_94b4 = 0x1388;
 L_72ee:;
     g_9494 = g_94a8;
-    g_e37a = g_947c;
+    g_e324.e37a = g_947c;
     f_135e8(g_7b16, ((g_94a8 * 0x6f) / g_94a4) + 0xb4, 0xb3, 0x123, 0xb9, 0);
     f_135e8(g_7b14, ((g_94a8 * 0x6f) / g_94a4) + 0xb4, 0xb3, 0x123, 0xb9, 0);
-    g_e37a = 0xa6;
+    g_e324.e37a = 0xa6;
     g_9484 += 8;
     f_c20d(0x25);
 L_738f:;
