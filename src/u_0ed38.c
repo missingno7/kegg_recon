@@ -71,8 +71,8 @@ short g_7b1c = 0;
 short g_7b1e = 1;
 short flip_src = 0;
 short flip_dst = 1;
-short g_7b24 = 2;
-short g_7b26 = 3;
+short video_page_2_index = 2;
+short vp3idx = 3;
 
 void show_page(void) {
     disp_idx = draw_idx;

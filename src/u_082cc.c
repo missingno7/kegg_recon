@@ -23,8 +23,8 @@ extern short page2;
 extern short page3;
 extern short flip_src;
 extern short flip_dst;
-extern short g_7b24;
-extern short g_7b26;
+extern short video_page_2_index;
+extern short vp3idx;
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
@@ -37,8 +37,8 @@ extern int g_e1b8;
 extern short g_e1bc;
 extern short g_e1c0;
 extern unsigned char current_scan_code;
-extern unsigned char previous_ascii_key_2f;
-extern unsigned char current_key_code_01;
+extern unsigned char prior_key_ascii;
+extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
 extern void handle_s_key(void);
 extern void f_9d40(unsigned char);
@@ -92,8 +92,8 @@ void f_843a(void)
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     disp_idx = flip_src;
     draw_idx = flip_dst;
-    page2 = g_7b24;
-    page3 = g_7b26;
+    page2 = video_page_2_index;
+    page3 = vp3idx;
 }
 
 void f_84a0(int a0)
@@ -113,5 +113,5 @@ void f_84a0(int a0)
         } while (g_e1bc < g_e1c0);
         redraw_image_region(0, 0);
         show_page();
-    } while ((previous_ascii_key_2f == current_ascii || current_ascii != 0x20) && (mouse_btn == mouse_btn_old || !(*(unsigned char *)&mouse_btn & 7)) && (current_scan_code == current_key_code_01 || current_key_code_01 != 1) && g_e14c < a0);
+    } while ((prior_key_ascii == current_ascii || current_ascii != 0x20) && (mouse_btn == mouse_btn_old || !(*(unsigned char *)&mouse_btn & 7)) && (current_scan_code == keyboard_scan_byte || keyboard_scan_byte != 1) && g_e14c < a0);
 }

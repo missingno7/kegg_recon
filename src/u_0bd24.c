@@ -2,17 +2,17 @@
 #include <string.h>
 extern signed short sound_blaster_detected;
 extern unsigned char sound_blaster_irq;
-extern unsigned char g_74da;
-extern unsigned char g_74db;
+extern unsigned char sndvec;
+extern unsigned char sound_system_irq_line;
 extern unsigned char g_75a8;
 extern unsigned char slave_pic_vector_base;
-extern unsigned char g_74c4[];
+extern unsigned char sndirq[];
 extern void f_d656(void *, void(*)(void));
 extern void release_sound_system(void);
 void prepare_sound_system(void);
-extern unsigned char g_7513;
-extern unsigned char g_7514;
-extern unsigned char g_74fd[];
+extern unsigned char sound_callback_interrupt_number;
+extern unsigned char sound_callback_irq_line;
+extern unsigned char scbctx[];
 extern int sound_callback_allocation_size;
 extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
@@ -22,11 +22,11 @@ extern void free_dpmi_memory(int);
 extern int save_screen_image(char *);
 extern void release_sound_callback(void);
 extern void __far a_0(void);
-extern int g_74dd;
-extern int g_74e1;
-extern int g_74e5;
-extern int g_74e9;
-extern int g_74f9;
+extern int sound_system_hook_flags;
+extern int sound_system_handler_address;
+extern int sound_system_physical_start;
+extern int sound_system_mapping_state;
+extern int sound_system_mapped_address;
 extern unsigned g_75c4;
 extern int audio_dma_memory;
 extern short sound_blaster_base_port;
@@ -42,11 +42,11 @@ int audio_dma_allocation_bytes = 0;
 void prepare_sound_system(void)
 {
     if (sound_blaster_detected == -1) {
-        g_74db = sound_blaster_irq + g_75a8;
-        g_74da = g_74db;
+        sound_system_irq_line = sound_blaster_irq + g_75a8;
+        sndvec = sound_system_irq_line;
         if (sound_blaster_irq >= 8)
-            g_74da += slave_pic_vector_base - 8 - g_75a8;
-        f_d656(&g_74c4, release_sound_system);
+            sndvec += slave_pic_vector_base - 8 - g_75a8;
+        f_d656(&sndirq, release_sound_system);
     }
 }
 
@@ -54,7 +54,7 @@ void release_sound_system(void)
 {
     if (sound_blaster_detected == -1) {
         stop_audio_stream();
-        f_d7b8(&g_74c4);
+        f_d7b8(&sndirq);
         free_dpmi_memory(audio_dma_allocation_bytes);
         audio_dma_allocation_bytes = 0;
     }
@@ -64,23 +64,23 @@ int configure_sound_dma(int bytes_requested)
 {
     unsigned char * interrupt_record;
     if (!bytes_requested) {
-        bytes_requested = g_74dd;
+        bytes_requested = sound_system_hook_flags;
         if (!bytes_requested) {
             return 0;
         }
     }
-    if (sound_blaster_detected != -1 || *(short *)g_74fd == -1) {
+    if (sound_blaster_detected != -1 || *(short *)scbctx == -1) {
         return 0x606;
     }
-    g_74dd = bytes_requested;
+    sound_system_hook_flags = bytes_requested;
     prepare_sound_system();
-    g_74e1 = (int)sound_blaster_irq_handler;
-    g_74e5 = (int)a_0;
-    g_74e9 = (int)((unsigned char __far *)a_0 + 0x69);
+    sound_system_handler_address = (int)sound_blaster_irq_handler;
+    sound_system_physical_start = (int)a_0;
+    sound_system_mapping_state = (int)((unsigned char __far *)a_0 + 0x69);
     /* Install the Sound Blaster transfer hook and reserve its DMA buffer. */
-    if (f_da01(g_74c4) != -1) {
+    if (f_da01(sndirq) != -1) {
         if ((bytes_requested & 1) == 1) {
-            interrupt_record = (unsigned char *)g_74f9;
+            interrupt_record = (unsigned char *)sound_system_mapped_address;
             *(short *)(interrupt_record + 2) = sound_blaster_base_port;
             *(short *)(interrupt_record + 4) = 0x280;
             if (sound_blaster_irq < 8) {

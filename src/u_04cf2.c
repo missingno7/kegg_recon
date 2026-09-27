@@ -29,8 +29,8 @@ extern State *racket_object;
 extern char g_e13a;
 extern unsigned char g_e13b;
 extern unsigned char g_e46b;
-extern short mouse_y_recent_average_g;
-extern short mouse_x_recent_average_1c;
+extern short mouse_y_mean_recent;
+extern short mouse_x_average_recent;
 extern void move_mouse_to(int, int);
 extern void write_dac_palette(void *, int, int, int);
 extern void draw_racket_and_effects(void);
@@ -65,7 +65,7 @@ extern void set_mouse_horizontal_bounds(int, int);
 extern void set_mouse_vertical_bounds(int, int);
 extern int g_e4d0_wfmxdlyju;
 extern int g_67b0;
-extern int audio_request_table_8;
+extern int audio_request_entries;
 extern int g_df3c;
 extern int level_art_base;
 extern int g_e4c8;
@@ -106,14 +106,14 @@ extern int next_random_value();
 extern void spawn_enemy_projectile(int, int, int, int);
 extern void move_enemy_projectiles(void);
 extern int b_DF40_omuefnnbqp;
-extern int g_e24c;
-extern int r_e250;
-extern int g_e22c;
-extern int g_e230;
-extern int g_e23c;
-extern int u_e240;
-extern int g_e244;
-extern int g_e248;
+extern int collision_box_a_left;
+extern int collision_box_a_top;
+extern int collision_box_b_left;
+extern int b_box_top;
+extern int sprite_rect_c_left;
+extern int collision_box_c_top;
+extern int collision_box_c_right;
+extern int collision_rect_c_bottom;
 extern unsigned char g_e142_baun;
 extern unsigned char g_e143_eayxx;
 extern int g_dd78;
@@ -283,19 +283,19 @@ L_5241:;
             if (--racket_object->at_38 <= 0) {
                 player_key_flags[0] &= 0xef;
                 player_key_flags[0] &= 0xfb;
-                racket_object->at_00 = ((racket_object->at_10 + racket_object->at_0c) - (short)mouse_x_recent_average_1c);
-                racket_object->at_04 = (short)mouse_y_recent_average_g;
+                racket_object->at_00 = ((racket_object->at_10 + racket_object->at_0c) - (short)mouse_x_average_recent);
+                racket_object->at_04 = (short)mouse_y_mean_recent;
                 move_mouse_to(racket_object->at_00, racket_object->at_04);
             } else {
-                racket_object->at_00 = ((racket_object->at_10 + racket_object->at_0c) - (short)mouse_x_recent_average_1c);
-                racket_object->at_04 = (short)mouse_y_recent_average_g;
+                racket_object->at_00 = ((racket_object->at_10 + racket_object->at_0c) - (short)mouse_x_average_recent);
+                racket_object->at_04 = (short)mouse_y_mean_recent;
                 if (racket_object->at_38 < 32) {
                     ((Flags *)player_key_flags)->b2 = (racket_object->at_38 >> 2) & 1;
                 }
             }
         } else {
-            racket_object->at_00 = (short)mouse_x_recent_average_1c;
-            racket_object->at_04 = (short)mouse_y_recent_average_g;
+            racket_object->at_00 = (short)mouse_x_average_recent;
+            racket_object->at_04 = (short)mouse_y_mean_recent;
         }
     }
 L_5377:;
@@ -413,7 +413,7 @@ void update_racket_dimensions(void) {
     g_8e20 = racket_object->at_00;
     if (player_key_flags[0] & 0x10)
         g_8e20 = racket_object->at_10 + racket_object->at_0c - g_8e20;
-    move_mouse_to(g_8e20, mouse_y_recent_average_g);
+    move_mouse_to(g_8e20, mouse_y_mean_recent);
 }
 
 void update_racket_movement_bounds(void) {
@@ -422,7 +422,7 @@ void update_racket_movement_bounds(void) {
     racket_object->at_14 = g_8e20;
     racket_object->at_18 = 0xbc;
     set_mouse_vertical_bounds(racket_object->at_14, racket_object->at_18);
-    move_mouse_to(mouse_x_recent_average_1c, racket_object->at_04);
+    move_mouse_to(mouse_x_average_recent, racket_object->at_04);
 }
 
 int get_racket_sprite_height(void) {

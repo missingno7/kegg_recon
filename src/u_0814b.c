@@ -11,8 +11,8 @@ unsigned char g_de60[124];
 int g_dedc;
 
 extern unsigned char g_e143_eayxx;
-extern unsigned char previous_ascii_key_2f;
-extern unsigned char current_key_code_01;
+extern unsigned char prior_key_ascii;
+extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
 extern void spawn_falling_spell(unsigned char, unsigned char, int, int);
 extern void update_racket_movement_bounds(void);
@@ -20,11 +20,11 @@ extern void update_racket_movement_bounds(void);
 void handle_keyboard_controls(void)
 {
     if (keyboard_cheat_flags & 1) {
-        if (current_ascii >= 0x41 && current_ascii <= 0x5a && (current_key_code_01 & 0x80) == 0)
+        if (current_ascii >= 0x41 && current_ascii <= 0x5a && (keyboard_scan_byte & 0x80) == 0)
             spawn_falling_spell((unsigned char)(current_ascii - 0x41), 0, 0xa0, 0x64);
-        if (current_ascii == 0x25 && (current_key_code_01 & 0x80) == 0)
+        if (current_ascii == 0x25 && (keyboard_scan_byte & 0x80) == 0)
             spawn_falling_spell(0xf, 0, 0xa0, 0x64);
-        if (current_ascii == 0x2e && (current_key_code_01 & 0x80) == 0) {
+        if (current_ascii == 0x2e && (keyboard_scan_byte & 0x80) == 0) {
             *player_key_flags &= 0xf7;
             player_key_flags[1] &= 0xfb;
             *player_key_flags &= 0xbf;
@@ -34,17 +34,17 @@ void handle_keyboard_controls(void)
     }
 
     if (keyboard_cheat_flags & 2) {
-        if (current_key_code_01 == 0x1b) {
+        if (keyboard_scan_byte == 0x1b) {
             g_e143_eayxx = 0x3c;
             g_ddc0 = 0;
             g_dd78 = 0;
             current_ascii = 0;
         }
-        if (previous_ascii_key_2f != 0x20 && current_ascii == 0x20) {
+        if (prior_key_ascii != 0x20 && current_ascii == 0x20) {
             g_ddc0 = 0;
             g_dd78 = 0;
         }
-        if (previous_ascii_key_2f != 0x2a && current_ascii == 0x2a) {
+        if (prior_key_ascii != 0x2a && current_ascii == 0x2a) {
             g_e143_eayxx += 9;
             g_ddc0 = 0;
             g_dd78 = 0;

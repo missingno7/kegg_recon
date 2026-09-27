@@ -30,7 +30,7 @@ typedef struct { unsigned char b[18]; } Rec12;
 typedef struct { unsigned char b[40]; } Rec28;
 typedef struct { int value, pad; } Pair8;
 typedef struct { int v[4]; } Row16;
-extern unsigned char g_74c4[];
+extern unsigned char sndirq[];
 extern unsigned char key_irq[];
 extern unsigned char g_756f[];
 extern void f_9afc(void);
@@ -60,7 +60,7 @@ extern short space_pressed;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
 extern int file_error_state;
-extern int g_8428;
+extern int file_operation_result;
 extern unsigned char screen_palette_buffer[];
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
@@ -77,8 +77,8 @@ extern int g_e1d8;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
 extern unsigned char current_scan_code;
-extern unsigned char previous_ascii_key_2f;
-extern unsigned char current_key_code_01;
+extern unsigned char prior_key_ascii;
+extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
 extern int g_e4c8;
 extern int g_e4d0_wfmxdlyju;
@@ -127,15 +127,15 @@ extern void redraw_image_region(int, int);
 extern void show_page(void);
 extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
-extern short mouse_y_recent_average_g;
-extern short mouse_x_recent_average_1c;
+extern short mouse_y_mean_recent;
+extern short mouse_x_average_recent;
 extern unsigned char g_6988[];
 extern unsigned char g_698c[];
 extern unsigned char g_6990[];
 extern unsigned char g_6994[];
 extern unsigned char g_e13f;
 extern unsigned char g_e46b;
-extern short mouse_x_sample_0_f;
+extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
 extern int invalid_code_text;
 extern int valid_code_text;
@@ -353,10 +353,10 @@ void handle_gameplay_keypress(void);
 extern unsigned char *g_dda4;
 extern int g_ddbc;
 extern int g_dDb8;
-extern int g_e24c;
-extern int r_e250;
-extern int g_e22c;
-extern int g_e230;
+extern int collision_box_a_left;
+extern int collision_box_a_top;
+extern int collision_box_b_left;
+extern int b_box_top;
 extern int g_8db4;
 extern void (*g_8db8)(void);
 extern unsigned char p_A990[];
@@ -384,7 +384,7 @@ extern void set_mouse_horizontal_bounds(int, int);
 extern void set_mouse_vertical_bounds(int, int);
 extern int game_art_base;
 extern int g_67b0;
-extern int audio_request_table_8;
+extern int audio_request_entries;
 extern int g_df3c;
 extern int level_art_base;
 extern Row16 g_6cbb[];
@@ -505,9 +505,9 @@ void move_falling_spells(void)
 {
     int unused_stack_slot;
 
-    g_e24c = racket_object->at_00;
-    r_e250 = racket_object->at_04;
-    get_sprite_bounds(&g_e24c, racket_object->at_78);
+    collision_box_a_left = racket_object->at_00;
+    collision_box_a_top = racket_object->at_04;
+    get_sprite_bounds(&collision_box_a_left, racket_object->at_78);
     g_dda4 = p_A990;
     for (g_ddbc = 0; g_ddbc < g_ddc0; ++g_ddbc) {
         *(int *)g_dda4 = *(int *)g_dda4;
@@ -521,10 +521,10 @@ void move_falling_spells(void)
             continue;
         }
         if (*(int *)(g_dda4 + 4) < 0xc3) {
-            g_e22c = *(int *)g_dda4;
-            g_e230 = *(int *)(g_dda4 + 4);
-            get_sprite_bounds(&g_e22c, g_8db4);
-            if (rectangles_intersect(&g_e24c, &g_e22c) != 0) {
+            collision_box_b_left = *(int *)g_dda4;
+            b_box_top = *(int *)(g_dda4 + 4);
+            get_sprite_bounds(&collision_box_b_left, g_8db4);
+            if (rectangles_intersect(&collision_box_a_left, &collision_box_b_left) != 0) {
                 g_dDb8 = ((unsigned char *)g_dda4)[0x10] + 1;
                 g_8e20 = ((unsigned char *)g_dda4)[0x11];
                 if (g_8e20 >= 0x1c)
@@ -608,8 +608,8 @@ void attach_ball_to_racket(void)
     if ((*player_key_flags & 8) == 0) {
         if ((*player_key_flags & 0x10) == 0) {
             *player_key_flags |= 0x10;
-            racket_object->at_00 = racket_object->at_10 + racket_object->at_0c - mouse_x_recent_average_1c;
-            racket_object->at_04 = mouse_y_recent_average_g;
+            racket_object->at_00 = racket_object->at_10 + racket_object->at_0c - mouse_x_average_recent;
+            racket_object->at_04 = mouse_y_mean_recent;
             move_mouse_to(racket_object->at_00, racket_object->at_04);
             racket_object->at_38 = g_dDb8 << 6;
         } else {
@@ -683,8 +683,8 @@ void trigger_racket_slide(void) {
     player_key_flags[1] &= 0xfe;
     if (player_key_flags[0] & 0x10) {
         player_key_flags[0] &= 0xef;
-        racket_object->at_00 = racket_object->at_10 + racket_object->at_0c - (short)mouse_x_recent_average_1c;
-        racket_object->at_04 = (short)mouse_y_recent_average_g;
+        racket_object->at_00 = racket_object->at_10 + racket_object->at_0c - (short)mouse_x_average_recent;
+        racket_object->at_04 = (short)mouse_y_mean_recent;
         move_mouse_to(racket_object->at_00, racket_object->at_04);
     }
 }

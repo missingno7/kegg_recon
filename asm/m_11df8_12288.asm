@@ -1,7 +1,7 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN g_e2ac:BYTE
+EXTRN gif_decoded_image_state:BYTE
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
@@ -526,17 +526,17 @@ L_12222:
 L_12224:
         sub eax, dword ptr [ebp + 0Ch]
 L_12227:
-        mov dword ptr [g_e2ac+10h], eax
+        mov dword ptr [gif_decoded_image_state+10h], eax
 L_1222C:
         and eax, 1
 L_1222F:
         sub edi, eax
 L_12231:
-        sub dword ptr [g_e2ac+10h], eax
+        sub dword ptr [gif_decoded_image_state+10h], eax
 L_12237:
         mov ecx, dword ptr [gif_lzw_dictionary_bytes]
 L_1223D:
-        add dword ptr [g_e2ac+10h], ecx
+        add dword ptr [gif_decoded_image_state+10h], ecx
 L_12243:
         mov esi, dword ptr [gif_compressed_data_start]
 L_12249:

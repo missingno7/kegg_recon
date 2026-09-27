@@ -16,12 +16,12 @@ extern void fatal_exit(unsigned, unsigned);
 extern void run_main_menu(void);
 extern void set_img_buffers(int, int, short, int, int);
 extern int alloc_heap_block(int);
-extern unsigned char previous_ascii_key_2f;
+extern unsigned char prior_key_ascii;
 extern unsigned char current_ascii;
 extern void toggle_audio_transfer_mode(void);
 
 /* _DATA [0x8428,0x842c) */
-int g_8428 = 0;
+int file_operation_result = 0;
 
 void main(void)
 {
@@ -47,6 +47,6 @@ void main(void)
 void handle_s_key(void)
 {
     /* Toggle the display-copy setting on a newly pressed S key. */
-    if (previous_ascii_key_2f != 0x53 && current_ascii == 0x53)
+    if (prior_key_ascii != 0x53 && current_ascii == 0x53)
         toggle_audio_transfer_mode();
 }

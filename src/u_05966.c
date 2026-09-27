@@ -81,7 +81,7 @@ extern int game_ball_slot;
 extern int current_ball_count;
 extern int g_dDb8;
 extern int g_e4d0;
-extern int audio_request_table_8;
+extern int audio_request_entries;
 extern int g_df3c;
 extern int level_art_base;
 extern char *enemy_picture;
@@ -94,14 +94,14 @@ extern int g_dd48;
 extern unsigned char *g_dd4c;
 extern int player_shot_total;
 extern int g_df40;
-extern int g_e24c[];
-extern int r_e250;
-extern int g_e22c[];
-extern int g_e230;
-extern int g_e23c[];
-extern int u_e240;
-extern int g_e244;
-extern int g_e248;
+extern int collision_box_a_left[];
+extern int collision_box_a_top;
+extern int collision_box_b_left[];
+extern int b_box_top;
+extern int sprite_rect_c_left[];
+extern int collision_box_c_top;
+extern int collision_box_c_right;
+extern int collision_rect_c_bottom;
 extern unsigned char g_e142_baun;
 extern unsigned char g_e143_eayxx;
 extern int g_dd78;
@@ -139,8 +139,8 @@ extern int moving_target_number;
 extern int moving_target_count;
 extern Rec28 *moving_target_cursor;
 extern Rec28 moving_target_records[];
-extern short mouse_x_recent_average_1c;
-extern short mouse_y_recent_average_g;
+extern short mouse_x_average_recent;
+extern short mouse_y_mean_recent;
 void load_monster_art(void);
 void f_61a6(void);
 extern unsigned char collision_animation_frames[];
@@ -157,8 +157,8 @@ extern int b_DD70;
 extern S2 *g_dd80;
 extern unsigned char *player_shot_cursor;
 extern int player_shot_index;
-extern int g_e254;
-extern int g_e258;
+extern int sprite_rect_a_right;
+extern int sprite_bounds_a_bottom;
 extern void process_brick_hit(int, int, int, int);
 extern void draw_level_tile_on_pages(int, int, int);
 extern void queue_timed_level_change(int, int);
@@ -221,12 +221,12 @@ extern int attack_delay;
 extern int enemy_attack_timer;
 extern int attack_frame_count;
 extern int enemy_fire_acceleration;
-extern short g_7b24;
-extern short g_7b26;
+extern short video_page_2_index;
+extern short vp3idx;
 extern short draw_idx;
 extern short page3;
-extern short mouse_sensitivity_x_o;
-extern short mouse_sensitivity_y_9;
+extern short x_cursor_sensitivity;
+extern short mouse_sensitivity_y_axis;
 extern void query_mouse_sensitivity(void);
 extern void restore_mouse_driver_sensitivity(void);
 void rkt_mv(void);
@@ -250,7 +250,7 @@ void remove_auxiliary_projectile(void);
 void remove_animated_sprite(void);
 void upd_bl(void);
 void remove_game_ball(void);
-extern short mouse_x_sample_0_f;
+extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
 extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void spawn_auxiliary_projectile(int, int, int, int, int, int, int);
@@ -286,11 +286,11 @@ extern unsigned char g_5df8[];
 extern unsigned char g_5e30[];
 extern int brick_x_index;
 extern int brick_y_index;
-extern int g_e234;
-extern int g_e238;
-extern int g_e25c[];
-extern int g_e260;
-extern short mouse_y_sample_2_1a;
+extern int collision_box_b_right;
+extern int collision_rect_b_bottom;
+extern int collision_box_d_left[];
+extern int sprite_bounds_d_top;
+extern short vertical_mouse_frame_2;
 extern short mouse_y_sample_1;
 extern int resolve_ball_brick_collision(int, int);
 void update_racket_state(void);
@@ -348,12 +348,12 @@ L_5a9c:;
 
 void move_enemy_projectiles(void)
 {
-    *(int *)g_e24c = *(int *)racket_object;
-    r_e250 = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
-    get_sprite_collision_bounds(g_e24c, (unsigned char *)*(int *)((unsigned char *)(unsigned char *)racket_object + 0x78));
-    *(int *)g_e22c = *(int *)((unsigned char *)(unsigned char *)racket_object + 0x74);
-    g_e230 = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
-    get_sprite_collision_bounds(g_e22c, (unsigned char *)(game_art_base + 0x7536));
+    *(int *)collision_box_a_left = *(int *)racket_object;
+    collision_box_a_top = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
+    get_sprite_collision_bounds(collision_box_a_left, (unsigned char *)*(int *)((unsigned char *)(unsigned char *)racket_object + 0x78));
+    *(int *)collision_box_b_left = *(int *)((unsigned char *)(unsigned char *)racket_object + 0x74);
+    b_box_top = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
+    get_sprite_collision_bounds(collision_box_b_left, (unsigned char *)(game_art_base + 0x7536));
     moving_target_cursor = moving_target_records;
     for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
         *(int *)moving_target_cursor += *(int *)(((unsigned char *)moving_target_cursor + 8));
@@ -370,21 +370,21 @@ void move_enemy_projectiles(void)
             }
         }
         *(int *)(((unsigned char *)moving_target_cursor + 0x10)) = (int)(enemy_picture + next_packed_table_value(((unsigned char *)moving_target_cursor + 0x18), ((unsigned char *)moving_target_cursor + 0x1c)));
-        *(int *)g_e23c = *(int *)moving_target_cursor;
-        u_e240 = *(int *)(((unsigned char *)moving_target_cursor + 4));
-        get_sprite_bounds(g_e23c, (void *)*(int *)(((unsigned char *)moving_target_cursor + 0x10)));
+        *(int *)sprite_rect_c_left = *(int *)moving_target_cursor;
+        collision_box_c_top = *(int *)(((unsigned char *)moving_target_cursor + 4));
+        get_sprite_bounds(sprite_rect_c_left, (void *)*(int *)(((unsigned char *)moving_target_cursor + 0x10)));
         if (!(*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 2) || *(int *)(((unsigned char *)moving_target_cursor + 0x20)) > 0) {
-            if (*(int *)g_e23c <= 0x10) {
+            if (*(int *)sprite_rect_c_left <= 0x10) {
                 if (*(int *)(((unsigned char *)moving_target_cursor + 8)) < 0) {
                     *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
                 }
             }
-            if (g_e244 >= 0x130) {
+            if (collision_box_c_right >= 0x130) {
                 if (*(int *)(((unsigned char *)moving_target_cursor + 8)) > 0) {
                     *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
                 }
             }
-            if (u_e240 <= 0x18) {
+            if (collision_box_c_top <= 0x18) {
                 if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) < 0) {
                     *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
                 }
@@ -394,12 +394,12 @@ void move_enemy_projectiles(void)
             } else {
                 g_8e04 = 0xc8;
             }
-            if ((unsigned)g_e248 >= g_8e04) {
+            if ((unsigned)collision_rect_c_bottom >= g_8e04) {
                 if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) > 0) {
                     *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
                 }
             }
-            if (rectangles_intersect(g_e24c, g_e23c)) {
+            if (rectangles_intersect(collision_box_a_left, sprite_rect_c_left)) {
                 if (*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 1) {
                     if (!(*(unsigned char *)player_key_flags & 8)) {
                         tick_racket_capture();
@@ -410,11 +410,11 @@ void move_enemy_projectiles(void)
             } else {
 L_5d63:;
                 if (!(*(unsigned char *)(player_key_flags + 1) & 2)) goto L_5dd5;
-                if (!rectangles_intersect(g_e22c, g_e23c)) goto L_5dd5;
+                if (!rectangles_intersect(collision_box_b_left, sprite_rect_c_left)) goto L_5dd5;
             }
         }
 L_5d86:;
-        spawn_animated_sprite((*(int *)g_e23c + g_e244) >> 1, ((u_e240 + g_e248) + 0xa) >> 1, *(int *)(((unsigned char *)moving_target_cursor + 8)), *(int *)(((unsigned char *)moving_target_cursor + 0xc)), (int)enemy_picture, (int)collision_animation_frames, 1);
+        spawn_animated_sprite((*(int *)sprite_rect_c_left + collision_box_c_right) >> 1, ((collision_box_c_top + collision_rect_c_bottom) + 0xa) >> 1, *(int *)(((unsigned char *)moving_target_cursor + 8)), *(int *)(((unsigned char *)moving_target_cursor + 0xc)), (int)enemy_picture, (int)collision_animation_frames, 1);
         remove_enemy_projectile();
         continue;
 L_5dd5:;

@@ -2,7 +2,7 @@
 int g_pcx_allocation_size;
 int g_e1c8;
 int g_e1cc;
-int g_pcx_pixels_d;
+int pcx_pixel_and_palette_payload_bytes;
 
 /* PCX image reader: expand the indexed pixels, then convert the VGA palette to 6-bit DAC values. */
 typedef struct {
@@ -64,7 +64,7 @@ int decode_pcx_image(int source_address, int pixel_buffer_address, unsigned char
         (unsigned char)(*(unsigned char *)(source_address_cursor++) >> 2);
     }
     g_pcx_allocation_size = pixel_count + 0x380;
-    g_pcx_pixels_d = pixel_count + 0x300;
+    pcx_pixel_and_palette_payload_bytes = pixel_count + 0x300;
     ((DecodedImage *)image_address)->pixels = (unsigned char *)pixel_buffer_address;
     ((DecodedImage *)image_address)->width = width;
     ((DecodedImage *)image_address)->height = height;

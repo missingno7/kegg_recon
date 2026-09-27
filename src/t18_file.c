@@ -1,6 +1,6 @@
 /* These aliases keep descriptive names while preserving verified BSS linker names. */
-#define current_file_length current_file_length_g_1m
-#define file_bytes_written file_bytes_written_a
+#define current_file_length current_file_size_bytes
+#define file_bytes_written file_output_bytes_written
 
 unsigned int current_file_name;
 unsigned int file_bytes_written;

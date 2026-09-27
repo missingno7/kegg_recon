@@ -29,9 +29,9 @@ struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int pag
 extern struct DisplayModeInfo vga_state;
 void save_bios(void);
 extern unsigned char current_scan_code;
-extern unsigned char current_key_code_01;
-extern short mouse_y_recent_average_g;
-extern short mouse_x_recent_average_1c;
+extern unsigned char keyboard_scan_byte;
+extern short mouse_y_mean_recent;
+extern short mouse_x_average_recent;
 int remaining_level_time;
 int last_displayed_enemy_health;
 int attack_frame_count;
@@ -88,14 +88,14 @@ int level_intro_ticks;
 int enemy_attack_interval;
 
 extern unsigned char gameplay_tuning_by_stage[];
-extern short g_7b24;
-extern short g_7b26;
+extern short video_page_2_index;
+extern short vp3idx;
 extern short draw_idx;
 extern short page3;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
-extern short mouse_sensitivity_x_o;
-extern short mouse_sensitivity_y_9;
+extern short x_cursor_sensitivity;
+extern short mouse_sensitivity_y_axis;
 extern void query_mouse_sensitivity(void);
 extern void restore_mouse_driver_sensitivity(void);
 void rkt_mv(void);
@@ -122,7 +122,7 @@ void remove_animated_sprite(void);
 void upd_bl(void);
 void remove_game_ball(void);
 void spawn_game_ball(int x, int y);
-extern short mouse_x_sample_0_f;
+extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
 extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void write_dac_palette(void *, int, int, int);
@@ -228,7 +228,7 @@ int run_level(void)
                     if (!audio_stream_flag) {
                         submit_audio_request(0x6a);
                     }
-                    spawn_animated_sprite(rand_rng(-0x10, 0x10) + (mouse_x_recent_average_1c + 4), (mouse_y_recent_average_g + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)game_sprite_data_base_j, (int)g_67b4, 1);
+                    spawn_animated_sprite(rand_rng(-0x10, 0x10) + (mouse_x_average_recent + 4), (mouse_y_mean_recent + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)game_sprite_data_base_j, (int)g_67b4, 1);
                     enemy_shot_countdown = 0x19;
                 }
             }
@@ -237,7 +237,7 @@ int run_level(void)
             restore_gameplay_display_mode();
             return award_level_completion_bonus();
         }
-    } while (level_intro_ticks > 0 && (current_scan_code == current_key_code_01 || current_key_code_01 != 1));
+    } while (level_intro_ticks > 0 && (current_scan_code == keyboard_scan_byte || keyboard_scan_byte != 1));
     restore_gameplay_display_mode();
     return fade_level_to_white();
 }
@@ -328,7 +328,7 @@ void update_level_hud(void)
 {
     if (remaining_level_time <= 0) {
         remaining_level_time = 0;
-        set_mouse_bounds(mouse_x_sample_0_f, mouse_y_sample_0, mouse_x_sample_0_f, mouse_y_sample_0);
+        set_mouse_bounds(history_mouse_x_0, mouse_y_sample_0, history_mouse_x_0, mouse_y_sample_0);
     }
     if (remaining_level_time != last_displayed_time) {
         last_displayed_time = remaining_level_time;
@@ -369,14 +369,14 @@ void upd_sh(void)
         if (!g_68f4 && mouse_btn != 3) {
             if (mouse_btn != mouse_btn_old && (mouse_btn & 1) == 1) {
                 submit_audio_request(0x66);
-                spawn_auxiliary_projectile(0, 4, mouse_x_recent_average_1c, mouse_y_recent_average_g, 0x40, 0, (int)g_6864);
-                mouse_x_sample_0_f -= 7;
+                spawn_auxiliary_projectile(0, 4, mouse_x_average_recent, mouse_y_mean_recent, 0x40, 0, (int)g_6864);
+                history_mouse_x_0 -= 7;
                 g_68f4 = 1;
             } else if (mouse_btn != mouse_btn_old && mouse_btn & 2) {
                 submit_audio_request(0x66);
-                spawn_auxiliary_projectile(0, 1, mouse_x_recent_average_1c, mouse_y_recent_average_g, 0x60, 0x18, (int)g_6864);
-                spawn_auxiliary_projectile(0, 1, mouse_x_recent_average_1c, mouse_y_recent_average_g, 0x60, -0x18, (int)g_6864);
-                mouse_x_sample_0_f -= 7;
+                spawn_auxiliary_projectile(0, 1, mouse_x_average_recent, mouse_y_mean_recent, 0x60, 0x18, (int)g_6864);
+                spawn_auxiliary_projectile(0, 1, mouse_x_average_recent, mouse_y_mean_recent, 0x60, -0x18, (int)g_6864);
+                history_mouse_x_0 -= 7;
                 g_68f4 = 1;
             }
         } else {
@@ -384,8 +384,8 @@ void upd_sh(void)
         }
     }
     *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + 0x35d6);
-    *(short *)(image_buffer_cursor + 4) = mouse_x_recent_average_1c;
-    *(short *)(image_buffer_cursor + 6) = mouse_y_recent_average_g;
+    *(short *)(image_buffer_cursor + 4) = mouse_x_average_recent;
+    *(short *)(image_buffer_cursor + 6) = mouse_y_mean_recent;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 10;
 }
@@ -423,7 +423,7 @@ void move_auxiliary_projectiles(void)
             }
         } else {
             target_bounds = (S18 *)(game_sprite_data_base_j + 0x35d6);
-            if (frames_intersect_inset(*target_bounds, mouse_x_recent_average_1c, mouse_y_recent_average_g, *shot_frame_info, (bolt_cursor->x >> 4) + 8, bolt_cursor->y >> 4, 4, 4, 4, 4) == -1) {
+            if (frames_intersect_inset(*target_bounds, mouse_x_average_recent, mouse_y_mean_recent, *shot_frame_info, (bolt_cursor->x >> 4) + 8, bolt_cursor->y >> 4, 4, 4, 4, 4) == -1) {
                 if (remaining_level_time > 0) {
                     remaining_level_time -= bolt_cursor->damage;
                 }
@@ -489,8 +489,8 @@ void update_enemy_attack_cycle(void)
             --attack_frame_count;
             if (attack_frame_count <= 0) {
                 attack_frame_count = 7;
-                projectile_dx = ((mouse_x_recent_average_1c - monster_x) << 4) / 0x28;
-                projectile_dy = ((rand_rng(-0x1e, 0x1e) + (mouse_y_recent_average_g - monster_y)) << 4) / 0x28;
+                projectile_dx = ((mouse_x_average_recent - monster_x) << 4) / 0x28;
+                projectile_dy = ((rand_rng(-0x1e, 0x1e) + (mouse_y_mean_recent - monster_y)) << 4) / 0x28;
                 spawn_auxiliary_projectile(1, enemy_pattern, monster_x, monster_y, projectile_dx, projectile_dy, (int)g_687c);
                 if (remaining_level_time > 0) {
                     submit_audio_request(0x58);

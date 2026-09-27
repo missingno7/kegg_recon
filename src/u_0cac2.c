@@ -1,4 +1,4 @@
-int sound_irq_test_complete_l;
+int sound_irq_test_flag;
 int saved_sound_mixer_value;
 short g_e2fe;
 /* TU [0xcac2, 0xd2f0): _TEXT tables, detect_sound_blaster..read_dos_version (sound-card detection); from worker u12 T12.c */
@@ -38,8 +38,8 @@ extern void program_sound_dma_channel(void);
 extern void set_sound_blaster_sample_rate(unsigned int);
 extern void copy_ds_to_es(void);
 extern void send_pic_end_of_interrupt(void);
-extern unsigned int g_e300;
-extern unsigned int g_e304;
+extern unsigned int xms_entry_offset;
+extern unsigned int xms_entry_segment;
 extern unsigned int g_1258;
 int detect_vga_bios_mode(void);
 int detect_xms_driver(void);
@@ -54,13 +54,13 @@ extern void f_13889(int, int, int);
 extern short vga_bios_mode_supported;
 extern unsigned short u_749a;
 extern unsigned short u_749c;
-extern unsigned long g_749e;
+extern unsigned long vga_bios_version;
 extern unsigned short u_74a2;
 extern short xms_driver_available;
-extern unsigned long g_74a6;
+extern unsigned long xms_driver_version;
 extern unsigned short u_74aa;
 extern short ems_manager_signature_found;
-extern unsigned long g_74ae;
+extern unsigned long ems_manager_version;
 extern unsigned short u_74b2;
 extern short dpmi_host_available;
 extern unsigned long dpmi_version_bcd;
@@ -68,8 +68,8 @@ extern unsigned short u_74ba;
 extern short ems_manager_available;
 extern unsigned long ems_manager_handle;
 extern unsigned short u_74c2;
-extern unsigned char g_74c4[57];
-extern unsigned char g_74fd[57];
+extern unsigned char sndirq[57];
+extern unsigned char scbctx[57];
 extern unsigned char key_irq[57];
 extern unsigned char g_756f[57];
 extern unsigned int g_75a8;
@@ -173,7 +173,7 @@ int detect_sound_blaster_irq(void) {
     candidate_index = 0;
     irq_candidates = *(struct SoundBlasterIrqChoices *)sound_blaster_irq_candidates;
     first_attempt = 0;
-    sound_irq_test_complete_l = -1;
+    sound_irq_test_flag = -1;
     /* The DSP's IRQ response identifies the usable interrupt line. */
     for (;;) {
         if (first_attempt == 0) {
@@ -207,10 +207,10 @@ int detect_sound_blaster_irq(void) {
         sound_blaster_command_byte = 0xf2;
         write_sound_blaster_byte();
         for (wait_count = 0; wait_count < 0xc350; wait_count++) {
-            if (sound_irq_test_complete_l == 0)
+            if (sound_irq_test_flag == 0)
                 break;
         }
-        if (sound_irq_test_complete_l == -1)
+        if (sound_irq_test_flag == -1)
             acknowledge_sound_blaster_irq();
         sound_blaster_command_byte = 0x80;
         write_sound_blaster_byte();
@@ -219,18 +219,18 @@ int detect_sound_blaster_irq(void) {
         sound_blaster_command_byte = 0;
         write_sound_blaster_byte();
         for (wait_count = 0; wait_count < 0xc350; wait_count++) {
-            if (sound_irq_test_complete_l == 0)
+            if (sound_irq_test_flag == 0)
                 break;
         }
-        if (sound_irq_test_complete_l == -1)
+        if (sound_irq_test_flag == -1)
             sound_blaster_irq = 0xff;
         f_d7b8(interrupt_config.bytes);
         if (irq_candidates.bytes[candidate_index] == 0xff)
             break;
-        if (sound_irq_test_complete_l != -1)
+        if (sound_irq_test_flag != -1)
             break;
     }
-    return sound_irq_test_complete_l;
+    return sound_irq_test_flag;
 }
 
 int detect_sound_blaster_dma(void) {
@@ -314,7 +314,7 @@ void __interrupt sound_test_irq_handler(void) {
     copy_ds_to_es();
     acknowledge_sound_blaster_irq();
     send_pic_end_of_interrupt();
-    sound_irq_test_complete_l = 0;
+    sound_irq_test_flag = 0;
 }
 
 int read_dos_version(void) {

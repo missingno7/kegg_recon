@@ -4,18 +4,18 @@
 extern short sound_blaster_detected;
 extern unsigned char sound_blaster_irq;
 extern unsigned char sound_blaster_dma_channel;
-extern short g_74fd;
+extern short scbctx;
 extern short sound_blaster_base_port;
 extern int load_protracker_module(int, int, int, int, int);
 extern void stop_protracker_module(void);
 extern void release_sound_callback(void);
 extern unsigned char g_75a8;
 extern unsigned char slave_pic_vector_base;
-extern unsigned char g_74da;
-extern unsigned char g_74db;
-extern unsigned char g_7513;
-extern unsigned char g_7514;
-extern short g_74c4;
+extern unsigned char sndvec;
+extern unsigned char sound_system_irq_line;
+extern unsigned char sound_callback_interrupt_number;
+extern unsigned char sound_callback_irq_line;
+extern short sndirq;
 extern int audio_dma_allocation_bytes;
 extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
@@ -25,10 +25,10 @@ extern void f_d656(void *, void(*)(void));
 extern int save_screen_image(char *);
 void prepare_sound_callback(void);
 extern void __far a_70(void);
-extern int g_7516;
-extern int g_751e;
-extern int g_7522;
-extern int g_7532;
+extern int sound_callback_hook_flags;
+extern int sound_callback_physical_start;
+extern int sound_callback_mapping_state;
+extern int sound_callback_mapped_address;
 extern unsigned g_75c4;
 extern int f_da01(void *);
 
@@ -39,7 +39,7 @@ short initialize_sound_device(int device_mode, short sample_rate)
 {
     int unused_8;
     if (sound_blaster_detected == -1) {
-        if (g_74fd == -1)
+        if (scbctx == -1)
             release_sound_callback();
         atexit(stop_protracker_module);
         return load_protracker_module(device_mode, sample_rate, sound_blaster_base_port, sound_blaster_irq, sound_blaster_dma_channel);
@@ -49,18 +49,18 @@ short initialize_sound_device(int device_mode, short sample_rate)
 
 void restore_sound_device(void)
 {
-    if (g_74fd == -1)
+    if (scbctx == -1)
         stop_protracker_module();
 }
 
 void prepare_sound_callback(void)
 {
     if (sound_blaster_detected == -1) {
-        g_7514 = sound_blaster_irq + 8;
-        g_7513 = g_7514;
+        sound_callback_irq_line = sound_blaster_irq + 8;
+        sound_callback_interrupt_number = sound_callback_irq_line;
         if (sound_blaster_irq >= 8)
-            g_7513 += 0x60;
-        f_d656(&g_74fd, release_sound_callback);
+            sound_callback_interrupt_number += 0x60;
+        f_d656(&scbctx, release_sound_callback);
     }
 }
 
@@ -68,7 +68,7 @@ void release_sound_callback(void)
 {
     if (sound_blaster_detected == -1) {
         stop_audio_stream();
-        f_d7b8(&g_74fd);
+        f_d7b8(&scbctx);
         free_dpmi_memory(sound_callback_allocation_size);
         sound_callback_allocation_size = 0;
     }
@@ -78,21 +78,21 @@ int configure_sound_callback(int allocation_bytes)
 {
     unsigned char * interrupt_record;
     if (!allocation_bytes) {
-        allocation_bytes = g_7516;
+        allocation_bytes = sound_callback_hook_flags;
         if (!allocation_bytes) {
             return 0;
         }
     }
-    if (sound_blaster_detected != -1 || g_74c4 == -1) {
+    if (sound_blaster_detected != -1 || sndirq == -1) {
         return 0x606;
     }
-    g_7516 = allocation_bytes;
+    sound_callback_hook_flags = allocation_bytes;
     prepare_sound_callback();
-    g_751e = (int)a_70;
-    g_7522 = (int)((unsigned char __far *)a_70 + 0x69);
-    if (f_da01(&g_74fd) != -1) {
+    sound_callback_physical_start = (int)a_70;
+    sound_callback_mapping_state = (int)((unsigned char __far *)a_70 + 0x69);
+    if (f_da01(&scbctx) != -1) {
         if ((allocation_bytes & 1) == 1) {
-            interrupt_record = (unsigned char *)g_7532;
+            interrupt_record = (unsigned char *)sound_callback_mapped_address;
             *(short *)(interrupt_record + 2) = sound_blaster_base_port;
             *(short *)(interrupt_record + 4) = 0x90;
             if (sound_blaster_irq < 8) {

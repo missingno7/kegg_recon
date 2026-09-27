@@ -17,7 +17,7 @@ typedef struct { unsigned char bytes[25]; } Record;
 typedef struct { unsigned char prefix : 2; unsigned char value : 6; } IndexBits;
 struct Cell { unsigned char lo : 2, hi : 6; unsigned char flag; };
 typedef struct { unsigned char prefix : 2; unsigned char code : 6; } CodeBits;
-extern unsigned char g_74c4[];
+extern unsigned char sndirq[];
 extern unsigned char key_irq[];
 extern unsigned char g_756f[];
 extern void f_9afc(void);
@@ -47,7 +47,7 @@ extern short space_pressed;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
 extern int file_error_state;
-extern int g_8428;
+extern int file_operation_result;
 extern unsigned char screen_palette_buffer[];
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
@@ -64,8 +64,8 @@ extern int g_e1d8;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
 extern unsigned char current_scan_code;
-extern unsigned char previous_ascii_key_2f;
-extern unsigned char current_key_code_01;
+extern unsigned char prior_key_ascii;
+extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
 extern int g_e4c8;
 extern int g_e4d0_wfmxdlyju;
@@ -114,8 +114,8 @@ extern void redraw_image_region(int, int);
 extern void show_page(void);
 extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
-extern short mouse_y_recent_average_g;
-extern short mouse_x_recent_average_1c;
+extern short mouse_y_mean_recent;
+extern short mouse_x_average_recent;
 extern unsigned char g_6988[];
 extern unsigned char g_698c[];
 extern unsigned char g_6990[];
@@ -124,7 +124,7 @@ extern int g_8e20;
 extern unsigned char g_e13f;
 union KeyboardKeyBitmap { unsigned short word; struct { unsigned char lo, hi; } bytes; };
 extern union KeyboardKeyBitmap scan_code_bitmap[8];
-extern short mouse_x_sample_0_f;
+extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
 extern int invalid_code_text;
 extern int valid_code_text;
@@ -1578,15 +1578,15 @@ void load_menu_graphics(void)
 {
     g_e4d0_wfmxdlyju = file_error_state;
     sprite_memory_base = (unsigned char *)g_e4d0_wfmxdlyju;
-    g_8428 = f_a574_wrvhrpegbz(title_image_file);
-    if (g_8428) {
-        fatal_exit(g_8428, title_image_file);
+    file_operation_result = f_a574_wrvhrpegbz(title_image_file);
+    if (file_operation_result) {
+        fatal_exit(file_operation_result, title_image_file);
     }
     if ((short)sound_blaster_detected == -1) {
         g_dd44 = g_e4d0_wfmxdlyju;
-        g_8428 = load_next_file(title_data_filename);
-        if (g_8428) {
-            fatal_exit(g_8428, title_data_filename);
+        file_operation_result = load_next_file(title_data_filename);
+        if (file_operation_result) {
+            fatal_exit(file_operation_result, title_data_filename);
         }
         queue_audio(g_dd44, g_e4c8, 8000, 0);
     }
@@ -1609,7 +1609,7 @@ void wait_menu_select(void)
         do {
             f_9d40(3);
             handle_s_key();
-            if (space_pressed || (mouse_btn != mouse_btn_old && mouse_btn) || (current_scan_code != current_key_code_01 && current_key_code_01 == 1)) goto L_9e0;
+            if (space_pressed || (mouse_btn != mouse_btn_old && mouse_btn) || (current_scan_code != keyboard_scan_byte && keyboard_scan_byte == 1)) goto L_9e0;
         } while (!sound_blaster_detected);
     } while (audio_stream_flag == -1);
 L_9e0:;
@@ -1623,7 +1623,7 @@ void launch_print_order_form(void)
     int v_c;
     v_4 = *(short *)g_756f;
     v_8 = *(short *)key_irq;
-    v_c = *(short *)g_74c4;
+    v_c = *(short *)sndirq;
     set_audio_transfer_mode(0);
     f_9afc();
     remove_keyboard_input_handler();
@@ -1652,25 +1652,25 @@ void show_high_score_screen(void)
         set_display_mode(2);
         g_e4d0_wfmxdlyju = (unsigned char *)file_error_state;
         sprite_memory_base = g_e4d0_wfmxdlyju;
-        g_8428 = f_a574_wrvhrpegbz(order_image_filename);
-        if (g_8428) {
-            fatal_exit(g_8428, current_file_name);
+        file_operation_result = f_a574_wrvhrpegbz(order_image_filename);
+        if (file_operation_result) {
+            fatal_exit(file_operation_result, current_file_name);
         }
         game_sprite_data_base_j = g_e4d0_wfmxdlyju;
-        g_8428 = load_next_file((void *)order_sprite_filename);
-        if (g_8428) {
-            fatal_exit(g_8428, current_file_name);
+        file_operation_result = load_next_file((void *)order_sprite_filename);
+        if (file_operation_result) {
+            fatal_exit(file_operation_result, current_file_name);
         }
         vga_buffer_base = g_e4d0_wfmxdlyju + 0x900;
-        g_8428 = load_next_file((void *)main_palette_fn);
-        if (g_8428) {
-            fatal_exit(g_8428, current_file_name);
+        file_operation_result = load_next_file((void *)main_palette_fn);
+        if (file_operation_result) {
+            fatal_exit(file_operation_result, current_file_name);
         }
         if (sound_blaster_detected == -1) {
             g_dd44 = (int)g_e4d0_wfmxdlyju;
-            g_8428 = load_next_file((void *)information_data_filename);
-            if (g_8428) {
-                fatal_exit(g_8428, current_file_name);
+            file_operation_result = load_next_file((void *)information_data_filename);
+            if (file_operation_result) {
+                fatal_exit(file_operation_result, current_file_name);
             }
             queue_audio(g_dd44, g_e4c8, 0x1d4c, -1);
         }
@@ -1702,7 +1702,7 @@ void show_high_score_screen(void)
         set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
 L_d7a:;
         f_9d40(3);
-        if (previous_ascii_key_2f == 0x50 || current_ascii != 0x50) break;
+        if (prior_key_ascii == 0x50 || current_ascii != 0x50) break;
         launch_print_order_form();
     }
     rkt_mv();
@@ -1715,7 +1715,7 @@ L_d7a:;
             g_df48 = 0;
         }
     }
-    if ((previous_ascii_key_2f == current_ascii || current_ascii != 0x20) && (current_scan_code == current_key_code_01 || current_key_code_01 != 1)) {
+    if ((prior_key_ascii == current_ascii || current_ascii != 0x20) && (current_scan_code == keyboard_scan_byte || keyboard_scan_byte != 1)) {
         if (mouse_btn == mouse_btn_old || !(*(unsigned char *)&mouse_btn & 1)) goto L_d7a;
     }
     fade_start = 0;
@@ -1736,27 +1736,27 @@ void load_title_screen_assets(void)
 {
     g_e4d0_wfmxdlyju = (unsigned char *)file_error_state;
     sprite_memory_base = g_e4d0_wfmxdlyju;
-    g_8428 = f_a574_wrvhrpegbz(menu_image_filename);
-    if (g_8428) {
-        fatal_exit(g_8428, menu_image_filename);
+    file_operation_result = f_a574_wrvhrpegbz(menu_image_filename);
+    if (file_operation_result) {
+        fatal_exit(file_operation_result, menu_image_filename);
     }
     game_sprite_data_base_j = g_e4d0_wfmxdlyju;
-    g_8428 = load_next_file((void *)menu_sprite_filename);
-    if (g_8428) {
-        fatal_exit(g_8428, menu_sprite_filename);
+    file_operation_result = load_next_file((void *)menu_sprite_filename);
+    if (file_operation_result) {
+        fatal_exit(file_operation_result, menu_sprite_filename);
     }
     if (sound_blaster_detected == -1) {
         g_dd44 = (int)g_e4d0_wfmxdlyju;
-        g_8428 = load_next_file((void *)menu_data_filename);
-        if (g_8428) {
-            fatal_exit(g_8428, menu_data_filename);
+        file_operation_result = load_next_file((void *)menu_data_filename);
+        if (file_operation_result) {
+            fatal_exit(file_operation_result, menu_data_filename);
         }
         queue_audio(g_dd44, g_e4c8, 0x1f40, -1);
     }
     vga_buffer_base = g_e4d0_wfmxdlyju + 0xc00;
-    g_8428 = load_next_file((void *)main_palette_fn);
-    if (g_8428) {
-        fatal_exit(g_8428, main_palette_fn);
+    file_operation_result = load_next_file((void *)main_palette_fn);
+    if (file_operation_result) {
+        fatal_exit(file_operation_result, main_palette_fn);
     }
     g_df54 = (g_e4c8 - 0xc00) / 3;
 }
@@ -1819,20 +1819,20 @@ void update_menu_sprite_animation(void) {
 
 void queue_menu_sprite(void) {
     *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + *(int *)g_df70);
-    *(short *)(image_buffer_cursor + 4) = mouse_x_recent_average_1c;
-    *(short *)(image_buffer_cursor + 6) = mouse_y_recent_average_g;
+    *(short *)(image_buffer_cursor + 4) = mouse_x_average_recent;
+    *(short *)(image_buffer_cursor + 6) = mouse_y_mean_recent;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 10;
 }
 
 void handle_menu_input(void)
 {
-    if ((current_scan_code != 1 && current_key_code_01 == 1) || (mouse_btn_old != mouse_btn && mouse_btn && mouse_x_sample_0_f == (int)vga_state.left && mouse_y_sample_0 == (int)vga_state.top)) {
+    if ((current_scan_code != 1 && keyboard_scan_byte == 1) || (mouse_btn_old != mouse_btn && mouse_btn && history_mouse_x_0 == (int)vga_state.left && mouse_y_sample_0 == (int)vga_state.top)) {
         g_e13f = 0xff;
         h_df5c = -1;
     }
     for (g_8e20 = 0; g_8e20 < 4; ++g_8e20) {
-        if (mouse_x_sample_0_f > *(int *)(g_6988 + (g_8e20 << 4)) && mouse_x_sample_0_f < *(int *)(g_698c + (g_8e20 << 4)) && mouse_y_sample_0 > *(int *)(g_6990 + (g_8e20 << 4)) && mouse_y_sample_0 < *(int *)(g_6994 + (g_8e20 << 4))) {
+        if (history_mouse_x_0 > *(int *)(g_6988 + (g_8e20 << 4)) && history_mouse_x_0 < *(int *)(g_698c + (g_8e20 << 4)) && mouse_y_sample_0 > *(int *)(g_6990 + (g_8e20 << 4)) && mouse_y_sample_0 < *(int *)(g_6994 + (g_8e20 << 4))) {
             update_menu_sprite_animation();
             if (!(scan_code_bitmap[1].bytes.hi & 0x20)) {
                 if (mouse_btn && mouse_btn_old != mouse_btn) {
@@ -1855,7 +1855,7 @@ void cycle_menu_palette(void) {
 
 void handle_restart_code_input(void)
 {
-    if (current_scan_code != 0x39 && current_key_code_01 == 0x39) {
+    if (current_scan_code != 0x39 && keyboard_scan_byte == 0x39) {
         g_df74 = -1;
         i_dF44 = 0;
         *(S5 *)g_6984 = *(S5 *)"XXXX";
@@ -1863,8 +1863,8 @@ void handle_restart_code_input(void)
         draw_restart_code_text((int)enter_code_prompt);
     }
     if (g_df74) {
-        if (current_key_code_01 != current_scan_code && !(current_key_code_01 & 0x80)) {
-            g_8e46 = current_key_code_01;
+        if (keyboard_scan_byte != current_scan_code && !(keyboard_scan_byte & 0x80)) {
+            g_8e46 = keyboard_scan_byte;
             current_scan_code = g_8e46;
             if (g_8e46 == 0xe) {
                 if (i_dF44 > 0) {
@@ -1879,7 +1879,7 @@ void handle_restart_code_input(void)
                 *(unsigned char *)(enter_code_prompt + 0x2f) = 0;
             }
             g_8e46 = current_ascii;
-            previous_ascii_key_2f = g_8e46;
+            prior_key_ascii = g_8e46;
             if ((g_8e46 >= 0x41 && g_8e46 <= 0x46) || (g_8e46 >= 0x30 && g_8e46 <= 0x39)) {
                 *(unsigned char *)(g_6984 + i_dF44) = g_8e46;
                 *(unsigned char *)(g_6984 + (i_dF44 + 1)) = 0;
@@ -2096,8 +2096,8 @@ void enter_high_score_name(void)
                 g_dF68 = 0x23;
                 g_df64 = -g_df64;
             }
-            if (current_key_code_01 != current_scan_code) {
-                g_8e46 = current_key_code_01;
+            if (keyboard_scan_byte != current_scan_code) {
+                g_8e46 = keyboard_scan_byte;
                 current_scan_code = g_8e46;
                 if (g_8e46 == 0xe) {
                     if (g_e141) {
@@ -2107,9 +2107,9 @@ void enter_high_score_name(void)
                     g_e13d = 0x80;
                 }
             }
-            if (current_ascii != previous_ascii_key_2f) {
+            if (current_ascii != prior_key_ascii) {
                 g_8e46 = current_ascii;
-                previous_ascii_key_2f = g_8e46;
+                prior_key_ascii = g_8e46;
                 if ((g_8e46 >= 0x41 && g_8e46 <= 0x5a) || (g_8e46 >= 0x30 && g_8e46 <= 0x39) || g_8e46 == 0x20) {
                     *(unsigned char *)(g_6984 + g_e141) = g_8e46;
                     *(unsigned char *)(g_6984 + g_e141 + 1) = 0;
@@ -2131,7 +2131,7 @@ void enter_high_score_name(void)
                 }
             }
             f_9d40(1);
-        } while (current_key_code_01 != 0x1c && current_key_code_01 != 1);
+        } while (keyboard_scan_byte != 0x1c && keyboard_scan_byte != 1);
         strcpy((char *)((unsigned char *)high_score_records + (g_dedc * 0x19)), (char *)g_6984);
         g_dedc = 0xffffffff;
     }
@@ -2149,7 +2149,7 @@ void wait_for_key_or_click(void)
     do {
         f_9d40(3);
         handle_s_key();
-        if (space_pressed || (mouse_btn != mouse_btn_old && *(unsigned char *)&mouse_btn & 7) || (current_scan_code != current_key_code_01 && current_key_code_01 == 1)) break;
+        if (space_pressed || (mouse_btn != mouse_btn_old && *(unsigned char *)&mouse_btn & 7) || (current_scan_code != keyboard_scan_byte && keyboard_scan_byte == 1)) break;
         --g_df6c;
     } while (g_df6c);
 }
@@ -2160,8 +2160,8 @@ void save_high_score_table(void)
     for (g_8e20 = 0; g_8e20 < 5; ++g_8e20)
         saved[g_8e20] = high_score_records[g_8e20];
     validate_high_score_records();
-    g_8428 = f_1065b(high_score_filename, g_e4d0_wfmxdlyju);
-    if (g_8428 == 0) {
+    file_operation_result = f_1065b(high_score_filename, g_e4d0_wfmxdlyju);
+    if (file_operation_result == 0) {
         validate_high_score_records();
         if (saved_high_score_state == g_8ddc)
             return;

@@ -78,10 +78,10 @@ extern int moving_target_number;
 extern int moving_target_count;
 extern unsigned char *player_key_flags;
 extern unsigned char *game_art_base;
-extern unsigned char g_e22c[];
-extern int g_e230;
-extern int g_e234;
-extern int g_e238;
+extern unsigned char collision_box_b_left[];
+extern int b_box_top;
+extern int collision_box_b_right;
+extern int collision_rect_b_bottom;
 int v_DF30;
 int spell_art_base;
 int g_df38;
@@ -89,16 +89,16 @@ int g_df3c;
 unsigned char g_e13b;
 unsigned char g_e13c;
 
-extern unsigned char g_e23c[];
-extern int g_e244;
-extern unsigned char g_e24c[];
-extern int r_e250;
-extern int g_e254;
-extern int g_e258;
-extern unsigned char g_e25c[];
-extern int g_e260;
+extern unsigned char sprite_rect_c_left[];
+extern int collision_box_c_right;
+extern unsigned char collision_box_a_left[];
+extern int collision_box_a_top;
+extern int sprite_rect_a_right;
+extern int sprite_bounds_a_bottom;
+extern unsigned char collision_box_d_left[];
+extern int sprite_bounds_d_top;
 extern unsigned char *image_buffer_cursor;
-extern short mouse_y_sample_2_1a;
+extern short vertical_mouse_frame_2;
 extern short mouse_y_sample_1;
 extern short mouse_y_sample_0;
 extern void spawn_animated_sprite(int, int, int, int, int, int, int);
@@ -145,15 +145,15 @@ void update_game_balls(void)
     unsigned char bounce_vertical;
     int sprite_offset;
     struct BallCollisionEdges collision_edges;
-    *(int *)g_e24c = *(int *)racket_object;
-    r_e250 = *(int *)(racket_object + 4);
-    get_sprite_bounds(g_e24c, (void *)*(int *)(racket_object + 0x78));
-    r_e250 += 3;
-    g_e258 = r_e250 + 0xa;
-    *(int *)g_e24c += 2;
-    g_e254 -= 2;
-    *(int *)g_e23c = *(int *)(racket_object + 0x74);
-    get_sprite_bounds(g_e23c, game_art_base + 0x7536);
+    *(int *)collision_box_a_left = *(int *)racket_object;
+    collision_box_a_top = *(int *)(racket_object + 4);
+    get_sprite_bounds(collision_box_a_left, (void *)*(int *)(racket_object + 0x78));
+    collision_box_a_top += 3;
+    sprite_bounds_a_bottom = collision_box_a_top + 0xa;
+    *(int *)collision_box_a_left += 2;
+    sprite_rect_a_right -= 2;
+    *(int *)sprite_rect_c_left = *(int *)(racket_object + 0x74);
+    get_sprite_bounds(sprite_rect_c_left, game_art_base + 0x7536);
     current_ball_pointer = game_balls;
     for (game_ball_slot = 0; game_ball_slot < current_ball_count; ++game_ball_slot) {
         g_8e20 = current_ball_pointer->behavior;
@@ -186,20 +186,20 @@ void update_game_balls(void)
             remove_game_ball();
             continue;
         }
-        *(int *)g_e22c = current_ball_pointer->x >> 4;
-        g_e230 = current_ball_pointer->y >> 4;
-        get_sprite_bounds(g_e22c, (void *)sprite_offset);
-        if (*(int *)g_e22c <= 0x10) {
+        *(int *)collision_box_b_left = current_ball_pointer->x >> 4;
+        b_box_top = current_ball_pointer->y >> 4;
+        get_sprite_bounds(collision_box_b_left, (void *)sprite_offset);
+        if (*(int *)collision_box_b_left <= 0x10) {
             if (current_ball_pointer->velocity_x >= 0) goto L_880f;
             g_8e20 = 0x10;
         } else {
 L_880f:;
-            if (g_e234 >= 0x130) {
+            if (collision_box_b_right >= 0x130) {
                 if (current_ball_pointer->velocity_x <= 0) goto L_8832;
                 g_8e20 = 0x130;
             } else {
 L_8832:;
-                if (g_e230 <= 0x18) {
+                if (b_box_top <= 0x18) {
                     if (current_ball_pointer->velocity_y < 0) {
                         g_8e1c = 0x18;
                         goto L_8878;
@@ -218,12 +218,12 @@ L_8899:;
         submit_audio_request(0x24);
         spawn_animated_sprite(g_8e20, g_8e1c, 0, 0, spell_art_base, (int)g_6098, 1);
 L_88c9:;
-        if (g_e230 <= 0xbe) {
+        if (b_box_top <= 0xbe) {
             if (current_ball_pointer->velocity_y >= 0) {
-                if (r_e250 <= g_e238) {
-                    if (g_e258 < g_e230) goto L_8a69;
-                    if (*(int *)g_e24c <= g_e234) {
-                        if (g_e254 >= *(int *)g_e22c) {
+                if (collision_box_a_top <= collision_rect_b_bottom) {
+                    if (sprite_bounds_a_bottom < b_box_top) goto L_8a69;
+                    if (*(int *)collision_box_a_left <= collision_box_b_right) {
+                        if (sprite_rect_a_right >= *(int *)collision_box_b_left) {
                             if (!(*(unsigned char *)player_key_flags & 8)) {
                                 if (*(unsigned char *)player_key_flags & 0x40) {
                                     current_ball_pointer->x -= *(int *)racket_object << 4;
@@ -236,7 +236,7 @@ L_88c9:;
                             if (!(current_ball_pointer->flags & 2)) {
                                 mouse_y_sample_0 += *(short *)&g_8e20;
                                 mouse_y_sample_1 += *(short *)&g_8e20;
-                                mouse_y_sample_2_1a += *(short *)&g_8e20;
+                                vertical_mouse_frame_2 += *(short *)&g_8e20;
                             } else if (!(*(unsigned char *)(player_key_flags + 1) & 0x20)) {
                                 current_ball_pointer->flags &= 0xfd;
                             }
@@ -245,16 +245,16 @@ L_88c9:;
                             } else {
                                 submit_audio_request(0x65);
                             }
-                            if ((*(int *)g_e24c + 3) >= g_e234) goto L_8a8d;
-                            if ((g_e254 - 3) <= *(int *)g_e22c) goto L_8a6e;
+                            if ((*(int *)collision_box_a_left + 3) >= collision_box_b_right) goto L_8a8d;
+                            if ((sprite_rect_a_right - 3) <= *(int *)collision_box_b_left) goto L_8a6e;
                             goto L_8ad2;
                         }
                     }
-                    if (!(*(unsigned char *)(player_key_flags + 1) & 2) || *(int *)g_e23c > g_e234) goto L_8a69;
-                    if (g_e244 < *(int *)g_e22c) goto L_8a69;
+                    if (!(*(unsigned char *)(player_key_flags + 1) & 2) || *(int *)sprite_rect_c_left > collision_box_b_right) goto L_8a69;
+                    if (collision_box_c_right < *(int *)collision_box_b_left) goto L_8a69;
                     submit_audio_request(0x21);
-                    if ((*(int *)g_e23c + 3) >= g_e234) goto L_8a8d;
-                    if ((g_e244 - 3) <= *(int *)g_e22c) goto L_8a6e;
+                    if ((*(int *)sprite_rect_c_left + 3) >= collision_box_b_right) goto L_8a8d;
+                    if ((collision_box_c_right - 3) <= *(int *)collision_box_b_left) goto L_8a6e;
                 } else {
 L_8a69:;
                     goto L_8b85;
@@ -295,10 +295,10 @@ L_8b85:;
             if (!(current_ball_pointer->flags & 2)) {
                 moving_target_cursor = moving_target_records;
                 for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
-                    *(int *)g_e25c = moving_target_cursor->x;
-                    g_e260 = moving_target_cursor->y;
-                    get_sprite_collision_bounds(g_e25c, (void *)moving_target_cursor->sprite_info);
-                    if (rectangles_intersect(g_e22c, g_e25c)) {
+                    *(int *)collision_box_d_left = moving_target_cursor->x;
+                    sprite_bounds_d_top = moving_target_cursor->y;
+                    get_sprite_collision_bounds(collision_box_d_left, (void *)moving_target_cursor->sprite_info);
+                    if (rectangles_intersect(collision_box_b_left, collision_box_d_left)) {
                         moving_target_cursor->flags |= 2;
                         moving_target_cursor->hit_points = 0;
                         moving_target_cursor->velocity_x += current_ball_pointer->velocity_x >> 4;
@@ -328,34 +328,34 @@ L_8b85:;
                     collision_edges.edges[1].edge_mask = 1;
                     collision_edges.edges[2].edge_mask = 0;
                     collision_edges.edges[3].edge_mask = 0;
-                    collision_edges.edges[0].x = *(int *)g_e22c;
-                    collision_edges.edges[0].y = g_e230;
-                    collision_edges.edges[1].x = g_e234;
-                    collision_edges.edges[1].y = g_e230;
+                    collision_edges.edges[0].x = *(int *)collision_box_b_left;
+                    collision_edges.edges[0].y = b_box_top;
+                    collision_edges.edges[1].x = collision_box_b_right;
+                    collision_edges.edges[1].y = b_box_top;
                 } else {
                     collision_edges.edges[0].edge_mask = 0;
                     collision_edges.edges[1].edge_mask = 0;
                     collision_edges.edges[2].edge_mask = 1;
                     collision_edges.edges[3].edge_mask = 1;
-                    collision_edges.edges[2].x = g_e234;
-                    collision_edges.edges[2].y = g_e238;
-                    collision_edges.edges[3].x = *(int *)g_e22c;
-                    collision_edges.edges[3].y = g_e238;
+                    collision_edges.edges[2].x = collision_box_b_right;
+                    collision_edges.edges[2].y = collision_rect_b_bottom;
+                    collision_edges.edges[3].x = *(int *)collision_box_b_left;
+                    collision_edges.edges[3].y = collision_rect_b_bottom;
                 }
                 if (current_ball_pointer->velocity_x < 0) {
                     collision_edges.edges[0].edge_mask += 2;
                     collision_edges.edges[3].edge_mask += 2;
-                    collision_edges.edges[0].x = *(int *)g_e22c;
-                    collision_edges.edges[0].y = g_e230;
-                    collision_edges.edges[3].x = *(int *)g_e22c;
-                    collision_edges.edges[3].y = g_e238;
+                    collision_edges.edges[0].x = *(int *)collision_box_b_left;
+                    collision_edges.edges[0].y = b_box_top;
+                    collision_edges.edges[3].x = *(int *)collision_box_b_left;
+                    collision_edges.edges[3].y = collision_rect_b_bottom;
                 } else if (current_ball_pointer->velocity_x > 0) {
                     collision_edges.edges[1].edge_mask += 2;
                     collision_edges.edges[2].edge_mask += 2;
-                    collision_edges.edges[1].x = g_e234;
-                    collision_edges.edges[1].y = g_e230;
-                    collision_edges.edges[2].x = g_e234;
-                    collision_edges.edges[2].y = g_e238;
+                    collision_edges.edges[1].x = collision_box_b_right;
+                    collision_edges.edges[1].y = b_box_top;
+                    collision_edges.edges[2].x = collision_box_b_right;
+                    collision_edges.edges[2].y = collision_rect_b_bottom;
                 }
                 collision_count = 0;
                 brick_x_index = -1;

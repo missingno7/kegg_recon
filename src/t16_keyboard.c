@@ -1,8 +1,8 @@
 /* These aliases keep descriptive names while preserving verified BSS linker names. */
-#define previous_scan_code previous_scan_code_20
-#define bios_keyboard_lock_flags bios_keyboard_lock_flags_c
-#define previous_ascii_key_2f previous_ascii_key_2f
-#define current_key_code_01 current_key_code_01
+#define previous_scan_code previous_key_scan_code
+#define bios_keyboard_lock_flags keyboard_bios_status_flags
+#define prior_key_ascii prior_key_ascii
+#define keyboard_scan_byte keyboard_scan_byte
 #define KEY_HOOK_REPEAT_CHORD 0x01
 #define KEY_HOOK_PAUSE 0x02
 #define KEY_HOOK_SPACE_PRESS 0x04
@@ -31,10 +31,10 @@ union KeyboardHookFlags {
     unsigned char bytes[2];
 };
 extern union KeyboardKeyBitmap scan_code_bitmap[8], translated_key_bitmap[8];
-extern unsigned char current_ascii, pending_ascii_key, previous_scan_code, latest_scan_byte, current_scan_code, bios_keyboard_lock_flags, previous_ascii_key_2f, current_key_code_01;
+extern unsigned char current_ascii, pending_ascii_key, previous_scan_code, latest_scan_byte, current_scan_code, bios_keyboard_lock_flags, prior_key_ascii, keyboard_scan_byte;
 void ignore_keyboard_action(void);
-extern unsigned char g_754d;
-extern unsigned char g_754c;
+extern unsigned char keyboard_irq_line;
+extern unsigned char keyboard_interrupt_number;
 extern unsigned char g_75a8;
 struct KeyboardInterruptRecord {
     short installation_status;
@@ -45,12 +45,12 @@ extern void remove_keyboard_input_handler(void);
 extern void f_d656(unsigned char *, int);
 void install_keyboard_input_handler(void);
 extern void f_d7b8(unsigned char *);
-extern int g_754f;
-extern int g_756b;
+extern int keyboard_hook_flags;
+extern int keyboard_mapped_address;
 extern int g_75c4;
-extern void (*g_7553)(void);
-extern void (*g_7557)(void);
-extern void (*g_755b)(void);
+extern void (*keyboard_handler_address)(void);
+extern void (*keyboard_physical_start)(void);
+extern void (*keyboard_mapping_state)(void);
 extern void clear_keyboard_state(void);
 extern void save_bios_keyboard_flags(void);
 extern void f_da01(int *);
@@ -111,8 +111,8 @@ void ignore_keyboard_action(void) {
 }
 
 void install_keyboard_input_handler(void) {
-    g_754d = 9;
-    g_754c = g_75a8 + 1;
+    keyboard_irq_line = 9;
+    keyboard_interrupt_number = g_75a8 + 1;
     f_d656((unsigned char *)&key_irq, (int)remove_keyboard_input_handler);
 }
 
@@ -123,22 +123,22 @@ void remove_keyboard_input_handler(void) {
 int initialize_keyboard_manager(int manager_flags) {
     int bios_buffer_address;
     if (manager_flags == 0) {
-        manager_flags = g_754f;
+        manager_flags = keyboard_hook_flags;
         if (manager_flags == 0) return 0;
     }
     if (key_irq.installation_status != -1) {
         clear_keyboard_state();
         save_bios_keyboard_flags();
-        g_754f = manager_flags;
+        keyboard_hook_flags = manager_flags;
         install_keyboard_input_handler();
-        g_7553 = (void (*)(void))keyboard_interrupt_handler;
-        g_7557 = (void (*)(void))irq_110;
-        g_755b = (void (*)(void))((unsigned char __far *)irq_110 + 0x39);
+        keyboard_handler_address = (void (*)(void))keyboard_interrupt_handler;
+        keyboard_physical_start = (void (*)(void))irq_110;
+        keyboard_mapping_state = (void (*)(void))((unsigned char __far *)irq_110 + 0x39);
         f_da01((int *)&key_irq);
         if ((manager_flags & 1) == 1) {
             int bios_buffer_head_address;
             int bios_buffer_tail_address;
-            bios_buffer_address = g_756b;
+            bios_buffer_address = keyboard_mapped_address;
             bios_buffer_head_address = 0x41a;
             *(unsigned short *)(bios_buffer_address + 4) = *(unsigned short *)bios_buffer_head_address;
             bios_buffer_tail_address = 0x41c;
@@ -217,13 +217,13 @@ void poll_keyboard(void) {
         update_key_state_from_scan_code(*(unsigned char *)bios_keyboard_buffer);
         *(unsigned char *)bios_keyboard_buffer = 0;
     }
-    if (previous_scan_code == current_key_code_01 || current_key_code_01 != latest_scan_byte) {
-        previous_ascii_key_2f = current_ascii;
-        current_scan_code = current_key_code_01;
+    if (previous_scan_code == keyboard_scan_byte || keyboard_scan_byte != latest_scan_byte) {
+        prior_key_ascii = current_ascii;
+        current_scan_code = keyboard_scan_byte;
     }
-    current_key_code_01 = latest_scan_byte;
+    keyboard_scan_byte = latest_scan_byte;
     current_ascii = pending_ascii_key;
-    previous_scan_code = current_key_code_01;
+    previous_scan_code = keyboard_scan_byte;
 }
 
 void dispatch_keyboard(void) {
@@ -237,7 +237,7 @@ void dispatch_keyboard(void) {
 }
 
 void record_space_key_press(void) {
-    if (previous_ascii_key_2f != 0x20 && current_ascii == 0x20) space_pressed = -1;
+    if (prior_key_ascii != 0x20 && current_ascii == 0x20) space_pressed = -1;
 }
 
 /* Hold the repeat callback while the configured key chord remains down. */
@@ -256,12 +256,12 @@ void handle_keyboard_repeat_chord(void) {
 }
 
 void handle_pause_key(void) {
-    if (current_key_code_01 != SCAN_PAUSE) return;
+    if (keyboard_scan_byte != SCAN_PAUSE) return;
     key_repeat();
     keyboard_state = -1;
-    while (current_key_code_01 == SCAN_PAUSE) poll_keyboard();
-    while (current_key_code_01 != SCAN_PAUSE) poll_keyboard();
-    while (current_key_code_01 == SCAN_PAUSE) poll_keyboard();
+    while (keyboard_scan_byte == SCAN_PAUSE) poll_keyboard();
+    while (keyboard_scan_byte != SCAN_PAUSE) poll_keyboard();
+    while (keyboard_scan_byte == SCAN_PAUSE) poll_keyboard();
     keyboard_release_handler();
     keyboard_state = 0;
 }
@@ -278,7 +278,7 @@ void update_keyboard_chord_state(void) {
 
 /* Require the modifier bitmap and a fresh Enter make-code before requesting exit. */
 void handle_keyboard_exit_chord(void) {
-    if (scan_code_bitmap[0].bytes.low&2 && (int)(short)scan_code_bitmap[0].word&0x8000 && scan_code_bitmap[1].bytes.high&0x20 && (current_scan_code!=SCAN_ENTER && current_key_code_01==SCAN_ENTER)) {
+    if (scan_code_bitmap[0].bytes.low&2 && (int)(short)scan_code_bitmap[0].word&0x8000 && scan_code_bitmap[1].bytes.high&0x20 && (current_scan_code!=SCAN_ENTER && keyboard_scan_byte==SCAN_ENTER)) {
         key_action_hook(0x101,0);
     }
 }
@@ -290,13 +290,13 @@ void handle_keyboard_abort_chord(void) {
 void toggle_keyboard_lock_leds(void) {
     unsigned char previous_lock_flags=bios_keyboard_lock_flags;
     int scroll_lock_pressed,num_lock_pressed,caps_lock_pressed;
-    if (current_scan_code!=SCAN_SCROLL_LOCK && current_key_code_01==SCAN_SCROLL_LOCK) scroll_lock_pressed=1;
+    if (current_scan_code!=SCAN_SCROLL_LOCK && keyboard_scan_byte==SCAN_SCROLL_LOCK) scroll_lock_pressed=1;
     else scroll_lock_pressed=0;
     if(scroll_lock_pressed) bios_keyboard_lock_flags^=1;
-    if (current_scan_code!=SCAN_NUM_LOCK && current_key_code_01==SCAN_NUM_LOCK) num_lock_pressed=1;
+    if (current_scan_code!=SCAN_NUM_LOCK && keyboard_scan_byte==SCAN_NUM_LOCK) num_lock_pressed=1;
     else num_lock_pressed=0;
     if(num_lock_pressed) bios_keyboard_lock_flags^=2;
-    if (current_scan_code!=SCAN_CAPS_LOCK && current_key_code_01==SCAN_CAPS_LOCK) caps_lock_pressed=1;
+    if (current_scan_code!=SCAN_CAPS_LOCK && keyboard_scan_byte==SCAN_CAPS_LOCK) caps_lock_pressed=1;
     else caps_lock_pressed=0;
     if(caps_lock_pressed) bios_keyboard_lock_flags^=4;
     if(previous_lock_flags!=bios_keyboard_lock_flags) {
@@ -312,8 +312,8 @@ void toggle_keyboard_lock_leds(void) {
 /* Accumulate translated key codes and compare the completed sequence on Enter. */
 void check_keyboard_cheat_code(void) {
     int signature_index;
-    if (current_key_code_01 != current_scan_code && current_key_code_01 < 0x7f) {
-        if (current_key_code_01 == SCAN_ENTER) {
+    if (keyboard_scan_byte != current_scan_code && keyboard_scan_byte < 0x7f) {
+        if (keyboard_scan_byte == SCAN_ENTER) {
             for (signature_index=0;(short)signature_index<9;signature_index++) {
                 if (keyboard_cheat_signatures[(short)signature_index] == keyboard_cheat_code_accumulator) {
                     if ((short)signature_index==8) keyboard_cheat_flags ^= 0xff;
@@ -358,5 +358,5 @@ unsigned char previous_scan_code;
 unsigned char latest_scan_byte;
 unsigned char current_scan_code;
 unsigned char bios_keyboard_lock_flags;
-unsigned char previous_ascii_key_2f;
-unsigned char current_key_code_01;
+unsigned char prior_key_ascii;
+unsigned char keyboard_scan_byte;

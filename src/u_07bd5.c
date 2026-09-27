@@ -56,7 +56,7 @@ void spawn_game_ball(int x, int y);
 extern int g_8db4;
 extern unsigned char *player_key_flags;
 extern unsigned char *racket_object;
-extern int g_e24c;
+extern int collision_box_a_left;
 struct AnimatedSprite sprite_animations[50];
 unsigned char g_9af8[2592];
 int vga_buffer_base;
@@ -66,7 +66,7 @@ int game_sprite_data_base_j;
 int g_dd50;
 int g_dd54;
 
-extern int r_e250;
+extern int collision_box_a_top;
 extern unsigned char *image_buffer_cursor;
 extern void get_sprite_bounds(int *, int);
 void *memcpy(void *, const void *, size_t);
@@ -298,9 +298,9 @@ void draw_animated_sprites(void)
         }
         g_8db4 = sprite_current->sprite_bank + sprite_current->current_frame->image_offset;
         if (sprite_current->check_screen_bounds) {
-            g_e24c = sprite_current->x;
-            r_e250 = sprite_current->y;
-            get_sprite_bounds(&g_e24c, g_8db4);
+            collision_box_a_left = sprite_current->x;
+            collision_box_a_top = sprite_current->y;
+            get_sprite_bounds(&collision_box_a_left, g_8db4);
             if (sprite_current->x > 0x150 || sprite_current->x < -0x10 ||
                 sprite_current->y > 0xd8 || sprite_current->y < -0x10) {
                 remove_animated_sprite();

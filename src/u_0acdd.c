@@ -1,6 +1,6 @@
 /* Scratch used by the recursive midpoint-displacement heightfield generator. */
 unsigned char g_e1f0[8];
-int g_midpoint_height_6;
+int midpoint_height;
 float g_height_noise_scale;
 
 #include <stdlib.h>
@@ -93,16 +93,16 @@ void perturb_height_midpoint(short x1, short y1, short x2, short y2, short midpo
     if (read_vga_pixel_entry(midpoint_x, midpoint_y) != g_height_min)
         return;
 
-    g_midpoint_height_6 = rand_rng(g_noise_min, g_noise_max) +
+    midpoint_height = rand_rng(g_noise_min, g_noise_max) +
                          ((read_vga_pixel_entry(x1, y1) + read_vga_pixel_entry(x2, y2)) >> 1) +
                          (int)(rand_rng(-g_height_range >> 1, g_height_range >> 1) * g_height_noise_scale *
                                (float)(abs(x1 - x2) + abs(y1 - y2))) /
                              (g_height_range >> 1);
-    if (g_midpoint_height_6 < g_height_min + 1)
-        g_midpoint_height_6 = g_height_min + 1;
-    if (g_midpoint_height_6 > g_height_max - 1)
-        g_midpoint_height_6 = g_height_max - 1;
-    write_vga_pixel_entry(midpoint_x, midpoint_y, g_midpoint_height_6);
+    if (midpoint_height < g_height_min + 1)
+        midpoint_height = g_height_min + 1;
+    if (midpoint_height > g_height_max - 1)
+        midpoint_height = g_height_max - 1;
+    write_vga_pixel_entry(midpoint_x, midpoint_y, midpoint_height);
 }
 
 int next_packed_table_value(int *remaining, PackedValueRecord **cursor)

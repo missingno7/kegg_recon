@@ -7,14 +7,14 @@ EXTRN background_plane_delta:DWORD
 EXTRN sprite_source_column:WORD
 EXTRN sprite_clip_top:DWORD
 EXTRN sprite_clip_left:DWORD
-EXTRN g_8388:DWORD
+EXTRN visible_sprite_width:DWORD
 EXTRN vga_plane_index:DWORD
-EXTRN g_8390:DWORD
+EXTRN sprite_row_width_remaining:DWORD
 EXTRN current_vga_plane_mask:BYTE
 EXTRN first_vga_plane_mask:BYTE
-EXTRN g_e2e4:DWORD
+EXTRN render_page_base:DWORD
 EXTRN vga_state:WORD
-EXTRN u_e2E0:DWORD
+EXTRN screen_page_base:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
@@ -40,7 +40,7 @@ L_122A8:
 L_122AB:
         mov eax, edi
 L_122AD:
-        sub eax, dword ptr [g_e2e4]
+        sub eax, dword ptr [render_page_base]
 L_122B3:
         mov dword ptr [edx + 0Ah], eax
 L_122B6:
@@ -48,7 +48,7 @@ L_122B6:
 L_122BB:
         mov word ptr [edx + 0Eh], ax
 L_122BF:
-        mov eax, dword ptr [g_8388]
+        mov eax, dword ptr [visible_sprite_width]
 L_122C4:
         mov word ptr [edx + 10h], ax
 L_122C8:
@@ -79,7 +79,7 @@ L_122EB:
 L_122F2:
         jne near ptr L_123B9
 L_122F8:
-        cmp dword ptr [g_8388], 0
+        cmp dword ptr [visible_sprite_width], 0
 L_122FF:
         jne near ptr L_124B8
 L_12305:
@@ -401,9 +401,9 @@ L_124B7:
 L_124B8:
         mov word ptr [sprite_source_column], 0Ah
 L_124C1:
-        mov edx, dword ptr [g_8388]
+        mov edx, dword ptr [visible_sprite_width]
 L_124C7:
-        mov dword ptr [g_8390], edx
+        mov dword ptr [sprite_row_width_remaining], edx
 L_124CD:
         mov edx, dword ptr [vga_state+3Ah]
 L_124D3:
@@ -461,15 +461,15 @@ L_1251B:
 L_1251D:
         loop L_1250F
 L_1251F:
-        mov edx, dword ptr [g_8390]
+        mov edx, dword ptr [sprite_row_width_remaining]
 L_12525:
         add edx, 3
 L_12528:
         sar edx, 2
 L_1252B:
-        mov dword ptr [g_8388], edx
+        mov dword ptr [visible_sprite_width], edx
 L_12531:
-        dec dword ptr [g_8390]
+        dec dword ptr [sprite_row_width_remaining]
 L_12537:
         mov edx, edi
 L_12539:
@@ -493,7 +493,7 @@ L_12547:
 L_12549:
         sub eax, edx
 L_1254B:
-        sub eax, dword ptr [g_8388]
+        sub eax, dword ptr [visible_sprite_width]
 L_12551:
         jge short L_1255B
 L_12553:
@@ -580,9 +580,9 @@ L_125B2:
 L_125B6:
         jcxz L_125FF
 L_125B9:
-        mov esi, dword ptr [u_e2E0]
+        mov esi, dword ptr [screen_page_base]
 L_125BF:
-        mov edi, dword ptr [g_e2e4]
+        mov edi, dword ptr [render_page_base]
 L_125C5:
         mov eax, dword ptr [ebx + 0Ah]
 L_125C8:
@@ -630,9 +630,9 @@ L_125FC:
 L_125FE:
         ret
 L_125FF:
-        mov eax, dword ptr [g_e2e4]
+        mov eax, dword ptr [render_page_base]
 L_12604:
-        mov edi, dword ptr [u_e2E0]
+        mov edi, dword ptr [screen_page_base]
 L_1260A:
         sub edi, eax
 L_1260C:

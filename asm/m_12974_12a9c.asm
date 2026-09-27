@@ -6,9 +6,9 @@ EXTRN vga_row_advance:DWORD
 EXTRN sprite_clip_top:DWORD
 EXTRN sprite_clip_left:DWORD
 EXTRN sprite_clip_right:DWORD
-EXTRN g_e2e4:DWORD
+EXTRN render_page_base:DWORD
 EXTRN vga_state:WORD
-EXTRN u_e2E0:DWORD
+EXTRN screen_page_base:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
@@ -28,7 +28,7 @@ L_1298A:
 L_1298E:
         mov eax, edi
 L_12990:
-        sub eax, dword ptr [g_e2e4]
+        sub eax, dword ptr [render_page_base]
 L_12996:
         mov dword ptr [edx + 0Ah], eax
         ; Decode transparent sprite runs into the clipped destination rows.
@@ -230,9 +230,9 @@ L_12A57:
         PUBLIC restore_sprite_rectangle
 restore_sprite_rectangle LABEL NEAR
 L_12A58:
-        mov esi, dword ptr [u_e2E0]
+        mov esi, dword ptr [screen_page_base]
 L_12A5E:
-        mov edi, dword ptr [g_e2e4]
+        mov edi, dword ptr [render_page_base]
 L_12A64:
         mov eax, dword ptr [ebx + 0Ah]
 L_12A67:

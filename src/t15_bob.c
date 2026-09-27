@@ -1,9 +1,9 @@
 /* These aliases keep descriptive names while preserving verified BSS linker names. */
-#define primary_joystick_two_frames_ago primary_joystick_two_frames_ago_0n
-#define secondary_joystick secondary_joystick_u
-#define secondary_joystick_three_frames_ago secondary_joystick_three_frames_ago_9
-#define primary_joystick_three_frames_ago primary_joystick_three_frames_ago_12
-#define current_key_code_01 current_key_code_01
+#define primary_joystick_two_frames_ago player_one_joystick_two_frames_ago
+#define secondary_joystick secondary_stick_state
+#define secondary_joystick_three_frames_ago secondary_stick_three_frames_prior
+#define primary_joystick_three_frames_ago player_one_joystick_three_frames_back
+#define keyboard_scan_byte keyboard_scan_byte
 #define scan_code current_scan_code
 #define JOYSTICK_GAMEPORT 0x201
 #define JOYSTICK_PROBE_POLL_LIMIT 1000
@@ -46,7 +46,7 @@ void poll_joystick_ports(void);
 extern void _disable(void);
 extern void _enable(void);
 extern unsigned char scan_code;
-extern unsigned char current_key_code_01;
+extern unsigned char keyboard_scan_byte;
 extern void poll_keyboard(void);
 extern void recalculate_joystick_thresholds(void);
 /* _DATA [0x7b28,0x7b34) */
@@ -166,7 +166,7 @@ void capture_joystick_center(void) {
         poll_joystick_ports();
         poll_keyboard();
     }
-    while (scan_code == current_key_code_01 && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
+    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
     primary_joystick.axis_timing[JOY_X_CENTER] = primary_joystick.axis_timing[JOY_X_CURRENT];
     primary_joystick.axis_timing[JOY_Y_CENTER] = primary_joystick.axis_timing[JOY_Y_CURRENT];
     secondary_joystick.axis_timing[JOY_X_CENTER] = secondary_joystick.axis_timing[JOY_X_CURRENT];
@@ -184,7 +184,7 @@ void capture_joystick_minimums(void) {
         poll_joystick_ports();
         poll_keyboard();
     }
-    while (scan_code == current_key_code_01 && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
+    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
     primary_joystick.axis_timing[JOY_X_MINIMUM] = primary_joystick.axis_timing[JOY_X_CURRENT];
     primary_joystick.axis_timing[JOY_Y_MINIMUM] = primary_joystick.axis_timing[JOY_Y_CURRENT];
     secondary_joystick.axis_timing[JOY_X_MINIMUM] = secondary_joystick.axis_timing[JOY_X_CURRENT];
@@ -202,7 +202,7 @@ void capture_joystick_maximums(void) {
         poll_joystick_ports();
         poll_keyboard();
     }
-    while (scan_code == current_key_code_01 && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
+    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
     primary_joystick.axis_timing[JOY_X_MAXIMUM] = primary_joystick.axis_timing[JOY_X_CURRENT];
     primary_joystick.axis_timing[JOY_Y_MAXIMUM] = primary_joystick.axis_timing[JOY_Y_CURRENT];
     secondary_joystick.axis_timing[JOY_X_MAXIMUM] = secondary_joystick.axis_timing[JOY_X_CURRENT];

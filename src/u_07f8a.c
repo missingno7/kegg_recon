@@ -73,16 +73,16 @@ extern int g_688c[];
 extern int g_6890[];
 extern short flip_src;
 extern short flip_dst;
-extern short g_7b24;
-extern short g_7b26;
+extern short video_page_2_index;
+extern short vp3idx;
 extern short disp_idx;
 extern short draw_idx;
 extern short page2;
 extern short page3;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
-extern short mouse_sensitivity_x_o;
-extern short mouse_sensitivity_y_9;
+extern short x_cursor_sensitivity;
+extern short mouse_sensitivity_y_axis;
 extern void submit_audio_request(int);
 extern void write_pal(void *);
 extern void f_9d40(int);
@@ -138,13 +138,13 @@ void rkt_mv(void)
         if (mouse_btn != mouse_btn_old) {
             if (mouse_btn == 1) {
                 query_mouse_sensitivity();
-                mouse_sensitivity_x_o -= 2;
-                mouse_sensitivity_y_9 -= 2;
+                x_cursor_sensitivity -= 2;
+                mouse_sensitivity_y_axis -= 2;
                 restore_mouse_driver_sensitivity();
             } else if (mouse_btn == 2) {
                 query_mouse_sensitivity();
-                mouse_sensitivity_x_o += 2;
-                mouse_sensitivity_y_9 += 2;
+                x_cursor_sensitivity += 2;
+                mouse_sensitivity_y_axis += 2;
                 restore_mouse_driver_sensitivity();
             }
         }

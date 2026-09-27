@@ -11,11 +11,11 @@ int g_e28c;
 #include <string.h>
 extern short sound_blaster_detected;
 int g_e274_d1;
-char *audio_request_table_8;
+char *audio_request_entries;
 int g_e278;
 int g_e27c;
 
-extern unsigned char g_74c4[];
+extern unsigned char sndirq[];
 extern void fatal_exit(unsigned, unsigned);
 extern int configure_sound_dma(int);
 extern void initialize_audio_stream(void);
@@ -65,7 +65,7 @@ void queue_audio(int source, int byte_count, int sample_rate, int playback_mode)
 {
     int sound_status;
     if (sound_blaster_detected == -1) {
-        if (*(short *)g_74c4 != -1) {
+        if (*(short *)sndirq != -1) {
             sound_status = configure_sound_dma(4);
             if (sound_status != 0)
                 fatal_exit(sound_status, 0);
@@ -90,10 +90,10 @@ void queue_audio(int source, int byte_count, int sample_rate, int playback_mode)
 
 void submit_audio_request(int index)
 {
-    queue_audio(*(int *)(audio_request_table_8 + index * 16 - 16),
-           *(int *)(audio_request_table_8 + index * 16 - 12),
-           *(int *)(audio_request_table_8 + index * 16 - 8),
-           *(int *)(audio_request_table_8 + index * 16 - 4));
+    queue_audio(*(int *)(audio_request_entries + index * 16 - 16),
+           *(int *)(audio_request_entries + index * 16 - 12),
+           *(int *)(audio_request_entries + index * 16 - 8),
+           *(int *)(audio_request_entries + index * 16 - 4));
 }
 
 void play_audio_request_at(int request_x, int request_y)

@@ -64,8 +64,8 @@ extern short page2;
 extern short page3;
 extern short g_7b1c;
 extern short g_7b1e;
-extern short g_7b24;
-extern short g_7b26;
+extern short video_page_2_index;
+extern short vp3idx;
 
 /* _DATA [0x75c8,0x7b00) */
 short video_restore_registered = 0;

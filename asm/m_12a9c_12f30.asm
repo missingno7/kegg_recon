@@ -5,11 +5,11 @@ EXTRN image_buffer_error_code:WORD
 EXTRN image_color_depth:WORD
 EXTRN draw_idx:WORD
 EXTRN page2:WORD
-EXTRN g_e2e4:DWORD
-EXTRN active_image_buffer_pointer_2:DWORD
+EXTRN render_page_base:DWORD
+EXTRN active_video_page_buffer:DWORD
 EXTRN image_buffer_cursor:DWORD
 EXTRN vga_state:WORD
-EXTRN u_e2E0:DWORD
+EXTRN screen_page_base:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
 EXTRN render_sprite_record_kind_5_entry:NEAR
@@ -69,9 +69,9 @@ L_12AE7:
 L_12AED:
         add esi, dword ptr [ebx + vga_state+22h]
 L_12AF3:
-        mov dword ptr [g_e2e4], edi
+        mov dword ptr [render_page_base], edi
 L_12AF9:
-        mov dword ptr [u_e2E0], esi
+        mov dword ptr [screen_page_base], esi
 L_12AFF:
         add edi, dword ptr [ebp + 8]
 L_12B02:
@@ -135,7 +135,7 @@ L_12B7C:
 L_12B7E:
         mov eax, dword ptr [sprite_record_cursor]
 L_12B83:
-        mov dword ptr [active_image_buffer_pointer_2], eax
+        mov dword ptr [active_video_page_buffer], eax
 L_12B88:
         mov eax, dword ptr [sprite_command_cursor]
 L_12B8D:
@@ -232,15 +232,15 @@ L_12C49:
 L_12C4D:
         out dx, ax
 L_12C4F:
-        mov dword ptr [g_e2e4], edi
+        mov dword ptr [render_page_base], edi
 L_12C55:
-        mov dword ptr [u_e2E0], esi
+        mov dword ptr [screen_page_base], esi
 L_12C5B:
         cmp word ptr [image_color_depth], 4
 L_12C63:
         jne short L_12C8F
 L_12C65:
-        mov ebx, dword ptr [active_image_buffer_pointer_2]
+        mov ebx, dword ptr [active_video_page_buffer]
 L_12C6B:
         mov dword ptr [sprite_record_cursor], ebx
 L_12C71:
@@ -323,13 +323,13 @@ L_12D08:
 L_12D0E:
         add edi, dword ptr [ebx + vga_state+22h]
 L_12D14:
-        mov dword ptr [g_e2e4], esi
+        mov dword ptr [render_page_base], esi
 L_12D1A:
-        mov dword ptr [u_e2E0], edi
+        mov dword ptr [screen_page_base], edi
 L_12D20:
         mov dword ptr [vga_draw_origin], esi
 L_12D26:
-        mov ebx, dword ptr [active_image_buffer_pointer_2]
+        mov ebx, dword ptr [active_video_page_buffer]
 L_12D2C:
         mov dword ptr [sprite_record_cursor], ebx
 L_12D32:
@@ -343,7 +343,7 @@ L_12D3B:
 L_12D40:
         mov ebx, dword ptr [sprite_record_cursor]
 L_12D46:
-        mov dword ptr [active_image_buffer_pointer_2], ebx
+        mov dword ptr [active_video_page_buffer], ebx
 L_12D4C:
         mov byte ptr [vga_state+61h], 0Fh
 L_12D53:
@@ -496,7 +496,7 @@ L_12E6A:
 L_12E6F:
         mov dword ptr [sprite_clip_right], eax
 L_12E74:
-        mov dword ptr [g_8388], eax
+        mov dword ptr [visible_sprite_width], eax
 L_12E79:
         cmp edx, dword ptr [vga_state+4Eh]
 L_12E7F:
@@ -578,7 +578,7 @@ L_12EFF:
 L_12F04:
         movsx eax, cx
 L_12F07:
-        mov dword ptr [g_8388], eax
+        mov dword ptr [visible_sprite_width], eax
 L_12F0C:
         rol ecx, 10h
 L_12F0F:
@@ -630,12 +630,12 @@ sprite_clip_bottom	DD 0
 sprite_clip_left	DD 0
         PUBLIC sprite_clip_right
 sprite_clip_right	DD 0
-        PUBLIC g_8388
-g_8388	DD 0
+        PUBLIC visible_sprite_width
+visible_sprite_width	DD 0
         PUBLIC vga_plane_index
 vga_plane_index	DD 0
-        PUBLIC g_8390
-g_8390 LABEL DWORD
+        PUBLIC sprite_row_width_remaining
+sprite_row_width_remaining LABEL DWORD
         DB 18 DUP (0)
         PUBLIC sprite_operation_dispatch_table
 sprite_operation_dispatch_table LABEL DWORD

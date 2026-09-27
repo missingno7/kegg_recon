@@ -1,27 +1,27 @@
 /* These aliases keep descriptive names while preserving verified BSS linker names. */
-#define saved_mouse_sensitivity_y saved_mouse_sensitivity_y_6r
-#define saved_mouse_sensitivity_x saved_mouse_sensitivity_x_6u
-#define mouse_x_sample_5 mouse_x_sample_5_0g
-#define mouse_y_sample_5 mouse_y_sample_5_02
-#define mouse_y_sample_7 mouse_y_sample_7_04
-#define mouse_x_sample_7 mouse_x_sample_7_n
-#define mouse_x_sample_6 mouse_x_sample_6_q
-#define mouse_y_sample_6 mouse_y_sample_6_05
-#define mouse_x_sample_4 mouse_x_sample_4_0f
-#define mouse_y_sample_4 mouse_y_sample_4_03
-#define mouse_sensitivity_threshold mouse_sensitivity_threshold_5m
-#define mouse_sensitivity_x mouse_sensitivity_x_o
-#define mouse_sensitivity_y mouse_sensitivity_y_9
-#define mouse_y_sample_3 mouse_y_sample_3_a1
-#define mouse_x_sample_3 mouse_x_sample_3_0s
-#define mouse_x_sample_2 mouse_x_sample_2_0s
-#define mouse_y_sample_2 mouse_y_sample_2_1a
-#define smoothed_mouse_y smoothed_mouse_y_0f
-#define mouse_x_sample_1 mouse_x_sample_1_6
-#define mouse_x_sample_0 mouse_x_sample_0_f
-#define previous_smoothed_mouse_y previous_smoothed_mouse_y_0t
-#define mouse_y_recent_average mouse_y_recent_average_g
-#define mouse_x_recent_average mouse_x_recent_average_1c
+#define saved_mouse_sensitivity_y previous_mouse_sensitivity_y
+#define saved_mouse_sensitivity_x previous_mouse_sensitivity_x
+#define mouse_x_sample_5 mouse_x_measurement_5
+#define mouse_y_sample_5 vertical_mouse_value_5
+#define mouse_y_sample_7 cursor_y_7_value
+#define mouse_x_sample_7 mouse_reading_x_7
+#define mouse_x_sample_6 pointer_horizontal_sample_6
+#define mouse_y_sample_6 vertical_mouse_value_6
+#define mouse_x_sample_4 mouse_reading_x_4
+#define mouse_y_sample_4 vertical_sample_mouse_4
+#define mouse_sensitivity_threshold mouse_driver_speed_threshold
+#define mouse_sensitivity_x x_cursor_sensitivity
+#define mouse_sensitivity_y mouse_sensitivity_y_axis
+#define mouse_y_sample_3 mouse_y_3_sample
+#define mouse_x_sample_3 x_mouse_sample_3
+#define mouse_x_sample_2 x_cursor_history_2
+#define mouse_y_sample_2 vertical_mouse_frame_2
+#define smoothed_mouse_y mouse_y_smooth_average
+#define mouse_x_sample_1 x_mouse_sample_1
+#define mouse_x_sample_0 history_mouse_x_0
+#define previous_smoothed_mouse_y previous_y_average
+#define mouse_y_recent_average mouse_y_mean_recent
+#define mouse_x_recent_average mouse_x_average_recent
 
 short mouse_sensitivity_y;
 short previous_smoothed_mouse_y;

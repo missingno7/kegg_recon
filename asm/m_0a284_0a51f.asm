@@ -1,10 +1,10 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-EXTRN g_e2c4:DWORD
-EXTRN g_e2c8:DWORD
-EXTRN g_e2cc:DWORD
-EXTRN g_e2d0:DWORD
+EXTRN iff_width_pixels:DWORD
+EXTRN iff_height_pixels:DWORD
+EXTRN iff_output_byte_count:DWORD
+EXTRN iff_decoded_pixel_count:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
@@ -47,8 +47,8 @@ L_A2B4:
         movzx   ecx,word ptr [ebx+6]
         xchg    al,ah
         xchg    cl,ch
-        mov     dword ptr g_e2c4,eax
-        mov     dword ptr g_e2c8,ecx
+        mov     dword ptr iff_width_pixels,eax
+        mov     dword ptr iff_height_pixels,ecx
         mul     ecx
         mov     dword ptr g_iff_pixel_count,eax
         lea     ecx,[edi+eax]
@@ -108,10 +108,10 @@ L_A37A:
         jne     near ptr L_A47E
         mov     esi,dword ptr g_iff_pixels
         mov     edi,dword ptr g_iff_file
-        mov     ecx,dword ptr g_e2c8
+        mov     ecx,dword ptr iff_height_pixels
 L_A3AC:
         push    ecx
-        mov     ecx,dword ptr g_e2c4
+        mov     ecx,dword ptr iff_width_pixels
         shr     ecx,4
 L_A3B6:
         push    ecx
@@ -122,7 +122,7 @@ L_A3BC:
 L_A3C2:
         sub     al,al
         dec     ecx
-        mov     edx,dword ptr g_e2c4
+        mov     edx,dword ptr iff_width_pixels
         add     esi,edx
         shr     edx,3
         sub     esi,edx
@@ -174,7 +174,7 @@ L_A430:
         je      short L_A43A
         jmp     near ptr L_A3B6
 L_A43A:
-        mov     edx,dword ptr g_e2c4
+        mov     edx,dword ptr iff_width_pixels
         mov     ecx,edx
         shr     ecx,3
         sub     edx,ecx
@@ -184,8 +184,8 @@ L_A43A:
         je      short L_A453
         jmp     near ptr L_A3AC
 L_A453:
-        mov     eax,dword ptr g_e2c4
-        mul     dword ptr g_e2c8
+        mov     eax,dword ptr iff_width_pixels
+        mul     dword ptr iff_height_pixels
         mov     ecx,eax
         mov     edi,dword ptr g_iff_pixels
         mov     esi,dword ptr g_iff_file
@@ -199,20 +199,20 @@ L_A453:
         mov     edi,eax
         add     edi,dword ptr g_iff_palette_bytes
 L_A47E:
-        mov     dword ptr g_e2cc,edi
+        mov     dword ptr iff_output_byte_count,edi
         mov     edi,dword ptr g_iff_pixel_count
-        mov     dword ptr g_e2d0,edi
+        mov     dword ptr iff_decoded_pixel_count,edi
         mov     ebx,[ebp+10h]
         mov     eax,[ebp+0Ch]
         mov     [ebx],eax
-        mov     eax,dword ptr g_e2c4
-        mul     dword ptr g_e2c8
+        mov     eax,dword ptr iff_width_pixels
+        mul     dword ptr iff_height_pixels
         mov     [ebx+20h],eax
         add     eax,[ebp+0Ch]
         mov     [ebx+4],eax
-        mov     eax,dword ptr g_e2c4
+        mov     eax,dword ptr iff_width_pixels
         mov     [ebx+8],eax
-        mov     eax,dword ptr g_e2c8
+        mov     eax,dword ptr iff_height_pixels
         mov     [ebx+0Ch],eax
         mov     dword ptr [ebx+14h],100h
         mov     dword ptr [ebx+1Ch],300h

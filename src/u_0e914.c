@@ -219,6 +219,6 @@ extern short g_7b1c;
 extern short g_7b1e;
 extern short flip_src;
 extern short flip_dst;
-extern short g_7b24;
-extern short g_7b26;
+extern short video_page_2_index;
+extern short vp3idx;
 extern struct DisplayModeInfo vga_state;

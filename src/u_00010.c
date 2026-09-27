@@ -32,7 +32,7 @@ extern short g_e1bc;
 extern short g_e1c0;
 extern unsigned char *image_buffer_cursor;
 extern unsigned char current_scan_code;
-extern unsigned char current_key_code_01;
+extern unsigned char keyboard_scan_byte;
 extern int g_e4c8;
 extern int g_e4d0_wfmxdlyju;
 extern void update_mouse(void);
@@ -536,7 +536,7 @@ void wait_menu_select(void);
 extern int title_image_file;
 extern int title_data_filename;
 extern short sound_blaster_detected;
-extern int g_8428;
+extern int file_operation_result;
 extern unsigned char *sprite_memory_base;
 extern int load_next_file();
 extern int f_a574_wrvhrpegbz();
@@ -633,7 +633,7 @@ L_16d:;
             fatal_exit(image_buffer_error_code, 0);
         }
         update_game_status_panel();
-        if ((current_scan_code != 1 && current_key_code_01 == 1) || (current_ball_count <= 0 && g_ddc0 <= 0 && !g_e142_baun)) {
+        if ((current_scan_code != 1 && keyboard_scan_byte == 1) || (current_ball_count <= 0 && g_ddc0 <= 0 && !g_e142_baun)) {
             start_racket_release_animation();
         }
         if (g_dd78 > 0 || g_ddc0 > 0) break;
@@ -644,7 +644,7 @@ L_16d:;
     }
     handle_keyboard_controls();
     show_page();
-    if (g_e13b && (mouse_btn_old != mouse_btn || current_key_code_01 == 0x39)) goto L_385;
+    if (g_e13b && (mouse_btn_old != mouse_btn || keyboard_scan_byte == 0x39)) goto L_385;
     if (!g_e13a) goto L_16d;
     if (!g_e13b) {
         if ((*(int *)(racket_state + 4) -= 0x71) >= 0) goto L_d6;

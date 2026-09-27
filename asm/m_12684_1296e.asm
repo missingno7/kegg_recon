@@ -7,10 +7,10 @@ EXTRN background_plane_delta:DWORD
 EXTRN sprite_clip_top:DWORD
 EXTRN sprite_clip_left:DWORD
 EXTRN sprite_clip_right:DWORD
-EXTRN g_8388:DWORD
-EXTRN g_e2e4:DWORD
+EXTRN visible_sprite_width:DWORD
+EXTRN render_page_base:DWORD
 EXTRN vga_state:WORD
-EXTRN u_e2E0:DWORD
+EXTRN screen_page_base:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
@@ -56,7 +56,7 @@ L_126B9:
 L_126BC:
         mov eax, edi
 L_126BE:
-        sub eax, dword ptr [g_e2e4]
+        sub eax, dword ptr [render_page_base]
 L_126C4:
         mov dword ptr [edx + 0Ah], eax
 L_126C7:
@@ -64,7 +64,7 @@ L_126C7:
 L_126CC:
         mov word ptr [edx + 0Eh], ax
 L_126D0:
-        mov eax, dword ptr [g_8388]
+        mov eax, dword ptr [visible_sprite_width]
 L_126D5:
         mov word ptr [edx + 10h], ax
 L_126D9:
@@ -284,7 +284,7 @@ L_127C2:
 L_127C4:
         sub eax, edx
 L_127C6:
-        sub eax, dword ptr [g_8388]
+        sub eax, dword ptr [visible_sprite_width]
 L_127CC:
         jge short L_127D6
 L_127CE:
@@ -357,9 +357,9 @@ L_12817:
 L_1281C:
         mov esi, dword ptr [ebx + 6]
 L_1281F:
-        mov edi, dword ptr [g_e2e4]
+        mov edi, dword ptr [render_page_base]
 L_12825:
-        mov eax, dword ptr [u_e2E0]
+        mov eax, dword ptr [screen_page_base]
 L_1282A:
         sub eax, edi
 L_1282C:

@@ -13,7 +13,7 @@ struct TextRenderState {
 
 unsigned char *g_font_bitmap_data;
 struct TextRenderState g_text_render_state;
-unsigned char *g_font_offsets_39;
+unsigned char *glyph_metrics_offsets;
 
 typedef struct {
     int bitmap_offset;
@@ -70,7 +70,7 @@ int draw_text(int x, int y, int text_address)
     GlyphMetrics *glyph;
     GlyphMetrics *default_metrics;
 
-    default_metrics = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(g_font_offsets_39 + 0x208));
+    default_metrics = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(glyph_metrics_offsets + 0x208));
     g_text_render_state.cursor_x = x;
     g_text_render_state.cursor_y = y;
     if (default_metrics->edge_x < 0) {
@@ -114,7 +114,7 @@ newline_control:;
         while (scan_character != 0x20 && scan_character != 9 && scan_character != 0xa && scan_character != 0x12 && scan_character) {
             candidate_x += g_text_render_state.character_advance;
             if (g_text_render_state.font_mode == 1) {
-                glyph = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(g_font_offsets_39 + (scan_character << 3)));
+                glyph = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(glyph_metrics_offsets + (scan_character << 3)));
                 candidate_x += glyph->advance;
             }
             if ((candidate_x - 1) > g_text_render_state.clip_right) {
@@ -123,7 +123,7 @@ newline_control:;
             }
             scan_character = *(unsigned char *)(unsigned char *)(lookahead_address++);
         }
-        glyph = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(g_font_offsets_39 + (character << 3)));
+        glyph = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(glyph_metrics_offsets + (character << 3)));
         if (((glyph->edge_x + (g_text_render_state.cursor_x + glyph->advance)) - 1) <= g_text_render_state.clip_right) {
             draw_bob_sprite_entry((int)glyph, g_text_render_state.cursor_x, g_text_render_state.cursor_y);
             g_text_render_state.cursor_x += g_text_render_state.character_advance;
@@ -165,7 +165,7 @@ void draw_zero_padded_number(int x, int y, int value, int base, int width)
 void configure_text_renderer(unsigned char *glyph_offsets, unsigned char *bitmap_data,
                              char font_mode, int character_advance, int line_advance)
 {
-    g_font_offsets_39 = glyph_offsets;
+    glyph_metrics_offsets = glyph_offsets;
     g_font_bitmap_data = bitmap_data;
     g_text_render_state.font_mode = font_mode;
     g_text_render_state.character_advance = character_advance;
