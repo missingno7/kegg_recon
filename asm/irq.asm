@@ -127,6 +127,8 @@ TIMER SEGMENT PARA PUBLIC USE16 'CODE'
         ORG     0
 PUBLIC a_e0
 a_e0 LABEL BYTE
+PUBLIC o2_e0
+o2_e0 LABEL BYTE
 TIMER_Start LABEL BYTE
         pushad
         mov     ax,ds
@@ -144,6 +146,8 @@ TIMER_Ack:
         popad
         jmp     far ptr HandlerVector
         nop
+PUBLIC o2_103
+o2_103 LABEL BYTE
 TIMER ENDS
 
 KEYBOARD SEGMENT PARA PUBLIC USE16 'CODE'
@@ -152,6 +156,8 @@ KEYBOARD SEGMENT PARA PUBLIC USE16 'CODE'
         ORG     0
 PUBLIC a_110
 a_110 LABEL BYTE
+PUBLIC irq_110
+irq_110 LABEL BYTE
 KEYBOARD_Start LABEL BYTE
         pushad
         mov     ax,ds

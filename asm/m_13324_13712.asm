@@ -1,5 +1,5 @@
 .386
-EXTRN g_7b16:WORD
+EXTRN g_7b14:WORD
 EXTRN g_e324:WORD
 EXTRN g_e326:DWORD
 EXTRN g_e336:DWORD
@@ -9,9 +9,145 @@ EXTRN g_e36e:DWORD
 EXTRN g_e372:DWORD
 EXTRN g_e376:DWORD
 EXTRN g_e37a:DWORD
+EXTRN g_e386:BYTE
+EXTRN g_7b16:WORD
 EXTRN g_e384:BYTE
 EXTRN g_e385:BYTE
+EXTRN L_13712:NEAR
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT
+        PUBLIC a_13324
+        PUBLIC f_13324
+f_13324 LABEL NEAR
+a_13324 PROC NEAR
+        push ebp
+L_13325:
+        lea ebp, [esp]
+L_13328:
+        push ebx
+L_13329:
+        push edx
+L_1332A:
+        push esi
+L_1332B:
+        mov eax, dword ptr [ebp + 8]
+L_1332E:
+        mov ebx, dword ptr [ebp + 0Ch]
+L_13331:
+        cmp eax, dword ptr [g_e36e]
+L_13337:
+        jge short L_13341
+L_13339:
+        mov eax, dword ptr [g_e36e]
+L_1333E:
+        mov dword ptr [ebp + 8], eax
+L_13341:
+        cmp eax, dword ptr [g_e376]
+L_13347:
+        jle short L_13351
+L_13349:
+        mov eax, dword ptr [g_e376]
+L_1334E:
+        mov dword ptr [ebp + 8], eax
+L_13351:
+        cmp ebx, dword ptr [g_e372]
+L_13357:
+        jge short L_13362
+L_13359:
+        mov ebx, dword ptr [g_e372]
+L_1335F:
+        mov dword ptr [ebp + 0Ch], ebx
+L_13362:
+        cmp ebx, dword ptr [g_e37a]
+L_13368:
+        jle short L_13373
+L_1336A:
+        mov ebx, dword ptr [g_e37a]
+L_13370:
+        mov dword ptr [ebp + 0Ch], ebx
+L_13373:
+        cmp word ptr [g_e324], 0
+L_1337B:
+        je short L_133C6
+L_1337D:
+        movzx ebx, word ptr [g_7b14]
+L_13384:
+        shl ebx, 2
+L_13387:
+        mov esi, dword ptr [ebx + g_e326]
+L_1338D:
+        add esi, dword ptr [ebx + g_e336]
+L_13393:
+        add esi, dword ptr [ebx + g_e346]
+L_13399:
+        mov eax, dword ptr [ebp + 0Ch]
+L_1339C:
+        mul dword ptr [g_e35e]
+L_133A2:
+        add eax, dword ptr [ebp + 8]
+L_133A5:
+        add esi, eax
+L_133A7:
+        mov eax, esi
+L_133A9:
+        shr esi, 2
+L_133AC:
+        shl eax, 8
+L_133AF:
+        and ah, 3
+L_133B2:
+        mov byte ptr [g_e386], ah
+L_133B8:
+        mov al, 4
+L_133BA:
+        mov dx, 3CEh
+L_133BE:
+        out dx, ax
+L_133C0:
+        lodsb
+L_133C1:
+        pop esi
+L_133C2:
+        pop edx
+L_133C3:
+        pop ebx
+L_133C4:
+        pop ebp
+L_133C5:
+        ret
+L_133C6:
+        movzx ebx, word ptr [g_7b14]
+L_133CD:
+        shl ebx, 2
+L_133D0:
+        mov esi, dword ptr [ebx + g_e326]
+L_133D6:
+        add esi, dword ptr [ebx + g_e336]
+L_133DC:
+        add esi, dword ptr [ebx + g_e346]
+L_133E2:
+        mov eax, dword ptr [ebp + 0Ch]
+L_133E5:
+        mul dword ptr [g_e35e]
+L_133EB:
+        add eax, dword ptr [ebp + 8]
+L_133EE:
+        add esi, eax
+L_133F0:
+        lodsb
+L_133F1:
+        pop esi
+L_133F2:
+        pop edx
+L_133F3:
+        pop ebx
+L_133F4:
+        pop ebp
+L_133F5:
+        ret
+a_13324 ENDP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
         PUBLIC a_133f6
@@ -510,100 +646,6 @@ L_13710:
         pop ebp
 L_13711:
         ret
-L_13712:
-        cmp byte ptr [g_e385], 0Fh
-L_13719:
-        je short L_1372C
-L_1371B:
-        mov byte ptr [g_e385], 0Fh
-L_13722:
-        mov ax, 0F02h
-L_13726:
-        mov dx, 3C4h
-L_1372A:
-        out dx, ax
-L_1372C:
-        cmp byte ptr [g_e384], 40h
-L_13733:
-        je short L_13746
-L_13735:
-        mov byte ptr [g_e384], 40h
-L_1373C:
-        mov ax, 4005h
-L_13740:
-        mov dx, 3CEh
-L_13744:
-        out dx, ax
-L_13746:
-        mov ecx, dword ptr [g_e35e]
-L_1374C:
-        mov eax, dword ptr [ebp + 10h]
-L_1374F:
-        mul ecx
-L_13751:
-        mov edi, eax
-L_13753:
-        add edi, dword ptr [ebp + 0Ch]
-L_13756:
-        mov ebx, dword ptr [ebp + 8]
-L_13759:
-        shl ebx, 2
-L_1375C:
-        add edi, dword ptr [ebx + g_e326]
-L_13762:
-        add edi, dword ptr [ebx + g_e336]
-L_13768:
-        add edi, dword ptr [ebx + g_e346]
-L_1376E:
-        mov edx, dword ptr [ebp - 10h]
-L_13771:
-        mov ebx, edx
-L_13773:
-        shr edx, 2
-L_13776:
-        mov dword ptr [ebp - 8], edx
-L_13779:
-        and ebx, 3
-L_1377C:
-        mov dword ptr [ebp - 0Ch], ebx
-L_1377F:
-        sub ecx, dword ptr [ebp - 10h]
-L_13782:
-        mov esi, ecx
-L_13784:
-        mov ebx, dword ptr [ebp - 14h]
-L_13787:
-        mov edx, dword ptr [ebp + 1Ch]
-L_1378A:
-        mov dh, dl
-L_1378C:
-        mov eax, edx
-L_1378E:
-        rol eax, 10h
-L_13791:
-        mov ax, dx
-L_13794:
-        mov ecx, dword ptr [ebp - 8]
-L_13797:
-        rep stosd
-L_13799:
-        mov ecx, dword ptr [ebp - 0Ch]
-L_1379C:
-        rep stosb
-L_1379E:
-        add edi, esi
-L_137A0:
-        dec ebx
-L_137A1:
-        jne short L_13794
-L_137A3:
-        popad
-L_137A4:
-        mov esp, ebp
-L_137A6:
-        pop ebp
-L_137A7:
-        ret
 a_134f2 ENDP
 _TEXT ENDS
-        END
+END

@@ -461,7 +461,7 @@ def main(argv):
             raise SystemExit(f"{a.func} not defined in candidate; symbols: {names}")
         k = names.index(a.func)
         c0 = ext[k][0]
-        c1 = ext[k + 1][0] if k + 1 < len(ext) else seg_end
+        c1 = next((o for o, _ in ext[k + 1:] if o > c0), seg_end)  # aliases at the same offset do not end it
     entry = next((f for f in man.get("functions", []) if f.get("name") == a.func), None)
     if a.at:
         a0 = int(a.at, 16)
