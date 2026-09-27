@@ -54,6 +54,7 @@ uint32_t oracle_port_call(void *fn, int argc, const uint32_t *args);
 
 /* The oracle reserves A0000h..BFFFFh as no-access and emulates original VGA accesses. */
 int oracle_vga_window_reserved(void);
+int oracle_vga_adopt_reserved_window(void);
 int oracle_vga_snapshot(OracleVgaSnapshot *snapshot);
 /* Return 0 when equal; otherwise print the first differing device block and return 1. */
 int oracle_vga_snapshot_equal(const OracleVgaSnapshot *a, const OracleVgaSnapshot *b,

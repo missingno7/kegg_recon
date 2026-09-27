@@ -57,6 +57,18 @@ static int reserve_vga_window(void)
     return 0;
 }
 
+int oracle_vga_adopt_reserved_window(void)
+{
+    void *wanted = (void *)(uintptr_t)0xA0000u;
+    MEMORY_BASIC_INFORMATION info;
+    if (!VirtualQuery(wanted, &info, sizeof info) || info.BaseAddress != wanted ||
+        info.AllocationBase != wanted || info.State != MEM_RESERVE ||
+        info.AllocationProtect != PAGE_NOACCESS || info.RegionSize < 0x20000u)
+        return -1;
+    vga_guard = wanted;
+    return 0;
+}
+
 int oracle_vga_window_reserved(void) { return vga_guard != NULL; }
 
 static uint16_t read_u16(const uint8_t *p)
@@ -558,12 +570,12 @@ int oracle_load(const char *image_path, const char *symbols_path)
     uint16_t ds_selector;
     FILE *sf;
     char line[256];
+    /* Protect the VGA aperture before allocating the image buffer; the CRT heap may
+     * otherwise reserve A0000h..BFFFFh before the memory-backed oracle is installed. */
+    if (reserve_vga_window() != 0)
+        return -1;
     if (read_file(image_path, &img, &size) != 0 || memcmp(img, "KEIM", 4) != 0) {
         fprintf(stderr, "oracle: cannot read %s (run python port/tools/le_export.py)\n", image_path);
-        return -1;
-    }
-    if (reserve_vga_window() != 0) {
-        free(img);
         return -1;
     }
     nobj = rd32(img + 8);

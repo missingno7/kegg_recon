@@ -5,6 +5,7 @@
  * Exit code 0 when every test passes.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 #include <timeapi.h>
@@ -34,6 +35,65 @@ void register_vga_tests(void);
 static struct { const char *name; oracle_test_fn fn; } tests[128];
 static int test_count;
 
+/* Reserve the oracle's VGA aperture in the suspended child before its CRT startup. */
+static int relaunch_with_vga_reserved(int *exit_code)
+{
+    STARTUPINFOW startup;
+    PROCESS_INFORMATION process;
+    WCHAR path[MAX_PATH];
+    void *wanted = (void *)(uintptr_t)0xA0000u;
+    void *reserved = NULL;
+    DWORD result = 2, last_error = 0;
+    int attempt, started = 0;
+
+    if (getenv("KE_ORACLE_CHILD")) {
+        if (oracle_vga_adopt_reserved_window() != 0) {
+            fprintf(stderr, "oracle: child did not inherit the reserved VGA window\n");
+            *exit_code = 2;
+            return 1;
+        }
+        return 0;
+    }
+
+    SetEnvironmentVariableA("KE_ORACLE_CHILD", "1");
+    if (!GetModuleFileNameW(NULL, path, MAX_PATH)) {
+        fprintf(stderr, "oracle: cannot get executable path (%lu)\n", GetLastError());
+        *exit_code = 2;
+        return 1;
+    }
+    memset(&startup, 0, sizeof startup);
+    startup.cb = sizeof startup;
+    for (attempt = 0; attempt < 8; attempt++) {
+        if (!CreateProcessW(path, GetCommandLineW(), NULL, NULL, FALSE, CREATE_SUSPENDED,
+                            NULL, NULL, &startup, &process)) {
+            last_error = GetLastError();
+            continue;
+        }
+        reserved = VirtualAllocEx(process.hProcess, wanted, 0x20000u, MEM_RESERVE, PAGE_NOACCESS);
+        if (reserved == wanted) {
+            started = 1;
+            break;
+        }
+        last_error = GetLastError();
+        TerminateProcess(process.hProcess, 2);
+        CloseHandle(process.hThread);
+        CloseHandle(process.hProcess);
+    }
+    if (!started) {
+        fprintf(stderr, "oracle: cannot start child with reserved VGA window after 8 attempts "
+                "(%lu)\n", last_error);
+        *exit_code = 2;
+        return 1;
+    }
+    ResumeThread(process.hThread);
+    WaitForSingleObject(process.hProcess, INFINITE);
+    GetExitCodeProcess(process.hProcess, &result);
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    *exit_code = (int)result;
+    return 1;
+}
+
 void oracle_register(const char *name, oracle_test_fn fn)
 {
     tests[test_count].name = name;
@@ -48,14 +108,19 @@ int main(int argc, char **argv)
     const char *dir = argc > 1 ? argv[1] : "build/port/oracle";
     const char *filter = argc > 2 ? argv[2] : NULL;
     int i, failed = 0, run = 0;
+    int child_exit;
+    if (relaunch_with_vga_reserved(&child_exit))
+        return child_exit;
     setvbuf(stdout, NULL, _IONBF, 0);
-    ke_config_load(1, argv);
-    ke_config.log_level = KE_LOG_WARN;
-    ke_log_init(NULL);
     snprintf(image, sizeof image, "%s/ke_image.bin", dir);
     snprintf(symbols, sizeof symbols, "%s/ke_symbols.txt", dir);
     if (oracle_load(image, symbols) != 0)
         return 2;
+    /* oracle_load reserves A0000h before its first allocations; keep config and logging
+     * startup after that guard so their CRT bookkeeping cannot claim the VGA aperture. */
+    ke_config_load(1, argv);
+    ke_config.log_level = KE_LOG_WARN;
+    ke_log_init(NULL);
     timeBeginPeriod(1);
     vpic_init();
     vga_init();
