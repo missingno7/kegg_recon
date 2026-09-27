@@ -2681,8 +2681,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_dfc3.c",
-   "src_sha256": "ef6689b34bd8b940980d286de63ee04f22b3ee666b4252590afa8b40196665ad"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e028",
@@ -2691,8 +2692,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e028.c",
-   "src_sha256": "204c410df53f29a787c994fbbc8ca4bfcf653bf9a04d510f6f7031ceb294a1a8"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e095",
@@ -2701,8 +2703,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e095.c",
-   "src_sha256": "dfb96422657e7c2e0c0f8e0de37e725789d3584adf2b5ab1a8208c379b157ced"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e3e5",
@@ -2711,8 +2714,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e3e5.c",
-   "src_sha256": "2adc902f523778a8bf9be51b75d99e1c4f361428b3024cc6280b103dbf2d3a95"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e41d",
@@ -2721,8 +2725,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e41d.c",
-   "src_sha256": "44357ce48f1c70986d606d5b0576583485725eb2aa6ea9997d790fbe3691dfbf"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e473",
@@ -2731,8 +2736,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e473.c",
-   "src_sha256": "62f71bb4a338ced6a2be4549bf2addb85aa2fbfc397f87736a972cc2454ef51e"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e6b3",
@@ -2741,8 +2747,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e6b3.c",
-   "src_sha256": "9bd13f508532431e827a59dffaee4be8b5c7723c568dd304678ae3c20c35dd42"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e813",
@@ -2751,8 +2758,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e813.c",
-   "src_sha256": "91892a71f9254a94b80489c0a5f007c7b54e5d9a486dab39a843465f2ae2309a"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e855",
@@ -2761,8 +2769,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e855.c",
-   "src_sha256": "3d8a166542067228dc55c24a09848d3bd02bab5e85687d1d691ad94559e54924"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e88d",
@@ -2771,8 +2780,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e88d.c",
-   "src_sha256": "3d5ed83633652aac7e308aa9f7d929414b156bd04569018d9318c411f81d68dc"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e914",
@@ -2781,8 +2791,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e914.c",
-   "src_sha256": "c98bd1fd002f847d0dc36fae99cdfb65c6d47637dde50972c5dc48769eda1061"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e95c",
@@ -2791,8 +2802,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e95c.c",
-   "src_sha256": "1ac7b1239fb34ce5c5ec51d94f25a9bf4a044d090ffae8d83af5c0ed79bfd21e"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e983",
@@ -2801,8 +2813,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e983.c",
-   "src_sha256": "eec305601cc3a456039b7ce916c0d2c86f9f8be4045e86482dd0cf4e825805a3"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e9b3",
@@ -2811,8 +2824,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e9b3.c",
-   "src_sha256": "d556966adca9a24e0fed7efbba56cfa8bf065158ca7bcd10d00e59112e3e1616"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_e9dd",
@@ -2821,8 +2835,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_e9dd.c",
-   "src_sha256": "1e505099d7701f74f90421b277a20b3b52da8bcde1047be048d2d8e4669e7e3d"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ea04",
@@ -2831,8 +2846,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ea04.c",
-   "src_sha256": "1f550d5ba54d07540fd102bcedb1af252442f99ba115f69fea6d7a032401a32e"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ea71",
@@ -2841,8 +2857,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ea71.c",
-   "src_sha256": "56acc38d6a0305251478a9658e3e53a60daf5e6957369916cd747a8d345fd30d"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ea9f",
@@ -2851,8 +2868,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ea9f.c",
-   "src_sha256": "c8e2e27ae42e98f287c4df1358b76af951f824cea58d85b14655af949caa5e9b"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ebcd",
@@ -2861,8 +2879,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ebcd.c",
-   "src_sha256": "3b9688e4b87cb829512ed69d256341da515a33ace68cad3f3d1587156d510416"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ec44",
@@ -2871,8 +2890,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ec44.c",
-   "src_sha256": "0395fdb25bebc8cc02bb596b156c26e2b24fe3de43e8a67ba949d650c994b3d1"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ec76",
@@ -2881,8 +2901,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ec76.c",
-   "src_sha256": "6c45284b808dac10f03ed4869abca00a4bc77ed0a5aaaa9582cb6ebd273ddd77"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ec9c",
@@ -2891,8 +2912,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ec9c.c",
-   "src_sha256": "0e91e9851615a56faeae406e07010dfbe79ad216296ed9af55970b29bf6c678e"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ecdf",
@@ -2901,8 +2923,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ecdf.c",
-   "src_sha256": "32d2677b12bb0d33075eb29ce0e20f941ac84648c0dfcccc44e70e5caaf0e8d5"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ed38",
@@ -2911,8 +2934,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ed38.c",
-   "src_sha256": "0f43c1e19079000dc4c445be077fefe8b77d81190b0267f19b7c70f8ea87e08c"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_eda0",
@@ -2921,8 +2945,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_eda0.c",
-   "src_sha256": "cd20d1d9c12a362ca4302d1000ed6df2bacf1e8afbf447e1ffeff74872117ec6"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_edd5",
@@ -2931,8 +2956,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_edd5.c",
-   "src_sha256": "f127b57eb53d1d70805ba62791d3ad8a8eba5a657578ee2a75981b1f3a4a920b"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ee33",
@@ -2941,8 +2967,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ee33.c",
-   "src_sha256": "377d4208af37be8d8e37e28f328bf26a4253333ab3eb7a625e045abac614b40d"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_ee65",
@@ -2951,8 +2978,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ee65.c",
-   "src_sha256": "9c7a5e5c990801da7e428de9d48bd9ac0d1f5260b8d9752001f6cafdd8ac3e23"
+   "src": "src/t14_video.c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "unit": "T14"
   },
   {
    "name": "f_eeac",
@@ -4953,7 +4981,13 @@
   "f_fcab": "1:fcab",
   "f_f690": "1:f690",
   "f_ff0d": "1:ff0d",
-  "f_fce4": "1:fce4"
+  "f_fce4": "1:fce4",
+  "a_13824": "1:13824",
+  "f_e473": "1:e473",
+  "f_e813": "1:e813",
+  "f_e6b3": "1:e6b3",
+  "f_eda0": "1:eda0",
+  "f_e983": "1:e983"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -5867,6 +5901,19 @@
     "_DATA@3:75b0+0x18"
    ],
    "note": "own _DATA 0x75b0+24 verified"
+  },
+  {
+   "id": "T14",
+   "src": "src/t14_video.c",
+   "start": "0xdfc3",
+   "end": "0xeeac",
+   "profile": "game-c",
+   "src_sha256": "ce0883fc91344f311cf032cc327be3300db4fcb8eb13a18d4e1561947522640c",
+   "data": [
+    "_DATA@3:75c8+0x560",
+    "_BSS@3:e324+0x64"
+   ],
+   "note": "video: _DATA 0x75c8+0x560 (mode/VGA tables) verified; BSS 0xe324+0x64 (struct)"
   },
   {
    "id": "T15",
