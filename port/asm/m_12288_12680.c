@@ -41,38 +41,6 @@ static uint8_t *skip_plane_rows(uint8_t *source, unsigned rows)
     return sprite_skip_rle_rows(source, rows);
 }
 
-static void draw_plane_stream(const uint8_t *stream, uint32_t width, uint32_t height,
-                              uint32_t pixel_dest, unsigned stream_plane,
-                              unsigned first_plane, uint32_t left, uint32_t stride)
-{
-    const uint8_t *source = skip_plane_rows((uint8_t *)(uintptr_t)stream, sprite_clip_top);
-    uint32_t y;
-    uint32_t origin_x = pixel_dest - left;
-    uint32_t visible_right = left + width;
-    for (y = 0; y < height; y++) {
-        unsigned runs = *source++;
-        uint32_t sample = 0;
-        while (runs--) {
-            int8_t run = (int8_t)*source++;
-            uint32_t count = run < 0 ? (uint32_t)(-(int)run) : (uint32_t)run;
-            if (run > 0) {
-                uint32_t j;
-                for (j = 0; j < count; j++) {
-                    uint32_t sprite_x = stream_plane + 4u * (sample + j);
-                    if (sprite_x >= left && sprite_x < visible_right) {
-                        uint32_t pixel = origin_x + sprite_x + y * stride;
-                        unsigned plane = (first_plane + (stream_plane + 4u * (sample + j) - left)) & 3u;
-                        uint32_t cpu = pixel_to_planar_address(pixel);
-                        (void)plane; /* The outer pass selected this register mask. */
-                        sprite_vga_write_linear(cpu, source[j]);
-                    }
-                }
-                source += count;
-            }
-            sample += count;
-        }
-    }
-}
 
 static void draw_unclipped_plane_stream(const uint8_t *stream, uint32_t width,
                                         uint32_t height, uint32_t first_address,
@@ -148,14 +116,11 @@ void render_sprite_record_kind_5_draw(const uint8_t *esi, uint32_t ebx,
     const uint8_t *table = esi - 10;
     uint32_t stride = *(uint32_t *)(void *)(vga_state + 0x3a);
     unsigned first_plane = edi & 3u;
-    unsigned first_stream = sprite_clip_left & 3u;
     unsigned pass;
 
     current_vga_plane_mask = (uint8_t)((0x11u << first_plane) |
                                        (0x11u >> (8u - first_plane)));
     first_vga_plane_mask = current_vga_plane_mask;
-    sprite_row_width_remaining = ebx;
-    vga_row_advance = stride >> 2;
     if (!sprite_clip_left && !sprite_clip_right) {
         uint32_t base = pixel_to_planar_address(edi);
         for (pass = 0; pass < 4; pass++) {
@@ -201,15 +166,50 @@ void render_sprite_record_kind_5_draw(const uint8_t *esi, uint32_t ebx,
         current_vga_plane_mask = first_vga_plane_mask;
         return;
     }
+    /* draw_kind5_right_clipped, literally (docs/port/lockstep.md, L7): streams in plane pass
+     * order; plane N shows (visible_width - N + 3) >> 2 planar columns, kept in the globals
+     * visible_sprite_width / sprite_row_width_remaining as the original does. */
+    sprite_source_column = 0x0a;
+    sprite_row_width_remaining = visible_sprite_width;
+    vga_row_advance = stride >> 2;
     for (pass = 0; pass < 4; pass++) {
-        unsigned stream_index = (first_stream + pass) & 3u;
         unsigned plane = (first_plane + pass) & 3u;
-        uint8_t *stream = (uint8_t *)(uintptr_t)(table + 10u +
-                                                 get16(table + stream_index * 2u));
+        uint32_t wraps = first_plane + pass >= 4u;
+        const uint8_t *esi = (const uint8_t *)(uintptr_t)(table + 10u +
+                                 get16(table + (10u - sprite_source_column)));
+        uint32_t row_address = pixel_to_planar_address(edi) + wraps, row;
         select_plane(plane);
-        draw_plane_stream(stream, ebx, edx, edi, stream_index, first_plane,
-                          sprite_clip_left, stride);
-        sprite_source_column = (uint16_t)(10u - 2u * (pass + 1u));
+        sprite_source_column = (uint16_t)(sprite_source_column - 2u);
+        esi = sprite_skip_rle_rows((uint8_t *)(uintptr_t)esi, sprite_clip_top);
+        visible_sprite_width = (uint32_t)((int32_t)(sprite_row_width_remaining + 3u) >> 2);
+        sprite_row_width_remaining--;
+        for (row = 0; row < edx; row++) {
+            uint32_t dest = row_address;
+            unsigned runs = *esi++;
+            while (runs--) {
+                int8_t run = (int8_t)*esi++;
+                if (run < 0) {
+                    dest += (uint32_t)(-(int)run);
+                } else {
+                    int32_t beyond = (int32_t)(dest - row_address - visible_sprite_width);
+                    uint32_t count = (uint32_t)run, rest = 0, x;
+                    if (beyond >= 0) {
+                        esi += count;          /* kind5_right_run_starts_beyond_clip */
+                        continue;
+                    }
+                    beyond += (int32_t)count;
+                    if (beyond >= 0) {
+                        count -= (uint32_t)beyond;
+                        rest = (uint32_t)beyond;
+                    }
+                    for (x = 0; x < count; x++)
+                        sprite_vga_write_linear(dest + x, esi[x]);
+                    esi += count + rest;
+                    dest += count;
+                }
+            }
+            row_address += vga_row_advance;
+        }
     }
     current_vga_plane_mask = first_vga_plane_mask;
 }

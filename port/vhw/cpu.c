@@ -42,10 +42,15 @@ int vhw_lockstep;
 uint64_t vhw_lockstep_ns;
 void (*vhw_lockstep_idle_hook)(void);
 
+void (*vhw_lockstep_ms_hook)(void);
+
 void vhw_lockstep_advance(uint64_t ns)
 {
+    uint64_t before = vhw_lockstep_ns;
     vhw_lockstep_ns += ns;
     vpit_lockstep_update();
+    if (vhw_lockstep_ms_hook && before / 1000000u != vhw_lockstep_ns / 1000000u)
+        vhw_lockstep_ms_hook();
 }
 
 /* One monotonic machine clock feeds both the PIT and VGA raster. A calibration entered by
@@ -102,7 +107,10 @@ uint64_t vhw_clock_now_ns(void)
 void vhw_clock_begin_calibration(uint64_t start_ns)
 {
     DWORD tid = GetCurrentThreadId();
-    uint64_t now = ke_now_ns();
+    uint64_t now;
+    if (vhw_lockstep)
+        return;                 /* the lockstep clock is already per-event deterministic */
+    now = ke_now_ns();
     ensure_machine_clock();
     EnterCriticalSection(&machine_clock_lock);
     if (!vcpu_if_flag && tid == (DWORD)InterlockedCompareExchange(&if_owner_tid, 0, 0)) {
@@ -117,6 +125,8 @@ void vhw_clock_begin_calibration(uint64_t start_ns)
 int vhw_clock_calibration_active(void)
 {
     int active;
+    if (vhw_lockstep)
+        return 0;
     ensure_machine_clock();
     EnterCriticalSection(&machine_clock_lock);
     active = calibration_clock_active && GetCurrentThreadId() == calibration_clock_owner &&

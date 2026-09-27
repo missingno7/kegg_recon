@@ -17,6 +17,9 @@ void ke_replay_frame_entry(void);
 void ke_replay_report(void);
 uint32_t ke_wait_for_tick_count(void);
 extern void (*ke_frame_entry_hook)(void);
+/* Deterministic runs: use `clock` instead of host time and pump explicitly. */
+void ke_replay_use_clock(uint64_t (*clock)(void));
+void ke_replay_pump(void);
 
 /* GNU ld --wrap=wait_for_tick: inject immediately before the original per-frame wait. */
 void __wrap_wait_for_tick(short wait_flags);

@@ -45,6 +45,7 @@ extern volatile long vhw_cpu_poll_waiting; /* game thread is at the scheduler's 
 extern int vhw_lockstep;                  /* set before vhw init: no device threads        */
 extern uint64_t vhw_lockstep_ns;          /* the deterministic machine clock               */
 extern void (*vhw_lockstep_idle_hook)(void); /* blocking BIOS wait (getch) on no input     */
+extern void (*vhw_lockstep_ms_hook)(void);   /* each emulated millisecond (replay pump)     */
 #define VHW_LOCKSTEP_IO_NS 1000ull        /* one ISA I/O cycle                              */
 #define VHW_LOCKSTEP_POLL_NS 1000ull      /* minimum cost of one memory-poll iteration      */
 #define VHW_LOCKSTEP_POLL_MAX_NS 1000000ull

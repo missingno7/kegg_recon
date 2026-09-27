@@ -27,6 +27,16 @@ static uint64_t last_key_event_ns;
 static uint64_t frame_period_ns = 1000000000ull / 70;
 static CRITICAL_SECTION replay_lock;
 static int replay_lock_initialized, replay_pump_stop;
+/* Lockstep runs (port/oracle/lockstep.c) replace host time with the virtual machine clock
+ * and call ke_replay_pump() themselves instead of the pump thread. */
+static uint64_t (*replay_clock)(void) = ke_now_ns;
+static int replay_external_pump;
+
+void ke_replay_use_clock(uint64_t (*clock)(void))
+{
+    replay_clock = clock ? clock : ke_now_ns;
+    replay_external_pump = clock != NULL;
+}
 
 static unsigned replay_time_occurrence(uint64_t now)
 {
@@ -66,28 +76,43 @@ static void replay_apply_through(unsigned occurrence, uint64_t now)
         ++next_event;
         replay_apply_event(event);
         if (event->kind == REPLAY_KEY) {
-            last_key_event_ns = ke_now_ns();
+            last_key_event_ns = replay_clock();
             return;
         }
     }
+}
+
+/* One pump step: apply the events due by time since the last frame entry. Returns 0 once
+ * the replay is stopped or complete. */
+static int replay_pump_step(void)
+{
+    uint64_t now;
+    EnterCriticalSection(&replay_lock);
+    if (replay_pump_stop || replay_complete) {
+        LeaveCriticalSection(&replay_lock);
+        return 0;
+    }
+    now = replay_clock();
+    replay_apply_through(replay_time_occurrence(now), now);
+    if (frame_occurrence >= replay_frame_count && next_event >= event_count)
+        replay_complete = 1;
+    LeaveCriticalSection(&replay_lock);
+    return 1;
+}
+
+void ke_replay_pump(void)
+{
+    if (replay_lock_initialized && replay_started)
+        replay_pump_step();
 }
 
 static DWORD WINAPI replay_pump_thread(LPVOID unused)
 {
     (void)unused;
     for (;;) {
-        uint64_t now;
         Sleep(1);
-        EnterCriticalSection(&replay_lock);
-        if (replay_pump_stop || replay_complete) {
-            LeaveCriticalSection(&replay_lock);
+        if (!replay_pump_step())
             break;
-        }
-        now = ke_now_ns();
-        replay_apply_through(replay_time_occurrence(now), now);
-        if (frame_occurrence >= replay_frame_count && next_event >= event_count)
-            replay_complete = 1;
-        LeaveCriticalSection(&replay_lock);
     }
     return 0;
 }
@@ -185,10 +210,10 @@ void ke_replay_start(void)
     replay_lock_initialized = 1;
     replay_pump_stop = 0;
     replay_started = 1;
-    thread = CreateThread(NULL, 0, replay_pump_thread, NULL, 0, NULL);
+    thread = replay_external_pump ? NULL : CreateThread(NULL, 0, replay_pump_thread, NULL, 0, NULL);
     if (thread)
         CloseHandle(thread);
-    else
+    else if (!replay_external_pump)
         ke_log(KE_LOG_ERROR, "replay", "could not start replay input pump");
     ke_log(KE_LOG_INFO, "replay", "started at wait_for_tick occurrence 0");
 }
@@ -203,7 +228,7 @@ void ke_replay_frame_entry(void)
         LeaveCriticalSection(&replay_lock);
         return;
     }
-    now = ke_now_ns();
+    now = replay_clock();
     if (last_frame_entry_ns && now > last_frame_entry_ns) {
         delta = now - last_frame_entry_ns;
         if (delta >= 7000000ull && delta <= 100000000ull)

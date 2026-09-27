@@ -124,8 +124,9 @@ int measure_pit_channel0(void)
     pit_out8(PIT_COMMAND_PORT, al);
     low = pit_in8(PIT_CHANNEL0_PORT);
     high = pit_in8(PIT_CHANNEL0_PORT);
-    pit_sample_auxiliary = ((uint32_t)high << 8) | low;
-    g_pit_elapsed_ticks = PIT_COUNTER_MODULUS - pit_sample_auxiliary;
+    /* EAX = count; EBX = 10000h - EAX; only g_pit_elapsed_ticks is stored (the
+     * original never writes pit_sample_auxiliary: docs/port/lockstep.md, L8). */
+    g_pit_elapsed_ticks = PIT_COUNTER_MODULUS - (((uint32_t)high << 8) | low);
 
     pit_out8(PIC_SLAVE_MASK_PORT, slave_mask);
     pit_out8(PIC_MASTER_MASK_PORT, master_mask);

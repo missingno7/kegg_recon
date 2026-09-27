@@ -69,6 +69,29 @@ class Symbols:
             self.orig_by_obj[1].append((int(f["start"], 16), f["name"]))
         for k in self.orig_by_obj:
             self.orig_by_obj[k] = sorted(set(self.orig_by_obj[k]))
+        # Internal _DATA labels of the TASM modules (not manifest symbols), placed by their
+        # module's manifest-named labels (gen_asm_stubs.parse_module sizes).
+        known = {name for _off, name in self.orig_by_obj[3]}
+        by_name = {name: off for off, name in self.orig_by_obj[3]}
+        from gen_asm_stubs import parse_module
+        for path in sorted((ROOT / "asm").glob("*.asm")):
+            try:
+                _publics, blobs, *_rest = parse_module(path)
+            except Exception:
+                continue
+            rel, labels = 0, []
+            for label, _lines, size in blobs["_DATA"]:
+                if label:
+                    labels.append((label, rel))
+                rel += size
+            base = next((by_name[l] - r for l, r in labels if l in by_name), None)
+            if base is None:
+                continue
+            for label, r in labels:
+                if label not in known:
+                    self.orig_by_obj[3].append((base + r, label))
+                    known.add(label)
+        self.orig_by_obj[3].sort()
         self.orig = [s for s in self.orig_by_obj[3] if s[0] < DG_SIZE]
         self.orig_offs = [o for o, _ in self.orig]
         self.exe = exe
@@ -127,11 +150,12 @@ class Symbols:
                 lst.sort()
                 base = None      # (orig - objoff) of the nearest preceding anchor
                 anchor_exe = None  # (exe - objoff)
+                lst = [e for e in lst if not e[1].startswith("_ke_original_const3_")]
                 for k, (objoff, name, kind) in enumerate(lst):
                     nxt = lst[k + 1][0] if k + 1 < len(lst) else sizes.get(sec, objoff)
                     length = nxt - objoff
                     exe = self.port.get(name)
-                    if name in orig_off and exe and kind in "DB":
+                    if name in orig_off and exe and kind in "DBd":
                         base = orig_off[name] - objoff
                         anchor_exe = exe[0] - objoff
                     if sec == ".bss" and name not in orig_off:
@@ -148,6 +172,13 @@ class Symbols:
                     if 0 <= o and o + length <= DG_SIZE and name not in spans:
                         spans[name] = (o, length, anchor_exe + objoff if sec == ".data" or name not in self.port
                                        else self.port[name][0], name)
+        # G2 (gcc_pack_data.py) emits the game's CONST block (string literals) byte for byte
+        # at its original offsets in its own section, labelled __ke_original_const3_<offset>.
+        for name, (addr, _kind) in self.port.items():
+            if name.startswith("_ke_original_const3_"):
+                base = addr - int(name.rsplit("_", 1)[1], 16)
+                spans["CONST"] = (0, GAME_CONST_END, base, "CONST")
+                break
         out = sorted(spans.values())
         # drop overlaps (keep the first claim of each original byte)
         result, end = [], 0
@@ -168,6 +199,7 @@ class Symbols:
 
 
 CONST_END = 0x25EC     # CONST/CONST2 (string literals) precede the first unit's _DATA
+GAME_CONST_END = 0x2454  # first runtime (clib) CONST byte (manifest runtime.data_layout)
 
 
 class PEImage:
@@ -220,6 +252,7 @@ class Normalizer:
         self.port_fn_names = {k: frozenset(v) for k, v in tmp.items()}
         self.o2_base = syms.port.get("a_0", (None,))[0]
         self.vga_alias = bases.get("vga", 0)
+        self.const_mapped = any(n == "CONST" for _o, _l, _a, n in spans)
 
     def port_span_contains(self, v: int) -> bool:
         i = bisect.bisect_right(self.port_span_addrs, v) - 1
@@ -237,7 +270,7 @@ class Normalizer:
                 off = v - b
                 if obj == 1 and off in self.orig_fn_names:
                     return ("fn", self.orig_fn_names[off])
-                if obj == 3 and off < CONST_END and dg is not None:
+                if obj == 3 and off < CONST_END and dg is not None and not self.const_mapped:
                     end = dg.find(bytes(1), off, off + 256)
                     return ("str", bytes(dg[off:end if end >= 0 else off + 256]))
                 return (obj, off)
@@ -245,7 +278,7 @@ class Normalizer:
             return ("heap", v)
         return None
 
-    def port(self, v: int):
+    def port(self, v: int, dg: bytes | None = None):
         if 0xA0000 <= v < 0xC0000 or 0x280000 <= v < 0x300000:
             return ("vga", v)
         if self.o2_base is not None and self.o2_base <= v <= self.o2_base + 0x149:
@@ -351,8 +384,9 @@ def build_replay(args, out: Path) -> Path | None:
             events.append((int(parts[1]) + args.replay_offset, seq, parts[0],
                            tuple(int(x) for x in parts[2:])))
     if args.click_every:
-        first, step, x, y = (int(v) for v in args.click_every.split(":"))
-        for f in range(first, args.frames, step):
+        parts = [int(v) for v in args.click_every.split(":")]
+        first, step, x, y = parts[:4]
+        for f in range(first, parts[4] if len(parts) > 4 else args.frames, step):
             args.event = (args.event or []) + [f"{f}:M:{2 * x}:{2 * y}:1", f"{f + 5}:M:{2 * x}:{2 * y}:0"]
     for seq, spec in enumerate(args.event or []):
         parts = spec.split(":")
@@ -395,29 +429,40 @@ KNOWN_TABLES = {"sprite_operation_dispatch_table", "sprite_render_mode_table",
                 "module_channel_state_table"}
 
 
+_MASK_INT = None
+
+
 def dg_diffs(syms, spans, mask, a, b, norm_p: Normalizer, norm_o: Normalizer):
-    """Symbols whose mapped bytes differ (port a, orig b) after pointer normalization."""
+    """Symbols whose mapped bytes differ (port a, orig b) after pointer normalization: a
+    differing dword that normalizes to the same object/symbol/string/VGA token on both sides
+    is equal. Windows may straddle span boundaries (packed records split by local labels)."""
+    global _MASK_INT
+    if _MASK_INT is None or _MASK_INT[0] is not mask:
+        _MASK_INT = (mask, int.from_bytes(bytes(0xFF if m else 0 for m in mask), "little"))
+    x = (int.from_bytes(a, "little") ^ int.from_bytes(b, "little")) & _MASK_INT[1]
+    if not x:
+        return []
+    xb = x.to_bytes(len(a), "little")
+    diff = [i for i, v in enumerate(xb) if v]
+    same: set[int] = set()
+    tried: set[int] = set()
+    for i in diff:
+        for k in range(max(0, i - 3), min(i, len(a) - 4) + 1):
+            if k in tried or not all(mask[k:k + 4]):
+                continue
+            tried.add(k)
+            vp = struct.unpack_from("<I", a, k)[0]
+            vo = struct.unpack_from("<I", b, k)[0]
+            if vp != vo and tokens_equal(norm_p.port(vp, a), norm_o.orig(vo, b)):
+                same.update(range(k, k + 4))
+    left = set(i for i in diff if i not in same)
     out = []
     for off, ln, _addr, name in spans:
         if name in KNOWN_TABLES:
             continue
-        pa, ob = a[off:off + ln], b[off:off + ln]
-        if pa == ob:
-            continue
-        diff = [i for i in range(ln) if pa[i] != ob[i]]
-        same = set()
-        for i in diff:
-            for k in range(max(0, i - 3), min(i, ln - 4) + 1):
-                if k in same:
-                    continue
-                vp = struct.unpack_from("<I", pa, k)[0]
-                vo = struct.unpack_from("<I", ob, k)[0]
-                tp, to = norm_p.port(vp), norm_o.orig(vo, b)
-                if tokens_equal(tp, to):
-                    same.update(range(k, k + 4))
-        left = [i for i in diff if i not in same]
-        if left:
-            out.append((off, ln, name, left, pa, ob))
+        idx = [i - off for i in range(off, off + ln) if i in left]
+        if idx:
+            out.append((off, ln, name, idx, a[off:off + ln], b[off:off + ln]))
     return out
 
 
@@ -497,8 +542,8 @@ def main() -> int:
     ap.add_argument("--replay", help="kegg_forged input JSON (portforge-dos-input-script-v1 / replay-v2)")
     ap.add_argument("--replay-offset", type=int, default=0, help="frame offset added to the JSON's occurrences")
     ap.add_argument("--event", action="append", help="F:M:x:y:buttons (DOS mouse coords) or F:K:hexscan")
-    ap.add_argument("--click-every", default="", help="FIRST:STEP:X:Y - left clicks at game raster X,Y "
-                    "(held 5 frames) every STEP frames from FIRST until --frames")
+    ap.add_argument("--click-every", default="", help="FIRST:STEP:X:Y[:END] - left clicks at game raster "
+                    "X,Y (held 5 frames) every STEP frames from FIRST until END (default --frames)")
     ap.add_argument("--idle-keys", default="39,b9", help="hex scancodes for blocking BIOS keyboard waits")
     ap.add_argument("--full-at", default="", help="frames whose full VGA planes are dumped")
     ap.add_argument("--out", default=str(ROOT / "build/port/lockstep"))
@@ -508,7 +553,8 @@ def main() -> int:
     ap.add_argument("--skip-run", action="store_true", help="only compare existing dumps in --out")
     ap.add_argument("--only", choices=("port", "orig"), help="run one side only")
     args = ap.parse_args()
-    out = Path(args.out)
+    out = Path(args.out).resolve()
+    args.out = str(out)
     out.mkdir(parents=True, exist_ok=True)
     exe = Path(args.exe)
     syms = Symbols(ROOT / "build/port/oracle", exe)

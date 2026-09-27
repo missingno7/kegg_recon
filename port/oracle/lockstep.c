@@ -114,6 +114,8 @@ void __wrap_free(void *p)
         __real_free(p);
 }
 
+static uint64_t lockstep_clock(void) { return vhw_lockstep_ns; }
+
 /* ---- options / dump ----------------------------------------------------------------------- */
 static int mode_orig;
 static const char *out_path, *portmap_path, *replay_path, *log_path;
@@ -573,6 +575,8 @@ int main(int argc, char **argv)
     }
     if (replay_path && ke_replay_load(replay_path) != 0)
         return 2;
+    ke_replay_use_clock(lockstep_clock);
+    vhw_lockstep_ms_hook = ke_replay_pump;
     ke_replay_start();
     vhw_lockstep_idle_hook = lockstep_idle;
     if (io_trace)
