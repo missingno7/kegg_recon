@@ -40,6 +40,10 @@ if(NOT KE_GAME_COUNT EQUAL 49)
   message(WARNING "expected 49 historical units in src/, found ${KE_GAME_COUNT}")
 endif()
 add_library(ke_game OBJECT ${KE_GAME_SOURCES})
+# The launcher rewrites GCC's assembly before assembling each object. Make its edits a
+# compilation dependency so merged builds cannot silently keep pre-layout game objects.
+set_property(SOURCE ${KE_GAME_SOURCES} APPEND PROPERTY OBJECT_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tools/gcc_pack_data.py")
 target_include_directories(ke_game PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/watcom")
 target_compile_options(ke_game PRIVATE
   -std=gnu89 -O0 -g -funsigned-char -fpack-struct=1 -mms-bitfields -fno-common -fwrapv
