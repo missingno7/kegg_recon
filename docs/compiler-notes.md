@@ -239,3 +239,11 @@ every layout predicted exactly; supervisor probes `build/workers/sup/probe/bss*.
   +104 offset). -ot units whose CONST has pad bytes are EXACT only with `--host dosbox`; the canonical build
   (image.py `cache_compile`, validate.py default `nt`) must compile such units on the DOS host with the
   `C:\CAND.C` layout (supervisor: add a per-profile/unit `host` for C in `check.compile_candidate`).
+
+## Data records (data agent, verified through the whole-image link)
+- Initialised data LEDATA records are cut on a 172-byte grid at element boundaries; implicit trailing zeros of an
+  initialiser are skipped (not emitted) and restart the grid.
+- Import flushes (EXTDEF name bytes reaching 192) also happen inside data initialisers (pointer initialisers import
+  their targets); after such a flush the next name is written as its own EXTDEF.
+- Defining a TU's own data changes its code chunking (own globals are EXTDEF'd up front under -d2 and $$SYMBOLS
+  shifts), so name lengths must be re-fitted after moving data into a TU (build/workers/data/refit.py).
