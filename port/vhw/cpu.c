@@ -13,6 +13,7 @@
 volatile LONG vcpu_if_flag = 1;      /* IF: 1 = interrupts enabled                            */
 volatile LONG vhw_game_depth;        /* nesting of vhw services on the game thread            */
 volatile LONG vhw_in_isr;            /* an interrupt handler is running (either thread)       */
+volatile LONG vhw_cpu_polling;       /* game is in a memory-poll loop with explicit CPU yields */
 static DWORD game_tid;
 static DWORD irq_tid;
 
@@ -34,7 +35,7 @@ void vhw_leave(void)
     if (vhw_game_depth == 1 && !vhw_in_isr) {
         if (vcpu_if_flag && vpic_has_deliverable())
             vpic_deliver_pending();
-        if (ke_quit_requested())
+        if (ke_quit_requested() && !vhw_cpu_polling)
             ke_check_quit();
     }
     InterlockedDecrement(&vhw_game_depth);
@@ -45,10 +46,43 @@ void vhw_reset_nesting(void)
 {
     InterlockedExchange(&vhw_game_depth, 0);
     InterlockedExchange(&vhw_in_isr, 0);
+    InterlockedExchange(&vhw_cpu_polling, 0);
 }
 
 void vcpu_cli(void) { InterlockedExchange(&vcpu_if_flag, 0); }
 void vcpu_sti(void) { InterlockedExchange(&vcpu_if_flag, 1); }
+
+/* The original wait_for_tick path polls a memory flag without entering the vhw. */
+void vhw_cpu_poll_yield(void)
+{
+    if (GetCurrentThreadId() == game_tid) {
+        /* Honor quit before spending time delivering more pending virtual IRQs. */
+        if (ke_quit_requested())
+            ke_check_quit();
+        /* Give pending IRQs the same instruction-boundary opportunity as a vhw access. */
+        vhw_enter();
+        vhw_leave();
+        SwitchToThread();
+    }
+}
+
+void vhw_cpu_poll_begin(void)
+{
+    if (GetCurrentThreadId() == game_tid) {
+        vhw_enter();
+        InterlockedExchange(&vhw_cpu_polling, 1);
+        vhw_leave();
+    }
+}
+
+void vhw_cpu_poll_end(void)
+{
+    if (GetCurrentThreadId() == game_tid) {
+        vhw_enter();
+        InterlockedExchange(&vhw_cpu_polling, 0);
+        vhw_leave();                /* take an IRQ raised at the end of the poll loop */
+    }
+}
 
 /* Watcom clib _disable()/_enable() (CLI/STI). */
 void _disable(void)

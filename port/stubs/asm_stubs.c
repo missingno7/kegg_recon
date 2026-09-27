@@ -5,9 +5,7 @@
 
 /* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
-KE_ASM_STUB(measure_pit_channel0, "m_09f64_0a0d2")
-KE_ASM_STUB(set_pit_channel0_reload, "m_09f64_0a0d2")
-KE_ASM_STUB(pit_channel0_interrupt, "m_09f64_0a0d2")
+/* m_09f64_0a0d2: owned by port/asm/m_09f64_0a0d2.c */
 
 /* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
 
@@ -19,49 +17,27 @@ KE_ASM_STUB(pit_channel0_interrupt, "m_09f64_0a0d2")
 
 /* m_11530_11df8: owned by port/asm/m_11530_11df8.c */
 
-KE_ASM_STUB(decode_gif_image_entry, "m_11df8_12288")
-KE_ASM_STUB(decode_gif_image, "m_11df8_12288")
+/* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
 
-KE_ASM_STUB(render_sprite_record_kind_5_entry, "m_12288_12680")
-KE_ASM_STUB(render_sprite_record_kind_5_draw, "m_12288_12680")
-KE_ASM_STUB(restore_sprite_background_record, "m_12288_12680")
+/* m_12288_12680: owned by port/asm/m_12288_12680.c */
 
 /* m_12680_12683: owned by port/asm/m_12680_12683.c */
 
-KE_ASM_STUB(render_sprite_record_kind_3_entry, "m_12684_1296e")
-KE_ASM_STUB(render_sprite_record_kind_3_draw, "m_12684_1296e")
-KE_ASM_STUB(restore_sprite_background_from_record, "m_12684_1296e")
+/* m_12684_1296e: owned by port/asm/m_12684_1296e.c */
 
 /* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
-KE_ASM_STUB(render_transparent_sprite_record_entry, "m_12974_12a9c")
-KE_ASM_STUB(draw_transparent_sprite_rows, "m_12974_12a9c")
-KE_ASM_STUB(restore_sprite_rectangle, "m_12974_12a9c")
+/* m_12974_12a9c: owned by port/asm/m_12974_12a9c.c */
 
-KE_ASM_STUB(process_sprite_update_list, "m_12a9c_12f30")
-KE_ASM_STUB(process_sprite_update_list_entry, "m_12a9c_12f30")
-KE_ASM_STUB(replay_sprite_update_list, "m_12a9c_12f30")
-KE_ASM_STUB(replay_sprite_update_list_entry, "m_12a9c_12f30")
-KE_ASM_STUB(draw_bob_sprite, "m_12a9c_12f30")
-KE_ASM_STUB(draw_bob_sprite_entry, "m_12a9c_12f30")
-KE_ASM_STUB(clip_and_dispatch_sprite_record, "m_12a9c_12f30")
+/* m_12a9c_12f30: owned by port/asm/m_12a9c_12f30.c */
 
-KE_ASM_STUB(copy_chunky_scanline_to_vga, "m_12f30_12f9c")
-KE_ASM_STUB(copy_chunky_scanline_to_vga_entry, "m_12f30_12f9c")
+/* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
 
-KE_ASM_STUB(copy_screen_span, "m_12f9c_13324")
-KE_ASM_STUB(copy_screen_span_entry, "m_12f9c_13324")
-KE_ASM_STUB(copy_clipped_screen_rectangle, "m_12f9c_13324")
+/* m_12f9c_13324: owned by port/asm/m_12f9c_13324.c */
 
-KE_ASM_STUB(read_vga_pixel, "m_13324_13712")
-KE_ASM_STUB(read_vga_pixel_entry, "m_13324_13712")
-KE_ASM_STUB(write_vga_pixel, "m_13324_13712")
-KE_ASM_STUB(write_vga_pixel_entry, "m_13324_13712")
-KE_ASM_STUB(fill_vga_span, "m_13324_13712")
-KE_ASM_STUB(fill_vga_span_entry, "m_13324_13712")
-KE_ASM_STUB(fill_clipped_vga_rectangle, "m_13324_13712")
+/* m_13324_13712: owned by port/asm/m_13324_13712.c */
 
-KE_ASM_STUB(fill_planar_video_rows, "m_13712_137a8")
+/* m_13712_137a8: owned by port/asm/m_13712_137a8.c */
 
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 

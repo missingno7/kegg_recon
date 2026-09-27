@@ -44,6 +44,12 @@ void ke_present_frame(void)
     SDL_RenderClear(renderer);
     if (vga_scanout(indexed, MAX_W, MAX_W, MAX_H, &w, &h)) {
         vga_palette_rgb888(pal);
+        /* Match DOSBox-X's 6-bit DAC screenshot conversion: shift without bit replication. */
+        for (x = 0; x < 256; x++) {
+            pal[x][0] &= 0xfcu;
+            pal[x][1] &= 0xfcu;
+            pal[x][2] &= 0xfcu;
+        }
         for (x = 0; x < 256; x++)
             lut[x] = 0xff000000u | ((uint32_t)pal[x][0] << 16) | ((uint32_t)pal[x][1] << 8) | pal[x][2];
         for (y = 0; y < h; y++)
@@ -92,6 +98,12 @@ int ke_present_save_bmp(const char *path)
     if (!vga_scanout(indexed, MAX_W, MAX_W, MAX_H, &w, &h))
         return -1;
     vga_palette_rgb888(pal);
+    /* The indexed BMP represents DOSBox-X's DAC truncation, like the displayed texture. */
+    for (i = 0; i < 256; i++) {
+        pal[i][0] &= 0xfcu;
+        pal[i][1] &= 0xfcu;
+        pal[i][2] &= 0xfcu;
+    }
     surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_INDEX8, indexed, MAX_W);
     if (!surface)
         return -1;

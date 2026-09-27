@@ -2,23 +2,6 @@
 /* Byte-exact _DATA of the historical TASM modules that no translation owns yet. */
 /* Symbols follow the i686-w64-mingw32 C convention (leading underscore). */
 
-    .set KE_LABEL_sprite_render_noop, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_restore_sprite_rectangle, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_restore_sprite_background_record, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_restore_sprite_background_from_record, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_transparent_sprite_record_entry, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_5_entry, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_5_draw, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_3_entry, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_3_draw, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12972, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12971, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12970, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12682, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12681, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12680, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_draw_transparent_sprite_rows, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_clip_sprite_record, 0 /* m_12a9c_12f30: private label */
 /* irq.asm: LE object 2 real-mode IRQ templates (USE16). Zero bytes: the
  * virtual PC never executes real mode; C code only copies and patches them. */
     .data
@@ -42,17 +25,7 @@ _ke_asm_irq_object2:
 
 /* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
-/* m_09f64_0a0d2.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_09f64_0a0d2_data:
-    .globl _pit_sample_auxiliary
-_pit_sample_auxiliary:
-    .long 0
-    .globl _g_pit_elapsed_ticks
-_g_pit_elapsed_ticks:
-    .long 0
-/* m_09f64_0a0d2 _DATA: 0x8 bytes */
+/* m_09f64_0a0d2: owned by port/asm/m_09f64_0a0d2.c */
 
 /* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
 
@@ -64,205 +37,27 @@ _g_pit_elapsed_ticks:
 
 /* m_11530_11df8: owned by port/asm/m_11530_11df8.c */
 
-/* m_11df8_12288.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_11df8_12288_data:
-    .globl _gif_reserved_state
-_gif_reserved_state:
-    .short 0
-    .globl _gif_lzw_current_code
-_gif_lzw_current_code:
-    .short 0
-    .globl _gif_image_width
-_gif_image_width:
-    .short 0
-    .globl _gif_image_height
-_gif_image_height:
-    .short 0
-    .globl _gif_has_global_color_table
-_gif_has_global_color_table:
-    .byte 0
-    .globl _gif_color_resolution_bits
-_gif_color_resolution_bits:
-    .byte 0
-    .globl _gif_color_index_bits
-_gif_color_index_bits:
-    .short 0
-    .globl _gif_lzw_expansion_stack
-_gif_lzw_expansion_stack:
-    .byte 1
-    .byte 0
-    .byte 0
-    .byte 0
-    .globl _gif_lzw_prefix_table
-_gif_lzw_prefix_table:
-    .byte 1
-    .byte 0
-    .byte 0
-    .byte 0
-    .globl _gif_lzw_suffix_table
-_gif_lzw_suffix_table:
-    .byte 1
-    .byte 0
-    .byte 0
-    .byte 0
-    .globl _gif_lzw_code_width
-_gif_lzw_code_width:
-    .short 0
-    .globl _gif_lzw_next_code_width
-_gif_lzw_next_code_width:
-    .short 0
-    .globl _gif_lzw_first_available_code
-_gif_lzw_first_available_code:
-    .short 0
-    .globl _gif_lzw_next_code
-_gif_lzw_next_code:
-    .short 0
-    .globl _gif_lzw_code_limit
-_gif_lzw_code_limit:
-    .short 0
-    .globl _gif_lzw_code_limit_shadow
-_gif_lzw_code_limit_shadow:
-    .short 0
-    .globl _gif_lzw_code_mask
-_gif_lzw_code_mask:
-    .short 0
-    .globl _gif_color_index_mask
-_gif_color_index_mask:
-    .short 0
-    .globl _gif_previous_literal
-_gif_previous_literal:
-    .byte 0
-    .globl _gif_lzw_bit_buffer
-_gif_lzw_bit_buffer:
-    .long 0
-    .globl _gif_lzw_bits_buffered
-_gif_lzw_bits_buffered:
-    .short 0
-    .globl _gif_lzw_saved_codes
-_gif_lzw_saved_codes:
-    .fill 3, 2, 0
-    .globl _gif_lzw_clear_code
-_gif_lzw_clear_code:
-    .short 0
-    .globl _gif_lzw_end_code
-_gif_lzw_end_code:
-    .short 0
-    .globl _gif_pixel_output_start
-_gif_pixel_output_start:
-    .long 0
-    .globl _gif_compressed_data_cursor
-_gif_compressed_data_cursor:
-    .long 0
-    .globl _gif_decode_error_code
-_gif_decode_error_code:
-    .short 0
-    .globl _gif_global_color_table_bytes
-_gif_global_color_table_bytes:
-    .long 0
-    .globl _gif_global_color_table_source
-_gif_global_color_table_source:
-    .byte 0
-    .byte 0
-    .byte 0
-    .byte 0
-    .byte 0
-/* m_11df8_12288 _DATA: 0x4c bytes */
+/* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
+
+/* m_12288_12680: owned by port/asm/m_12288_12680.c */
 
 /* m_12680_12683: owned by port/asm/m_12680_12683.c */
 
+/* m_12684_1296e: owned by port/asm/m_12684_1296e.c */
+
 /* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
-/* m_12a9c_12f30.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_12a9c_12f30_data:
-    .globl _sprite_record_cursor
-_sprite_record_cursor:
-    .fill 2, 4, 0
-    .globl _vga_draw_origin
-_vga_draw_origin:
-    .long 0
-    .globl _vga_row_advance
-_vga_row_advance:
-    .long 0
-    .globl _background_plane_delta
-_background_plane_delta:
-    .long 0
-    .globl _sprite_record_flags
-_sprite_record_flags:
-    .short 0
-    .globl _sprite_source_column
-_sprite_source_column:
-    .short 0
-    .globl _sprite_clip_top
-_sprite_clip_top:
-    .long 0
-    .globl _sprite_clip_bottom
-_sprite_clip_bottom:
-    .long 0
-    .globl _sprite_clip_left
-_sprite_clip_left:
-    .long 0
-    .globl _sprite_clip_right
-_sprite_clip_right:
-    .long 0
-    .globl _visible_sprite_width
-_visible_sprite_width:
-    .long 0
-    .globl _vga_plane_index
-_vga_plane_index:
-    .long 0
-    .globl _sprite_row_width_remaining
-_sprite_row_width_remaining:
-    .fill 18, 1, 0
-    .globl _sprite_operation_dispatch_table
-_sprite_operation_dispatch_table:
-    .byte 0
-    .byte 0
-    .globl _current_vga_plane_mask
-_current_vga_plane_mask:
-    .byte 0
-    .globl _first_vga_plane_mask
-_first_vga_plane_mask:
-    .byte 0
-    .long KE_LABEL_restore_sprite_rectangle
-    .globl _sprite_render_mode_table
-_sprite_render_mode_table:
-    .long KE_LABEL_noop_sprite_callback_12972
-    .long KE_LABEL_restore_sprite_background_from_record
-    .long KE_LABEL_noop_sprite_callback_12682
-    .long KE_LABEL_restore_sprite_background_record
-    .long KE_LABEL_clip_sprite_record
-    .long KE_LABEL_render_transparent_sprite_record_entry
-    .long KE_LABEL_draw_transparent_sprite_rows
-    .long 0
-    .long KE_LABEL_sprite_render_noop
-    .long KE_LABEL_noop_sprite_callback_12970
-    .long KE_LABEL_noop_sprite_callback_12971
-    .long 0
-    .long KE_LABEL_clip_sprite_record
-    .long KE_LABEL_render_sprite_record_kind_3_entry
-    .long KE_LABEL_render_sprite_record_kind_3_draw
-    .long 0
-    .long KE_LABEL_sprite_render_noop
-    .long KE_LABEL_noop_sprite_callback_12680
-    .long KE_LABEL_noop_sprite_callback_12681
-    .long 0
-    .long KE_LABEL_clip_sprite_record
-    .long KE_LABEL_render_sprite_record_kind_5_entry
-    .long KE_LABEL_render_sprite_record_kind_5_draw
-    .globl _sprite_origin_x
-_sprite_origin_x:
-    .long 0
-    .globl _sprite_origin_y
-_sprite_origin_y:
-    .long 0
-    .globl _sprite_command_cursor
-_sprite_command_cursor:
-    .fill 10, 1, 0
-/* m_12a9c_12f30 _DATA: 0xb8 bytes */
+/* m_12974_12a9c: owned by port/asm/m_12974_12a9c.c */
+
+/* m_12a9c_12f30: owned by port/asm/m_12a9c_12f30.c */
+
+/* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
+
+/* m_12f9c_13324: owned by port/asm/m_12f9c_13324.c */
+
+/* m_13324_13712: owned by port/asm/m_13324_13712.c */
+
+/* m_13712_137a8: owned by port/asm/m_13712_137a8.c */
 
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 

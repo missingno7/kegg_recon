@@ -72,7 +72,7 @@ set(KE_VHW_SOURCES
   vhw/joy.c vhw/dma.c vhw/sb.c vhw/intsvc.c vhw/lowmem.c vhw/fault.c)
 set(KE_HOST_SOURCES
   host/main_sdl.c host/gamethread.c host/log.c host/input.c host/present.c host/clib.c
-  host/files.c)
+  host/files.c host/replay.c)
 
 add_executable(ke_sdl3 ${KE_HOST_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES}
   ${KE_ASM_TRANSLATIONS} $<TARGET_OBJECTS:ke_game>)
@@ -85,6 +85,7 @@ target_link_libraries(ke_sdl3 PRIVATE SDL3::SDL3 winmm)
 # 32-bit image as low as 0x90000), and the process relaunches itself with the range
 # reserved (relaunch_with_low_memory_reserved in host/main_sdl.c).
 target_link_options(ke_sdl3 PRIVATE -mconsole -Wl,--stack,8388608 -Wl,--disable-dynamicbase
+  -Wl,--wrap=wait_for_tick
   -Wl,--image-base,0x00400000)
 add_custom_command(TARGET ke_sdl3 POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${KE_SDL3_DIR}/bin/SDL3.dll" "$<TARGET_FILE_DIR:ke_sdl3>")
@@ -104,12 +105,14 @@ set(KE_HOST_LIB_SOURCES host/gamethread.c host/log.c host/input.c host/present.c
 add_executable(ke_oracle oracle/oracle.c oracle/oracle_main.c ${KE_ORACLE_TESTS}
   ${KE_HOST_LIB_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES} ${KE_ASM_TRANSLATIONS}
   $<TARGET_OBJECTS:ke_game>)
-target_compile_definitions(ke_oracle PRIVATE KE_ORACLE=1)
+target_compile_definitions(ke_oracle PRIVATE KE_ORACLE=1 KE_ORACLE_TRACE)
 set_target_properties(ke_oracle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/oracle")
 target_include_directories(ke_oracle PRIVATE include)
 target_compile_options(ke_oracle PRIVATE
   $<$<COMPILE_LANGUAGE:C>:-std=gnu11 -O1 -g -Wall -Wno-unused-function -fno-strict-aliasing -fno-omit-frame-pointer>)
 target_link_libraries(ke_oracle PRIVATE SDL3::SDL3 winmm)
-target_link_options(ke_oracle PRIVATE -mconsole)
+# Keep the oracle image away from DOS/VGA space and disable ASLR, matching ke_sdl3. Original
+# VGA operands are relocated by the oracle because Windows may own A0000h..BFFFFh itself.
+target_link_options(ke_oracle PRIVATE -mconsole -Wl,--disable-dynamicbase -Wl,--image-base,0x00400000)
 add_custom_command(TARGET ke_oracle POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${KE_SDL3_DIR}/bin/SDL3.dll" "$<TARGET_FILE_DIR:ke_oracle>")

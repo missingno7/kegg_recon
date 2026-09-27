@@ -39,7 +39,9 @@ int ke_atexit(void (*fn)(void))
     return 0;
 }
 
-void ke_exit(int code)
+static void ke_exit_impl(int code, int log_exit, int run_atexit) __attribute__((noreturn));
+
+static void ke_exit_impl(int code, int log_exit, int run_atexit)
 {
     if (!ke_on_game_thread()) {
         /* exit() reached from an ISR running on the IRQ thread: make the game thread exit. */
@@ -48,20 +50,32 @@ void ke_exit(int code)
     vhw_reset_nesting();
     if (InterlockedExchange(&exiting, 1) == 0) {
         exit_code = code;
-        ke_log(KE_LOG_INFO, "game", "exit(%d) called; running %d atexit handlers", code,
-               atexit_count);
-        while (atexit_count > 0)
-            atexit_fns[--atexit_count]();
+        if (log_exit)
+            ke_log(KE_LOG_INFO, "game", "exit(%d) called; running %d atexit handlers", code,
+                   atexit_count);
+        if (run_atexit) {
+            while (atexit_count > 0)
+                atexit_fns[--atexit_count]();
+        }
         fflush(stdout);
     }
     longjmp(exit_jump, 1);
 }
 
+void ke_exit(int code)
+{
+    ke_exit_impl(code, 1, 1);
+}
+
 void ke_check_quit(void)
 {
     if (quit_requested && ke_on_game_thread() && !exiting) {
-        ke_log(KE_LOG_INFO, "game", "window closed: unwinding the game thread");
-        ke_exit(0);
+        int log_quit = !vhw_cpu_polling;
+        if (log_quit)
+            ke_log(KE_LOG_INFO, "game", "window closed: unwinding the game thread");
+        /* Host window shutdown owns virtual-device cleanup; game atexit handlers may
+         * wait for emulated ticks and can outlast the host's quit grace period. */
+        ke_exit_impl(0, log_quit, 0);
     }
 }
 

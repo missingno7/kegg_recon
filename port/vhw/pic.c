@@ -316,7 +316,7 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
         while (vpic_has_deliverable() && !irq_stop) {
             CONTEXT ctx;
             int delivered = 0;
-            if (!vcpu_if_flag || vhw_game_depth || vhw_in_isr) {
+            if (!vcpu_if_flag || vhw_game_depth || vhw_in_isr || vhw_cpu_polling) {
                 stats_blocked++;
                 break;             /* sync delivery at vhw_leave/STI will handle it */
             }
@@ -324,7 +324,8 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
                 break;
             memset(&ctx, 0, sizeof ctx);
             ctx.ContextFlags = CONTEXT_CONTROL;
-            if (GetThreadContext(game, &ctx) && vcpu_if_flag && !vhw_game_depth && !vhw_in_isr &&
+            if (GetThreadContext(game, &ctx) && vcpu_if_flag && !vhw_game_depth &&
+                !vhw_in_isr && !vhw_cpu_polling &&
                 ctx.Eip >= text_lo && ctx.Eip < text_hi) {
                 if (setjmp(isr_abandon) == 0) {
                     delivered = deliver_one();
