@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -148,6 +149,140 @@ def check_bss(objs, nm="nm"):
     return bad
 
 
+def check_const(objs, objdump="objdump", objcopy="objcopy"):
+    """Verify packed writable CONST sections against the original LE object bytes."""
+    sys.path.insert(0, str(ROOT / "port" / "tools"))
+    import gcc_pack_data
+
+    _const, const_limit, ranges, _targets, _symbols, _fixups, original_objects, _locations = \
+        gcc_pack_data.original_const_layout()
+    original3 = original_objects[2]
+    checked = bad = 0
+    aliases_checked = 0
+    packed_ranges = []
+    for obj in objs:
+        packed = obj.with_suffix(".packed.s")
+        if not packed.exists():
+            continue
+        text = packed.read_text(encoding="utf-8", errors="replace")
+        markers = []
+        current = None
+        section_name = None
+        cursor = 0
+        marker_offsets_bad = False
+        alias_bad = False
+        for line in text.splitlines():
+            section = re.match(r"^\s*\.section\s+([^,\s]+)", line)
+            if section:
+                section_name = section.group(1)
+                current = None
+                continue
+            marker = re.match(r"^# KE_CONST_SECTION 3 (0x[0-9a-f]+) (0x[0-9a-f]+)$", line)
+            if marker:
+                current = (int(marker.group(1), 16), int(marker.group(2), 16))
+                cursor = 0
+                markers.append((current, section_name))
+                packed_ranges.append((current[0], current[1], obj.name, section_name))
+                continue
+            if current is None:
+                continue
+            label = re.match(r"^# KE_CONST_LABEL 3 (0x[0-9a-f]+) (.+)$", line)
+            if label:
+                origin = int(label.group(1), 16)
+                expected = origin - current[0]
+                if cursor != expected:
+                    marker_offsets_bad = True
+                    print(f"CONST {obj.name}: label {label.group(2)} at packed +{cursor:#x}, "
+                          f"original offset {origin:#x} requires +{expected:#x}")
+                continue
+            data = re.match(r"^\s*\.byte\s+(.+)$", line)
+            if data:
+                cursor += len(data.group(1).split(","))
+
+        lines = text.splitlines()
+        for index, line in enumerate(lines):
+            alias = re.match(r"^# KE_CONST_ALIAS 3 (0x[0-9a-f]+) (\S+) (\S+)$", line)
+            if not alias:
+                continue
+            aliases_checked += 1
+            offset = int(alias.group(1), 16)
+            local_name, target_name = alias.group(2), alias.group(3)
+            expected_target = f"__ke_original_const3_{offset:08x}"
+            next_line = lines[index + 1].strip() if index + 1 < len(lines) else ""
+            if (target_name != expected_target or offset >= const_limit or
+                    not re.fullmatch(rf"\.set\s+{re.escape(local_name)}\s*,\s*{re.escape(target_name)}", next_line)):
+                alias_bad = True
+                print(f"CONST {obj.name}: alias {local_name} does not resolve to original offset {offset:#x}")
+
+        if not markers and not alias_bad:
+            continue
+        unit_bad = marker_offsets_bad or alias_bad
+        section_text = subprocess.run([objdump, "-h", str(obj)], capture_output=True, text=True).stdout
+        section_lines = section_text.splitlines()
+        for (start, end), name in markers:
+            checked += 1
+            expected_name = f".data$KECONST3${start:08x}"
+            if name != expected_name:
+                unit_bad = True
+                print(f"CONST {obj.name}: subsection {name!r}, expected original-order key {expected_name}")
+            writable = False
+            for index, line in enumerate(section_lines):
+                header = re.match(r"^\s*\d+\s+(\S+)\s+", line)
+                if name and header and header.group(1) == name:
+                    flags = " ".join(section_lines[index + 1:index + 3])
+                    writable = "DATA" in flags and "READONLY" not in flags
+                    break
+            if not writable:
+                unit_bad = True
+                print(f"CONST {obj.name}: {name or '.data$KECONST3'} is missing or not writable")
+            expected = original3[start:end]
+            try:
+                with tempfile.TemporaryDirectory() as td:
+                    dumped = Path(td) / "const.bin"
+                    result = subprocess.run(
+                        [objcopy, "--dump-section", f"{name}={dumped}", str(obj)],
+                        capture_output=True, text=True,
+                    )
+                    if result.returncode:
+                        unit_bad = True
+                        print(f"CONST {obj.name}: cannot extract {name}: {result.stderr.strip()}")
+                        continue
+                    actual = dumped.read_bytes()
+            except OSError as error:
+                unit_bad = True
+                print(f"CONST {obj.name}: {error}")
+                continue
+            if end > len(original3) or actual != expected:
+                unit_bad = True
+                mismatch = next((i for i, (a, b) in enumerate(zip(actual, expected)) if a != b),
+                                min(len(actual), len(expected)))
+                print(f"CONST {obj.name}: original [{start:#x},{end:#x}) is {len(expected)} bytes; "
+                      f"{name} is {len(actual)} bytes, first mismatch +{mismatch:#x}")
+        if unit_bad:
+            bad += 1
+
+    expected_ranges = [(0, const_limit)]
+    actual_ranges = sorted((start, end) for start, end, _obj, _section in packed_ranges)
+    if actual_ranges != expected_ranges:
+        bad += 1
+        missing = sorted(set(expected_ranges) - set(actual_ranges))
+        extra = sorted(set(actual_ranges) - set(expected_ranges))
+        print(f"CONST global ranges differ: missing {missing[:8]}, extra {extra[:8]}")
+    else:
+        cursor = expected_ranges[0][0] if expected_ranges else 0
+        for start, end in expected_ranges:
+            if start != cursor:
+                bad += 1
+                print(f"CONST global order has a gap/overlap at {cursor:#x}: next range starts {start:#x}")
+            cursor = end
+        if cursor != const_limit:
+            bad += 1
+            print(f"CONST global order ends at {cursor:#x}, expected {const_limit:#x}")
+    print(f"{checked} original CONST range checked byte-for-byte and by label offset; "
+          f"{aliases_checked} cross-unit labels checked; {bad} differ")
+    return bad
+
+
 def main(argv):
     data_mode = "--data" in argv
     argv = [a for a in argv if a != "--data"]
@@ -190,6 +325,7 @@ def main(argv):
     if data_mode:
         mismatches += check_data(objs)
         mismatches += check_bss(objs)
+        mismatches += check_const(objs)
     return 1 if mismatches else 0
 
 
