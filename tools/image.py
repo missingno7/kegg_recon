@@ -285,10 +285,37 @@ def cache_compile(ctx, src: Path, profile: str, cache: Path):
     return out
 
 
-def canonical_items(ctx, cache, whatif=None):
+def canonical_items(ctx, cache, whatif=None, asm_modules=None):
     man = ctx.man
     items = []
+    module_items = []
     unit_src = {}
+    module_functions = set()
+    if asm_modules is not None:
+        module_manifest = asm_modules / "modules.json"
+        if not module_manifest.is_file():
+            raise SystemExit(f"assembly module manifest not found: {module_manifest}")
+        for m in json.loads(module_manifest.read_text()).get("modules", []):
+            start, end = int(m["start"], 16), int(m["end"], 16)
+            functions = list(m["functions"])
+            duplicates = module_functions.intersection(functions)
+            if duplicates:
+                raise SystemExit(f"assembly module function listed more than once: {sorted(duplicates)}")
+            module_functions.update(functions)
+            src = Path(m["source"])
+            if src.is_absolute():
+                try:
+                    src = src.relative_to(ROOT)
+                except ValueError:
+                    raise SystemExit(f"assembly module source must be under repository root: {src}")
+            it = Item(f"asm-module:{start:x}", "asm", 1, start, end, src.as_posix(), "game-asm")
+            it.functions = functions
+            module_items.append(it)
+        expected = {f["name"] for f in ctx.funcs if f.get("object", 1) == 1 and f["kind"] == "asm"
+                    and f.get("status") == "matching" and f.get("src")}
+        if module_functions != expected:
+            raise SystemExit("assembly module coverage mismatch; missing="
+                             f"{sorted(expected - module_functions)}, extra={sorted(module_functions - expected)}")
     for u in man.get("units", []):
         it = Item(f"unit:{u['id']}", "unit", 1, int(u["start"], 16), int(u["end"], 16), u["src"], u["profile"])
         it.functions = [f["name"] for f in ctx.funcs if f.get("src") == u["src"]]
@@ -299,6 +326,8 @@ def canonical_items(ctx, cache, whatif=None):
         if f.get("status") != "matching" or not f.get("src") or f["src"] in unit_src:
             continue
         o = f.get("object", 1)
+        if asm_modules is not None and o == 1 and f["kind"] == "asm":
+            continue
         if o == 2:
             if irq is None:
                 irq = Item("asm16:irq", "asm", 2, 0, len(ctx.orig.bytes[2]), f["src"], f["profile"])
@@ -310,6 +339,7 @@ def canonical_items(ctx, cache, whatif=None):
                   int(f["end"], 16), f["src"], f["profile"])
         it.functions = [f["name"]]
         items.append(it)
+    items.extend(module_items)
     def build(lst):
         for it in lst:
             try:
@@ -1161,7 +1191,8 @@ def culprit_of(ctx, ev):
 
 def run(args):
     ctx = Ctx()
-    out = ROOT / "build" / "image" / (args.mode + ("-asmwhatif" if args.asm_whatif else ""))
+    suffix = "-asmwhatif" if args.asm_whatif else "-asmmodules" if args.asm_modules else ""
+    out = ROOT / "build" / "image" / (args.mode + suffix)
     objdir = out / "objs"
     shutil.rmtree(objdir, ignore_errors=True)
     objdir.mkdir(parents=True)
@@ -1169,7 +1200,8 @@ def run(args):
     cache.mkdir(parents=True, exist_ok=True)
     reals = []
     if args.mode == "canonical":
-        reals = canonical_items(ctx, cache, out / "asm-whatif" if args.asm_whatif else None)
+        reals = canonical_items(ctx, cache, out / "asm-whatif" if args.asm_whatif else None,
+                                args.asm_modules)
         for r in reals:
             place_real(ctx, r)
             if r.key in args.exclude:
@@ -1422,7 +1454,13 @@ def main(argv):
     ap.add_argument("--asm-whatif", action="store_true",
                     help="DIAGNOSTIC: link scratch copies of asm/*.asm with ASM_TEXT PARA -> _TEXT BYTE and "
                          "PUBLIC aliases for imported entry names (build/image/canonical-asmwhatif; not canonical)")
-    return run(ap.parse_args(argv[1:]))
+    ap.add_argument("--asm-modules", type=Path, metavar="DIR",
+                    help="DIAGNOSTIC: replace per-routine obj1 asm items with modules.json candidates from DIR "
+                         "(writes a separate *-asmmodules image report)")
+    args = ap.parse_args(argv[1:])
+    if args.asm_whatif and args.asm_modules:
+        ap.error("--asm-whatif and --asm-modules are mutually exclusive")
+    return run(args)
 
 
 if __name__ == "__main__":

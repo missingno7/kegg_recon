@@ -3455,8 +3455,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_108a9.c",
-   "src_sha256": "044339d3e91790af0eeb60abec835190116bf8e52b1df50f5a6f25a51735d853"
+   "src": "src/t19_sys.c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "unit": "T19"
   },
   {
    "name": "f_10d72",
@@ -3465,8 +3466,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_10d72.c",
-   "src_sha256": "374be6b21a722a4f9dbca830e42f6e8316ab86724e883e46a82d489016c8bc67"
+   "src": "src/t19_sys.c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "unit": "T19"
   },
   {
    "name": "f_11051",
@@ -3475,8 +3477,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_11051.c",
-   "src_sha256": "7e7de9ddf38c4ce8802ddace91d060c4f69acbb1314432a39d145a37546c90b0"
+   "src": "src/t19_sys.c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "unit": "T19"
   },
   {
    "name": "f_11146",
@@ -3485,8 +3488,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_11146.c",
-   "src_sha256": "d77740847029a4eeba36ada26b9803c173430c777ac9db2ffe1aca82377e1b14"
+   "src": "src/t19_sys.c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "unit": "T19"
   },
   {
    "name": "f_111de",
@@ -3495,8 +3499,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_111de.c",
-   "src_sha256": "a9c567e4de15a45f80ab207d21a9e8a2d464ee88ffeb37faa24eb87d9ddecaa7"
+   "src": "src/t19_sys.c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "unit": "T19"
   },
   {
    "name": "f_11209",
@@ -3505,8 +3510,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_11209.c",
-   "src_sha256": "1fb7f055b9e7760625878278327254663d876a871b626da4c33fad8b48697376"
+   "src": "src/t19_sys.c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "unit": "T19"
   },
   {
    "name": "a_112fa",
@@ -4874,7 +4880,27 @@
   "strtoul": "1:13d21",
   "g_T07_bss": "3:e1c4",
   "f_ddb9": "1:ddb9",
-  "f_de21": "1:de21"
+  "f_de21": "1:de21",
+  "g_7c18": "3:7c18",
+  "f_d288": "1:d288",
+  "f_11209": "1:11209",
+  "f_ca6a": "1:ca6a",
+  "f_d2f0": "1:d2f0",
+  "f_d36c": "1:d36c",
+  "f_d408": "1:d408",
+  "f_d5d0": "1:d5d0",
+  "f_d4ba": "1:d4ba",
+  "f_dea6": "1:dea6",
+  "f_df49": "1:df49",
+  "f_df7f": "1:df7f",
+  "f_de3e": "1:de3e",
+  "f_ffbe": "1:ffbe",
+  "f_eeac": "1:eeac",
+  "f_cb3f": "1:cb3f",
+  "f_9974": "1:9974",
+  "f_11146": "1:11146",
+  "f_fb17": "1:fb17",
+  "f_ee65": "1:ee65"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -5823,6 +5849,19 @@
     "_DATA@3:7c08+0x10"
    ],
    "note": "file I/O; own CONST 0x1264+8 and _DATA 0x7c08+16 verified"
+  },
+  {
+   "id": "T19",
+   "src": "src/t19_sys.c",
+   "start": "0x108a9",
+   "end": "0x11256",
+   "profile": "game-c",
+   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "data": [
+    "CONST@3:126c+0x11e6",
+    "_DATA@3:7c18+0x198"
+   ],
+   "note": "sys/messages: CONST 0x126c..0x2452 (4582 B) + _DATA 0x7c18..0x7db0 verified"
   }
  ]
 }
