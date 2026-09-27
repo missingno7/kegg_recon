@@ -22,6 +22,10 @@ void register_m_13a48_tests(void);
 void register_m_11258_tests(void);
 void register_m_11494_tests(void);
 void register_m_11df8_tests(void);
+void register_m_13324_tests(void);
+void register_m_13712_tests(void);
+void register_m_12f30_tests(void);
+void register_m_12f9c_tests(void);
 void register_vhw_irq_tests(void);
 void register_vga_tests(void);
 
@@ -59,6 +63,10 @@ int main(int argc, char **argv)
     register_m_13944_tests();
     register_m_13a48_tests();
     register_m_11df8_tests();
+    register_m_13324_tests();
+    register_m_13712_tests();
+    register_m_12f30_tests();
+    register_m_12f9c_tests();
     register_vhw_irq_tests();
     register_vga_tests();
     /* A9 trace fixtures replace PIC port callbacks, so run the live PIC test first. */
