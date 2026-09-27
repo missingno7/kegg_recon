@@ -45,9 +45,40 @@ def load_porting():
     return data
 
 
+def rename_text(text, rx, renamed):
+    return rx.sub(lambda m: renamed[m.group(1)], text) if rx else text
+
+
+def rename_values(value, rx, renamed):
+    if isinstance(value, str):
+        return rename_text(value, rx, renamed)
+    if isinstance(value, list):
+        return [rename_values(v, rx, renamed) for v in value]
+    if isinstance(value, dict):
+        return {k: rename_values(v, rx, renamed) for k, v in value.items()}
+    return value
+
+
 def refresh():
+    """names/units/src from the manifest by (object, start); every other old symbol name (callers, callees, state,
+    prose) through the manifest's cumulative rename log; `name` @ `addr` pairs in docs/porting.md by address"""
+    import re
     manifest = load_manifest()
+    renamed = read_json(MANIFEST).get("renamed", {})
+    renamed = {k: v for k, v in renamed.items() if k != v}
+    rx = re.compile(r"\b(" + "|".join(map(re.escape, sorted(renamed, key=len, reverse=True))) + r")\b") if renamed else None
     data = load_porting()
+    data["functions"] = {k: rename_values(r, rx, renamed) for k, r in data["functions"].items()}
+    for k in list(data):
+        if k != "functions":
+            data[k] = rename_values(data[k], rx, renamed)
+    md = ROOT / "docs" / "porting.md"
+    if md.exists():
+        by_start = {int(f["start"], 16): f["name"] for (obj, _), f in manifest.items() if obj == 1}
+        text = rename_text(md.read_text(encoding="utf-8"), rx, renamed)
+        text = re.sub(r"`(\w+)` @ `(0x[0-9a-fA-F]+)`",
+                      lambda m: "`{}` @ `{}`".format(by_start.get(int(m.group(2), 16), m.group(1)), m.group(2)), text)
+        md.write_text(text, encoding="utf-8", newline="\n")
     for key, record in data["functions"].items():
         ident = identity(record)
         current = manifest.get(ident)

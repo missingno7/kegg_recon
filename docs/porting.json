@@ -44,27 +44,27 @@
         "next_lvl",
         "load_palette",
         "load_assets",
-        "reset_lvl",
+        "reset_level",
         "load_and_draw_level",
         "queue_audio",
         "wait_level",
         "entry_prompt",
         "load_enemy",
-        "prep_brick",
+        "prep_level",
         "fatal_exit",
         "init_round",
         "draw_status",
-        "set_img_buffers",
-        "f_9d40",
+        "set_image_pages",
+        "wait_for_tick",
         "update_mouse",
-        "set_pal_rgb",
+        "set_vga_palette_rgb",
         "handle_s_key",
-        "rkt_mv",
+        "adjust",
         "update_racket_state",
-        "upd_bl",
+        "update",
         "shot_cd",
         "update_falling_spells",
-        "upd_ani",
+        "animate",
         "update_enemy_projectiles",
         "process_timed_level_changes",
         "redraw_image_region",
@@ -82,10 +82,10 @@
         "current_scan_code",
         "file_error_state",
         "frames",
-        "g_e1b8",
-        "g_e1bc",
-        "g_e1c0",
-        "g_e4c8",
+        "save_cur",
+        "retrace_tick_count",
+        "ticklim",
+        "n_read",
         "hook_flags_word",
         "image_buffer_cursor",
         "image_buffer_error_code",
@@ -96,7 +96,7 @@
         "mouse_btn",
         "mouse_btn_old",
         "player_key_flags",
-        "racket_state",
+        "score_state",
         "remaining_brick_count",
         "sfx_data_ptr",
         "spell_count",
@@ -105,9 +105,9 @@
       "state_produced": [
         "arcade",
         "frames",
-        "g_e1b8",
-        "g_e1bc",
-        "g_e4d0_wfmxdlyju",
+        "save_cur",
+        "retrace_tick_count",
+        "file_buf_ptr",
         "hook_flags_word",
         "image_buffer_cursor",
         "temp"
@@ -131,7 +131,7 @@
         "run_gameplay_session"
       ],
       "callees": [
-        "rand_rng",
+        "random_in_range",
         "set_game_progress"
       ],
       "state_consumed": [
@@ -171,7 +171,7 @@
         "bonus_index",
         "difficulty_tier_index",
         "level_number",
-        "racket_state",
+        "score_state",
         "start_decade"
       ],
       "state_produced": [
@@ -238,7 +238,7 @@
       ],
       "callees": [],
       "state_consumed": [
-        "racket_state"
+        "score_state"
       ],
       "state_produced": [],
       "sdl3_strategy": "Keep portable behavior: Recomputes level-dependent progress and difficulty tier."
@@ -272,7 +272,7 @@
         "done",
         "level_number",
         "menu_result",
-        "racket_state"
+        "score_state"
       ],
       "state_produced": [
         "arcade",
@@ -333,7 +333,7 @@
         "initialize_main_menu"
       ],
       "callees": [
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "fatal_exit",
         "load_next_file",
         "queue_audio"
@@ -341,8 +341,8 @@
       "state_consumed": [
         "file_error_state",
         "file_operation_result",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "sfx_data_ptr",
         "sound_blaster_detected",
         "title_data_filename",
@@ -350,7 +350,7 @@
       ],
       "state_produced": [
         "file_operation_result",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "sfx_data_ptr",
         "sprite_memory_base"
       ],
@@ -374,19 +374,19 @@
         "initialize_main_menu"
       ],
       "callees": [
-        "fade_pal",
+        "fade_dac",
         "plot_transformed_pixel",
         "draw_page"
       ],
       "state_consumed": [
-        "disp_idx",
-        "flip_src",
+        "page_idx",
+        "src_page",
         "g_e35a",
         "sprite_memory_base",
         "vga_buffer_base"
       ],
       "state_produced": [
-        "disp_idx",
+        "page_idx",
         "vga_buffer_base"
       ],
       "seam": "Keep the 8-bit indexed page/palette contract; replace page copy, palette transfer and pixel output with the SDL3 framebuffer backend.",
@@ -411,9 +411,9 @@
         "initialize_main_menu"
       ],
       "callees": [
-        "f_9d40",
+        "wait_for_tick",
         "handle_s_key",
-        "fade_pal"
+        "fade_dac"
       ],
       "state_consumed": [
         "audio_stream_flag",
@@ -450,19 +450,19 @@
       ],
       "callees": [
         "set_audio_transfer_mode",
-        "f_9afc",
+        "reset_timer",
         "remove_keyboard_input_handler",
         "release_sound_system",
         "restore_bios",
         "spawnlp",
-        "clear_pal",
+        "clear_vga_palette",
         "save_bios",
-        "f_9b44",
+        "start_timer",
         "initialize_keyboard_manager",
         "configure_sound_dma"
       ],
       "state_consumed": [
-        "g_756f",
+        "tmr_rec",
         "key_irq",
         "sndirq"
       ],
@@ -491,24 +491,24 @@
       ],
       "callees": [
         "set_display_mode",
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "fatal_exit",
         "load_next_file",
         "queue_audio",
-        "clear_pal",
+        "clear_vga_palette",
         "plot_transformed_pixel",
         "configure_text_renderer",
         "set_text_clip_rect",
         "draw_text",
         "refresh_video_pages",
-        "fade_pal",
+        "fade_dac",
         "set_mouse_bounds",
-        "set_pal",
-        "set_pg",
-        "set_img_buffers",
-        "f_9d40",
+        "apply_palette_gradients",
+        "set_page",
+        "set_image_pages",
+        "wait_for_tick",
         "launch_print_order_form",
-        "rkt_mv",
+        "adjust",
         "handle_s_key",
         "write_dac_palette_entry",
         "write_dac_palette"
@@ -517,16 +517,16 @@
         "current_ascii",
         "current_file_name",
         "current_scan_code",
-        "draw_idx",
+        "drawpage",
         "file_error_state",
         "file_operation_result",
-        "g_e1d8",
+        "pic_of",
         "g_e36e",
         "g_e372",
         "g_e376",
         "g_e37a",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "game_sprite_base",
         "hook_flags_word",
         "image_color_depth",
@@ -549,9 +549,9 @@
         "vga_buffer_base"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "file_operation_result",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_sprite_base",
         "hook_flags_word",
         "image_color_depth",
@@ -613,7 +613,7 @@
         "update_menu_screen"
       ],
       "callees": [
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "fatal_exit",
         "load_next_file",
         "queue_audio"
@@ -621,8 +621,8 @@
       "state_consumed": [
         "file_error_state",
         "file_operation_result",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "main_palette_fn",
         "menu_data_filename",
         "menu_image_filename",
@@ -632,7 +632,7 @@
       ],
       "state_produced": [
         "file_operation_result",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_sprite_base",
         "palette_entries",
         "sfx_data_ptr",
@@ -660,7 +660,7 @@
         "update_menu_screen"
       ],
       "callees": [
-        "clear_pal",
+        "clear_vga_palette",
         "plot_transformed_pixel",
         "configure_text_renderer",
         "set_text_clip_rect",
@@ -668,11 +668,11 @@
         "refresh_video_pages",
         "set_mouse_bounds",
         "draw_restart_code_text",
-        "set_pg"
+        "set_page"
       ],
       "state_consumed": [
         "codeok",
-        "draw_idx",
+        "drawpage",
         "g_e35a",
         "g_e36e",
         "g_e372",
@@ -686,7 +686,7 @@
         "version_text"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "image_color_depth"
       ],
       "seam": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here.",
@@ -711,9 +711,9 @@
         "update_menu_screen"
       ],
       "callees": [
-        "set_img_buffers",
-        "f_9d40",
-        "rkt_mv",
+        "set_image_pages",
+        "wait_for_tick",
+        "adjust",
         "handle_s_key",
         "update_menu_sprite_animation",
         "queue_menu_sprite",
@@ -938,9 +938,9 @@
         "draw_text"
       ],
       "state_consumed": [
-        "draw_idx",
-        "flip_dst",
-        "flip_src",
+        "drawpage",
+        "dst_page",
+        "src_page",
         "g_e376",
         "g_e37a",
         "game_sprite_base",
@@ -948,7 +948,7 @@
         "page2"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "image_color_depth"
       ],
       "seam": "Keep the 8-bit indexed page/palette contract; replace page copy, palette transfer and pixel output with the SDL3 framebuffer backend.",
@@ -1006,7 +1006,7 @@
         "last_code_prompt",
         "level_number",
         "parity",
-        "racket_state",
+        "score_state",
         "restart_word",
         "scratch"
       ],
@@ -1055,15 +1055,15 @@
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "draw_idx",
-        "flip_dst",
-        "flip_src",
+        "drawpage",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "image_buffer_error_code",
         "page2"
       ],
       "state_produced": [
-        "draw_idx"
+        "drawpage"
       ],
       "seam": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here.",
       "sdl3_strategy": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here."
@@ -1087,22 +1087,22 @@
         "show_game_over_screen"
       ],
       "callees": [
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "load_next_file",
         "queue_audio"
       ],
       "state_consumed": [
         "file_error_state",
         "font_sprite_filename",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "score_data_filename",
         "score_image_filename",
         "sfx_data_ptr",
         "sound_blaster_detected"
       ],
       "state_produced": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_sprite_base",
         "sfx_data_ptr",
         "sprite_memory_base"
@@ -1238,14 +1238,14 @@
       "callees": [
         "copy_clipped_screen_rectangle",
         "draw_text",
-        "f_9d40",
+        "wait_for_tick",
         "strcpy"
       ],
       "state_consumed": [
         "current_ascii",
         "current_scan_code",
         "cursor_direction",
-        "draw_idx",
+        "drawpage",
         "enjoy_yourself_text",
         "enter_name_text",
         "g_e20d",
@@ -1263,7 +1263,7 @@
       "state_produced": [
         "current_scan_code",
         "cursor_direction",
-        "draw_idx",
+        "drawpage",
         "high_score_cursor",
         "high_score_input_redraw_flag",
         "high_score_name_timer",
@@ -1297,7 +1297,7 @@
       "callees": [
         "show_page",
         "update_mouse",
-        "f_9d40",
+        "wait_for_tick",
         "handle_s_key"
       ],
       "state_consumed": [
@@ -1333,11 +1333,11 @@
       "callers": [],
       "callees": [
         "validate_high_score_records",
-        "f_1065b"
+        "read_file_with_decoder"
       ],
       "state_consumed": [
         "file_operation_result",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "high_score_filename",
         "result",
         "saved_high_score_state",
@@ -1371,7 +1371,7 @@
         "write_file_buffer"
       ],
       "state_consumed": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "high_score_filename",
         "result"
       ],
@@ -1472,15 +1472,15 @@
         "show_instructions"
       ],
       "callees": [
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "load_next_file",
         "queue_audio"
       ],
       "state_consumed": [
         "end_fn",
         "file_error_state",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "information_data_filename",
         "main_palette_fn",
         "scoref",
@@ -1488,7 +1488,7 @@
         "sound_blaster_detected"
       ],
       "state_produced": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_sprite_base",
         "sfx_data_ptr",
         "sprite_memory_base"
@@ -1555,9 +1555,9 @@
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "disp_idx",
-        "flip_dst",
-        "flip_src",
+        "page_idx",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "g_e36e",
         "g_e372",
@@ -1569,7 +1569,7 @@
         "page2"
       ],
       "state_produced": [
-        "draw_idx"
+        "drawpage"
       ],
       "seam": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here.",
       "sdl3_strategy": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here."
@@ -1628,15 +1628,15 @@
         "show_ending_pages"
       ],
       "callees": [
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "load_next_file",
         "queue_audio"
       ],
       "state_consumed": [
         "end_screen_data_filename",
         "file_error_state",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "main_palette_fn",
         "score_background_filename",
         "score_font_filename",
@@ -1644,7 +1644,7 @@
         "sound_blaster_detected"
       ],
       "state_produced": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_sprite_base",
         "sfx_data_ptr",
         "sprite_memory_base"
@@ -1711,9 +1711,9 @@
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "disp_idx",
-        "flip_dst",
-        "flip_src",
+        "page_idx",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "g_e36e",
         "g_e372",
@@ -1725,7 +1725,7 @@
         "page2"
       ],
       "state_produced": [
-        "draw_idx"
+        "drawpage"
       ],
       "seam": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here.",
       "sdl3_strategy": "Feed existing key/scan-code and mouse-state values from one SDL input adapter; leave game action mapping and thresholds here."
@@ -1751,25 +1751,25 @@
       "callees": [
         "stop_audio_stream",
         "set_display_mode",
-        "fade_pal",
-        "f_a574_wrvhrpegbz",
+        "fade_dac",
+        "load_picture_keep",
         "load_next_file",
         "queue_audio",
         "plot_transformed_pixel",
         "copy_screen_span",
-        "set_pal_rgb",
-        "f_9d40",
+        "set_vga_palette_rgb",
+        "wait_for_tick",
         "write_dac_palette_entry",
         "copy_screen_span_entry",
         "write_dac_palette"
       ],
       "state_consumed": [
         "file_error_state",
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "page2",
         "publisher_data_filename",
         "publisher_image_one_filename",
@@ -1780,7 +1780,7 @@
         "vga_buffer_base"
       ],
       "state_produced": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "sfx_data_ptr",
         "sprite_memory_base",
         "vga_buffer_base"
@@ -1809,9 +1809,9 @@
         "render_image_with_options"
       ],
       "state_consumed": [
-        "disp_idx",
+        "page_idx",
         "fill_sprite_data",
-        "g_e4c8",
+        "n_read",
         "sfx_data_ptr"
       ],
       "state_produced": [],
@@ -1845,22 +1845,22 @@
         "load_return_screen_assets",
         "queue_audio",
         "prepare_game_asset_read",
-        "wait_input",
+        "await_input",
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "disp_idx",
+        "page_idx",
         "file_error_state",
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
-        "g_e4c8",
+        "n_read",
         "hook_flags_word",
         "page2",
         "sfx_data_ptr"
       ],
       "state_produced": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "hook_flags_word"
       ],
       "seam": "Keep the transition state; route return-screen assets, indexed copies, input/ticks and audio through host asset, renderer, input/clock and audio services.",
@@ -1889,7 +1889,7 @@
       "state_consumed": [
         "file_mark",
         "fill_sprite_filename",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_font_filename",
         "level_screen_data_filename",
         "level_table_filename",
@@ -1898,7 +1898,7 @@
       "state_produced": [
         "file_mark",
         "fill_sprite_data",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "level_data_cursor",
         "sfx_data_ptr",
         "tile_art_base"
@@ -1928,7 +1928,7 @@
       ],
       "state_consumed": [
         "file_mark",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_font_filename",
         "pause_screen_data_filename",
         "sound_blaster_detected"
@@ -1936,7 +1936,7 @@
       "state_produced": [
         "file_mark",
         "fill_sprite_data",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "sfx_data_ptr"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
@@ -1964,7 +1964,7 @@
       ],
       "state_consumed": [
         "file_mark",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "game_font_filename",
         "game_over_data_filename",
         "sound_blaster_detected"
@@ -1972,7 +1972,7 @@
       "state_produced": [
         "file_mark",
         "fill_sprite_data",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "sfx_data_ptr"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
@@ -1994,7 +1994,7 @@
         "run_gameplay_session"
       ],
       "callees": [
-        "set_draw_page",
+        "clear_draw_page",
         "draw_background_tiles",
         "copy_screen_span",
         "fatal_exit",
@@ -2008,7 +2008,7 @@
         "tileid"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "image_color_depth",
         "tileid"
       ],
@@ -2040,7 +2040,7 @@
         "brick_art_start",
         "brick_code_mapping",
         "brick_sprite_offsets_first",
-        "bricks",
+        "bonus_stage_brick_counts",
         "cell_cursor",
         "current_brick_code",
         "level_data_cursor",
@@ -2053,7 +2053,7 @@
       "state_produced": [
         "cell_cursor",
         "current_brick_code",
-        "draw_idx",
+        "drawpage",
         "enemy_spawn_wait_time",
         "image_color_depth",
         "level_data_cursor",
@@ -2089,21 +2089,21 @@
       ],
       "callees": [
         "init_stage_palette",
-        "set_img_buffers",
+        "set_image_pages",
         "update_mouse",
         "advance_tracks",
         "queue_draws",
         "redraw_image_region",
         "fatal_exit",
         "show_page",
-        "f_9d40",
+        "wait_for_tick",
         "handle_s_key",
         "copy_screen_span",
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "hook_flags_word",
         "image_buffer_error_code",
@@ -2115,7 +2115,7 @@
         "tick"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "hook_flags_word",
         "space_pressed"
       ],
@@ -2140,23 +2140,23 @@
         "wait_level"
       ],
       "callees": [
-        "set_pg",
+        "set_page",
         "init_tracks",
         "clear_draw_page",
         "write_vga_palette",
-        "set_draw_page",
-        "write_pal"
+        "clear_draw_page",
+        "write_vga_palette"
       ],
       "state_consumed": [
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "palette_base",
         "tile_art_base"
       ],
       "state_produced": [
-        "path_num",
+        "path_count",
         "sprite_base",
-        "track_data"
+        "transition_track_data"
       ],
       "seam": "Keep the 8-bit indexed page/palette contract; replace page copy, palette transfer and pixel output with the SDL3 framebuffer backend.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -2180,16 +2180,16 @@
         "run_gameplay_session"
       ],
       "callees": [
-        "set_pg",
+        "set_page",
         "write_level_number_glyphs",
-        "wait_input",
+        "await_input",
         "fatal_exit",
         "copy_screen_span",
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "image_buffer_error_code",
         "page2",
@@ -2221,7 +2221,7 @@
         "fill_sprite_data",
         "level_digit_sprite_records",
         "level_number",
-        "track_data"
+        "transition_track_data"
       ],
       "state_produced": [
         "sprite_base"
@@ -2247,14 +2247,14 @@
       "callers": [],
       "callees": [
         "stop_audio_stream",
-        "prep_brick",
+        "prep_level",
         "copy_screen_span",
         "move_mouse_to",
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "page2",
         "racket_object"
@@ -2280,7 +2280,7 @@
         "return_to_main_menu"
       ],
       "callees": [
-        "set_pg",
+        "set_page",
         "init_tracks"
       ],
       "state_consumed": [
@@ -2316,8 +2316,8 @@
         "copy_screen_span_entry"
       ],
       "state_consumed": [
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "g_e36e",
         "g_e372",
@@ -2326,10 +2326,10 @@
         "high_score_values",
         "monster_art",
         "page2",
-        "racket_state"
+        "score_state"
       ],
       "state_produced": [
-        "draw_idx"
+        "drawpage"
       ],
       "seam": "Inject the original logical tick/frame counter at the wait boundary; retain game tick comparisons and update order.",
       "sdl3_strategy": "Inject the original logical tick/frame counter at the wait boundary; retain game tick comparisons and update order."
@@ -2358,9 +2358,9 @@
         "copy_clipped_screen_rectangle"
       ],
       "state_consumed": [
-        "draw_idx",
-        "flip_dst",
-        "flip_src",
+        "drawpage",
+        "dst_page",
+        "src_page",
         "g_e36e",
         "g_e372",
         "g_e376",
@@ -2369,10 +2369,10 @@
         "monster_art",
         "next_extra_life_score",
         "page2",
-        "racket_state"
+        "score_state"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "image_color_depth"
       ],
       "seam": "Keep game request IDs and route them through the SDL3 audio stream adapter.",
@@ -2401,17 +2401,17 @@
         "brick_art_start",
         "cell_cursor",
         "current_brick_code",
-        "draw_idx",
-        "flip_dst",
-        "flip_src",
+        "drawpage",
+        "dst_page",
+        "src_page",
         "frames",
         "page2",
         "racket_object",
-        "racket_state",
+        "score_state",
         "remaining_brick_count"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "remaining_brick_count"
       ],
       "sdl3_strategy": "Keep portable behavior: Applies a brick collision result and updates brick/score/effect state."
@@ -2441,15 +2441,15 @@
       "state_consumed": [
         "brick_art_start",
         "brick_sprite_offsets_first",
-        "draw_idx",
-        "flip_dst",
-        "flip_src",
+        "drawpage",
+        "dst_page",
+        "src_page",
         "image_color_depth",
         "page2",
         "sprite_metadata"
       ],
       "state_produced": [
-        "draw_idx",
+        "drawpage",
         "image_color_depth",
         "sprite_metadata"
       ],
@@ -2477,7 +2477,7 @@
         "copy_clipped_screen_rectangle"
       ],
       "state_consumed": [
-        "draw_idx",
+        "drawpage",
         "page3"
       ],
       "state_produced": [],
@@ -2510,21 +2510,21 @@
       "callees": [
         "copy_screen_span",
         "show_page",
-        "f_9d40",
+        "wait_for_tick",
         "write_vga_palette",
         "copy_screen_span_entry",
-        "write_pal"
+        "write_vga_palette"
       ],
       "state_consumed": [
-        "disp_idx",
-        "draw_idx",
-        "flip_dst",
-        "flip_src",
+        "page_idx",
+        "drawpage",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "page2"
       ],
       "state_produced": [
-        "draw_idx"
+        "drawpage"
       ],
       "seam": "Inject the original logical tick/frame counter at the wait boundary; retain game tick comparisons and update order.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -2716,7 +2716,7 @@
         "falling_spell_cursor",
         "image_buffer_cursor",
         "racket_object",
-        "racket_state",
+        "score_state",
         "spell_art_base",
         "spell_count",
         "spell_cursor",
@@ -2973,7 +2973,7 @@
       ],
       "state_consumed": [
         "motion_dir",
-        "racket_state"
+        "score_state"
       ],
       "state_produced": [],
       "sdl3_strategy": "Keep portable behavior: Adds the score value for a collected bonus."
@@ -3895,7 +3895,7 @@
         "moving_target_cursor",
         "moving_target_number",
         "racket_object",
-        "racket_state",
+        "score_state",
         "remaining_brick_count"
       ],
       "state_produced": [
@@ -3959,13 +3959,13 @@
       ],
       "state_consumed": [
         "brick_sprite_fn",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju",
+        "n_read",
+        "file_buf_ptr",
         "main_palette_fn"
       ],
       "state_produced": [
         "brick_art_start",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "palette_base",
         "vga_buffer_base"
       ],
@@ -3994,7 +3994,7 @@
       "state_consumed": [
         "digit_sprite_filename",
         "foe_sprite_fn",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "racket_sprite_filename",
         "spell_sprite_fn"
       ],
@@ -4024,11 +4024,11 @@
         "run_level"
       ],
       "callees": [
-        "f_a574_wrvhrpegbz",
+        "load_picture_keep",
         "load_next_file"
       ],
       "state_consumed": [
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "monster_anim_fname",
         "monster_sprite_filename",
         "sprite_memory_base"
@@ -4066,10 +4066,10 @@
       ],
       "state_consumed": [
         "file_mark",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "level_art_base",
         "level_art_load_base",
-        "level_layout_records",
+        "level_audio_requests",
         "main_screen_data_filename",
         "previous_level_art_base",
         "sound_blaster_detected",
@@ -4077,10 +4077,10 @@
       ],
       "state_produced": [
         "file_mark",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "level_art_base",
         "level_art_load_base",
-        "level_layout_records",
+        "level_audio_requests",
         "previous_level_art_base",
         "temp"
       ],
@@ -4161,7 +4161,7 @@
         "portal_y_source",
         "ptrbuf",
         "racket_object",
-        "racket_state",
+        "score_state",
         "spell_art_base",
         "sprite_bounds_a_bottom",
         "sprite_frame_pointer",
@@ -4260,29 +4260,29 @@
         "next_lvl"
       ],
       "callees": [
-        "fade_pal",
+        "fade_dac",
         "load_monster_art",
-        "prep_brick",
-        "set_img_buffers",
+        "prep_level",
+        "set_image_pages",
         "initialize_level_hud",
-        "clr_bc",
-        "clr_sp",
-        "set_lc",
-        "f_9d40",
+        "zapbol",
+        "sprclr",
+        "aitune",
+        "wait_for_tick",
         "plot_transformed_pixel",
         "copy_screen_span",
         "scan",
         "update_enemy_attack_cycle",
-        "upd_sh",
+        "firein",
         "update_level_hud",
         "handle_s_key",
         "update_auxiliary_projectiles",
-        "upd_ani",
+        "animate",
         "redraw_image_region",
         "fatal_exit",
         "show_page",
         "submit_audio_request",
-        "rand_rng",
+        "random_in_range",
         "spawn_animated_sprite",
         "restore_gameplay_display_mode",
         "award_level_completion_bonus",
@@ -4295,8 +4295,8 @@
         "enemy_health_current",
         "enemy_shot_countdown",
         "file_error_state",
-        "flip_dst",
-        "flip_src",
+        "dst_page",
+        "src_page",
         "g_e35a",
         "g_e37a",
         "game_sprite_base",
@@ -4312,9 +4312,9 @@
         "vga_buffer_base"
       ],
       "state_produced": [
-        "disp_idx",
+        "page_idx",
         "enemy_shot_countdown",
-        "g_e4d0_wfmxdlyju",
+        "file_buf_ptr",
         "hook_flags_word",
         "level_intro_ticks",
         "old_display_mode"
@@ -4367,8 +4367,8 @@
       ],
       "callees": [
         "submit_audio_request",
-        "write_pal",
-        "f_9d40"
+        "write_vga_palette",
+        "wait_for_tick"
       ],
       "state_consumed": [
         "temp",
@@ -4401,11 +4401,11 @@
       ],
       "callees": [
         "submit_audio_request",
-        "fade_pal"
+        "fade_dac"
       ],
       "state_consumed": [
         "arcade",
-        "racket_state",
+        "score_state",
         "remaining_level_time",
         "total_level_time",
         "vga_buffer_base"
@@ -4572,8 +4572,8 @@
         "write_dac_palette"
       ],
       "state_consumed": [
-        "disp_idx",
-        "draw_idx",
+        "page_idx",
+        "drawpage",
         "enemy_health_current",
         "enemy_max_health",
         "history_mouse_x_0",
@@ -4736,7 +4736,7 @@
       "class": "KEEP",
       "hardware_dependencies": [],
       "callers": [
-        "upd_sh",
+        "firein",
         "update_enemy_attack_cycle"
       ],
       "callees": [],
@@ -4767,7 +4767,7 @@
         "run_level"
       ],
       "callees": [
-        "rand_rng",
+        "random_in_range",
         "spawn_auxiliary_projectile",
         "submit_audio_request"
       ],
@@ -4834,7 +4834,7 @@
         "Consumes the legacy sprite queue and indexed framebuffer."
       ],
       "callers": [
-        "upd_ani"
+        "animate"
       ],
       "callees": [
         "remove_animated_sprite",
@@ -4935,7 +4935,7 @@
         "Draws into the indexed page/sprite renderer."
       ],
       "callers": [
-        "reset_lvl"
+        "reset_level"
       ],
       "callees": [
         "draw_bob_sprite",
@@ -5076,7 +5076,7 @@
         "player_key_flags",
         "prior_key_ascii",
         "racket_object",
-        "racket_state"
+        "score_state"
       ],
       "state_produced": [
         "current_ascii",
@@ -5092,7 +5092,7 @@
       "unit": "U082cc",
       "src": "src/u_082cc.c",
       "subsystem": "frame and sprite scheduling",
-      "purpose": "Init tracks.",
+      "purpose": "Init level_prompt_fallback_tracks.",
       "class": "KEEP",
       "hardware_dependencies": [],
       "callers": [
@@ -5102,11 +5102,11 @@
       ],
       "callees": [],
       "state_consumed": [
-        "path_num",
-        "track_data"
+        "path_count",
+        "transition_track_data"
       ],
       "state_produced": [],
-      "sdl3_strategy": "Keep portable behavior: Init tracks."
+      "sdl3_strategy": "Keep portable behavior: Init level_prompt_fallback_tracks."
     },
     "1:0x8345": {
       "start": "0x8345",
@@ -5115,23 +5115,23 @@
       "unit": "U082cc",
       "src": "src/u_082cc.c",
       "subsystem": "frame and sprite scheduling",
-      "purpose": "Advance tracks.",
+      "purpose": "Advance level_prompt_fallback_tracks.",
       "class": "KEEP",
       "hardware_dependencies": [],
       "callers": [
-        "wait_input",
+        "await_input",
         "wait_level"
       ],
       "callees": [],
       "state_consumed": [
-        "path_num",
+        "path_count",
         "tick",
-        "track_data"
+        "transition_track_data"
       ],
       "state_produced": [
         "tick"
       ],
-      "sdl3_strategy": "Keep portable behavior: Advance tracks."
+      "sdl3_strategy": "Keep portable behavior: Advance level_prompt_fallback_tracks."
     },
     "1:0x83b1": {
       "start": "0x83b1",
@@ -5144,15 +5144,15 @@
       "class": "KEEP",
       "hardware_dependencies": [],
       "callers": [
-        "wait_input",
+        "await_input",
         "wait_level"
       ],
       "callees": [],
       "state_consumed": [
         "image_buffer_cursor",
-        "path_num",
+        "path_count",
         "sprite_base",
-        "track_data"
+        "transition_track_data"
       ],
       "state_produced": [
         "image_buffer_cursor"
@@ -5180,17 +5180,17 @@
         "show_high_score_screen"
       ],
       "callees": [
-        "set_img_buffers"
+        "set_image_pages"
       ],
       "state_consumed": [
-        "flip_dst",
-        "flip_src",
-        "video_page_2_index",
-        "vp3idx"
+        "dst_page",
+        "src_page",
+        "stored_page_2_index",
+        "page_3"
       ],
       "state_produced": [
-        "disp_idx",
-        "draw_idx",
+        "page_idx",
+        "drawpage",
         "page2",
         "page3"
       ],
@@ -5204,7 +5204,7 @@
       "unit": "U082cc",
       "src": "src/u_082cc.c",
       "subsystem": "frame and sprite scheduling",
-      "purpose": "Waits for key/mouse/scan-code input while advancing tracks and drawing.",
+      "purpose": "Waits for key/mouse/scan-code input while advancing level_prompt_fallback_tracks and drawing.",
       "class": "ADAPT",
       "hardware_dependencies": [
         "Polls legacy key/mouse state, logical ticks and page/draw queues.",
@@ -5218,7 +5218,7 @@
         "return_to_main_menu"
       ],
       "callees": [
-        "f_9d40",
+        "wait_for_tick",
         "handle_s_key",
         "advance_tracks",
         "queue_draws",
@@ -5228,9 +5228,9 @@
       "state_consumed": [
         "current_ascii",
         "current_scan_code",
-        "g_e1b8",
-        "g_e1bc",
-        "g_e1c0",
+        "save_cur",
+        "retrace_tick_count",
+        "ticklim",
         "hook_flags_word",
         "image_buffer_cursor",
         "keyboard_scan_byte",
@@ -5240,8 +5240,8 @@
         "tick"
       ],
       "state_produced": [
-        "g_e1b8",
-        "g_e1bc",
+        "save_cur",
+        "retrace_tick_count",
         "hook_flags_word",
         "image_buffer_cursor",
         "space_pressed"
@@ -5284,7 +5284,7 @@
         "Emits a game audio request or controls the legacy audio stream."
       ],
       "callers": [
-        "upd_bl"
+        "update"
       ],
       "callees": [
         "get_sprite_bounds",
@@ -5470,7 +5470,7 @@
         "portal_y_source",
         "ptrbuf",
         "racket_object",
-        "racket_state",
+        "score_state",
         "spell_art_base",
         "temp"
       ],
@@ -5525,7 +5525,7 @@
         "show_high_score_screen"
       ],
       "callees": [
-        "set_pal_rgb"
+        "set_vga_palette_rgb"
       ],
       "state_consumed": [],
       "state_produced": [],
@@ -5593,11 +5593,11 @@
         "measure_pit_channel0"
       ],
       "state_consumed": [
-        "g_73a6",
+        "timer_ok",
         "windows_environment_detected"
       ],
       "state_produced": [
-        "g_73a6"
+        "timer_ok"
       ],
       "seam": "Preserve callers and observable state while replacing the listed timing service.",
       "sdl3_strategy": "Replace four PIT/retrace measurements with a monotonic-clock refresh/tick calibration. Preserve the accepted timing bounds and stability check as a compatibility policy, with refresh-dependent limits made explicit in the port."
@@ -5609,24 +5609,24 @@
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
-      "purpose": "Prepares and installs the VBL interrupt-manager descriptor, with f_9afc as its removal callback.",
+      "purpose": "Prepares and installs the VBL interrupt-manager descriptor, with reset_timer as its removal callback.",
       "class": "REIMPLEMENT",
       "hardware_dependencies": [
-        "DOS/DPMI protected-mode interrupt hook/mapping services through f_d656/f_d7b8/f_da01; PIT reload manager."
+        "DOS/DPMI protected-mode interrupt hook/mapping services through save_irq/restore/install; PIT reload manager."
       ],
       "callers": [
-        "f_9b44"
+        "start_timer"
       ],
       "callees": [
-        "f_d656"
+        "save_irq"
       ],
       "state_consumed": [
-        "g_756f",
-        "g_75a8"
+        "tmr_rec",
+        "picvec"
       ],
       "state_produced": [
-        "g_7585",
-        "g_7586"
+        "timer_num",
+        "pic_mask"
       ],
       "sdl3_strategy": "Replace DOS/PIT/IRQ/VBL hardware with an SDL3 performance-counter tick source. Preserve one logical frame tick per measured VGA retrace interval, callback ordering, and game-facing tick counters; poll SDL events at the same service boundary."
     },
@@ -5640,27 +5640,27 @@
       "purpose": "Removes the VBL hook, restores the default PIT reload, and resets the measured timer state.",
       "class": "REIMPLEMENT",
       "hardware_dependencies": [
-        "DOS/DPMI protected-mode interrupt hook/mapping services through f_d656/f_d7b8/f_da01; PIT reload manager."
+        "DOS/DPMI protected-mode interrupt hook/mapping services through save_irq/restore/install; PIT reload manager."
       ],
       "callers": [
         "launch_print_order_form",
         "restore_bios",
         "set_display_mode",
-        "f_9ac4"
+        "install_timer_irq"
       ],
       "callees": [
-        "f_d7b8",
+        "restore",
         "set_pit_channel0_reload",
         "_disable",
         "_enable"
       ],
       "state_consumed": [
-        "g_73ac",
-        "g_756f"
+        "timer_delta",
+        "tmr_rec"
       ],
       "state_produced": [
-        "g_73a8",
-        "g_73ac"
+        "pit_rollover_value",
+        "timer_delta"
       ],
       "sdl3_strategy": "Replace DOS/PIT/IRQ/VBL hardware with an SDL3 performance-counter tick source. Preserve one logical frame tick per measured VGA retrace interval, callback ordering, and game-facing tick counters; poll SDL events at the same service boundary."
     },
@@ -5674,7 +5674,7 @@
       "purpose": "Validates and installs the VBL-synchronized timer manager; sets the timer and chained BIOS vectors.",
       "class": "REIMPLEMENT",
       "hardware_dependencies": [
-        "DOS/DPMI protected-mode interrupt hook/mapping services through f_d656/f_d7b8/f_da01; PIT reload manager."
+        "DOS/DPMI protected-mode interrupt hook/mapping services through save_irq/restore/install; PIT reload manager."
       ],
       "callers": [
         "launch_print_order_form",
@@ -5684,33 +5684,33 @@
       ],
       "callees": [
         "measure_pit_channel0",
-        "f_9ac4",
-        "f_9f48",
-        "f_da01",
+        "install_timer_irq",
+        "clear_timer_events",
+        "install",
         "set_pit_channel0_reload",
-        "f_9d40",
+        "wait_for_tick",
         "_disable",
         "_enable"
       ],
       "state_consumed": [
-        "g_73a6",
-        "g_73ac",
-        "g_756f",
-        "g_7588",
-        "g_75a4",
-        "g_75c4"
+        "timer_ok",
+        "timer_delta",
+        "tmr_rec",
+        "irq_flags",
+        "irq_addr",
+        "dpmi_err"
       ],
       "state_produced": [
-        "g_73a6",
-        "g_73a8",
-        "g_73ac",
-        "g_73c8",
-        "g_7588",
-        "g_758c",
-        "g_7590",
-        "g_7594",
-        "g_e1b4_35",
-        "g_e1be_9"
+        "timer_ok",
+        "pit_rollover_value",
+        "timer_delta",
+        "timer_sync_flag_ptr",
+        "irq_flags",
+        "irq_handler",
+        "irq_phys",
+        "irq_map",
+        "timer_enabled09",
+        "retrace_count5"
       ],
       "sdl3_strategy": "Replace DOS/PIT/IRQ/VBL hardware with an SDL3 performance-counter tick source. Preserve one logical frame tick per measured VGA retrace interval, callback ordering, and game-facing tick counters; poll SDL events at the same service boundary."
     },
@@ -5748,15 +5748,15 @@
         "inp"
       ],
       "state_consumed": [
-        "g_73a8",
-        "g_e164_6",
-        "g_e1ac_j",
-        "g_e1b0_2"
+        "pit_rollover_value",
+        "pit_tick_accumulator5",
+        "pit_counter_snapshot2v",
+        "timer_error_hundredths0z"
       ],
       "state_produced": [
-        "g_e164_6",
-        "g_e1ac_j",
-        "g_e1b0_2"
+        "pit_tick_accumulator5",
+        "pit_counter_snapshot2v",
+        "timer_error_hundredths0z"
       ],
       "sdl3_strategy": "Replace DOS/PIT/IRQ/VBL hardware with an SDL3 performance-counter tick source. Preserve one logical frame tick per measured VGA retrace interval, callback ordering, and game-facing tick counters; poll SDL events at the same service boundary."
     },
@@ -5782,25 +5782,25 @@
         "refresh_video_pages",
         "run_level",
         "fade_level_to_white",
-        "wait_input",
-        "f_9b44"
+        "await_input",
+        "start_timer"
       ],
       "callees": [
-        "f_9e10",
-        "f_9e54"
+        "wait_for_vsync",
+        "process_timer_events"
       ],
       "state_consumed": [
-        "g_756f",
-        "g_e1be_9",
+        "tmr_rec",
+        "retrace_count5",
         "kbd_state_ptr"
       ],
       "state_produced": [
-        "g_e1a8_jn",
-        "g_e1be_9",
-        "g_e1c0"
+        "retrace_spin_count8",
+        "retrace_count5",
+        "ticklim"
       ],
       "seam": "Preserve callers and observable state while replacing the listed timing service.",
-      "sdl3_strategy": "Keep f_9d40 as the logical service boundary: pump SDL events into the same keyboard/mouse/joystick hooks selected by its flags, accumulate the same logical tick counter, and return frame counts with the same consume/reset behavior."
+      "sdl3_strategy": "Keep wait_for_tick as the logical service boundary: pump SDL events into the same keyboard/mouse/joystick hooks selected by its flags, accumulate the same logical tick counter, and return frame counts with the same consume/reset behavior."
     },
     "1:0x9e10": {
       "start": "0x9e10",
@@ -5815,7 +5815,7 @@
         "VGA input-status port 0x3DA, bit 3 (vertical retrace)."
       ],
       "callers": [
-        "f_9d40",
+        "wait_for_tick",
         "measure_pit_channel0",
         "pit_channel0_interrupt"
       ],
@@ -5823,10 +5823,10 @@
         "inp"
       ],
       "state_consumed": [
-        "g_e1a8_jn"
+        "retrace_spin_count8"
       ],
       "state_produced": [
-        "g_e1a8_jn"
+        "retrace_spin_count8"
       ],
       "sdl3_strategy": "Replace DOS/PIT/IRQ/VBL hardware with an SDL3 performance-counter tick source. Preserve one logical frame tick per measured VGA retrace interval, callback ordering, and game-facing tick counters; poll SDL events at the same service boundary."
     },
@@ -5841,19 +5841,19 @@
       "class": "ADAPT",
       "hardware_dependencies": [],
       "callers": [
-        "f_9d40",
+        "wait_for_tick",
         "pit_channel0_interrupt"
       ],
       "callees": [],
       "state_consumed": [
-        "g_73ac",
-        "g_73cc",
-        "g_e168_j",
-        "g_e1be_9"
+        "timer_delta",
+        "timer_event_count",
+        "timer_events4o",
+        "retrace_count5"
       ],
       "state_produced": [
-        "g_e168_j.elapsed",
-        "g_e1be_9"
+        "timer_events4o.elapsed",
+        "retrace_count5"
       ],
       "seam": "Preserve callers and observable state while replacing the listed timing service.",
       "sdl3_strategy": "Keep the five-slot periodic callback scheduler. Convert each PIT-count period and elapsed count to the portable logical tick source, then invoke due callbacks in the same order on the serialized game thread."
@@ -5871,11 +5871,11 @@
       "callers": [],
       "callees": [],
       "state_consumed": [
-        "g_73cc"
+        "timer_event_count"
       ],
       "state_produced": [
-        "g_73cc",
-        "g_e168_j",
+        "timer_event_count",
+        "timer_events4o",
         "g_e16c",
         "g_e170"
       ],
@@ -5892,12 +5892,12 @@
       "class": "KEEP",
       "hardware_dependencies": [],
       "callers": [
-        "f_9b44"
+        "start_timer"
       ],
       "callees": [],
       "state_consumed": [],
       "state_produced": [
-        "g_73cc"
+        "timer_event_count"
       ],
       "sdl3_strategy": "Keep this device-independent timer callback/default-slot behavior; the SDL3 tick backend calls it through the same game-facing callback contract."
     },
@@ -5915,12 +5915,12 @@
         "CLI/STI/FLAGS privilege and direct I/O access."
       ],
       "callers": [
-        "f_9974",
-        "f_9b44",
+        "verify_timer",
+        "start_timer",
         "sys_report"
       ],
       "callees": [
-        "f_9e10"
+        "wait_for_vsync"
       ],
       "state_consumed": [
         "g_pit_elapsed_ticks"
@@ -5943,8 +5943,8 @@
         "PIT channel 0 ports 0x40/0x43; disables/restores interrupts around the reload."
       ],
       "callers": [
-        "f_9afc",
-        "f_9b44"
+        "reset_timer",
+        "start_timer"
       ],
       "callees": [],
       "state_consumed": [],
@@ -5961,21 +5961,21 @@
       "purpose": "Protected-mode IRQ0 handler: re-arms PIT, synchronizes to VGA retrace, advances timer state, and sends PIC EOI.",
       "class": "REIMPLEMENT",
       "hardware_dependencies": [
-        "PIT channel 0 ports 0x40/0x43; master PIC EOI port 0x20; VGA input-status port 0x3DA via f_9e10.",
+        "PIT channel 0 ports 0x40/0x43; master PIC EOI port 0x20; VGA input-status port 0x3DA via wait_for_vsync.",
         "IRQ0 handler and interrupt-frame/segment restoration."
       ],
       "callers": [
-        "f_9b44"
+        "start_timer"
       ],
       "callees": [
-        "f_9e10",
-        "f_9e54"
+        "wait_for_vsync",
+        "process_timer_events"
       ],
       "state_consumed": [
-        "g_73a8"
+        "pit_rollover_value"
       ],
       "state_produced": [
-        "g_e1b4_35"
+        "timer_enabled09"
       ],
       "sdl3_strategy": "Replace DOS/PIT/IRQ/VBL hardware with an SDL3 performance-counter tick source. Preserve one logical frame tick per measured VGA retrace interval, callback ordering, and game-facing tick counters; poll SDL events at the same service boundary."
     },
@@ -5993,12 +5993,12 @@
         "Uses 32-bit integer-encoded flat addresses rather than bounded byte spans."
       ],
       "callers": [
-        "f_a658"
+        "decode_picture"
       ],
       "callees": [],
       "state_consumed": [],
       "state_produced": [
-        "g_pcx_allocation_size",
+        "pcx_allocation_size",
         "pcx_pixel_and_palette_payload_bytes"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
@@ -6019,7 +6019,7 @@
         "32-bit x86 assembly with flat input/output addresses and shared decoder globals."
       ],
       "callers": [
-        "f_a658"
+        "decode_picture"
       ],
       "callees": [
         "find_iff_chunk"
@@ -6089,12 +6089,12 @@
       ],
       "callers": [],
       "callees": [
-        "f_1065b",
-        "f_a658"
+        "read_file_with_decoder",
+        "decode_picture"
       ],
       "state_consumed": [
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju"
+        "n_read",
+        "file_buf_ptr"
       ],
       "state_produced": [],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
@@ -6125,22 +6125,22 @@
         "load_monster_art"
       ],
       "callees": [
-        "f_1065b",
-        "f_a658",
+        "read_file_with_decoder",
+        "decode_picture",
         "move_memory_bytes"
       ],
       "state_consumed": [
-        "g_7c0c",
-        "g_e1d4",
-        "g_e1d8",
-        "g_e1ec_f",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju"
+        "buf_lim",
+        "picture_pixels8",
+        "pic_of",
+        "picture_bytes77",
+        "n_read",
+        "file_buf_ptr"
       ],
       "state_produced": [
-        "g_e1d4",
-        "g_e1d8",
-        "g_e4d0_wfmxdlyju"
+        "picture_pixels8",
+        "pic_of",
+        "file_buf_ptr"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
       "sdl3_strategy": "Keep the original asset format parsing/depacking and indexed pixel/palette results. Replace only DOS/DPMI workspace allocation and any VGA-specific output pointer with bounded host buffers/software indexed surfaces."
@@ -6159,15 +6159,15 @@
         "Uses DOS _splitpath/_stricmp semantics and int-encoded pointers."
       ],
       "callers": [
-        "f_a520",
-        "f_a574_wrvhrpegbz"
+        "load_picture",
+        "load_picture_keep"
       ],
       "callees": [
         "move_memory_bytes",
         "a_a284",
-        "f_c826",
-        "f_a0e0",
-        "f_c685",
+        "decode_gif_with_workspace",
+        "decode_pcx_image",
+        "decode_game_bitmap",
         "_splitpath",
         "_stricmp"
       ],
@@ -6178,18 +6178,18 @@
         "g_1204",
         "g_120c",
         "g_1214",
-        "g_e1d4",
-        "g_e1dc",
-        "g_e1e0_3"
+        "picture_pixels8",
+        "picture_width8",
+        "picture_height0"
       ],
       "state_produced": [
-        "g_e1d4",
-        "g_e1d8",
-        "g_e1dc",
-        "g_e1e0_3",
-        "g_e1e4_n",
-        "g_e1e8_1p",
-        "g_e1ec_f"
+        "picture_pixels8",
+        "pic_of",
+        "picture_width8",
+        "picture_height0",
+        "picture_x5",
+        "picture_y9n",
+        "picture_bytes77"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
       "sdl3_strategy": "Keep the original asset format parsing/depacking and indexed pixel/palette results. Replace only DOS/DPMI workspace allocation and any VGA-specific output pointer with bounded host buffers/software indexed surfaces."
@@ -6247,14 +6247,14 @@
         "write_vga_palette",
         "write_vga_pixel",
         "write_vga_pixel_entry",
-        "write_pal"
+        "write_vga_palette"
       ],
       "state_consumed": [
-        "disp_idx",
-        "draw_idx"
+        "page_idx",
+        "drawpage"
       ],
       "state_produced": [
-        "draw_idx"
+        "drawpage"
       ],
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
     },
@@ -6482,9 +6482,9 @@
         "g_e219",
         "g_e21d",
         "g_e225",
-        "g_font_bitmap_data",
-        "g_text_render_state",
-        "glyph_metrics_offsets"
+        "font_bitmap_data",
+        "text_render_state",
+        "font_glyph_metric_table"
       ],
       "state_produced": [
         "g_e211",
@@ -6550,9 +6550,9 @@
       "state_produced": [
         "g_e209",
         "g_e20d",
-        "g_font_bitmap_data",
-        "g_text_render_state",
-        "glyph_metrics_offsets"
+        "font_bitmap_data",
+        "text_render_state",
+        "font_glyph_metric_table"
       ],
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
     },
@@ -6786,10 +6786,10 @@
         "configure_sound_dma"
       ],
       "callees": [
-        "f_d656"
+        "save_irq"
       ],
       "state_consumed": [
-        "g_75a8",
+        "picvec",
         "slave_pic_vector_base",
         "sndirq",
         "sndvec",
@@ -6821,7 +6821,7 @@
       ],
       "callees": [
         "stop_audio_stream",
-        "f_d7b8",
+        "restore",
         "free_dpmi_memory"
       ],
       "state_consumed": [
@@ -6852,14 +6852,14 @@
       ],
       "callees": [
         "prepare_sound_system",
-        "f_da01",
+        "install",
         "allocate_dpmi_memory"
       ],
       "state_consumed": [
         "audio_dma_buffer_bytes",
         "audio_dma_memory",
-        "dpmi_linear_address_value",
-        "g_75c4",
+        "dpmi_selector_or_failure_marker",
+        "dpmi_err",
         "scbctx",
         "sndirq",
         "sound_blaster_base_port",
@@ -6946,7 +6946,7 @@
         "configure_sound_callback"
       ],
       "callees": [
-        "f_d656"
+        "save_irq"
       ],
       "state_consumed": [
         "scbctx",
@@ -6979,7 +6979,7 @@
       ],
       "callees": [
         "stop_audio_stream",
-        "f_d7b8",
+        "restore",
         "free_dpmi_memory"
       ],
       "state_consumed": [
@@ -7007,10 +7007,10 @@
       "callers": [],
       "callees": [
         "prepare_sound_callback",
-        "f_da01"
+        "install"
       ],
       "state_consumed": [
-        "g_75c4",
+        "dpmi_err",
         "scbctx",
         "sndirq",
         "sound_blaster_base_port",
@@ -7135,7 +7135,7 @@
       "callees": [
         "random_in_range",
         "submit_audio_request",
-        "rand_rng"
+        "random_in_range"
       ],
       "state_consumed": [],
       "state_produced": [],
@@ -7248,7 +7248,7 @@
         "show_order_info",
         "return_to_main_menu",
         "redraw_level_state",
-        "prep_brick",
+        "prep_level",
         "release_sound_system"
       ],
       "callees": [
@@ -7365,7 +7365,7 @@
         "Uses 32-bit int-to-pointer representation for source/output buffers."
       ],
       "callers": [
-        "f_a658"
+        "decode_picture"
       ],
       "callees": [
         "memcpy",
@@ -7396,7 +7396,7 @@
         "Uses global heap allocation and int-encoded image state."
       ],
       "callers": [
-        "f_a658"
+        "decode_picture"
       ],
       "callees": [
         "alloc_heap_block",
@@ -7713,18 +7713,18 @@
         "detect_sound_blaster"
       ],
       "callees": [
-        "f_d656",
-        "f_da01",
+        "save_irq",
+        "install",
         "sound_blaster_ack_entry",
         "sound_blaster_write_entry",
-        "f_d7b8",
+        "restore",
         "write_sound_blaster_byte",
         "acknowledge_sound_blaster_irq",
         "strchr",
         "getenv"
       ],
       "state_consumed": [
-        "g_75a8",
+        "picvec",
         "slave_pic_vector_base",
         "sound_blaster_env_name",
         "sound_blaster_irq",
@@ -7754,12 +7754,12 @@
       ],
       "callees": [
         "allocate_dpmi_memory",
-        "f_d656",
-        "f_da01",
+        "save_irq",
+        "install",
         "sound_dma_mask_entry",
         "sound_blaster_rate_entry",
         "sound_blaster_write_entry",
-        "f_d7b8",
+        "restore",
         "free_dpmi_memory",
         "set_sound_blaster_sample_rate",
         "write_sound_blaster_byte",
@@ -7769,8 +7769,8 @@
         "getenv"
       ],
       "state_consumed": [
-        "dpmi_linear_address_value",
-        "g_75a8",
+        "dpmi_selector_or_failure_marker",
+        "picvec",
         "slave_pic_vector_base",
         "sound_blaster_dma_channel",
         "sound_blaster_env_name",
@@ -7959,7 +7959,7 @@
         "dpmi_host_available",
         "dpmi_private_data_paragraphs",
         "dpmi_version_bcd",
-        "g_75a8",
+        "picvec",
         "slave_pic_vector_base"
       ],
       "sdl3_strategy": "Replace DOS/BIOS/DPMI/XMS/EMS/VCPI probes, vectors, and conventional-memory allocation with SDL/platform capability queries and host allocation. Preserve diagnostic/error behavior where it is visible; do not gate startup on DOS-only devices."
@@ -8005,7 +8005,7 @@
         "DPMI INT 31h real-mode callback/interrupt-vector and memory-mapping services; DOS interrupt vectors; PIC masks/EOI ports 0x21/0xA1/0x20/0xA0; DPMI allocation helpers."
       ],
       "callers": [
-        "f_9ac4",
+        "install_timer_irq",
         "prepare_sound_system",
         "prepare_sound_callback",
         "detect_sound_blaster_irq",
@@ -8036,7 +8036,7 @@
         "DPMI INT 31h real-mode callback/interrupt-vector and memory-mapping services; DOS interrupt vectors; PIC masks/EOI ports 0x21/0xA1/0x20/0xA0; DPMI allocation helpers."
       ],
       "callers": [
-        "f_9afc",
+        "reset_timer",
         "release_sound_system",
         "release_sound_callback",
         "detect_sound_blaster_irq",
@@ -8068,7 +8068,7 @@
         "DPMI INT 31h real-mode callback/interrupt-vector and memory-mapping services; DOS interrupt vectors; PIC masks/EOI ports 0x21/0xA1/0x20/0xA0; DPMI allocation helpers."
       ],
       "callers": [
-        "f_9b44",
+        "start_timer",
         "configure_sound_dma",
         "configure_sound_callback",
         "detect_sound_blaster_irq",
@@ -8085,10 +8085,10 @@
         "int386"
       ],
       "state_consumed": [
-        "dpmi_linear_address_value"
+        "dpmi_selector_or_failure_marker"
       ],
       "state_produced": [
-        "g_75c4"
+        "dpmi_err"
       ],
       "sdl3_strategy": "Replace DOS/BIOS/DPMI/XMS/EMS/VCPI probes, vectors, and conventional-memory allocation with SDL/platform capability queries and host allocation. Preserve diagnostic/error behavior where it is visible; do not gate startup on DOS-only devices."
     },
@@ -8173,7 +8173,7 @@
       ],
       "callers": [
         "save_screen_image",
-        "f_c826",
+        "decode_gif_with_workspace",
         "sys_report",
         "main"
       ],
@@ -8204,7 +8204,7 @@
       ],
       "callers": [
         "save_screen_image",
-        "f_c826",
+        "decode_gif_with_workspace",
         "sys_report"
       ],
       "callees": [
@@ -8258,21 +8258,21 @@
       "callers": [
         "configure_sound_dma",
         "detect_sound_blaster_dma",
-        "f_da01",
+        "install",
         "sys_report"
       ],
       "callees": [
         "int386"
       ],
       "state_consumed": [
-        "dpmi_allocated_segment_base",
-        "dpmi_memory_selector_value"
+        "dpmi_segment_linear_base",
+        "dpmi_dos_segment"
       ],
       "state_produced": [
-        "dpmi_allocated_segment_base",
-        "dpmi_linear_address_value",
-        "dpmi_memory_selector_value",
-        "g_75c4"
+        "dpmi_segment_linear_base",
+        "dpmi_selector_or_failure_marker",
+        "dpmi_dos_segment",
+        "dpmi_err"
       ],
       "sdl3_strategy": "Replace DOS/BIOS/DPMI/XMS/EMS/VCPI probes, vectors, and conventional-memory allocation with SDL/platform capability queries and host allocation. Preserve diagnostic/error behavior where it is visible; do not gate startup on DOS-only devices."
     },
@@ -8292,7 +8292,7 @@
         "release_sound_system",
         "release_sound_callback",
         "detect_sound_blaster_dma",
-        "f_d7b8",
+        "restore",
         "sys_report"
       ],
       "callees": [
@@ -8377,13 +8377,13 @@
         "save_bios"
       ],
       "callees": [
-        "f_9afc",
-        "f_9b44",
+        "reset_timer",
+        "start_timer",
         "int386"
       ],
       "state_consumed": [
         "bios_video_mode_saved",
-        "g_756f",
+        "tmr_rec",
         "g_e381",
         "g_e382"
       ],
@@ -8419,21 +8419,21 @@
       ],
       "callees": [
         "save_bios",
-        "f_9afc",
+        "reset_timer",
         "clear_vga_palette",
         "clear_video_bytes_entry",
         "set_vga_memory_layout",
         "clear_draw_page",
         "initialize_vga_map_mask",
         "restore_vga_register_preset",
-        "f_9b44",
+        "start_timer",
         "int386",
-        "set_draw_page",
-        "clear_pal"
+        "clear_draw_page",
+        "clear_vga_palette"
       ],
       "state_consumed": [
         "bios_video_mode_saved",
-        "g_756f",
+        "tmr_rec",
         "g_75d2",
         "g_75d6",
         "g_75da",
@@ -8629,7 +8629,7 @@
         "Selected VGA page pointer and clipped viewport; pixel clearing is performed through the called rectangle renderer."
       ],
       "callers": [
-        "reset_lvl",
+        "reset_level",
         "init_stage_palette",
         "set_display_mode"
       ],
@@ -8692,13 +8692,13 @@
         "advance_video_page_indices"
       ],
       "state_consumed": [
-        "disp_idx",
-        "draw_idx",
+        "page_idx",
+        "drawpage",
         "g_e336",
         "g_e35e"
       ],
       "state_produced": [
-        "disp_idx"
+        "page_idx"
       ],
       "seam": "Preserve callers and observable state while replacing the listed indexed video and presentation service.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -8718,10 +8718,10 @@
         "set_vga_horizontal_pan_register"
       ],
       "state_consumed": [
-        "vga_crtc_offset"
+        "pending_horizontal_pan"
       ],
       "state_produced": [
-        "vga_crtc_offset"
+        "pending_horizontal_pan"
       ],
       "seam": "Preserve callers and observable state while replacing the listed indexed video and presentation service.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -8852,7 +8852,7 @@
       ],
       "callees": [
         "write_dac_palette_entry",
-        "f_9d40",
+        "wait_for_tick",
         "write_dac_palette"
       ],
       "state_consumed": [
@@ -8905,7 +8905,7 @@
       "callers": [],
       "callees": [
         "write_vga_palette",
-        "write_pal"
+        "write_vga_palette"
       ],
       "state_consumed": [
         "vga_palette_saved"
@@ -8981,7 +8981,7 @@
       "callers": [
         "run_gameplay_session",
         "run_screen_transition",
-        "set_pal",
+        "apply_palette_gradients",
         "clear_vga_palette"
       ],
       "callees": [
@@ -9009,20 +9009,20 @@
         "wait_level",
         "refresh_video_pages",
         "run_level",
-        "wait_input"
+        "await_input"
       ],
       "callees": [
         "set_vga_display_start",
         "advance_video_page_indices"
       ],
       "state_consumed": [
-        "disp_idx",
-        "draw_idx",
+        "page_idx",
+        "drawpage",
         "g_e336",
         "g_e356"
       ],
       "state_produced": [
-        "disp_idx"
+        "page_idx"
       ],
       "seam": "Preserve callers and observable state while replacing the listed indexed video and presentation service.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -9043,14 +9043,14 @@
       ],
       "callees": [],
       "state_consumed": [
-        "draw_idx",
-        "flip_dst",
-        "flip_src"
+        "drawpage",
+        "dst_page",
+        "src_page"
       ],
       "state_produced": [
-        "draw_idx",
-        "flip_dst",
-        "flip_src"
+        "drawpage",
+        "dst_page",
+        "src_page"
       ],
       "seam": "Preserve callers and observable state while replacing the listed indexed video and presentation service.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -9070,16 +9070,16 @@
         "set_vga_display_start"
       ],
       "state_consumed": [
-        "disp_idx",
-        "flip_dst",
-        "flip_src",
+        "page_idx",
+        "dst_page",
+        "src_page",
         "g_e336",
         "g_e346"
       ],
       "state_produced": [
-        "disp_idx",
-        "flip_dst",
-        "flip_src"
+        "page_idx",
+        "dst_page",
+        "src_page"
       ],
       "seam": "Preserve callers and observable state while replacing the listed indexed video and presentation service.",
       "sdl3_strategy": "Keep the existing game-facing draw/page/palette/text/image calls and their state semantics, but route them to an 8-bit indexed software framebuffer with emulated VGA pages. Convert the current palette to SDL3 texture colors at presentation."
@@ -9517,16 +9517,16 @@
       "purpose": "Installs the protected-mode keyboard callback and remembers the previous IRQ vector.",
       "class": "ADAPT",
       "hardware_dependencies": [
-        "DPMI/Watcom interrupt-vector and callback mapping via f_d656/f_d7b8/f_da01; BIOS keyboard buffer/status data at 0x417, 0x41A, and 0x41C."
+        "DPMI/Watcom interrupt-vector and callback mapping via save_irq/restore/install; BIOS keyboard buffer/status data at 0x417, 0x41A, and 0x41C."
       ],
       "callers": [
         "initialize_keyboard_manager"
       ],
       "callees": [
-        "f_d656"
+        "save_irq"
       ],
       "state_consumed": [
-        "g_75a8",
+        "picvec",
         "key_irq"
       ],
       "state_produced": [
@@ -9546,14 +9546,14 @@
       "purpose": "Removes the protected-mode keyboard callback and restores the previous vector.",
       "class": "ADAPT",
       "hardware_dependencies": [
-        "DPMI/Watcom interrupt-vector and callback mapping via f_d656/f_d7b8/f_da01; BIOS keyboard buffer/status data at 0x417, 0x41A, and 0x41C."
+        "DPMI/Watcom interrupt-vector and callback mapping via save_irq/restore/install; BIOS keyboard buffer/status data at 0x417, 0x41A, and 0x41C."
       ],
       "callers": [
         "launch_print_order_form",
         "install_keyboard_input_handler"
       ],
       "callees": [
-        "f_d7b8"
+        "restore"
       ],
       "state_consumed": [
         "key_irq"
@@ -9572,7 +9572,7 @@
       "purpose": "Initializes key bitmaps/BIOS keyboard state and installs the selected keyboard hook mode.",
       "class": "ADAPT",
       "hardware_dependencies": [
-        "DPMI/Watcom interrupt-vector and callback mapping via f_d656/f_d7b8/f_da01; BIOS keyboard buffer/status data at 0x417, 0x41A, and 0x41C."
+        "DPMI/Watcom interrupt-vector and callback mapping via save_irq/restore/install; BIOS keyboard buffer/status data at 0x417, 0x41A, and 0x41C."
       ],
       "callers": [
         "launch_print_order_form",
@@ -9582,10 +9582,10 @@
         "clear_keyboard_state",
         "save_bios_keyboard_flags",
         "install_keyboard_input_handler",
-        "f_da01"
+        "install"
       ],
       "state_consumed": [
-        "g_75c4",
+        "dpmi_err",
         "key_irq",
         "keyboard_hook_flags",
         "keyboard_mapped_address"
@@ -10319,7 +10319,7 @@
         "Mouse-driver INT 33h invoked with Watcom int386; bounds, position/buttons, sensitivity, and move services."
       ],
       "callers": [
-        "rkt_mv",
+        "adjust",
         "save_mouse_sensitivity"
       ],
       "callees": [
@@ -10349,7 +10349,7 @@
         "Mouse-driver INT 33h invoked with Watcom int386; bounds, position/buttons, sensitivity, and move services."
       ],
       "callers": [
-        "rkt_mv",
+        "adjust",
         "restore_mouse_sensitivity"
       ],
       "callees": [
@@ -10526,8 +10526,8 @@
       ],
       "callers": [
         "save_high_score_table",
-        "f_a520",
-        "f_a574_wrvhrpegbz",
+        "load_picture",
+        "load_picture_keep",
         "load_next_file"
       ],
       "callees": [
@@ -10542,15 +10542,15 @@
         "file_error_state",
         "file_load_nesting_state",
         "g_1264",
-        "g_7c0c",
-        "g_e4c8"
+        "buf_lim",
+        "n_read"
       ],
       "state_produced": [
         "current_file_name",
         "file_error_state",
         "file_load_nesting_state",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju"
+        "n_read",
+        "file_buf_ptr"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
       "sdl3_strategy": "Replace the Watcom/DOS-backed C stdio file access with a host file API. Preserve filenames, seek/read/write lengths, aligned work-buffer cursor updates, file nesting state, and the existing operation result/error codes."
@@ -10614,16 +10614,16 @@
         "load_assets"
       ],
       "callees": [
-        "f_1065b"
+        "read_file_with_decoder"
       ],
       "state_consumed": [
         "file_load_nesting_state",
-        "g_e4c8",
-        "g_e4d0_wfmxdlyju"
+        "n_read",
+        "file_buf_ptr"
       ],
       "state_produced": [
         "file_load_nesting_state",
-        "g_e4d0_wfmxdlyju"
+        "file_buf_ptr"
       ],
       "seam": "Keep decode/load behavior; pass bounded byte spans and image descriptors, with path resolution, reads and arena allocation behind one AssetStore seam.",
       "sdl3_strategy": "Replace the Watcom/DOS-backed C stdio file access with a host file API. Preserve filenames, seek/read/write lengths, aligned work-buffer cursor updates, file nesting state, and the existing operation result/error codes."
@@ -10661,27 +10661,27 @@
         "detect_joystick",
         "detect_sound_blaster",
         "poll_keyboard",
-        "f_9974",
+        "verify_timer",
         "measure_pit_channel0",
         "probe_cpu_environment",
         "getch",
         "printf",
-        "query_dpmi_free_memory",
-        "query_dos_free_memory"
+        "query_largest_dpmi_free_block",
+        "query_largest_dos_free_block"
       ],
       "state_consumed": [
         "cpu_iopl",
         "cpu_mode",
         "cpu_type",
         "current_ascii",
-        "dos_free_memory_bytes",
+        "largest_dos_free_block_bytes",
         "dos_memory_error",
         "dos_version_packed",
-        "dpmi_linear_address_value",
+        "dpmi_selector_or_failure_marker",
         "dpmi_version_bcd",
         "ems_manager_handle",
         "ems_manager_version",
-        "g_75c4",
+        "dpmi_err",
         "g_7c40",
         "g_7c44",
         "g_7c50",
@@ -10739,8 +10739,8 @@
       "callees": [
         "set_vga_display_start",
         "initialize_keyboard_manager",
-        "f_9b44",
-        "f_9d40",
+        "start_timer",
+        "wait_for_tick",
         "set_display_mode",
         "set_mouse_bounds",
         "move_mouse_to",
@@ -10750,14 +10750,14 @@
         "printf"
       ],
       "state_consumed": [
-        "disp_idx",
+        "page_idx",
         "error_message_categories",
         "g_240e",
         "g_2416",
         "g_241e",
         "g_2426",
-        "g_73a6",
-        "g_7588",
+        "timer_ok",
+        "irq_flags",
         "g_7ca8",
         "g_7cac",
         "g_7cb0",
@@ -10863,7 +10863,7 @@
         "show_game_over_screen",
         "show_instruction_page",
         "show_ending_page",
-        "reset_lvl",
+        "reset_level",
         "wait_level",
         "entry_prompt",
         "run_level",
@@ -11246,66 +11246,66 @@
         "32-bit x86 assembly with flat input/output addresses and global LZW state."
       ],
       "callers": [
-        "f_c826"
+        "decode_gif_with_workspace"
       ],
       "callees": [],
       "state_consumed": [
-        "g_8316",
-        "g_8318",
-        "g_831a",
-        "g_831c",
-        "g_831e",
-        "g_8320",
-        "g_8324",
-        "g_8328",
-        "g_832c",
-        "g_8332",
-        "g_8334",
-        "g_8338",
-        "g_833a",
-        "g_833c",
-        "g_833d",
-        "g_8341",
-        "g_8343",
-        "g_8349",
-        "g_834b",
-        "g_834d",
-        "g_8351",
-        "g_8355",
-        "g_8357",
-        "g_835b",
+        "gif_lzw_current_code",
+        "gif_image_width",
+        "gif_image_height",
+        "gif_has_global_color_table",
+        "gif_color_index_bits",
+        "gif_lzw_expansion_stack",
+        "gif_lzw_prefix_table",
+        "gif_lzw_suffix_table",
+        "gif_lzw_code_width",
+        "gif_lzw_next_code",
+        "gif_lzw_code_limit",
+        "gif_lzw_code_mask",
+        "gif_color_index_mask",
+        "gif_previous_literal",
+        "gif_lzw_bit_buffer",
+        "gif_lzw_bits_buffered",
+        "gif_lzw_saved_codes",
+        "gif_lzw_clear_code",
+        "gif_lzw_end_code",
+        "gif_pixel_output_start",
+        "gif_compressed_data_cursor",
+        "gif_decode_error_code",
+        "gif_global_color_table_bytes",
+        "gif_global_color_table_source",
         "g_e2bc"
       ],
       "state_produced": [
-        "g_8314",
-        "g_8316",
-        "g_8318",
-        "g_831a",
-        "g_831c",
-        "g_831d",
-        "g_831e",
-        "g_8320",
-        "g_8324",
-        "g_8328",
-        "g_832c",
-        "g_832e",
-        "g_8330",
-        "g_8332",
-        "g_8334",
-        "g_8336",
-        "g_8338",
-        "g_833a",
-        "g_833c",
-        "g_833d",
-        "g_8341",
-        "g_8343",
-        "g_8349",
-        "g_834b",
-        "g_834d",
-        "g_8351",
-        "g_8355",
-        "g_8357",
-        "g_835b",
+        "gif_reserved_state",
+        "gif_lzw_current_code",
+        "gif_image_width",
+        "gif_image_height",
+        "gif_has_global_color_table",
+        "gif_color_resolution_bits",
+        "gif_color_index_bits",
+        "gif_lzw_expansion_stack",
+        "gif_lzw_prefix_table",
+        "gif_lzw_suffix_table",
+        "gif_lzw_code_width",
+        "gif_lzw_next_code_width",
+        "gif_lzw_first_available_code",
+        "gif_lzw_next_code",
+        "gif_lzw_code_limit",
+        "gif_lzw_code_limit_shadow",
+        "gif_lzw_code_mask",
+        "gif_color_index_mask",
+        "gif_previous_literal",
+        "gif_lzw_bit_buffer",
+        "gif_lzw_bits_buffered",
+        "gif_lzw_saved_codes",
+        "gif_lzw_clear_code",
+        "gif_lzw_end_code",
+        "gif_pixel_output_start",
+        "gif_compressed_data_cursor",
+        "gif_decode_error_code",
+        "gif_global_color_table_bytes",
+        "gif_global_color_table_source",
         "g_e2bc"
       ],
       "sdl3_strategy": "Translate the GIF87a/LZW state machine to portable C; preserve the supported 320x200, 256-color, non-interlaced subset and errors.",
@@ -11458,7 +11458,7 @@
         "clip_and_dispatch_sprite_record"
       ],
       "state_consumed": [
-        "draw_idx",
+        "drawpage",
         "g_e326",
         "g_e336",
         "g_e346",
@@ -11506,7 +11506,7 @@
       "callees": [],
       "state_consumed": [
         "active_video_page_buffer",
-        "draw_idx",
+        "drawpage",
         "g_e326",
         "g_e336",
         "g_e346",
@@ -11553,7 +11553,7 @@
       ],
       "state_consumed": [
         "active_video_page_buffer",
-        "draw_idx",
+        "drawpage",
         "g_e326",
         "g_e336",
         "g_e346",
@@ -11638,7 +11638,7 @@
         "show_ending_page",
         "run_screen_transition",
         "return_to_main_menu",
-        "reset_lvl",
+        "reset_level",
         "wait_level"
       ],
       "callees": [],
@@ -11681,7 +11681,7 @@
       ],
       "callees": [],
       "state_consumed": [
-        "disp_idx",
+        "page_idx",
         "g_e326",
         "g_e336",
         "g_e346",
@@ -11720,7 +11720,7 @@
       ],
       "callees": [],
       "state_consumed": [
-        "draw_idx",
+        "drawpage",
         "g_e326",
         "g_e336",
         "g_e346",
@@ -11868,11 +11868,11 @@
       ],
       "callers": [
         "load_and_draw_level",
-        "f_a574_wrvhrpegbz",
-        "f_a658",
+        "load_picture_keep",
+        "decode_picture",
         "plot_transformed_pixel",
         "transfer_audio_stream_block",
-        "f_da01"
+        "install"
       ],
       "callees": [],
       "state_consumed": [
@@ -12108,20 +12108,20 @@
         "set_image_pages",
         "run_main_menu",
         "exit",
-        "set_img_buffers"
+        "set_image_pages"
       ],
       "state_consumed": [
-        "back_pg_upd_buf",
+        "back_page_queue",
         "file_error_state",
-        "frnt_pg_upd_buf",
+        "front_page_bufs",
         "sprite_commands"
       ],
       "state_produced": [
         "audio_stream_stop_flag",
         "decode_hook",
         "file_error_state",
-        "g_7c0c",
-        "g_e4d0_wfmxdlyju"
+        "buf_lim",
+        "file_buf_ptr"
       ],
       "seam": "Preserve callers and observable state while replacing the listed indexed video and presentation service.",
       "sdl3_strategy": "Keep startup/game sequencing and key-trigger semantics; replace video/audio initialization hooks with SDL3 backends and pass SDL key events into the same ASCII/action-hook state."
@@ -12144,7 +12144,7 @@
         "wait_for_key_or_click",
         "wait_level",
         "run_level",
-        "wait_input"
+        "await_input"
       ],
       "callees": [
         "toggle_audio_transfer_mode"
@@ -12220,7 +12220,7 @@
         "Real-mode timer vector chains through a load-time-patched far pointer; private tick word at DS:0x0D."
       ],
       "callers": [
-        "f_9b44"
+        "start_timer"
       ],
       "callees": [],
       "state_consumed": [
