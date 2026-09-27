@@ -6,8 +6,8 @@ extern short x_delta;
 extern short y_offset;
 extern short width;
 extern short height;
-extern struct Iter24 *track_data;
-extern int path_num;
+extern struct Iter24 *transition_track_data;
+extern int path_count;
 extern int tick;
 extern int sprite_base;
 extern unsigned char *image_buffer_cursor;
@@ -47,9 +47,9 @@ extern void show_page(void);
 
 void init_tracks(void)
 {
-    struct Iter24 *p = track_data;
+    struct Iter24 *p = transition_track_data;
     int i = 0;
-    for (; i < path_num; i++) {
+    for (; i < path_count; i++) {
         p->count = (p->second - p->first) / p->step;
         p->start = p->first - p->count;
         p++;
@@ -62,9 +62,9 @@ void advance_tracks(void)
     struct Iter24 *p;
     int i;
     ++tick;
-    p = track_data;
+    p = transition_track_data;
     i = 0;
-    for (; i < path_num; i++) {
+    for (; i < path_count; i++) {
         if (tick >= p->step)
             p->start = p->second;
         else
@@ -75,9 +75,9 @@ void advance_tracks(void)
 
 void queue_draws(void)
 {
-    struct Iter48 *p = (struct Iter48 *)track_data;
+    struct Iter48 *p = (struct Iter48 *)transition_track_data;
     int i = 0;
-    for (; i < (path_num >> 1); i++) {
+    for (; i < (path_count >> 1); i++) {
         *(int *)image_buffer_cursor = (int)(p->at20 + sprite_base);
         *(short *)(image_buffer_cursor + 4) = (short)(p->box >> 4);
         *(short *)(image_buffer_cursor + 6) = (short)(p->pad32 >> 4);

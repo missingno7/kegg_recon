@@ -91,7 +91,7 @@ extern void fatal_exit(unsigned, unsigned);
 extern void copy_screen_span_entry(int, int, int, int, int);
 extern void handle_s_key(void);
 extern void load_monster_art(void);
-extern void prep_brick(void);
+extern void prep_level(void);
 extern void restore_gameplay_display_mode(void);
 extern int fade_level_to_white(void);
 extern int award_level_completion_bonus(void);
@@ -231,7 +231,7 @@ int run_level(void)
     fade_dac((void *)vga_buffer_base, 0, VGA_DAC_MAX_COMPONENT, 8);
     g_e4d0_wfmxdlyju = file_error_state;
     load_monster_art();
-    prep_brick();
+    prep_level();
     *(unsigned char *)&hook_flags_word &= 0xf8;
     set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     initialize_level_hud();

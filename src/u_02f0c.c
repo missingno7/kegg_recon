@@ -85,7 +85,7 @@ extern void handle_s_key(void);
 extern void refresh_video_pages(int);
 extern void rkt_mv(void);
 extern void set_pg(void);
-extern void set_pal(void *, void *);
+extern void apply_palette_gradients(void *, void *);
 extern void f_9d40(unsigned char);
 extern int load_picture_keep();
 extern void plot_transformed_pixel(void *, int);
@@ -232,7 +232,7 @@ void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned c
 extern int fill_sprite_data;
 void load_shared_game_assets(void);
 void render_image_with_options(int, int, int, int, int);
-extern unsigned char *track_data;
+extern unsigned char *transition_track_data;
 extern int main_menu_return_transition_tracks;
 void load_return_screen_assets(void);
 void prepare_game_asset_read(void);
@@ -273,7 +273,7 @@ void advance_tracks(void);
 void queue_draws(void);
 extern int sprite_base;
 extern int level_palette_transition_tracks;
-extern int path_num;
+extern int path_count;
 extern int palette_base;
 void init_tracks(void);
 void write_vga_palette(int);
@@ -281,7 +281,7 @@ extern int level_number_transition_tracks_a;
 extern int tracks;
 void write_level_number_glyphs(void);
 extern unsigned char *racket_object;
-void prep_brick(void);
+void prep_level(void);
 void move_mouse_to(int, int);
 extern char monster_font_glyph_metrics[];
 void draw_zero_padded_number(int, int, int, int, int);
@@ -453,8 +453,8 @@ void init_stage_palette(void)
 {
     set_pg();
     sprite_base = tile_art_base;
-    track_data = (unsigned char *)&level_palette_transition_tracks;
-    path_num = 12;
+    transition_track_data = (unsigned char *)&level_palette_transition_tracks;
+    path_count = 12;
     init_tracks();
     clear_draw_page(src_page);
     clear_draw_page(dst_page);
@@ -464,11 +464,11 @@ void init_stage_palette(void)
 void entry_prompt(void)
 {
     set_pg();
-    track_data = (unsigned char *)&level_number_transition_tracks_a;
+    transition_track_data = (unsigned char *)&level_number_transition_tracks_a;
     write_level_number_glyphs();
     wait_input(0x78);
     if (tick == 0x78) {
-        track_data = (unsigned char *)&tracks;
+        transition_track_data = (unsigned char *)&tracks;
         write_level_number_glyphs();
         if (image_buffer_error_code != 0)
             fatal_exit(image_buffer_error_code, 0);
@@ -481,16 +481,16 @@ void entry_prompt(void)
 void write_level_number_glyphs(void)
 {
     sprite_base = fill_sprite_data;
-    path_num = 6;
+    path_count = 6;
     init_tracks();
-    *(int *)(track_data + 0x44) = level_digit_sprite_records[(((int)level_number + 1) / 10) % 10].value;
-    *(int *)(track_data + 0x74) = level_digit_sprite_records[((int)level_number + 1) % 10].value;
+    *(int *)(transition_track_data + 0x44) = level_digit_sprite_records[(((int)level_number + 1) / 10) % 10].value;
+    *(int *)(transition_track_data + 0x74) = level_digit_sprite_records[((int)level_number + 1) % 10].value;
 }
 
 void redraw_level_state(void)
 {
     stop_audio_stream();
-    prep_brick();
+    prep_level();
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
     move_mouse_to(((int *)racket_object)[0], ((int *)racket_object)[1]);
@@ -499,7 +499,7 @@ void redraw_level_state(void)
 void prepare_game_asset_read(void)
 {
     sprite_base = fill_sprite_data;
-    path_num = 4;
+    path_count = 4;
     set_pg();
     init_tracks();
 }
