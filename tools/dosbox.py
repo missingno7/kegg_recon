@@ -7,6 +7,8 @@ Library use:
 
 The work directory is mounted as C:, the pinned Watcom install as D:. Each call
 gets a private DOS batch/output name and a unique DOSBox-X configuration.
+The DOSBox-X executable (KEGG_DOSBOX_X or C:/tools/dosbox-x/dosbox-x.exe) and the launched DOS/4GW images
+are hash-checked against toolchain/toolchain.json before every run (fail closed).
 """
 from __future__ import annotations
 
@@ -52,6 +54,17 @@ def _check(inst_cfg: dict, root: Path, rel: str) -> str:
     actual = _sha(path)
     if actual.lower() != expected.lower():
         raise RuntimeError(f"toolchain file {path} hash {actual} != locked {expected}")
+    return actual
+
+
+def check_runner(cfg=None) -> str:
+    """The DOSBox-X executable must have the SHA-256 pinned in toolchain.json runners.dosbox-x (fail closed)."""
+    pin = (cfg or config()).get("runners", {}).get("dosbox-x", {}).get("sha256")
+    if not pin:
+        raise RuntimeError("no pinned SHA-256 for DOSBox-X in toolchain.json runners.dosbox-x")
+    actual = _sha(DOSBOX_X)
+    if actual != pin.lower():
+        raise RuntimeError(f"DOSBox-X executable {DOSBOX_X} hash {actual} != pinned {pin}")
     return actual
 
 
@@ -132,6 +145,7 @@ def run_dosbox(tool: str, args, install: str = "wc100", cwd=None, timeout=300) -
         raise NotADirectoryError(work)
     if not DOSBOX_X.is_file():
         raise FileNotFoundError(f"DOSBox-X executable is missing: {DOSBOX_X}")
+    check_runner(cfg)
 
     # These are the DOS/4GW images, not the Win32 loader stubs in BINNT.
     image_rel = hosts.get("dos4gw") or hosts.get("dos")

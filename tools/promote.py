@@ -10,7 +10,9 @@ frozen (copied) and freshly compiled; nothing previously tested is trusted.  Ext
   * address-named symbols f_HEX / g_HEX must bind to 1:HEX / 3:HEX (names encode original addresses);
   * bindings must not contradict manifest symbols;
   * after publishing, every other matching function is re-verified (tools/validate.py) and the publish is
-    rolled back if anything regresses.
+    rolled back if anything regresses; a --unit promotion additionally requires the whole-image gate
+    (tools/validate.py --image: one WLINK run == KE.EXE, zero raw debt) or it is rolled back.  Overlap with
+    existing units is checked before the destination file is written.
 """
 from __future__ import annotations
 
@@ -132,8 +134,19 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
         return 1
     with Lock():
         man = load_manifest()
-        backup = MAN.read_text()
+        backup = MAN.read_bytes()
+        # every overlap constraint is checked before anything is written
+        overl = lambda u: (int(u["start"], 16) < e0 and s0 < int(u["end"], 16)) or \
+            (data_only and (u["start"], u["end"]) == (start, end) and u["src"] == dest_rel)
+        superseded = [u for u in man.setdefault("units", []) if u["id"] != uid and overl(u)]
+        for u in superseded:  # a new unit covering an older one replaces it; members outside the new range revert
+            us, ue = int(u["start"], 16), int(u["end"], 16)
+            if us < s0 or ue > e0:
+                print(f"NOT PROMOTED: unit {uid} partially overlaps unit {u['id']} ({u['start']}..{u['end']}); "
+                      f"promote a unit that covers it completely")
+                return 1
         dest = ROOT / dest_rel
+        old_dest = dest.read_bytes() if dest.exists() else None
         dest.parent.mkdir(exist_ok=True)
         shutil.copyfile(frozen, dest)
         sha = hashlib.sha256(dest.read_bytes()).hexdigest()
@@ -145,13 +158,7 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
                 f.update({"status": "matching", "src": dest_rel, "unit": uid, "profile": profile, "src_sha256": sha})
                 for k in ("draft", "mismatch", "note"):
                     f.pop(k, None)
-        overl = lambda u: (int(u["start"], 16) < e0 and s0 < int(u["end"], 16)) or             (data_only and (u["start"], u["end"]) == (start, end) and u["src"] == dest_rel)
-        superseded = [u for u in man.setdefault("units", []) if u["id"] != uid and overl(u)]
-        for u in superseded:  # a new unit covering an older one replaces it; members outside the new range revert
-            us, ue = int(u["start"], 16), int(u["end"], 16)
-            if us < s0 or ue > e0:
-                raise SystemExit(f"unit {uid} partially overlaps unit {u['id']} ({u['start']}..{u['end']}); "
-                                 f"promote a unit that covers it completely")
+        for u in superseded:
             old.add(u["src"])
             print(f"superseding unit {u['id']}")
         units = [u for u in man["units"] if u["id"] != uid and not overl(u)]
@@ -164,11 +171,18 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
             if not k.startswith(("seg:", "grp:", "sel:")) and k not in man.get("symbols", {}):
                 man.setdefault("symbols", {})[k] = v
         save_manifest(man)
-        v = subprocess.run([sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet"], capture_output=True, text=True)
+        # a unit changes object boundaries / LEDATA chunking: only the whole-image link decides (validate --image)
+        v = subprocess.run([sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet", "--image"],
+                           capture_output=True, text=True)
         if v.returncode != 0:
-            MAN.write_text(backup)
-            print("ROLLED BACK: regression\n" + v.stdout[-2000:])
+            MAN.write_bytes(backup)
+            if old_dest is None:
+                dest.unlink(missing_ok=True)
+            else:
+                dest.write_bytes(old_dest)
+            print("ROLLED BACK: regression or whole-image gate failed (validate.py --image)\n" + v.stdout[-2000:])
             return 1
+        print(v.stdout.strip()[-1000:])
         still = {f.get("src") for f in man["functions"]}
         for o in old:
             if o not in still and (ROOT / o).exists():
@@ -252,7 +266,7 @@ def main(argv):
         return 0
     with Lock():
         man = load_manifest()
-        backup = MAN.read_text()
+        backup = MAN.read_bytes()
         e = next(f for f in man["functions"] if f.get("name") == func)
         known = {k: v for k, v in man.get("symbols", {}).items()}
         for f in man["functions"]:
@@ -277,7 +291,7 @@ def main(argv):
         v = None if no_validate else subprocess.run(
             [sys.executable, str(ROOT / "tools" / "validate.py"), "--quiet"], capture_output=True, text=True)
         if v is not None and v.returncode != 0:
-            MAN.write_text(backup)
+            MAN.write_bytes(backup)
             if old_src is None:
                 dest.unlink()
             else:

@@ -4,9 +4,18 @@
     python tools/image.py --mode raw         # all game code/data raw (only runtime libraries + stub real)
     python tools/image.py --mode canonical --no-predict     # link every canonical source even if predicted to differ
     python tools/image.py --exclude fn:f_3b2 --exclude unit:T11     # force items to raw debt
+    python tools/image.py --fresh            # no object-cache reads: compile/assemble every object (freeze gate)
 
 Output (build/image/<mode>/): objs/*.obj, ke.lnk, ke.exe, ke.map, report.json; a summary is printed.
-Exit status 0 iff the linked ke.exe is byte-identical to assets/KE.EXE.
+Exit status 0 iff the linked ke.exe is byte-identical to assets/KE.EXE (which must itself have the pinned
+SHA-256, tools/oracle.py; otherwise the build fails closed).
+
+Object cache (build/image/objcache): an optimisation for iteration only.  An entry is keyed by the source bytes,
+the profile, the hashes of every launched compiler/assembler image and runner (checked against their locks by
+tools/dosrun.py), the install identity (toolchain.json tree/key hashes), the Watcom H/ header tree and the compile
+code path; each entry has a .json sidecar that is re-verified (key, source hash, identity, object SHA-256) before
+use, otherwise the object is recompiled.  `--fresh` reads nothing from the cache (every object is compiled into
+the run's private fresh/ directory); the freeze gate is `python tools/validate.py --image --fresh`.
 
 Link plan (one WLINK 10.0 GA run through tools/dosrun.py): game objects in address order (canonical units,
 per-function objects and asm modules where admitted, RAW DEBT objects elsewhere; raw data carriers placed so
@@ -38,9 +47,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import inspect
 import json
+import os
 import re
 import shutil
+import tempfile
 import struct
 import sys
 from dataclasses import dataclass, field
@@ -54,6 +66,7 @@ import capstone  # noqa: E402
 import dosrun  # noqa: E402
 import le as lemod  # noqa: E402
 import omf  # noqa: E402
+import oracle  # noqa: E402
 from omfwrite import ALIGN_BYTES, Obj, ledata_groups  # noqa: E402
 
 ORIG = ROOT / "assets" / "KE.EXE"
@@ -111,6 +124,7 @@ def forward_blocks(S, cap=BLOCK):
 class Original:
     def __init__(self, path=ORIG):
         self.L = L = lemod.LE(path)
+        oracle.require_original_bytes(L.data, path)  # fail closed: the oracle must be the pinned original
         self.bytes = {}
         for o in L.objects:
             b = L.object_bytes(o)
@@ -289,21 +303,122 @@ class Item:
         return self.kind != "raw"
 
 
-def cache_compile(ctx, src: Path, profile: str, cache: Path):
-    """Compile a canonical source with its manifest profile (tools/check.py's compile path); cached by content."""
+CACHE_FORMAT = "kegg-objcache-2"
+_IDENTITY = {}
+
+
+def _tree_sha(root: Path):
+    """sha256 over sorted 'relpath<TAB>sha256' lines (as toolchain/install.py tree_hash) and the file count."""
+    lines = [f"{p.relative_to(root).as_posix()}\t{hashlib.sha256(p.read_bytes()).hexdigest()}"
+             for p in sorted(root.rglob("*")) if p.is_file()]
+    return hashlib.sha256("\n".join(lines).encode()).hexdigest(), len(lines)
+
+
+def toolchain_identity(ctx, profile: str):
+    """Everything outside the source that determines a compiled object for `profile`; every launched image and
+    runner is hash-checked against its lock (tools/dosrun.py, fail closed)."""
+    if profile in _IDENTITY:
+        return _IDENTITY[profile]
     import check
+    import dosbox
     prof = ctx.cfg["profiles"][profile]
+    inst_name = prof["install"]
+    inst = ctx.cfg["installs"][inst_name]
+    root = dosrun.tools_root() / inst["dir"]
+    tool = prof.get("tool", "wcc386")
+    host = prof.get("host") or ("msdos" if tool in ("masm", "ml", "tasm") else "nt")  # as check.compile_candidate
+    ident = {
+        "format": CACHE_FORMAT, "profile_name": profile, "profile": prof, "install": inst_name, "host": host,
+        "install_lock": {k: inst.get(k) for k in ("dir", "tree_sha256", "tree_files", "key_files")},
+        "launched": dosrun.launch_identity(tool, inst_name, host, ctx.cfg),
+        "headers": None,
+        "compile_code": hashlib.sha256("".join(inspect.getsource(f) for f in (
+            check.compile_candidate, dosrun.run, dosrun.environment, dosbox.run_dosbox)).encode()).hexdigest(),
+    }
+    inc = inst.get("env", {}).get("INCLUDE")
+    if tool in ("wcc386", "wpp386") and inc:
+        ident["headers"] = dict(zip(("tree_sha256", "files"), _tree_sha(root / inc)))
+    _IDENTITY[profile] = ident
+    return ident
+
+
+def _atomic_copy(src: Path, dst: Path):
+    fd, tmp = tempfile.mkstemp(prefix=dst.name + ".", suffix=".tmp", dir=dst.parent)
+    os.close(fd)
+    try:
+        shutil.copyfile(src, tmp)
+        os.replace(tmp, dst)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def _atomic_write(dst: Path, text: str):
+    fd, tmp = tempfile.mkstemp(prefix=dst.name + ".", suffix=".tmp", dir=dst.parent)
+    with os.fdopen(fd, "w", newline="\n") as fh:
+        fh.write(text)
+    os.replace(tmp, dst)
+
+
+def cache_compile(ctx, src: Path, profile: str, cache: Path):
+    """Compile a canonical source with its manifest profile (tools/check.py's compile path).  Cached by the source
+    bytes + profile + toolchain identity; a cache entry is used only after its sidecar metadata re-verifies.
+    With ctx.fresh the cache is never read: the object is compiled into the run's private fresh/ directory."""
+    import check
+    stats = ctx.__dict__.setdefault("cache_stats", {"fresh": bool(getattr(ctx, "fresh", False)), "hits": 0,
+                                                    "compiled": 0, "rejected": []})
+    ident = toolchain_identity(ctx, profile)
+    ident_sha = hashlib.sha256(json.dumps(ident, sort_keys=True).encode()).hexdigest()
+    src_bytes = src.read_bytes()
+    src_sha = hashlib.sha256(src_bytes).hexdigest()
     inc = b"".join(p.read_bytes() for p in sorted((ROOT / "include").rglob("*")) if p.is_file()) \
         if (ROOT / "include").exists() else b""
-    key = hashlib.sha256(src.read_bytes() + json.dumps(prof, sort_keys=True).encode() + inc).hexdigest()[:20]
-    out = cache / f"{src.stem}-{key}.obj"
-    if not out.exists():
-        work = cache / f"work-{src.stem}"
+    key = hashlib.sha256(json.dumps({"format": CACHE_FORMAT, "src_sha256": src_sha, "identity": ident_sha,
+                                     "include": hashlib.sha256(inc).hexdigest()}, sort_keys=True).encode()).hexdigest()
+    out = cache / f"{src.stem}-{key[:24]}.obj"
+    meta_path = out.with_suffix(".json")
+    fresh = bool(getattr(ctx, "fresh", False))
+    if not fresh and out.exists():
+        why = None
+        try:
+            meta = json.loads(meta_path.read_text())
+            obj = out.read_bytes()
+            if meta.get("format") != CACHE_FORMAT or meta.get("key") != key:
+                why = "key/format"
+            elif meta.get("src_sha256") != src_sha or meta.get("identity_sha256") != ident_sha:
+                why = "source/toolchain identity"
+            elif meta.get("obj_sha256") != hashlib.sha256(obj).hexdigest() or meta.get("obj_size") != len(obj):
+                why = "object hash"
+        except (OSError, ValueError) as exc:
+            why = f"metadata unreadable ({type(exc).__name__})"
+        if why is None:
+            stats["hits"] += 1
+            return out
+        stats["rejected"].append(f"{out.name}: {why}")
+    cache.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix=f"work-{src.stem}-", dir=cache))
+    try:
+        objp, r = check.compile_candidate(src, profile, work)
+        if getattr(r, "images", None) is not None and r.images != ident["launched"]:
+            raise SystemExit(f"compile of {src.name} launched {r.images}, expected {ident['launched']}")
+        obj = objp.read_bytes()
+        meta = {"format": CACHE_FORMAT, "key": key, "source": src.as_posix(), "src_sha256": src_sha,
+                "profile": profile, "identity_sha256": ident_sha, "identity": ident, "tool_sha256": r.tool_sha256,
+                "obj_sha256": hashlib.sha256(obj).hexdigest(), "obj_size": len(obj)}
+        mine = out
+        if fresh:
+            fdir = ctx.fresh_dir
+            fdir.mkdir(parents=True, exist_ok=True)
+            mine = fdir / out.name
+            shutil.copyfile(objp, mine)
+            (fdir / meta_path.name).write_text(json.dumps(meta, indent=1))
+        # store (or refresh) the verified cache entry atomically: object first, then its sidecar
+        _atomic_copy(objp, out)
+        _atomic_write(meta_path, json.dumps(meta, indent=1))
+        stats["compiled"] += 1
+        return mine
+    finally:
         shutil.rmtree(work, ignore_errors=True)
-        objp, _ = check.compile_candidate(src, profile, work)
-        shutil.copyfile(objp, out)
-        shutil.rmtree(work, ignore_errors=True)
-    return out
 
 
 def apply_plan(ctx, plan_path):
@@ -1140,7 +1255,7 @@ class Owners:
 def compare(ctx, plan, exe):
     o = ctx.orig
     rep = {}
-    a = ORIG.read_bytes()
+    a = oracle.require_original_bytes(o.L.data, ORIG)   # the pinned original (verified again here)
     b = exe.read_bytes()
     rep["identical"] = a == b
     rep["sha256"] = {"original": hashlib.sha256(a).hexdigest(), "linked": hashlib.sha256(b).hexdigest()}
@@ -1308,6 +1423,10 @@ def run(args):
     objdir = out / "objs"
     shutil.rmtree(objdir, ignore_errors=True)
     objdir.mkdir(parents=True)
+    ctx.fresh = bool(getattr(args, "fresh", False))
+    ctx.fresh_dir = out / "fresh"
+    shutil.rmtree(ctx.fresh_dir, ignore_errors=True)
+    ctx.cache_stats = {"fresh": ctx.fresh, "hits": 0, "compiled": 0, "rejected": []}
     cache = ROOT / "build" / "image" / "objcache"
     cache.mkdir(parents=True, exist_ok=True)
     reals = []
@@ -1364,7 +1483,8 @@ def run(args):
     plan, rb, bad, lib_problem = ev["plan"], ev["rb"], ev["bad"], ev["lib_problem"]
     excluded_log = [(k, w) for k, w in excluded_log if k not in readmitted]
     report = {"mode": args.mode + (" (asm what-if: NOT canonical sources)" if args.asm_whatif else ""),
-              "prediction_rounds": rounds, "readmitted_by_addback": readmitted}
+              "prediction_rounds": rounds, "readmitted_by_addback": readmitted,
+              "oracle_sha256": oracle.ORIGINAL_SHA256, "object_cache": ctx.cache_stats}
     report["predicted_fixup_order_mismatches"] = [
         {"page": k[0], "list": k[1], "index": i, "original": w and f"{w[0]}:{w[1]:x}",
          "predicted": g and f"{g[0]}:{g[1]:x}"} for k, i, w, g in bad]
@@ -1373,7 +1493,8 @@ def run(args):
     report["chunking"] = {r.key: chunk_check(ctx, r) for r in reals
                           if r.kind == "unit" and r.mod is not None and r.obj == 1}
     r, exe = link(ctx, plan.items, out)
-    report["wlink"] = {"rc": r.rc, "output": r.out.strip().splitlines()[-20:]}
+    report["wlink"] = {"rc": r.rc, "output": r.out.strip().splitlines()[-20:], "tool_sha256": r.tool_sha256,
+                       "images": getattr(r, "images", {})}
     if r.rc != 0 or not exe.exists():
         report["identical"] = False
         write_report(out, report, plan, ctx, rb, excluded_log)
@@ -1533,6 +1654,10 @@ def summary(rep, out):
     if rep.get("wlink", {}).get("rc"):
         L.append("  wlink failed: " + " | ".join(rep["wlink"]["output"][-5:]))
     it = rep["items"]
+    oc = rep.get("object_cache")
+    if oc:
+        L.append(f"  object cache: {'FRESH (no cache reads)' if oc['fresh'] else 'cached'}; {oc['compiled']} compiled, "
+                 f"{oc['hits']} verified cache hits, {len(oc['rejected'])} cache entries rejected")
     L.append(f"  objects: {len(it['real'])} real, {len(it['raw'])} raw debt; {len(it['rejected'])} canonical "
              f"sources kept as raw ({len(rep['excluded_by_prediction'])} by fixup/runtime-order prediction)")
     for c, e in sorted(rep.get("rejection_categories", {}).items(), key=lambda x: -x[1]["bytes"]):
@@ -1575,6 +1700,8 @@ def main(argv):
     ap.add_argument("--asm-modules", type=Path, metavar="DIR",
                     help="DIAGNOSTIC: replace per-routine obj1 asm items with modules.json candidates from DIR "
                          "(writes a separate *-asmmodules image report)")
+    ap.add_argument("--fresh", action="store_true",
+                    help="no object-cache reads: compile/assemble every object in this run (the freeze gate)")
     args = ap.parse_args(argv[1:])
     if args.asm_whatif and args.asm_modules:
         ap.error("--asm-whatif and --asm-modules are mutually exclusive")

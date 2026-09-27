@@ -1,5 +1,5 @@
 {
- "note": "Historical tool installs live under KEGG_TOOLS (default C:/tools), never in git. 'hosts' map a logical tool to the host executable. status: candidate | excluded | pending.",
+ "note": "Historical tool installs live under KEGG_TOOLS (default C:/tools), never in git. 'hosts' map a logical tool to the host executable. status: candidate | excluded | pending. hosts.<tool>.nt_payload: the bound DOS/4GW image that Watcom's generic 7680-byte Win32 loader stub (BINNT/<tool>.exe) loads; tools without it (wlink, wlib) have native Win32 BINNT executables (verified: BINNT/wlink.exe and BINNT/wlib.exe run from an isolated directory, the wcc386 stub crashes without its BINB image). 'runners' pins the external DOS hosts; 'python_deps' pins the vendored capstone tree.",
  "installs": {
   "wc100": {
    "product": "WATCOM C/C++32 10.0 GA (installed tree, files dated 1994-05-31; compiler banner 'Version 10.0')",
@@ -17,11 +17,13 @@
    "hosts": {
     "wcc386": {
      "nt": "BINNT/wcc386.exe",
-     "dos4gw": "BINB/wcc386.exe"
+     "dos4gw": "BINB/wcc386.exe",
+     "nt_payload": "BINB/wcc386.exe"
     },
     "wasm": {
      "nt": "BINNT/wasm.exe",
-     "dos4gw": "BINB/wasm.exe"
+     "dos4gw": "BINB/wasm.exe",
+     "nt_payload": "BINB/wasm.exe"
     },
     "wlink": {
      "nt": "BINNT/wlink.exe",
@@ -31,7 +33,8 @@
      "nt": "BINNT/wlib.exe"
     },
     "wdisasm": {
-     "nt": "BINNT/wdisasm.exe"
+     "nt": "BINNT/wdisasm.exe",
+     "nt_payload": "BINB/wdisasm.exe"
     }
    },
    "env": {
@@ -50,7 +53,11 @@
     "LIB386/math387s.lib": "893d05db1ff73d9310448369004a93c37920cdc0fcacd2c6ce948a3c6eb5c8dd",
     "LIB386/math3s.lib": "360b820279be4d95cc495aaf0178ddbc24baa3e22140f89be292703bbec65f5e",
     "LIB386/DOS/emu387.lib": "5b150d1cdca625eb27747b7ac182e36f5a66571e4441ccc19caccc6fbf773b5c",
-    "LIB386/noemu387.lib": "21afb6e48ff0860fff42a55202770c5e844f2e860ab0d7c4b91bf4d8ce1d956a"
+    "LIB386/noemu387.lib": "21afb6e48ff0860fff42a55202770c5e844f2e860ab0d7c4b91bf4d8ce1d956a",
+    "BINNT/wasm.exe": "6c35809c0fb39a44305894010c6cc0ab2010953b8221a89b8a0978b16cd4104b",
+    "BINNT/wdisasm.exe": "6c35809c0fb39a44305894010c6cc0ab2010953b8221a89b8a0978b16cd4104b",
+    "BINNT/wlib.exe": "7cf6da7ace424e65f407f68946c488d7e5fbdb9dd698aef3670626898d487388",
+    "BINB/wdisasm.exe": "90c0107d5efcf6952573347f85484068758a9cc9834d0bf5730961a8630a9188"
    },
    "tree_sha256": "5498d143742753b52bdc57c5f76f27d1da224b1996e40ad316fa1a5f681a8157",
    "tree_files": 2965
@@ -70,11 +77,13 @@
    "hosts": {
     "wcc386": {
      "nt": "BINNT/WCC386.EXE",
-     "dos4gw": "BINB/WCC386.EXE"
+     "dos4gw": "BINB/WCC386.EXE",
+     "nt_payload": "BINB/WCC386.EXE"
     },
     "wasm": {
      "nt": "BINNT/WASM.EXE",
-     "dos4gw": "BINB/WASM.EXE"
+     "dos4gw": "BINB/WASM.EXE",
+     "nt_payload": "BINB/WASM.EXE"
     },
     "wlink": {
      "nt": "BINNT/WLINK.EXE",
@@ -84,7 +93,8 @@
      "nt": "BINNT/WLIB.EXE"
     },
     "wdisasm": {
-     "nt": "BINNT/WDISASM.EXE"
+     "nt": "BINNT/WDISASM.EXE",
+     "nt_payload": "BINB/WDISASM.EXE"
     }
    },
    "env": {
@@ -104,7 +114,10 @@
     "LIB386/MATH387S.LIB": "56c06c8798691e821912eb195824c55557e2fee5f84837622f48bf6400897ddb",
     "LIB386/MATH3S.LIB": "7f828bc8295c9a9f6cd0e51c867e01d1af379a54e03b07a30c23ea46dfbc5845",
     "LIB386/DOS/EMU387.LIB": "5b150d1cdca625eb27747b7ac182e36f5a66571e4441ccc19caccc6fbf773b5c",
-    "LIB386/NOEMU387.LIB": "21afb6e48ff0860fff42a55202770c5e844f2e860ab0d7c4b91bf4d8ce1d956a"
+    "LIB386/NOEMU387.LIB": "21afb6e48ff0860fff42a55202770c5e844f2e860ab0d7c4b91bf4d8ce1d956a",
+    "BINNT/WASM.EXE": "8fee7d6ab3f2c06a0a874135e3898386898679e7dd53993fcc508e296364767d",
+    "BINNT/WDISASM.EXE": "8fee7d6ab3f2c06a0a874135e3898386898679e7dd53993fcc508e296364767d",
+    "BINB/WDISASM.EXE": "28d0af1976a970be401f8215ea8c6f2f334933f1c22500dff7efd1f79d04af7d"
    },
    "tree_sha256": "94f301770e60cd5e5fdab3614c02776d6ec098f59589e32992c8a3f694a3618f",
    "tree_files": 5115
@@ -139,7 +152,8 @@
    "key_files": {
     "BINNT/WCC386.EXE": "8120ccd90e6cdfdcfebca3ef647e8a4489618a12d1548a43cd7fbae75e110956",
     "BINNT/WLINK.EXE": "ec92090be14a1ddf8ba00f4d2cbcf48eff2b8dcf56d5d4eb90f1079034d14907",
-    "LIB386/DOS/CLIB3S.LIB": "95b423adf7561bd638876fac51108c92243cc057e0084e98b98b7cd032b3edae"
+    "LIB386/DOS/CLIB3S.LIB": "95b423adf7561bd638876fac51108c92243cc057e0084e98b98b7cd032b3edae",
+    "BINNT/WLIB.EXE": "c5951b296fc4b80c1358fcb89394983648e514992f516ad5c7f6d79cabc0082d"
    },
    "tree_sha256": "e2f24d5ac5b768a761b8f76aa5758f3e46480a09751ea38b5a17b7fb3219722f",
    "tree_files": 1223
@@ -422,6 +436,31 @@
    "host": "msdos",
    "status": "strong",
    "evidence": "build/workers/asmfinal: KE fixup order = resolved fixups first, forward refs second in ~490-byte batches (TASM single-pass); ALIGN pads 87 DB; 32-bit fixup types only with 3.1 (1.x/2.x give 16-bit)"
+  }
+ },
+ "runners": {
+  "dosbox-x": {
+   "product": "DOSBox-X 2022.09.0 (0.84.3) Windows x64 build (installed under C:/tools/dosbox-x; changelog.txt head)",
+   "path": "dosbox-x/dosbox-x.exe",
+   "env": "KEGG_DOSBOX_X",
+   "sha256": "b028a4d328302ea270722dec69f3ec3a10ebf76beba72a51970db33a88df2bf6",
+   "use": "host 'dosbox' (tools/dosbox.py): DOS/4GW-hosted Watcom tools; profile game-c-ot-dos"
+  },
+  "msdos": {
+   "product": "MS-DOS Player, ReC98 P0281 build (nmlgc fork of Takeda Toshiya's MS-DOS Player; release notes in C:/tools/nmlgcdos)",
+   "path": "nmlgcdos/msdos.exe",
+   "sha256": "f7f6cb0a3e816c5edb13112d327c1bddbf7463fe7bf9a005ca1eb5317751bd02",
+   "use": "host 'msdos' (tools/dosrun.py): real-mode assemblers (TASM 3.1 / MASM)"
+  }
+ },
+ "python_deps": {
+  "capstone": {
+   "version": "5.0.7",
+   "dir": "build/pylib",
+   "provision": "python -m pip install --no-user --target build/pylib capstone==5.0.7 (wheel for win_amd64); tools put build/pylib first on sys.path",
+   "tree_sha256": "65446f83f0aef8bc765ee6c6ff6e4bbe082e34c3343d2b25fbbce3a34463c800",
+   "tree_files": 65,
+   "tree_excludes": "__pycache__ directories and *.pyc (written by whichever Python imports it)"
   }
  }
 }

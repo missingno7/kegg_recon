@@ -5,16 +5,22 @@
 
 Library use:
     from dosrun import run
-    r = run("wcc386", ["-3s", "foo.c"], cwd=work)   # -> Result(rc, out, cmd, host, tool_sha256)
+    r = run("wcc386", ["-3s", "foo.c"], cwd=work)   # -> Result(rc, out, cmd, host, tool_sha256, images)
 
 Hosts
-  nt      Watcom's own Win32 loader stub (BINNT/<TOOL>.EXE) which loads the bound
-          BINB/<TOOL>.EXE image of the *same install* (verified: the stub opens its
-          sibling ..\\BINB image and fails without it).  Same compiler code as the
-          DOS/4GW-hosted tool; host independence is checked by the dosbox host.
-  msdos   MS-DOS Player (C:/tools/nmlgcdos/msdos.exe) for real-mode 16-bit tools.
-          Cannot host DOS/4GW programs (verified: silent failure).
-  dosbox  DOSBox-X, DOS/4GW-hosted tools (independent cross-check path).
+  nt      BINNT/<TOOL>.EXE.  For wcc386/wasm/wdisasm this is Watcom's generic Win32 loader stub which loads
+          the bound BINB/<TOOL>.EXE image of the *same install* (hosts.<tool>.nt_payload; verified: the stub
+          crashes without its BINB sibling).  BINNT/wlink.exe and BINNT/wlib.exe are native Win32 programs
+          (verified: they run from an isolated directory).  Same compiler code as the DOS/4GW-hosted tool;
+          host independence is checked by the dosbox host.
+  msdos   MS-DOS Player (C:/tools/nmlgcdos/msdos.exe, pinned in toolchain.json "runners") for real-mode
+          16-bit tools.  Cannot host DOS/4GW programs (verified: silent failure).
+  dosbox  DOSBox-X (pinned in toolchain.json "runners"), DOS/4GW-hosted tools (independent cross-check path).
+
+Every launched image is hash-checked against toolchain.json before it runs (fail closed: a launched file
+without a locked SHA-256 is an error): the host executable, the loader-stub payload, the configured DOS/4GW
+image (e.g. BIN/wlink.exe) and the external runner.  Result.tool_sha256 is the hash of the image holding the
+tool's code (the payload for loader stubs); Result.images lists every checked file with its hash.
 
 The environment is built from scratch: no inherited WCC386/WLINK/WPP386/INCLUDE
 variables can leak in.  Output is stdout+stderr combined, exit status preserved.
@@ -26,7 +32,7 @@ import json
 import os
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +56,7 @@ class Result:
     cmd: list
     host: str
     tool_sha256: str
+    images: dict = field(default_factory=dict)   # every hash-checked launched file -> sha256
 
     @property
     def ok(self):
@@ -64,12 +71,86 @@ def _sha(p: Path):
     return _hash_cache[key]
 
 
+def locked_digest(inst_cfg, rel: str):
+    """The locked SHA-256 of an install file (exact key first, then case-insensitive: Windows file names)."""
+    keys = inst_cfg.get("key_files", {})
+    if rel in keys:
+        return keys[rel]
+    low = {k.lower(): v for k, v in keys.items()}
+    return low.get(rel.lower())
+
+
 def _check(inst_cfg, root: Path, rel: str):
-    want = inst_cfg.get("key_files", {}).get(rel)
-    got = _sha(root / rel)
-    if want and want != got:
-        raise RuntimeError(f"toolchain file {root / rel} hash {got} != locked {want}")
+    """Hash-check one install file against its lock; fail closed if it is missing or has no locked digest."""
+    path = root / rel
+    if not path.is_file():
+        raise RuntimeError(f"pinned toolchain file is missing: {path}")
+    want = locked_digest(inst_cfg, rel)
+    if not want:
+        raise RuntimeError(f"no locked SHA-256 for toolchain file {rel} ({root}); add it to toolchain.json key_files")
+    got = _sha(path)
+    if want.lower() != got:
+        raise RuntimeError(f"toolchain file {path} hash {got} != locked {want}")
     return got
+
+
+def runner(name: str, path: Path | None = None, cfg=None):
+    """Path of a pinned external runner ('dosbox-x', 'msdos') after checking its SHA-256 (fail closed)."""
+    cfg = cfg or config()
+    r = cfg.get("runners", {}).get(name)
+    if not r or not r.get("sha256"):
+        raise RuntimeError(f"no pinned SHA-256 for external runner {name!r} in toolchain.json 'runners'")
+    if path is None:
+        path = Path(os.environ[r["env"]]) if r.get("env") and os.environ.get(r["env"]) else tools_root() / r["path"]
+    path = Path(path)
+    if not path.is_file():
+        raise RuntimeError(f"external runner {name} is missing: {path}")
+    got = _sha(path)
+    if got != r["sha256"].lower():
+        raise RuntimeError(f"external runner {name} {path} hash {got} != pinned {r['sha256']}")
+    return path, got
+
+
+def nt_images(inst_cfg, root: Path, tool: str):
+    """Hash-check the NT host executable, its loader payload and the configured DOS/4GW image.
+    Returns (tool_sha256, {rel: sha256})."""
+    hosts = inst_cfg["hosts"][tool]
+    stub = hosts["nt"]
+    images = {stub: _check(inst_cfg, root, stub)}
+    payload = hosts.get("nt_payload")
+    if not payload:
+        # fail closed: a generic loader stub (the same digest as another tool's stub with a payload) must name
+        # the image it loads, else the code that actually runs would go unchecked
+        loaders = {locked_digest(inst_cfg, h["nt"]) for h in inst_cfg["hosts"].values()
+                   if h.get("nt") and h.get("nt_payload")}
+        if images[stub] in {d.lower() for d in loaders if d}:
+            raise RuntimeError(f"{stub} is a Watcom loader stub but hosts.{tool}.nt_payload is not configured")
+    else:
+        images[payload] = _check(inst_cfg, root, payload)
+    image = hosts.get("dos4gw")
+    if image and image not in images:
+        images[image] = _check(inst_cfg, root, image)   # configured DOS/4GW image (e.g. BIN/wlink.exe)
+    return images[payload] if payload else images[stub], images
+
+
+def launch_identity(tool: str, install: str = "wc100", host: str = "nt", cfg=None):
+    """{file: sha256} of everything `run(tool, host=host)` would launch, all checked against their locks."""
+    cfg = cfg or config()
+    inst = cfg["installs"][install]
+    root = tools_root() / inst["dir"]
+    hosts = inst["hosts"][tool]
+    if host == "nt":
+        return nt_images(inst, root, tool)[1]
+    if host == "msdos":
+        return {hosts["msdos"]: _check(inst, root, hosts["msdos"]), "runner:msdos": runner("msdos", cfg=cfg)[1]}
+    if host == "dosbox":
+        import dosbox
+        image = hosts.get("dos4gw") or hosts.get("dos")
+        if not image:
+            raise ValueError(f"{tool} has no DOS/4GW image in toolchain/toolchain.json")
+        return {image: _check(inst, root, image), "BIN/DOS4GW.EXE": _check(inst, root, "BIN/DOS4GW.EXE"),
+                "runner:dosbox-x": runner("dosbox-x", dosbox.DOSBOX_X, cfg=cfg)[1]}
+    raise ValueError(host)
 
 
 def environment(inst_cfg, root: Path, cwd: Path):
@@ -89,25 +170,25 @@ def run(tool: str, args, install: str = "wc100", host: str = "nt", cwd=None, tim
     cwd = Path(cwd or os.getcwd()).resolve()
     hosts = inst["hosts"][tool]
     if host == "nt":
-        stub = hosts["nt"]
-        image = hosts.get("dos4gw")
-        _check(inst, root, stub)
-        tool_sha = _check(inst, root, image) if image and image.startswith("BINB/") else _sha(root / stub)
-        cmd = [str(root / stub), *map(str, args)]
+        tool_sha, images = nt_images(inst, root, tool)
+        cmd = [str(root / hosts["nt"]), *map(str, args)]
     elif host == "msdos":
         exe = hosts["msdos"]
         tool_sha = _check(inst, root, exe)
-        cmd = [str(tools_root() / MSDOS), "-e", str(root / exe), *map(str, args)]
+        msdos, msdos_sha = runner("msdos", cfg=cfg)
+        images = {exe: tool_sha, "runner:msdos": msdos_sha}
+        cmd = [str(msdos), "-e", str(root / exe), *map(str, args)]
     elif host == "dosbox":
         import dosbox
+        images = launch_identity(tool, install, "dosbox", cfg)
         rc, out = dosbox.run_dosbox(tool, args, install=install, cwd=cwd, timeout=timeout)
-        image = hosts.get("dos4gw")
-        return Result(rc, out, ["dosbox", tool, *map(str, args)], host, _sha(root / image) if image else "")
+        image = hosts.get("dos4gw") or hosts.get("dos")
+        return Result(rc, out, ["dosbox", tool, *map(str, args)], host, images[image], images)
     else:
         raise ValueError(host)
     p = subprocess.run(cmd, cwd=cwd, env=environment(inst, root, cwd), stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT, timeout=timeout)
-    return Result(p.returncode, p.stdout.decode("latin-1"), cmd, host, tool_sha)
+    return Result(p.returncode, p.stdout.decode("latin-1"), cmd, host, tool_sha, images)
 
 
 def main(argv):

@@ -1,6 +1,9 @@
 """Regression gate: freshly rebuild and re-verify every 'matching' function in manifest.json.
 
-    python tools/validate.py [--quiet] [-j N] [--host dosbox] [--image]   # --image: also the whole-image WLINK build
+    python tools/validate.py [--quiet] [-j N] [--host dosbox] [--image [--fresh]]
+        # --image: also the whole-image WLINK build (tools/image.py --mode canonical)
+        # --fresh: the image build reads no object cache, every object is compiled in this run (the freeze gate:
+        #          python tools/validate.py --image --fresh)
 
 Also checks manifest consistency: sorted non-overlapping extents, source hashes, unique names.
 Exit status 0 only if everything that is claimed still verifies EXACT.
@@ -79,18 +82,31 @@ def main(argv):
     for e in errors[: (20 if quiet else 200)]:
         print("  -", e)
     if "--image" in argv:
-        p = subprocess.run([sys.executable, str(ROOT / "tools" / "image.py"), "--mode", "canonical"],
-                           capture_output=True, text=True)
-        first = (p.stdout.strip().splitlines() or ["image.py produced no output"])[0]
+        fresh = "--fresh" in argv
+        nerr = len(errors)
+        rep = ROOT / "build" / "image" / "canonical" / "report.json"
+        stamp = rep.stat().st_mtime_ns if rep.exists() else None
+        p = subprocess.run([sys.executable, str(ROOT / "tools" / "image.py"), "--mode", "canonical",
+                            *(["--fresh"] if fresh else [])], capture_output=True, text=True)
+        first = (p.stdout.strip().splitlines() or p.stderr.strip().splitlines() or ["image.py produced no output"])[0]
         print(first)
         if p.returncode != 0:
             errors.append("whole image not identical: " + first)
-        rep = ROOT / "build" / "image" / "canonical" / "report.json"
-        if rep.exists():
-            acc = json.loads(rep.read_text()).get("accounting", {}).get("total", {})
+        if rep.exists() and rep.stat().st_mtime_ns != stamp:
+            r = json.loads(rep.read_text())
+            acc = r.get("accounting", {}).get("total", {})
+            oc = r.get("object_cache", {})
             print(f"image accounting: {acc}")
+            print(f"image objects: {'FRESH' if oc.get('fresh') else 'cached'} ({oc.get('compiled')} compiled, "
+                  f"{oc.get('hits')} verified cache hits)")
             if acc.get("raw", 0):  # the build is complete from sources: raw debt must never come back
                 errors.append(f"whole image uses {acc['raw']} bytes of raw debt")
+            if fresh and (not oc.get("fresh") or oc.get("hits")):
+                errors.append(f"--fresh image build read the object cache: {oc}")
+        elif p.returncode == 0:
+            errors.append("image.py passed but wrote no new report.json")
+        for e in errors[nerr:]:
+            print("  -", e)
     return 0 if not errors else 1
 
 

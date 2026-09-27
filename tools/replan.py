@@ -15,6 +15,10 @@ Transaction (single writer, under promote.py's lock):
      that no plan unit covers keep that unit's old file as a multi-function source (verified per function);
   4. `validate.py` must pass AND `image.py --mode canonical` must reproduce KE.EXE; otherwise everything is
      restored from the snapshot.
+
+Guards: a plan whose renames would textually change a host-pinned (frozen) source is refused before anything is
+written (those files are byte-exact inputs, e.g. -ot literal padding; see frozen_sources()).  Every --sandbox run
+gets a new unique directory under build/sandbox/; an existing sandbox is never removed or reused.
 """
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -41,15 +46,63 @@ def lf(b: bytes):
     return b.replace(bytes([13, 10]), bytes([10]))
 
 
+def pinned_profile(pf: dict) -> bool:
+    """Host-pinned C profile: the exact source bytes (CRLF included) are compiler input (as promote.py)."""
+    return bool(pf.get("host")) and pf.get("tool", "wcc386") == "wcc386"
+
+
+def frozen_sources(man, cfg=None):
+    """Canonical sources compiled with a host-pinned profile (e.g. src/t06.c, src/t08.c with game-c-ot-dos)."""
+    profiles = (cfg or P.dosrun.config())["profiles"]
+    out = set()
+    for e in [*man.get("units", []), *man.get("functions", [])]:
+        if e.get("src") and pinned_profile(profiles.get(e.get("profile", "game-c"), {})):
+            out.add(e["src"])
+    return out
+
+
+def renames_of(plan):
+    renames = plan.get("renames", {})
+    return dict(renames) if isinstance(renames, list) else renames
+
+
+def frozen_guard(plan, man, root=ROOT):
+    """Refuse (return a message) if the plan's renames would textually modify a host-pinned source that the plan
+    does not replace."""
+    renames = renames_of(plan)
+    if not renames:
+        return None
+    rx = re.compile(r"\b(" + "|".join(map(re.escape, sorted(renames, key=len, reverse=True))) + r")\b")
+    dests = {u["dest"] for u in plan["units"]}
+    hits = []
+    for rel in sorted(frozen_sources(man)):
+        if rel in dests or not (root / rel).exists():
+            continue
+        found = sorted(set(rx.findall((root / rel).read_bytes().decode("latin-1"))))
+        if found:
+            hits.append(f"{rel} ({', '.join(found[:8])})")
+    if hits:
+        return ("REFUSED: the plan's renames would textually modify host-pinned (frozen) sources, whose exact bytes "
+                "are compiler input (profiles with a pinned host, e.g. game-c-ot-dos): " + "; ".join(hits) +
+                ". Drop these renames from the plan (or replace the frozen unit as a plan unit verified on its host).")
+    return None
+
+
 def sandbox(argv):
     """Apply the plan to a throwaway copy of the canonical tree (never touches it) and run the full gate."""
     plan_path = Path(argv[1]).resolve()
     plan = json.loads(plan_path.read_text())
     for u in plan["units"]:
         u["file"] = str((ROOT / u["file"]).resolve())  # sources stay where the worker wrote them
-    box = ROOT / "build" / "sandbox" / f"{plan_path.parent.name}-{time.strftime('%H%M%S')}"
-    if box.exists():
-        shutil.rmtree(box)
+    msg = frozen_guard(plan, P.load_manifest())
+    if msg:
+        print(msg)
+        print("sandbox: not created -> FAIL")
+        return 1
+    # a new unique directory per run: an earlier sandbox (evidence) is never removed or reused
+    (ROOT / "build" / "sandbox").mkdir(parents=True, exist_ok=True)
+    box = Path(tempfile.mkdtemp(prefix=f"{plan_path.parent.name}-{time.strftime('%Y%m%d-%H%M%S')}-",
+                                dir=ROOT / "build" / "sandbox"))
     for d in ("src", "asm", "tools", "toolchain", "tests", "docs"):
         shutil.copytree(ROOT / d, box / d)
     for f in ("manifest.json",):
@@ -68,14 +121,16 @@ def main(argv):
         return sandbox([a for a in argv if a != "--sandbox"])
     plan = json.loads(Path(argv[1]).read_text())
     dry = "--dry-run" in argv
-    renames = plan.get("renames", {})
-    if isinstance(renames, list):
-        renames = dict(renames)
+    renames = renames_of(plan)
     units = plan["units"]
     rng = lambda u: (int(u["range"][0], 16), int(u["range"][1], 16))
     plan_dests = {u["dest"] for u in units}
     with P.Lock():
         man = P.load_manifest()
+        msg = frozen_guard(plan, man)
+        if msg:
+            print(msg)
+            return 1
         stamp = time.strftime("%Y%m%d-%H%M%S")
         snap = ROOT / "build" / "promote" / f"replan-{stamp}"
         for d in ("src", "asm"):

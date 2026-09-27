@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dosrun  # noqa: E402
 import le as lemod  # noqa: E402
 import omf  # noqa: E402
+import oracle  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 _ORIG = None
@@ -48,6 +49,7 @@ def original():
     global _ORIG
     if _ORIG is None:
         L = lemod.LE(ROOT / "assets" / "KE.EXE")
+        oracle.require_original_bytes(L.data, L.path)  # fail closed: the oracle must be the pinned original
         o = L.objects[CODE_OBJ - 1]
         code = L.object_bytes(o)[:o["vsize"]]
         fix, dfix = {}, {}
