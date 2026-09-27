@@ -1,12 +1,12 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN g_8360:BYTE
-EXTRN g_836c:DWORD
-EXTRN g_8370:DWORD
-EXTRN g_8378:DWORD
-EXTRN g_8380:DWORD
-EXTRN g_8384:DWORD
+EXTRN sprite_record_cursor:BYTE
+EXTRN vga_row_advance:DWORD
+EXTRN background_plane_delta:DWORD
+EXTRN sprite_clip_top:DWORD
+EXTRN sprite_clip_left:DWORD
+EXTRN sprite_clip_right:DWORD
 EXTRN g_8388:DWORD
 EXTRN g_e2e4:DWORD
 EXTRN g_e324:WORD
@@ -14,12 +14,13 @@ EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC f_12684
-f_12684 LABEL NEAR
-a_12684 PROC NEAR
+        ; Kind 3 renderer: prepare a clipped sprite record and draw its encoded rows.
+        PUBLIC render_sprite_record_kind_3_entry
+render_sprite_record_kind_3_entry LABEL NEAR
+render_sprite_record_kind_3 PROC NEAR
         sub eax, eax
 L_12686:
-        mov ecx, dword ptr [g_8378]
+        mov ecx, dword ptr [sprite_clip_top]
 L_1268C:
         jcxz L_1269F
 L_1268F:
@@ -41,9 +42,9 @@ L_1269B:
 L_1269D:
         loop L_1268F
 L_1269F:
-        mov edx, dword ptr [g_8360]
+        mov edx, dword ptr [sprite_record_cursor]
 L_126A5:
-        add dword ptr [g_8360], 14h
+        add dword ptr [sprite_record_cursor], 14h
 L_126AC:
         mov word ptr [edx], 3
 L_126B1:
@@ -59,7 +60,7 @@ L_126BE:
 L_126C4:
         mov dword ptr [edx + 0Ah], eax
 L_126C7:
-        mov eax, dword ptr [g_8380]
+        mov eax, dword ptr [sprite_clip_left]
 L_126CC:
         mov word ptr [edx + 0Eh], ax
 L_126D0:
@@ -68,12 +69,13 @@ L_126D5:
         mov word ptr [edx + 10h], ax
 L_126D9:
         jmp short L_126F6
-        PUBLIC f_126db
-f_126db LABEL NEAR
+        ; Kind 3 draw entry shared with the sprite mode dispatch table.
+        PUBLIC render_sprite_record_kind_3_draw
+render_sprite_record_kind_3_draw LABEL NEAR
 L_126DB:
         sub eax, eax
 L_126DD:
-        mov ecx, dword ptr [g_8378]
+        mov ecx, dword ptr [sprite_clip_top]
 L_126E3:
         jcxz L_126F6
 L_126E6:
@@ -99,15 +101,15 @@ L_126F6:
 L_126FC:
         sub edx, ebx
 L_126FE:
-        mov dword ptr [g_836c], edx
+        mov dword ptr [vga_row_advance], edx
 L_12704:
         neg ebp
 L_12706:
-        cmp dword ptr [g_8380], 0
+        cmp dword ptr [sprite_clip_left], 0
 L_1270D:
         jne short L_12756
 L_1270F:
-        cmp dword ptr [g_8384], 0
+        cmp dword ptr [sprite_clip_right], 0
 L_12716:
         jne near ptr L_127B2
 L_1271C:
@@ -178,7 +180,7 @@ L_12756:
 L_12758:
         mov edi, edx
 L_1275A:
-        mov ebx, dword ptr [g_8380]
+        mov ebx, dword ptr [sprite_clip_left]
 L_12760:
         sub edi, ebx
 L_12762:
@@ -341,16 +343,17 @@ L_12807:
         jne short L_127B4
 L_12809:
         ret
-        PUBLIC f_1280a
-f_1280a LABEL NEAR
+        ; Restore a saved sprite rectangle from the backing image.
+        PUBLIC restore_sprite_background_from_record
+restore_sprite_background_from_record LABEL NEAR
 L_1280A:
         movzx eax, word ptr [ebx + 0Eh]
 L_1280E:
-        mov dword ptr [g_8380], eax
+        mov dword ptr [sprite_clip_left], eax
 L_12813:
         movzx eax, word ptr [ebx + 10h]
 L_12817:
-        mov dword ptr [g_8384], eax
+        mov dword ptr [sprite_clip_right], eax
 L_1281C:
         mov esi, dword ptr [ebx + 6]
 L_1281F:
@@ -360,7 +363,7 @@ L_12825:
 L_1282A:
         sub eax, edi
 L_1282C:
-        mov dword ptr [g_8370], eax
+        mov dword ptr [background_plane_delta], eax
 L_12831:
         add edi, dword ptr [ebx + 0Ah]
 L_12834:
@@ -372,11 +375,11 @@ L_1283A:
 L_1283C:
         sub ecx, ecx
 L_1283E:
-        cmp dword ptr [g_8380], 0
+        cmp dword ptr [sprite_clip_left], 0
 L_12845:
         jne short L_128A0
 L_12847:
-        cmp dword ptr [g_8384], 0
+        cmp dword ptr [sprite_clip_right], 0
 L_1284E:
         jne near ptr L_12906
 L_12854:
@@ -402,7 +405,7 @@ L_1286A:
 L_1286C:
         add eax, ecx
 L_1286E:
-        mov esi, dword ptr [g_8370]
+        mov esi, dword ptr [background_plane_delta]
 L_12874:
         add esi, edi
 L_12876:
@@ -454,7 +457,7 @@ L_128A0:
 L_128A2:
         mov edi, edx
 L_128A4:
-        mov ebx, dword ptr [g_8380]
+        mov ebx, dword ptr [sprite_clip_left]
 L_128AA:
         sub edi, ebx
 L_128AC:
@@ -496,7 +499,7 @@ L_128CC:
 L_128CE:
         mov eax, esi
 L_128D0:
-        mov esi, dword ptr [g_8370]
+        mov esi, dword ptr [background_plane_delta]
 L_128D6:
         add esi, edi
 L_128D8:
@@ -566,7 +569,7 @@ L_12918:
 L_1291A:
         sub eax, edx
 L_1291C:
-        sub eax, dword ptr [g_8384]
+        sub eax, dword ptr [sprite_clip_right]
 L_12922:
         jge short L_1292C
 L_12924:
@@ -582,7 +585,7 @@ L_1292C:
 L_1292E:
         mov eax, esi
 L_12930:
-        mov esi, dword ptr [g_8370]
+        mov esi, dword ptr [background_plane_delta]
 L_12936:
         add esi, edi
 L_12938:
@@ -633,6 +636,6 @@ L_1296B:
         jne short L_12908
 L_1296D:
         ret
-a_12684 ENDP
+render_sprite_record_kind_3 ENDP
 _TEXT ENDS
         END

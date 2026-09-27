@@ -12,26 +12,27 @@ EXTRN g_e324:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
-EXTRN f_12288:NEAR
-EXTRN f_122d1:NEAR
-EXTRN f_125ae:NEAR
-EXTRN f_12680:NEAR
-EXTRN f_12681:NEAR
-EXTRN f_12682:NEAR
-EXTRN f_12684:NEAR
-EXTRN f_126db:NEAR
-EXTRN f_1280a:NEAR
-EXTRN f_12970:NEAR
-EXTRN f_12971:NEAR
-EXTRN f_12972:NEAR
-EXTRN f_12974:NEAR
-EXTRN f_12999:NEAR
-EXTRN f_12a58:NEAR
+EXTRN render_sprite_record_kind_5_entry:NEAR
+EXTRN render_sprite_record_kind_5_draw:NEAR
+EXTRN restore_sprite_background_record:NEAR
+EXTRN noop_sprite_callback_12680:NEAR
+EXTRN noop_sprite_callback_12681:NEAR
+EXTRN noop_sprite_callback_12682:NEAR
+EXTRN render_sprite_record_kind_3_entry:NEAR
+EXTRN render_sprite_record_kind_3_draw:NEAR
+EXTRN restore_sprite_background_from_record:NEAR
+EXTRN noop_sprite_callback_12970:NEAR
+EXTRN noop_sprite_callback_12971:NEAR
+EXTRN noop_sprite_callback_12972:NEAR
+EXTRN render_transparent_sprite_record_entry:NEAR
+EXTRN draw_transparent_sprite_rows:NEAR
+EXTRN restore_sprite_rectangle:NEAR
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_12a9c
-        PUBLIC f_12a9c
-f_12a9c LABEL NEAR
-a_12a9c PROC NEAR
+        PUBLIC process_sprite_update_list
+        ; Process queued drawing records against the selected pair of video pages.
+        PUBLIC process_sprite_update_list_entry
+process_sprite_update_list_entry LABEL NEAR
+process_sprite_update_list PROC NEAR
         pushad
 L_12A9D:
         lea ebp, [esp + 1Ch]
@@ -80,43 +81,43 @@ L_12B07:
 L_12B0A:
         add edi, eax
 L_12B0C:
-        mov dword ptr [g_8368], edi
+        mov dword ptr [vga_draw_origin], edi
 L_12B12:
         mov eax, dword ptr [ebp + 8]
 L_12B15:
-        mov dword ptr [g_8406], eax
+        mov dword ptr [sprite_origin_x], eax
 L_12B1A:
         mov eax, dword ptr [ebp + 0Ch]
 L_12B1D:
-        mov dword ptr [g_840a], eax
+        mov dword ptr [sprite_origin_y], eax
 L_12B22:
         mov edi, dword ptr [ebp + 14h]
 L_12B25:
-        mov dword ptr [g_8360], edi
+        mov dword ptr [sprite_record_cursor], edi
 L_12B2B:
         mov edi, dword ptr [ebp + 10h]
 L_12B2E:
-        mov dword ptr [g_840e], edi
+        mov dword ptr [sprite_command_cursor], edi
 L_12B34:
         jmp short L_12B5F
 L_12B36:
         movsx ebx, word ptr [edi + 4]
 L_12B3A:
-        sub ebx, dword ptr [g_8406]
+        sub ebx, dword ptr [sprite_origin_x]
 L_12B40:
         movsx edx, word ptr [edi + 6]
 L_12B44:
-        sub edx, dword ptr [g_840a]
+        sub edx, dword ptr [sprite_origin_y]
 L_12B4A:
         mov ax, word ptr [edi + 8]
 L_12B4E:
-        mov word ptr [g_8374], ax
+        mov word ptr [sprite_record_flags], ax
 L_12B54:
-        call f_12d5f
+        call clip_and_dispatch_sprite_record
 L_12B59:
-        mov edi, dword ptr [g_840e]
+        mov edi, dword ptr [sprite_command_cursor]
 L_12B5F:
-        add dword ptr [g_840e], 0Ah
+        add dword ptr [sprite_command_cursor], 0Ah
 L_12B66:
         mov esi, dword ptr [edi]
 L_12B68:
@@ -132,22 +133,23 @@ L_12B78:
 L_12B7C:
         out dx, ax
 L_12B7E:
-        mov eax, dword ptr [g_8360]
+        mov eax, dword ptr [sprite_record_cursor]
 L_12B83:
         mov dword ptr [g_e2e8], eax
 L_12B88:
-        mov eax, dword ptr [g_840e]
+        mov eax, dword ptr [sprite_command_cursor]
 L_12B8D:
         mov dword ptr [g_e2ec], eax
 L_12B92:
         popad
 L_12B93:
         ret
-a_12a9c ENDP
-        PUBLIC a_12b94
-        PUBLIC f_12b94
-f_12b94 LABEL NEAR
-a_12b94 PROC NEAR
+process_sprite_update_list ENDP
+        PUBLIC replay_sprite_update_list
+        ; Replay saved sprite operations and restore VGA register state on exit.
+        PUBLIC replay_sprite_update_list_entry
+replay_sprite_update_list_entry LABEL NEAR
+replay_sprite_update_list PROC NEAR
         pushad
 L_12B95:
         lea ebp, [esp + 1Ch]
@@ -240,15 +242,15 @@ L_12C63:
 L_12C65:
         mov ebx, dword ptr [g_e2e8]
 L_12C6B:
-        mov dword ptr [g_8360], ebx
+        mov dword ptr [sprite_record_cursor], ebx
 L_12C71:
         jmp short L_12C80
 L_12C73:
-        call dword ptr [ecx*4 + g_83a2]
+        call dword ptr [ecx*4 + sprite_operation_dispatch_table]
 L_12C7A:
-        mov ebx, dword ptr [g_8360]
+        mov ebx, dword ptr [sprite_record_cursor]
 L_12C80:
-        add dword ptr [g_8360], 14h
+        add dword ptr [sprite_record_cursor], 14h
 L_12C87:
         movzx ecx, word ptr [ebx]
 L_12C8A:
@@ -279,11 +281,12 @@ L_12CBB:
         popad
 L_12CBC:
         ret
-a_12b94 ENDP
-        PUBLIC a_12cbd
-        PUBLIC f_12cbd_pzyovjt
-f_12cbd_pzyovjt LABEL NEAR
-a_12cbd PROC NEAR
+replay_sprite_update_list ENDP
+        PUBLIC draw_bob_sprite
+        ; BOB sprites carry dimensions and encoded pixels; this path clips and dispatches them.
+        PUBLIC draw_bob_sprite_entry
+draw_bob_sprite_entry LABEL NEAR
+draw_bob_sprite PROC NEAR
         pushad
 L_12CBE:
         lea ebp, [esp + 1Ch]
@@ -324,11 +327,11 @@ L_12D14:
 L_12D1A:
         mov dword ptr [u_e2E0], edi
 L_12D20:
-        mov dword ptr [g_8368], esi
+        mov dword ptr [vga_draw_origin], esi
 L_12D26:
         mov ebx, dword ptr [g_e2e8]
 L_12D2C:
-        mov dword ptr [g_8360], ebx
+        mov dword ptr [sprite_record_cursor], ebx
 L_12D32:
         mov ebx, dword ptr [ebp + 0Ch]
 L_12D35:
@@ -338,7 +341,7 @@ L_12D38:
 L_12D3B:
         call L_12D5F
 L_12D40:
-        mov ebx, dword ptr [g_8360]
+        mov ebx, dword ptr [sprite_record_cursor]
 L_12D46:
         mov dword ptr [g_e2e8], ebx
 L_12D4C:
@@ -353,8 +356,9 @@ L_12D5D:
         popad
 L_12D5E:
         ret
-        PUBLIC f_12d5f
-f_12d5f LABEL NEAR
+        ; Validate sprite dimensions, clip to the viewport, then select a mode handler.
+        PUBLIC clip_and_dispatch_sprite_record
+clip_and_dispatch_sprite_record LABEL NEAR
 L_12D5F:
         mov cx, word ptr [esi + 2]
 L_12D63:
@@ -380,7 +384,7 @@ L_12D8A:
 L_12D90:
         movzx ebp, word ptr [esi + 8]
 L_12D94:
-        test word ptr [g_8374], 1
+        test word ptr [sprite_record_flags], 1
 L_12D9D:
         je short L_12DB4
 L_12D9F:
@@ -442,7 +446,7 @@ L_12DF6:
 L_12DF8:
         shl ebp, 4
 L_12DFB:
-        lea edi, [ebp + g_83aa]
+        lea edi, [ebp + sprite_render_mode_table]
 L_12E01:
         movsx ebp, word ptr [g_746e]
 L_12E08:
@@ -474,7 +478,7 @@ L_12E45:
 L_12E4E:
         jmp short L_12E50
 L_12E50:
-        mov edi, dword ptr [g_840e]
+        mov edi, dword ptr [sprite_command_cursor]
 L_12E56:
         mov dword ptr [edi], 0
 L_12E5C:
@@ -484,13 +488,13 @@ L_12E5D:
 L_12E5E:
         sub eax, eax
 L_12E60:
-        mov dword ptr [g_8378], eax
+        mov dword ptr [sprite_clip_top], eax
 L_12E65:
-        mov dword ptr [g_837c], eax
+        mov dword ptr [sprite_clip_bottom], eax
 L_12E6A:
-        mov dword ptr [g_8380], eax
+        mov dword ptr [sprite_clip_left], eax
 L_12E6F:
-        mov dword ptr [g_8384], eax
+        mov dword ptr [sprite_clip_right], eax
 L_12E74:
         mov dword ptr [g_8388], eax
 L_12E79:
@@ -508,7 +512,7 @@ L_12E8B:
 L_12E91:
         mov edx, dword ptr [g_e324+4Eh]
 L_12E97:
-        mov dword ptr [g_8378], eax
+        mov dword ptr [sprite_clip_top], eax
 L_12E9C:
         movsx eax, cx
 L_12E9F:
@@ -526,7 +530,7 @@ L_12EB0:
 L_12EB3:
         jle short L_12F2E
 L_12EB5:
-        mov dword ptr [g_837c], eax
+        mov dword ptr [sprite_clip_bottom], eax
 L_12EBA:
         cmp ebx, dword ptr [g_e324+4Ah]
 L_12EC0:
@@ -544,7 +548,7 @@ L_12ECF:
 L_12ED1:
         rol ecx, 10h
 L_12ED4:
-        mov dword ptr [g_8380], eax
+        mov dword ptr [sprite_clip_left], eax
 L_12ED9:
         mov ebx, dword ptr [g_e324+4Ah]
 L_12EDF:
@@ -570,7 +574,7 @@ L_12EFA:
 L_12EFD:
         jle short L_12F2E
 L_12EFF:
-        mov dword ptr [g_8384], eax
+        mov dword ptr [sprite_clip_right], eax
 L_12F04:
         movsx eax, cx
 L_12F07:
@@ -586,7 +590,7 @@ L_12F16:
 L_12F18:
         add eax, ebx
 L_12F1A:
-        mov edi, dword ptr [g_8368]
+        mov edi, dword ptr [vga_draw_origin]
 L_12F20:
         add edi, eax
 L_12F22:
@@ -602,74 +606,75 @@ L_12F2C:
 L_12F2E:
         ret
         ORG $+1 ; original zero fill to the next even code address
-a_12cbd ENDP
+draw_bob_sprite ENDP
 _TEXT ENDS
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-        PUBLIC g_8360
-g_8360	DD 2 DUP (0)
-        PUBLIC g_8368
-g_8368	DD 0
-        PUBLIC g_836c
-g_836c	DD 0
-        PUBLIC g_8370
-g_8370	DD 0
-        PUBLIC g_8374
-g_8374	DW 0
-        PUBLIC g_8376
-g_8376	DW 0
-        PUBLIC g_8378
-g_8378	DD 0
-        PUBLIC g_837c
-g_837c	DD 0
-        PUBLIC g_8380
-g_8380	DD 0
-        PUBLIC g_8384
-g_8384	DD 0
+        ; Renderer scratch state, VGA plane caches, and sprite-operation dispatch tables.
+        PUBLIC sprite_record_cursor
+sprite_record_cursor	DD 2 DUP (0)
+        PUBLIC vga_draw_origin
+vga_draw_origin	DD 0
+        PUBLIC vga_row_advance
+vga_row_advance	DD 0
+        PUBLIC background_plane_delta
+background_plane_delta	DD 0
+        PUBLIC sprite_record_flags
+sprite_record_flags	DW 0
+        PUBLIC sprite_source_column
+sprite_source_column	DW 0
+        PUBLIC sprite_clip_top
+sprite_clip_top	DD 0
+        PUBLIC sprite_clip_bottom
+sprite_clip_bottom	DD 0
+        PUBLIC sprite_clip_left
+sprite_clip_left	DD 0
+        PUBLIC sprite_clip_right
+sprite_clip_right	DD 0
         PUBLIC g_8388
 g_8388	DD 0
-        PUBLIC g_838c
-g_838c	DD 0
+        PUBLIC vga_plane_index
+vga_plane_index	DD 0
         PUBLIC g_8390
 g_8390 LABEL DWORD
         DB 18 DUP (0)
-        PUBLIC g_83a2
-g_83a2 LABEL DWORD
+        PUBLIC sprite_operation_dispatch_table
+sprite_operation_dispatch_table LABEL DWORD
         DB 0h, 0h
-        PUBLIC g_83a4
-g_83a4	DB 0
-        PUBLIC g_83a5
-g_83a5	DB 0
-        DD f_12a58
-        PUBLIC g_83aa
-g_83aa	DD f_12972
-        DD f_1280a
-        DD f_12682
-        DD f_125ae
+        PUBLIC current_vga_plane_mask
+current_vga_plane_mask	DB 0
+        PUBLIC first_vga_plane_mask
+first_vga_plane_mask	DB 0
+        DD restore_sprite_rectangle
+        PUBLIC sprite_render_mode_table
+sprite_render_mode_table	DD noop_sprite_callback_12972
+        DD restore_sprite_background_from_record
+        DD noop_sprite_callback_12682
+        DD restore_sprite_background_record
         DD L_12E5E
-        DD f_12974
-        DD f_12999
+        DD render_transparent_sprite_record_entry
+        DD draw_transparent_sprite_rows
         DD 0
         DD L_12E5D
-        DD f_12970
-        DD f_12971
+        DD noop_sprite_callback_12970
+        DD noop_sprite_callback_12971
         DD 0
         DD L_12E5E
-        DD f_12684
-        DD f_126db
+        DD render_sprite_record_kind_3_entry
+        DD render_sprite_record_kind_3_draw
         DD 0
         DD L_12E5D
-        DD f_12680
-        DD f_12681
+        DD noop_sprite_callback_12680
+        DD noop_sprite_callback_12681
         DD 0
         DD L_12E5E
-        DD f_12288
-        DD f_122d1
-        PUBLIC g_8406
-g_8406	DD 0
-        PUBLIC g_840a
-g_840a	DD 0
-        PUBLIC g_840e
-g_840e LABEL DWORD
+        DD render_sprite_record_kind_5_entry
+        DD render_sprite_record_kind_5_draw
+        PUBLIC sprite_origin_x
+sprite_origin_x	DD 0
+        PUBLIC sprite_origin_y
+sprite_origin_y	DD 0
+        PUBLIC sprite_command_cursor
+sprite_command_cursor LABEL DWORD
         DB 10 DUP (0)
 _DATA ENDS
         END

@@ -21,7 +21,7 @@ extern struct VideoState g_e324;
 void f_dfc3(void);
 void f_e028(void);
 void f_e3e5(void);
-extern unsigned char f_13324(int, int);
+extern unsigned char read_vga_pixel_entry(int, int);
 extern int f_107b6(char *, void *, unsigned int);
 extern void *f_ddb9(int);
 extern void f_de21(void *);
@@ -114,7 +114,7 @@ L_b89a:
     p = raw + 0x320;
     for (y = 0; y < g_e324.e36a; y++)
         for (x = 0; x < g_e324.e366; x++)
-            *p++ = (unsigned char)f_13324(x, y);
+            *p++ = (unsigned char)read_vga_pixel_entry(x, y);
 
     result = f_107b6(name, raw, raw_bytes);
     g_7b39 = (short)saved_mode;
@@ -153,7 +153,7 @@ L_b9f9:
     p = body + 8;
     for (y = 0; y < g_e324.e36a; y++)
         for (x = 0; x < ((g_e324.e366 + 1) & -2); x++)
-            *p++ = (unsigned char)f_13324(x, y);
+            *p++ = (unsigned char)read_vga_pixel_entry(x, y);
 
     result = f_107b6(name, allocated, (total_bytes + 3) & -4);
     g_7b39 = (short)saved_mode;

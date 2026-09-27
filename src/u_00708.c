@@ -139,7 +139,7 @@ extern unsigned char g_e13b;
 int f_17d2(unsigned long a0);
 extern short g_7b20;
 extern short g_7b22;
-extern void f_130b7(int, int, int, int, int, int, int, int);
+extern void copy_clipped_screen_rectangle(int, int, int, int, int, int, int, int);
 extern unsigned int g_8dfc;
 extern unsigned int g_8e00;
 extern unsigned int g_8e08;
@@ -149,7 +149,7 @@ extern int *r_dDDc_uzmlc;
 extern unsigned char g_e143_eayxx;
 char *itoa(int, char *, int);
 extern int g_df6c;
-extern void f_12f9c(int, int, int, int, int);
+extern void copy_screen_span_entry(int, int, int, int, int);
 void f_1af4(void);
 void f_1b7e(void);
 void f_1bc2(void);
@@ -262,7 +262,7 @@ extern unsigned char q_A988[];
 extern unsigned char g_6b9e[];
 extern unsigned char g_2fe4[];
 void f_13889(int, int, int);
-void f_12cbd_pzyovjt(int, int, int);
+void draw_bob_sprite_entry(int, int, int);
 extern int g_e14c;
 void f_339f_adddtkmk(void);
 void f_8345_wsdytbf(void);
@@ -2020,10 +2020,10 @@ void f_16bb(int a0)
     f_b57a(0x10, 0xda, g_e324.e376, g_e324.e37a);
     g_746e = 8;
     g_7b16 = g_7b20;
-    f_130b7(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
+    copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
     f_b1df(0x10, 0xda, a0);
     g_7b16 = g_7b22;
-    f_130b7(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
+    copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
     f_b1df(0x10, 0xda, a0);
     g_746e = (unsigned short)v_8;
     g_7b16 = (unsigned short)v_4;
@@ -2073,15 +2073,15 @@ void f_19b9(void)
     f_1d80();
     g_7b16 = g_7b18;
     f_1bc2();
-    f_12f9c((short)g_7b18, 0, (short)g_7b20, 0, g_e324.e35a);
-    f_12f9c((short)g_7b18, 0, (short)g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.e35a);
     g_7b16 = g_7b22;
     f_ee33((short)g_7b16);
     f_1e87();
     g_7b16 = g_7b18;
     f_1bc2();
-    f_12f9c((short)g_7b18, 0, (short)g_7b20, 0, g_e324.e35a);
-    f_12f9c((short)g_7b18, 0, (short)g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.e35a);
     g_7b16 = g_7b20;
     f_ed38();
     if (g_746c_mmw) {
@@ -2247,11 +2247,11 @@ L_1fc9:;
 L_1fd0:;
     if (g_e13d == 0) goto L_202b;
     g_e13d = 0;
-    f_130b7(g_7b18, 0xe, 0x32, g_e324.e376, 0xa5, g_7b16, 0xe, 0x32);
+    copy_clipped_screen_rectangle(g_7b18, 0xe, 0x32, g_e324.e376, 0xa5, g_7b16, 0xe, 0x32);
     f_b1df(0x36, (g_e208.v20d * g_dedc) + 0x32, (int)g_6984);
 L_202b:;
     if (g_dF68 != 0x23) goto L_2083;
-    f_130b7(g_7b18, 0x24, 0xae, g_e324.e376, 0xc5, g_7b16, 0x24, 0xae);
+    copy_clipped_screen_rectangle(g_7b18, 0x24, 0xae, g_e324.e376, 0xc5, g_7b16, 0x24, 0xae);
     if (g_df64 >= 0) goto L_2083;
     f_b1df(0x24, 0xae, g_3892);
 L_2083:;
@@ -2399,8 +2399,8 @@ void f_251c(void)
 
 void f_2565(int a0)
 {
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     g_7b16 = g_7b14;
     f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
     f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
@@ -2454,8 +2454,8 @@ void f_2796(void)
 
 void f_27df(int a)
 {
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     g_7b16 = g_7b14;
     f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 17, 23);
     f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
@@ -2492,8 +2492,8 @@ void f_2903(void)
     f_1085a_eklzmb(g_6974);
     f_c14b_lmdi(g_dd44, g_e4c8, 0x2ae4, -1);
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
 
     for (i = 0; i < 0x40; i++)
         f_ecdf(1, (unsigned char)i, (unsigned char)i, (unsigned char)i);
@@ -2506,8 +2506,8 @@ void f_2903(void)
     k_DD48_jbwjbqarofg = old1;
     x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.e35a;
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
     for (i = 0; i < 0x8c; i++)
         f_9d40(1);
@@ -2516,8 +2516,8 @@ void f_2903(void)
     k_DD48_jbwjbqarofg = old2;
     x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.e35a;
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
     for (i = 0; i < 0x8c; i++)
         f_9d40(1);
@@ -2534,9 +2534,9 @@ void f_2c72_zyd(void)
 
 void f_2ccc(void)
 {
-    f_12f9c(g_7b14, 0, g_7b18, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    f_12f9c(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b14, 0, g_7b18, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
     f_c3ab_euckgzihaj();
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
     f_2eab();

@@ -2,15 +2,16 @@
 EXTRN g_7b14:WORD
 EXTRN g_e324:WORD
 EXTRN g_7b16:WORD
-EXTRN fill_planar_video_rows:NEAR
+EXTRN L_13712:NEAR
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
-        PUBLIC a_13324
-        PUBLIC f_13324
-f_13324 LABEL NEAR
-a_13324 PROC NEAR
+        PUBLIC read_vga_pixel
+        ; Read one palette-indexed pixel while preserving the caller's VGA mode.
+        PUBLIC read_vga_pixel_entry
+read_vga_pixel_entry LABEL NEAR
+read_vga_pixel PROC NEAR
         push ebp
 L_13325:
         lea ebp, [esp]
@@ -136,13 +137,14 @@ L_133F4:
         pop ebp
 L_133F5:
         ret
-a_13324 ENDP
+read_vga_pixel ENDP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
-        PUBLIC a_133f6
-        PUBLIC f_133f6
-f_133f6 LABEL NEAR
-a_133f6 PROC NEAR
+        PUBLIC write_vga_pixel
+        ; Write one palette-indexed pixel, selecting its VGA plane when needed.
+        PUBLIC write_vga_pixel_entry
+write_vga_pixel_entry LABEL NEAR
+write_vga_pixel PROC NEAR
         push ebp
 L_133F7:
         lea ebp, [esp]
@@ -292,12 +294,13 @@ L_134F0:
         pop ebp
 L_134F1:
         ret
-a_133f6 ENDP
+write_vga_pixel ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_134f2
-        PUBLIC f_134f2
-f_134f2 LABEL NEAR
-a_134f2 PROC NEAR
+        PUBLIC fill_vga_span
+        ; Fill a linear run of pixels on the selected page.
+        PUBLIC fill_vga_span_entry
+fill_vga_span_entry LABEL NEAR
+fill_vga_span PROC NEAR
         pushad
 L_134F3:
         lea ebp, [esp + 1Ch]
@@ -439,8 +442,9 @@ L_135E6:
         popad
 L_135E7:
         ret
-        PUBLIC f_135e8
-f_135e8 LABEL NEAR
+        ; Normalize and clip a rectangle, then fill it with one palette index.
+        PUBLIC fill_clipped_vga_rectangle
+fill_clipped_vga_rectangle LABEL NEAR
 L_135E8:
         push ebp
 L_135E9:
@@ -540,7 +544,7 @@ L_13671:
 L_13672:
         cmp word ptr [g_e324], 0
 L_1367A:
-        je near ptr fill_planar_video_rows
+        je near ptr L_13712
 L_13680:
         cmp byte ptr [g_e324+61h], 0Fh
 L_13687:
@@ -635,6 +639,6 @@ L_13710:
         pop ebp
 L_13711:
         ret
-a_134f2 ENDP
+fill_vga_span ENDP
 _TEXT ENDS
 END

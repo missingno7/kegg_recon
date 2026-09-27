@@ -25,7 +25,7 @@ extern void _disable(void);
 extern void _enable(void);
 extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
 extern int g_947c;
-extern int f_135e8();
+extern int fill_clipped_vga_rectangle();
 extern void f_ee65(int);
 extern void f_eda0(void);
 extern int g_7b00;

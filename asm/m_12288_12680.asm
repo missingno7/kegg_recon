@@ -1,29 +1,30 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN g_8360:BYTE
-EXTRN g_836c:DWORD
-EXTRN g_8370:DWORD
-EXTRN g_8376:WORD
-EXTRN g_8378:DWORD
-EXTRN g_8380:DWORD
+EXTRN sprite_record_cursor:BYTE
+EXTRN vga_row_advance:DWORD
+EXTRN background_plane_delta:DWORD
+EXTRN sprite_source_column:WORD
+EXTRN sprite_clip_top:DWORD
+EXTRN sprite_clip_left:DWORD
 EXTRN g_8388:DWORD
-EXTRN g_838c:DWORD
+EXTRN vga_plane_index:DWORD
 EXTRN g_8390:DWORD
-EXTRN g_83a4:BYTE
-EXTRN g_83a5:BYTE
+EXTRN current_vga_plane_mask:BYTE
+EXTRN first_vga_plane_mask:BYTE
 EXTRN g_e2e4:DWORD
 EXTRN g_e324:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC f_12288
-f_12288 LABEL NEAR
-a_12288 PROC NEAR
-        mov edx, dword ptr [g_8360]
+        ; Kind 5 renderer: record the sprite operation, then decode its clipped run stream.
+        PUBLIC render_sprite_record_kind_5_entry
+render_sprite_record_kind_5_entry LABEL NEAR
+render_sprite_record_kind_5 PROC NEAR
+        mov edx, dword ptr [sprite_record_cursor]
 L_1228E:
-        add dword ptr [g_8360], 14h
+        add dword ptr [sprite_record_cursor], 14h
 L_12295:
         mov word ptr [edx], 5
 L_1229A:
@@ -43,7 +44,7 @@ L_122AD:
 L_122B3:
         mov dword ptr [edx + 0Ah], eax
 L_122B6:
-        mov eax, dword ptr [g_8380]
+        mov eax, dword ptr [sprite_clip_left]
 L_122BB:
         mov word ptr [edx + 0Eh], ax
 L_122BF:
@@ -51,11 +52,12 @@ L_122BF:
 L_122C4:
         mov word ptr [edx + 10h], ax
 L_122C8:
-        mov eax, dword ptr [g_8378]
+        mov eax, dword ptr [sprite_clip_top]
 L_122CD:
         mov word ptr [edx + 12h], ax
-        PUBLIC f_122d1
-f_122d1 LABEL NEAR
+        ; Shared kind 5 drawing entry used by the mode dispatch table.
+        PUBLIC render_sprite_record_kind_5_draw
+render_sprite_record_kind_5_draw LABEL NEAR
 L_122D1:
         mov ecx, edi
 L_122D3:
@@ -67,13 +69,13 @@ L_122D9:
 L_122DB:
         rol ch, cl
 L_122DD:
-        mov byte ptr [g_83a4], ch
+        mov byte ptr [current_vga_plane_mask], ch
 L_122E3:
-        mov byte ptr [g_83a5], ch
+        mov byte ptr [first_vga_plane_mask], ch
 L_122E9:
         neg ebp
 L_122EB:
-        cmp dword ptr [g_8380], 0
+        cmp dword ptr [sprite_clip_left], 0
 L_122F2:
         jne near ptr L_123B9
 L_122F8:
@@ -81,7 +83,7 @@ L_122F8:
 L_122FF:
         jne near ptr L_124B8
 L_12305:
-        mov word ptr [g_8376], 0Ah
+        mov word ptr [sprite_source_column], 0Ah
 L_1230E:
         push ebx
 L_1230F:
@@ -93,13 +95,13 @@ L_12311:
 L_12312:
         mov al, 2
 L_12314:
-        mov ah, byte ptr [g_83a4]
+        mov ah, byte ptr [current_vga_plane_mask]
 L_1231A:
         mov dx, 3C4h
 L_1231E:
         out dx, ax
 L_12320:
-        movzx eax, word ptr [g_8376]
+        movzx eax, word ptr [sprite_source_column]
 L_12327:
         sub esi, eax
 L_12329:
@@ -107,11 +109,11 @@ L_12329:
 L_1232C:
         add esi, eax
 L_1232E:
-        add word ptr [g_8376], -2
+        add word ptr [sprite_source_column], -2
 L_12336:
         sub eax, eax
 L_12338:
-        mov ecx, dword ptr [g_8378]
+        mov ecx, dword ptr [sprite_clip_top]
 L_1233E:
         jcxz L_12351
 L_12341:
@@ -139,7 +141,7 @@ L_12357:
 L_12359:
         shr edx, 2
 L_1235C:
-        mov dword ptr [g_836c], edx
+        mov dword ptr [vga_row_advance], edx
 L_12362:
         mov bh, byte ptr [esi]
 L_12364:
@@ -207,31 +209,31 @@ L_1239B:
 L_1239C:
         dec ebx
 L_1239D:
-        rol byte ptr [g_83a4], 1
+        rol byte ptr [current_vga_plane_mask], 1
 L_123A3:
         adc edi, 0
 L_123A6:
-        mov dl, byte ptr [g_83a4]
+        mov dl, byte ptr [current_vga_plane_mask]
 L_123AC:
-        cmp dl, byte ptr [g_83a5]
+        cmp dl, byte ptr [first_vga_plane_mask]
 L_123B2:
         jne near ptr L_1230E
 L_123B8:
         ret
 L_123B9:
-        mov edx, dword ptr [g_8380]
+        mov edx, dword ptr [sprite_clip_left]
 L_123BF:
         and edx, 3
 L_123C2:
-        mov dword ptr [g_838c], edx
+        mov dword ptr [vga_plane_index], edx
 L_123C8:
-        sar dword ptr [g_8380], 2
+        sar dword ptr [sprite_clip_left], 2
 L_123CF:
         mov edx, dword ptr [g_e324+3Ah]
 L_123D5:
         shr edx, 2
 L_123D8:
-        mov dword ptr [g_836c], edx
+        mov dword ptr [vga_row_advance], edx
 L_123DE:
         push ebx
 L_123DF:
@@ -243,7 +245,7 @@ L_123E1:
 L_123E2:
         mov al, 2
 L_123E4:
-        mov ah, byte ptr [g_83a4]
+        mov ah, byte ptr [current_vga_plane_mask]
 L_123EA:
         mov dx, 3C4h
 L_123EE:
@@ -251,7 +253,7 @@ L_123EE:
 L_123F0:
         mov edx, 0FFFFFFFBh
 L_123F5:
-        add edx, dword ptr [g_838c]
+        add edx, dword ptr [vga_plane_index]
 L_123FB:
         add edx, edx
 L_123FD:
@@ -261,7 +263,7 @@ L_12401:
 L_12403:
         sub eax, eax
 L_12405:
-        mov ecx, dword ptr [g_8378]
+        mov ecx, dword ptr [sprite_clip_top]
 L_1240B:
         jcxz L_1241E
 L_1240E:
@@ -287,7 +289,7 @@ L_1241E:
 L_12420:
         mov edi, edx
 L_12422:
-        mov ebx, dword ptr [g_8380]
+        mov ebx, dword ptr [sprite_clip_left]
 L_12428:
         sub edi, ebx
 L_1242A:
@@ -361,21 +363,21 @@ L_1246C:
 L_1246E:
         jne short L_1242F
 L_12470:
-        add edx, dword ptr [g_836c]
+        add edx, dword ptr [vga_row_advance]
 L_12476:
         inc ebp
 L_12477:
         jne short L_12420
 L_12479:
-        inc dword ptr [g_838c]
+        inc dword ptr [vga_plane_index]
 L_1247F:
-        cmp dword ptr [g_838c], 4
+        cmp dword ptr [vga_plane_index], 4
 L_12486:
         jne short L_12498
 L_12488:
-        mov dword ptr [g_838c], 0
+        mov dword ptr [vga_plane_index], 0
 L_12492:
-        inc dword ptr [g_8380]
+        inc dword ptr [sprite_clip_left]
 L_12498:
         pop edi
 L_12499:
@@ -385,19 +387,19 @@ L_1249A:
 L_1249B:
         pop ebx
 L_1249C:
-        rol byte ptr [g_83a4], 1
+        rol byte ptr [current_vga_plane_mask], 1
 L_124A2:
         adc edi, 0
 L_124A5:
-        mov dl, byte ptr [g_83a4]
+        mov dl, byte ptr [current_vga_plane_mask]
 L_124AB:
-        cmp dl, byte ptr [g_83a5]
+        cmp dl, byte ptr [first_vga_plane_mask]
 L_124B1:
         jne near ptr L_123DE
 L_124B7:
         ret
 L_124B8:
-        mov word ptr [g_8376], 0Ah
+        mov word ptr [sprite_source_column], 0Ah
 L_124C1:
         mov edx, dword ptr [g_8388]
 L_124C7:
@@ -407,7 +409,7 @@ L_124CD:
 L_124D3:
         shr edx, 2
 L_124D6:
-        mov dword ptr [g_836c], edx
+        mov dword ptr [vga_row_advance], edx
 L_124DC:
         push ebx
 L_124DD:
@@ -419,13 +421,13 @@ L_124DF:
 L_124E0:
         mov al, 2
 L_124E2:
-        mov ah, byte ptr [g_83a4]
+        mov ah, byte ptr [current_vga_plane_mask]
 L_124E8:
         mov dx, 3C4h
 L_124EC:
         out dx, ax
 L_124EE:
-        movzx eax, word ptr [g_8376]
+        movzx eax, word ptr [sprite_source_column]
 L_124F5:
         sub esi, eax
 L_124F7:
@@ -433,11 +435,11 @@ L_124F7:
 L_124FA:
         add esi, eax
 L_124FC:
-        add word ptr [g_8376], -2
+        add word ptr [sprite_source_column], -2
 L_12504:
         sub eax, eax
 L_12506:
-        mov ecx, dword ptr [g_8378]
+        mov ecx, dword ptr [sprite_clip_top]
 L_1250C:
         jcxz L_1251F
 L_1250F:
@@ -543,7 +545,7 @@ L_12581:
 L_12583:
         jne short L_12540
 L_12585:
-        add edx, dword ptr [g_836c]
+        add edx, dword ptr [vga_row_advance]
 L_1258B:
         inc ebp
 L_1258C:
@@ -557,19 +559,20 @@ L_12590:
 L_12591:
         pop ebx
 L_12592:
-        rol byte ptr [g_83a4], 1
+        rol byte ptr [current_vga_plane_mask], 1
 L_12598:
         adc edi, 0
 L_1259B:
-        mov dl, byte ptr [g_83a4]
+        mov dl, byte ptr [current_vga_plane_mask]
 L_125A1:
-        cmp dl, byte ptr [g_83a5]
+        cmp dl, byte ptr [first_vga_plane_mask]
 L_125A7:
         jne near ptr L_124DC
 L_125AD:
         ret
-        PUBLIC f_125ae
-f_125ae LABEL NEAR
+        ; Restore a saved rectangle or replay its encoded source, according to record flags.
+        PUBLIC restore_sprite_background_record
+restore_sprite_background_record LABEL NEAR
 L_125AE:
         mov cx, word ptr [ebx + 0Eh]
 L_125B2:
@@ -633,7 +636,7 @@ L_12604:
 L_1260A:
         sub edi, eax
 L_1260C:
-        mov dword ptr [g_8370], edi
+        mov dword ptr [background_plane_delta], edi
 L_12612:
         mov ebp, dword ptr [ebx + 0Ah]
 L_12615:
@@ -687,7 +690,7 @@ L_12648:
 L_1264B:
         add eax, edi
 L_1264D:
-        mov esi, dword ptr [g_8370]
+        mov esi, dword ptr [background_plane_delta]
 L_12653:
         add esi, edi
 L_12655:
@@ -726,6 +729,6 @@ L_1267D:
         jne short L_12630
 L_1267F:
         ret
-a_12288 ENDP
+render_sprite_record_kind_5 ENDP
 _TEXT ENDS
         END

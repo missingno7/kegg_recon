@@ -15,7 +15,7 @@ int g_ddcc;
 void f_dfc3(void);
 extern int g_df38;
 extern int g_2e9c[];
-extern void f_12cbd_pzyovjt(unsigned char *, int, int);
+extern void draw_bob_sprite_entry(unsigned char *, int, int);
 extern unsigned char *g_e158_tpotbrbk;
 extern short m_E15C;
 extern short g_e15e;
@@ -105,7 +105,7 @@ void f_7f8a(void)
         x = 0;
         while (x < g_e324.e366) {
             p = g_Ddd8 + g_2e9c[2 * g_df38];
-            f_12cbd_pzyovjt(p, x, y);
+            draw_bob_sprite_entry(p, x, y);
             x += *(short *)(p + 2);
         }
         y += *(short *)(p + 4);

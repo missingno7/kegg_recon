@@ -5,11 +5,11 @@ float g_e1fc;
 #include <stdlib.h>
 extern signed short g_7b16;
 extern int f_dd53(int, int);
-extern void f_135e8();
-extern void f_133f6();
+extern void fill_clipped_vga_rectangle();
+extern void write_vga_pixel_entry();
 extern void f_ae56();
 extern void f_b03c(short, short, short, short, short, short);
-extern unsigned char f_13324(short, short);
+extern unsigned char read_vga_pixel_entry(short, short);
 extern int g_e200;
 extern int g_e204;
 extern unsigned char g_e208;
@@ -45,11 +45,11 @@ void f_acdd(float factor, int first, int last)
 void f_ad63(float factor, int x1, int y1, int x2, int y2)
 {
     g_e1fc = factor;
-    f_135e8(g_7b16, x1, y1, x2, y2, g_7404);
-    f_133f6(x1, y1, f_dd53(g_7404 + 1, g_7408 - 1));
-    f_133f6(x2, y1, f_dd53(g_7404 + 1, g_7408 - 1));
-    f_133f6(x2, y2, f_dd53(g_7404 + 1, g_7408 - 1));
-    f_133f6(x1, y2, f_dd53(g_7404 + 1, g_7408 - 1));
+    fill_clipped_vga_rectangle(g_7b16, x1, y1, x2, y2, g_7404);
+    write_vga_pixel_entry(x1, y1, f_dd53(g_7404 + 1, g_7408 - 1));
+    write_vga_pixel_entry(x2, y1, f_dd53(g_7404 + 1, g_7408 - 1));
+    write_vga_pixel_entry(x2, y2, f_dd53(g_7404 + 1, g_7408 - 1));
+    write_vga_pixel_entry(x1, y2, f_dd53(g_7404 + 1, g_7408 - 1));
     f_ae56(x1, y1, x2, y2);
 }
 
@@ -67,10 +67,10 @@ subdivide:
     f_b03c(x2, y1, x2, y2, x2, midy);
     f_b03c(x1, y2, x2, y2, midx, y2);
     f_b03c(x1, y1, x1, y2, x1, midy);
-    if (f_13324(midx, midy) == g_7404) {
-        f_133f6(midx, midy,
-                (f_13324(x1, y1) + f_13324(x2, y1) +
-                 f_13324(x2, y2) + f_13324(x1, y2)) >> 2);
+    if (read_vga_pixel_entry(midx, midy) == g_7404) {
+        write_vga_pixel_entry(midx, midy,
+                (read_vga_pixel_entry(x1, y1) + read_vga_pixel_entry(x2, y1) +
+                 read_vga_pixel_entry(x2, y2) + read_vga_pixel_entry(x1, y2)) >> 2);
     }
     f_ae56(x1, y1, midx, midy);
     f_ae56(midx, y1, x2, midy);
@@ -80,13 +80,13 @@ subdivide:
 
 void f_b03c(short x1, short y1, short x2, short y2, short x3, short y3)
 {
-    if (f_13324(x3, y3) != g_7404) return;
-    g_e1f8 = f_dd53(g_7410, g_7414) + ((f_13324(x1, y1) + f_13324(x2, y2)) >> 1)
+    if (read_vga_pixel_entry(x3, y3) != g_7404) return;
+    g_e1f8 = f_dd53(g_7410, g_7414) + ((read_vga_pixel_entry(x1, y1) + read_vga_pixel_entry(x2, y2)) >> 1)
            + (int)(f_dd53(-g_740c >> 1, g_740c >> 1) * g_e1fc * (float)(abs(x1 - x2) + abs(y1 - y2)))
              / (g_740c >> 1);
     if (g_e1f8 < g_7404 + 1) g_e1f8 = g_7404 + 1;
     if (g_e1f8 > g_7408 - 1) g_e1f8 = g_7408 - 1;
-    f_133f6(x3, y3, g_e1f8);
+    write_vga_pixel_entry(x3, y3, g_e1f8);
 }
 
 int f_b17e(int *index, char **cursor)

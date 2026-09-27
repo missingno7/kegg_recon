@@ -14,12 +14,12 @@ int g_e2c4;
 int g_e2c8;
 
 int f_c886(void);
-extern void f_12b94(int);
+extern void replay_sprite_update_list_entry(int);
 void f_c936(void);
-extern void f_12a9c();
+extern void process_sprite_update_list_entry();
 void f_c960(int a, int b);
 extern short g_7b16;
-extern void f_12cbd_pzyovjt();
+extern void draw_bob_sprite_entry();
 extern short g_e324;
 extern short g_7474;
 extern int g_7476;
@@ -58,11 +58,11 @@ void f_c8c0_pm(int a, int b, int c, int d, int e) {
 
 void f_c936(void) {
     *(int *)g_e2ec = 0;
-    f_12b94(f_c886());
+    replay_sprite_update_list_entry(f_c886());
 }
 
 void f_c960(int a, int b) {
-    f_12a9c(a, b, g_e2dc, g_e2e8);
+    process_sprite_update_list_entry(a, b, g_e2dc, g_e2e8);
     *(short *)g_e2e8 = 0;
     if ((g_e2ec - g_e2dc) / 10 > g_7470 * 10)
         g_746c_mmw = 0x407;
@@ -79,7 +79,7 @@ void f_c9f4(int a, int b, int c, int d, int e) {
     int old_746e = g_746e;
     g_746e = b;
     g_7b16 = a;
-    f_12cbd_pzyovjt(c, d, e);
+    draw_bob_sprite_entry(c, d, e);
     g_7b16 = old_7b16;
     g_746e = old_746e;
 }

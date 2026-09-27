@@ -3,10 +3,11 @@ EXTRN g_e324:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
-        PUBLIC a_12f30
-        PUBLIC f_12f30
-f_12f30 LABEL NEAR
-a_12f30 PROC NEAR
+        PUBLIC copy_chunky_scanline_to_vga
+        ; Split chunky scanline pixels across the four VGA planes.
+        PUBLIC copy_chunky_scanline_to_vga_entry
+copy_chunky_scanline_to_vga_entry LABEL NEAR
+copy_chunky_scanline_to_vga PROC NEAR
         pushad
 L_12F31:
         lea ebp, [esp + 1Ch]
@@ -73,6 +74,6 @@ L_12F99:
 L_12F9A:
         ret
         ORG $+1 ; original zero fill to the next even code address
-a_12f30 ENDP
+copy_chunky_scanline_to_vga ENDP
 _TEXT ENDS
         END

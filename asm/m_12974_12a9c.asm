@@ -1,23 +1,24 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN g_8360:BYTE
-EXTRN g_836c:DWORD
-EXTRN g_8378:DWORD
-EXTRN g_8380:DWORD
-EXTRN g_8384:DWORD
+EXTRN sprite_record_cursor:BYTE
+EXTRN vga_row_advance:DWORD
+EXTRN sprite_clip_top:DWORD
+EXTRN sprite_clip_left:DWORD
+EXTRN sprite_clip_right:DWORD
 EXTRN g_e2e4:DWORD
 EXTRN g_e324:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC f_12974
-f_12974 LABEL NEAR
-a_12974 PROC NEAR
-        mov edx, dword ptr [g_8360]
+        ; Kind 1 renderer: zero bytes in the row stream leave destination pixels untouched.
+        PUBLIC render_transparent_sprite_record_entry
+render_transparent_sprite_record_entry LABEL NEAR
+render_transparent_sprite_record PROC NEAR
+        mov edx, dword ptr [sprite_record_cursor]
 L_1297A:
-        add dword ptr [g_8360], 14h
+        add dword ptr [sprite_record_cursor], 14h
 L_12981:
         mov word ptr [edx], 1
 L_12986:
@@ -30,32 +31,33 @@ L_12990:
         sub eax, dword ptr [g_e2e4]
 L_12996:
         mov dword ptr [edx + 0Ah], eax
-        PUBLIC f_12999
-f_12999 LABEL NEAR
+        ; Decode transparent sprite runs into the clipped destination rows.
+        PUBLIC draw_transparent_sprite_rows
+draw_transparent_sprite_rows LABEL NEAR
 L_12999:
-        mov eax, dword ptr [g_8378]
+        mov eax, dword ptr [sprite_clip_top]
 L_1299E:
         mov ecx, ebx
 L_129A0:
-        add ecx, dword ptr [g_8380]
+        add ecx, dword ptr [sprite_clip_left]
 L_129A6:
-        add ecx, dword ptr [g_8384]
+        add ecx, dword ptr [sprite_clip_right]
 L_129AC:
         mul ecx
 L_129AE:
         add esi, eax
 L_129B0:
-        mov edx, dword ptr [g_8380]
+        mov edx, dword ptr [sprite_clip_left]
 L_129B6:
         add esi, edx
 L_129B8:
-        add edx, dword ptr [g_8384]
+        add edx, dword ptr [sprite_clip_right]
 L_129BE:
         mov eax, dword ptr [g_e324+3Ah]
 L_129C3:
         sub eax, ebx
 L_129C5:
-        mov dword ptr [g_836c], eax
+        mov dword ptr [vga_row_advance], eax
 L_129CA:
         neg ebp
 L_129CC:
@@ -217,15 +219,16 @@ L_12A46:
 L_12A48:
         add esi, edx
 L_12A4A:
-        add edi, dword ptr [g_836c]
+        add edi, dword ptr [vga_row_advance]
 L_12A50:
         inc ebp
 L_12A51:
         jne near ptr L_129CC
 L_12A57:
         ret
-        PUBLIC f_12a58
-f_12a58 LABEL NEAR
+        ; Copy a saved rectangular patch from the backing image to the active page.
+        PUBLIC restore_sprite_rectangle
+restore_sprite_rectangle LABEL NEAR
 L_12A58:
         mov esi, dword ptr [u_e2E0]
 L_12A5E:
@@ -277,6 +280,6 @@ L_12A99:
 L_12A9B:
         ret
 
-a_12974 ENDP
+render_transparent_sprite_record ENDP
 _TEXT ENDS
         END

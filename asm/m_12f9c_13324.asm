@@ -3,10 +3,11 @@ EXTRN g_e324:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
-        PUBLIC a_12f9c
-        PUBLIC f_12f9c
-f_12f9c LABEL NEAR
-a_12f9c PROC NEAR
+        PUBLIC copy_screen_span
+        ; Copy one linear framebuffer span, using planar or packed VGA access.
+        PUBLIC copy_screen_span_entry
+copy_screen_span_entry LABEL NEAR
+copy_screen_span PROC NEAR
         pushad
 L_12F9D:
         lea ebp, [esp + 1Ch]
@@ -152,8 +153,9 @@ L_130B5:
         popad
 L_130B6:
         ret
-        PUBLIC f_130b7
-f_130b7 LABEL NEAR
+        ; Clip source and destination bounds before copying a screen rectangle.
+        PUBLIC copy_clipped_screen_rectangle
+copy_clipped_screen_rectangle LABEL NEAR
 L_130B7:
         push ebp
 L_130B8:
@@ -530,6 +532,6 @@ L_13321:
         ret
 L_13322:
         add byte ptr [eax], al
-a_12f9c ENDP
+copy_screen_span ENDP
 _TEXT ENDS
         END
