@@ -26,8 +26,6 @@ extern void _enable(void);
 extern int f_13964(unsigned char, unsigned char, unsigned char);
 extern int g_947c;
 extern int f_135e8();
-extern short g_7b14;
-extern short g_7b16;
 extern void f_ee65(int);
 extern void f_eda0(void);
 extern int g_7b00;
@@ -43,8 +41,6 @@ extern int outp(int, int);
 extern int inp(int);
 extern void f_ec76(void *);
 extern void f_ecdf(unsigned char, unsigned char, unsigned char, unsigned char);
-extern short g_7b20;
-extern short g_7b22;
 int f_e095_ughrsvpfh(int a0);
 void f_e3e5(void);
 void f_e41d(void);
@@ -64,12 +60,18 @@ void f_edd5(void);
 void f_ee33(int index);
 extern short g_7afe;
 extern short g_7b12;
-extern short g_7b18;
-extern short g_7b1a;
-extern short g_7b1c;
-extern short g_7b1e;
-extern short g_7b24;
-extern short g_7b26;
+
+/* _DATA [0x7b14,0x7b28) */
+short g_7b14 = 0;
+short g_7b16 = 1;
+short g_7b18 = 2;
+short g_7b1a = 3;
+short g_7b1c = 0;
+short g_7b1e = 1;
+short g_7b20 = 0;
+short g_7b22 = 1;
+short g_7b24 = 2;
+short g_7b26 = 3;
 
 void f_ed38(void) {
     g_7b14 = g_7b16;

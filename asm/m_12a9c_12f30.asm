@@ -16,7 +16,7 @@ EXTRN g_83aa:BYTE
 EXTRN g_8406:DWORD
 EXTRN g_840a:DWORD
 EXTRN g_840e:DWORD
-EXTRN g_e2e0:DWORD
+EXTRN u_e2E0:DWORD
 EXTRN g_e2e4:DWORD
 EXTRN g_e2e8:DWORD
 EXTRN g_e2ec:DWORD
@@ -77,7 +77,7 @@ L_12AED:
 L_12AF3:
         mov dword ptr [g_e2e4], edi
 L_12AF9:
-        mov dword ptr [g_e2e0], esi
+        mov dword ptr [u_e2E0], esi
 L_12AFF:
         add edi, dword ptr [ebp + 8]
 L_12B02:
@@ -240,7 +240,7 @@ L_12C4D:
 L_12C4F:
         mov dword ptr [g_e2e4], edi
 L_12C55:
-        mov dword ptr [g_e2e0], esi
+        mov dword ptr [u_e2E0], esi
 L_12C5B:
         cmp word ptr [g_746e], 4
 L_12C63:
@@ -331,7 +331,7 @@ L_12D0E:
 L_12D14:
         mov dword ptr [g_e2e4], esi
 L_12D1A:
-        mov dword ptr [g_e2e0], edi
+        mov dword ptr [u_e2E0], edi
 L_12D20:
         mov dword ptr [g_8368], esi
 L_12D26:

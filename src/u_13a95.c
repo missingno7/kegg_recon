@@ -4,7 +4,7 @@ extern short g_742e;
 extern int g_7c08_orxezsknd;
 extern unsigned g_7c0c;
 extern int (*g_7c10)();
-extern unsigned char g_ab40_jbfxrqns[];
+extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
 extern unsigned char *g_e4d0_wfmxdlyju;
@@ -20,6 +20,9 @@ extern unsigned char g_e48d_c;
 extern unsigned char g_e48f;
 extern void f_c294(void);
 
+/* _DATA [0x8428,0x842c) */
+int g_8428 = 0;
+
 void main(void)
 {
     if (f_108a9(0x1f40, 0x55730, -1) == 0) goto L_13ac5;
@@ -34,7 +37,7 @@ L_13adf:;
     g_7c0c = g_7c08_orxezsknd + 0x55730;
     g_7c10 = (int)a_982c;
     g_742e = -1;
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)g_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     f_708();
     shutdown_with_exit_message(0, 0);
     exit(0);

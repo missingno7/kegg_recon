@@ -2,14 +2,17 @@
 EXTRN f_9e10:NEAR
 EXTRN f_9e54:NEAR
 EXTRN g_73a8:DWORD
-EXTRN g_73d8:DWORD
 EXTRN g_e1b4_35:DWORD
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
+        PUBLIC g_73d4
+        PUBLIC g_73d8
+g_73d4  DD 0
+g_73d8  DD 0
 _DATA ENDS
 DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
-        ASSUME CS:_TEXT
-        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT, DS:DGROUP
+        ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC a_9f64
         PUBLIC f_9f64
 f_9f64 LABEL NEAR
@@ -121,7 +124,7 @@ L_A035:
         mov     eax,dword ptr g_73d8
         ret
 a_9f64 ENDP
-        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC a_a03f
         PUBLIC f_a03f
 f_a03f LABEL NEAR
@@ -157,7 +160,7 @@ L_A05E:
         pop     ebp
         ret
 a_a03f ENDP
-        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC a_a067
         PUBLIC f_a067
 f_a067 LABEL NEAR

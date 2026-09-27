@@ -3,6 +3,14 @@ typedef unsigned int size_t;
 struct f85a4_edge { unsigned char active; unsigned char result; int x; int y; };
 struct f85a4_local { struct f85a4_edge rows[4]; };
 typedef struct { unsigned char : 2; unsigned char f : 6; } BF1_2_6;
+int g_df70;
+int g_df74;
+char g_df78[450];
+unsigned char g_e140;
+unsigned char g_e141;
+unsigned char g_e142_baun;
+unsigned char g_e143_eayxx;
+
 typedef struct { unsigned char b[2]; } S2;
 extern int g_9480;
 extern int g_9488;
@@ -12,12 +20,21 @@ extern int g_94b0;
 extern int g_8e20;
 extern int g_dd84;
 extern int g_dd88;
-extern int g_dda8;
-extern int g_ddac;
+extern int g_dDa8;
+extern int c_DDAC;
 extern char *g_9478;
 extern char *g_dd6c;
+int g_df50;
+int g_df54;
+int h_df5c;
+int g_dF58;
+int g_df60;
+int g_df64;
+int g_dF68;
+int g_df6c;
+unsigned char g_e13f;
+
 extern unsigned char *g_ddb4;
-extern char g_df78[];
 extern void f_7551(void);
 extern void f_7bf4(void);
 extern void f_85a4(void);
@@ -37,6 +54,13 @@ void f_8fce(int x, int y);
 extern unsigned char g_5dc0[];
 extern unsigned char g_5df8[];
 extern unsigned char g_5e30[];
+int b_DF40_omuefnnbqp;
+int i_dF44;
+int g_df48;
+int g_df4c;
+unsigned char g_e13d;
+unsigned char g_e13e;
+
 extern unsigned char g_6098[];
 extern unsigned short g_7bfe;
 extern unsigned short g_7c00;
@@ -44,24 +68,29 @@ extern int g_8ddc;
 extern int g_8e1c;
 extern int g_8e24;
 extern unsigned char g_a848[];
-extern int g_dd58;
-extern int g_dd5c;
+extern int g_dD58;
+extern int p_Dd5C;
 extern unsigned char *g_dd94;
-extern int g_ddb8;
+extern int g_dDb8;
 extern int g_ddc4;
 extern int g_ddcc;
-extern unsigned char *g_de5c;
+extern unsigned char *m_de5c;
 extern unsigned char *g_dee0;
-extern unsigned char *g_dee4;
-extern int g_df34_nnyybtp;
 extern unsigned char g_e22c[];
 extern int g_e230;
 extern int g_e234;
 extern int g_e238;
+int v_DF30;
+int g_df34_nnyybtp;
+int g_df38;
+int g_df3c;
+unsigned char g_e13b;
+unsigned char g_e13c;
+
 extern unsigned char g_e23c[];
 extern int g_e244;
 extern unsigned char g_e24c[];
-extern int g_e250;
+extern int r_e250;
 extern int g_e254;
 extern int g_e258;
 extern unsigned char g_e25c[];
@@ -78,23 +107,32 @@ extern int f_91a3(int, int);
 extern int f_b5df(void *, void *);
 extern void f_c20d(int);
 void *memcpy(void *, const void *, size_t);
+int g_df24_krqpxkj;
+int g_df28;
+int g_df2c_hwkico;
+unsigned char g_e13a;
+unsigned char g_dee8_d0[28];
+unsigned char *g_dee4;
+unsigned char g_df04[28];
+int g_df20_rusvejgsscn;
+
 extern unsigned char g_5e68[];
 extern unsigned char g_8e10[];
 extern unsigned char g_a608[];
 extern unsigned g_dd50;
 extern int g_dd60;
 extern int g_dd64;
-extern int g_dd68;
-extern int g_dd70;
+extern int g_dD68;
+extern int b_DD70;
 extern S2 *g_dd80;
-extern unsigned char *g_dddc_uzmlc;
+extern unsigned char *r_dDDc_uzmlc;
 extern void f_3918(int, int, int, int);
 extern void f_3ac0(int, int, int);
 extern void f_3e0f(int, int);
 extern void f_4394(void);
 extern void f_c26a(int, int);
 
-void f_8585(void) { if (g_dda8) f_85a4(); }
+void f_8585(void) { if (g_dDa8) f_85a4(); }
 
 void f_85a4(void)
 {
@@ -105,27 +143,27 @@ void f_85a4(void)
     int v_14;
     struct f85a4_local v_40;
     *(int *)g_e24c = *(int *)g_dee4;
-    g_e250 = *(int *)(g_dee4 + 4);
+    r_e250 = *(int *)(g_dee4 + 4);
     f_8004(g_e24c, (void *)*(int *)(g_dee4 + 0x78));
-    g_e250 += 3;
-    g_e258 = g_e250 + 0xa;
+    r_e250 += 3;
+    g_e258 = r_e250 + 0xa;
     *(int *)g_e24c += 2;
     g_e254 -= 2;
     *(int *)g_e23c = *(int *)(g_dee4 + 0x74);
     f_8004(g_e23c, g_dee0 + 0x7536);
     g_ddb4 = g_df78;
-    g_ddac = 0;
+    c_DDAC = 0;
 L_863b:;
-    if (g_ddac < g_dda8) goto L_8655;
+    if (c_DDAC < g_dDa8) goto L_8655;
     return;
 L_864d:;
-    ++g_ddac;
+    ++c_DDAC;
     goto L_863b;
 L_8655:;
     g_8e20 = *(unsigned char *)(g_ddb4 + 0x10);
     if ((*(unsigned char *)(g_ddb4 + 0x11) & 2) == 0) goto L_86a7;
     g_8ddc = *(int *)(g_5e30 + (g_8e20 << 3));
-    if ((*(unsigned char *)(g_de5c + 1) & 0x20) != 0) goto L_869a;
+    if ((*(unsigned char *)(m_de5c + 1) & 0x20) != 0) goto L_869a;
     if (*(int *)(g_ddb4 + 4) > 0x980) goto L_869c;
 L_869a:;
     goto L_86a5;
@@ -134,7 +172,7 @@ L_869c:;
 L_86a5:;
     goto L_86da;
 L_86a7:;
-    if ((*(unsigned char *)(g_de5c + 1) & 0x10) == 0) goto L_86c7;
+    if ((*(unsigned char *)(m_de5c + 1) & 0x10) == 0) goto L_86c7;
     g_8ddc = *(int *)(g_5df8 + (g_8e20 << 3));
     goto L_86da;
 L_86c7:;
@@ -147,11 +185,11 @@ L_86da:;
     goto L_8780;
 L_8716:;
     *(int *)(g_ddb4 + 4) = *(int *)(g_dee4 + 4) << 4;
-    if ((*(unsigned char *)g_de5c & 2) != 0) goto L_877b;
+    if ((*(unsigned char *)m_de5c & 2) != 0) goto L_877b;
     if (g_7c00 == g_7bfe) goto L_874b;
     if ((*(unsigned char *)&g_7bfe & 1) != 0) goto L_8755;
 L_874b:;
-    if ((*(unsigned char *)g_de5c & 8) == 0) goto L_877b;
+    if ((*(unsigned char *)m_de5c & 8) == 0) goto L_877b;
 L_8755:;
     *(int *)g_ddb4 += *(int *)g_dee4 << 4;
     *(unsigned char *)(g_ddb4 + 0x11) &= 0xfe;
@@ -205,12 +243,12 @@ L_8899:;
 L_88c9:;
     if (g_e230 > 0xbe) goto L_8f05;
     if (*(int *)(g_ddb4 + 0xc) < 0) goto L_8b85;
-    if (g_e250 > g_e238) goto L_8a69;
+    if (r_e250 > g_e238) goto L_8a69;
     if (g_e258 < g_e230) goto L_8a69;
     if (*(int *)g_e24c > g_e234) goto L_8a16;
     if (g_e254 < *(int *)g_e22c) goto L_8a16;
-    if ((*(unsigned char *)g_de5c & 8) != 0) goto L_895c;
-    if ((*(unsigned char *)g_de5c & 0x40) == 0) goto L_895a;
+    if ((*(unsigned char *)m_de5c & 8) != 0) goto L_895c;
+    if ((*(unsigned char *)m_de5c & 0x40) == 0) goto L_895a;
     *(int *)g_ddb4 -= *(int *)g_dee4 << 4;
     *(unsigned char *)(g_ddb4 + 0x11) |= 1;
 L_895a:;
@@ -226,10 +264,10 @@ L_8970:;
     g_e4b0 += *(short *)&g_8e20;
     goto L_89cd;
 L_89b9:;
-    if ((*(unsigned char *)(g_de5c + 1) & 0x20) != 0) goto L_89cd;
+    if ((*(unsigned char *)(m_de5c + 1) & 0x20) != 0) goto L_89cd;
     *(unsigned char *)(g_ddb4 + 0x11) &= 0xfd;
 L_89cd:;
-    if ((*(unsigned char *)g_de5c & 0x80) == 0) goto L_89e3;
+    if ((*(unsigned char *)m_de5c & 0x80) == 0) goto L_89e3;
     f_c20d(0x20);
     goto L_89ed;
 L_89e3:;
@@ -239,7 +277,7 @@ L_89ed:;
     if ((g_e254 - 3) <= *(int *)g_e22c) goto L_8a6e;
     goto L_8ad2;
 L_8a16:;
-    if ((*(unsigned char *)(g_de5c + 1) & 2) == 0) goto L_8a2e;
+    if ((*(unsigned char *)(m_de5c + 1) & 2) == 0) goto L_8a2e;
     if (*(int *)g_e23c <= g_e234) goto L_8a30;
 L_8a2e:;
     goto L_8a69;
@@ -300,7 +338,7 @@ L_8bc2:;
     *(int *)(g_dd94 + 0x20) = 0;
     *(int *)(g_dd94 + 8) += *(int *)(g_ddb4 + 8) >> 4;
     *(int *)(g_dd94 + 0xc) += *(int *)(g_ddb4 + 0xc) >> 4;
-    if ((*(unsigned char *)(g_de5c + 1) & 0x10) != 0) goto L_8cc6;
+    if ((*(unsigned char *)(m_de5c + 1) & 0x10) != 0) goto L_8cc6;
     if ((*(signed char *)&g_8e24 & 0x10) == 0) goto L_8c76;
     *(int *)(g_ddb4 + 0xc) = -*(int *)(g_ddb4 + 0xc);
     goto L_8c88;
@@ -311,9 +349,9 @@ L_8c88:;
     *(int *)(g_ddb4 + 8) -= 4;
     goto L_8cc6;
 L_8c9e:;
-    g_ddb8 = 2;
+    g_dDb8 = 2;
     if ((*(signed char *)&g_8e24 & 1) == 0) goto L_8cb7;
-    g_ddb8 = -g_ddb8;
+    g_dDb8 = -g_dDb8;
 L_8cb7:;
     g_8e1c = 1;
     f_9053();
@@ -359,8 +397,8 @@ L_8d74:;
     v_40.rows[2].y = g_e238;
 L_8da7:;
     v_4 = 0;
-    g_dd58 = -1;
-    g_dd5c = -1;
+    g_dD58 = -1;
+    p_Dd5C = -1;
     v_c = 0;
 L_8dc3:;
     if (v_c < 4) goto L_8dd6;
@@ -383,7 +421,7 @@ L_8e43:;
 L_8e45:;
     v_8 = 0;
     v_10 = 0;
-    if ((*(unsigned char *)(g_de5c + 1) & 0x10) != 0) goto L_8f05;
+    if ((*(unsigned char *)(m_de5c + 1) & 0x10) != 0) goto L_8f05;
     v_c = 0;
 L_8e60:;
     if (v_c < 4) goto L_8e73;
@@ -435,17 +473,17 @@ L_8f2c:;
 
 void f_8f7e(void)
 {
-    --g_dda8;
-    if (g_ddac != g_dda8)
-        memcpy(g_ddb4, g_ddb4 + 0x12, (g_dda8 - g_ddac) * 0x12);
-    --g_ddac;
+    --g_dDa8;
+    if (c_DDAC != g_dDa8)
+        memcpy(g_ddb4, g_ddb4 + 0x12, (g_dDa8 - c_DDAC) * 0x12);
+    --c_DDAC;
 }
 
 void f_8fce(int x, int y)
 {
-    if (g_dda8 < 0x19) {
+    if (g_dDa8 < 0x19) {
         g_ddb4 = g_df78;
-        g_ddb4 += g_dda8 * 0x12;
+        g_ddb4 += g_dDa8 * 0x12;
         *(int *)(g_ddb4 + 0) = x << 4;
         *(int *)(g_ddb4 + 4) = y << 4;
         *(int *)(g_ddb4 + 8) = 10;
@@ -453,7 +491,7 @@ void f_8fce(int x, int y)
         g_ddb4[17] &= (unsigned char)~1;
         g_ddb4[17] &= (unsigned char)~2;
         g_ddb4[16] = 0;
-        ++g_dda8;
+        ++g_dDa8;
     }
 }
 
@@ -462,11 +500,11 @@ void f_9053(void)
     if (*(unsigned char *)&g_8e1c & 1) {
         g_8e20 = *(int *)(g_ddb4 + 8);
         if (g_8e20 > 0) {
-            g_8e20 += g_ddb8 * 4;
+            g_8e20 += g_dDb8 * 4;
             if (g_8e20 > 0x20) g_8e20 = 0x20;
             if (g_8e20 < 4) g_8e20 = 4;
         } else if (g_8e20 < 0) {
-            g_8e20 -= g_ddb8 * 4;
+            g_8e20 -= g_dDb8 * 4;
             if (g_8e20 < -0x20) g_8e20 = -0x20;
             if (g_8e20 > -4) g_8e20 = -4;
         }
@@ -475,11 +513,11 @@ void f_9053(void)
     if (*(unsigned char *)&g_8e1c & 2) {
         g_8e20 = *(int *)(g_ddb4 + 12);
         if (g_8e20 > 0) {
-            g_8e20 += g_ddb8 * 4;
+            g_8e20 += g_dDb8 * 4;
             if (g_8e20 > 0x28) g_8e20 = 0x28;
             if (g_8e20 < 4) g_8e20 = 4;
         } else {
-            g_8e20 -= g_ddb8 * 4;
+            g_8e20 -= g_dDb8 * 4;
             if (g_8e20 < -0x28) g_8e20 = -0x28;
             if (g_8e20 > -4) g_8e20 = -4;
         }
@@ -503,8 +541,8 @@ L_91c3:;
 L_91d7:;
     v_4 = (a0 - 0x10) >> 4;
     v_8 = ((a1 - 0x18) >> 3) * 0x12;
-    if (v_4 == g_dd58) {
-        if (v_8 == g_dd5c) goto L_920a;
+    if (v_4 == g_dD58) {
+        if (v_8 == p_Dd5C) goto L_920a;
     }
     goto L_920f;
 L_920a:;
@@ -515,13 +553,13 @@ L_920f:;
     g_dd50 = *(unsigned char *)(((unsigned char *)g_dd80) + ((v_4 * 2) + 1));
     if (g_dd50 == 0) goto L_9513;
     if (g_dd50 == 0xf8) {
-        *(int *)g_ddb4 += (g_dd68 - g_dd60) << 4;
-        *(int *)(g_ddb4 + 4) += (g_dd70 - g_dd64) << 4;
+        *(int *)g_ddb4 += (g_dD68 - g_dd60) << 4;
+        *(int *)(g_ddb4 + 4) += (b_DD70 - g_dd64) << 4;
         goto L_9522;
     }
     if (g_dd50 == 0xf9) {
-        *(int *)g_ddb4 += (g_dd60 - g_dd68) << 4;
-        *(int *)(g_ddb4 + 4) += (g_dd64 - g_dd70) << 4;
+        *(int *)g_ddb4 += (g_dd60 - g_dD68) << 4;
+        *(int *)(g_ddb4 + 4) += (g_dd64 - b_DD70) << 4;
         goto L_9522;
     }
     if (g_dd50 >= 1) {
@@ -561,7 +599,7 @@ L_9392:;
     goto L_9513;
 L_93af:;
     *(int *)g_8e10 = (int)g_6098;
-    if ((*(unsigned char *)(g_de5c + 1) & 0x10) != 0) {
+    if ((*(unsigned char *)(m_de5c + 1) & 0x10) != 0) {
         f_3918(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
         goto L_94ec;
     }
@@ -571,7 +609,7 @@ L_93af:;
     goto L_942b;
 L_940b:;
     f_c26a(0x2e, 0x32);
-    g_ddb8 = -1;
+    g_dDb8 = -1;
     f_4394();
     goto L_94ec;
 L_942b:;
@@ -582,7 +620,7 @@ L_942b:;
 L_9448:;
     f_c26a(1, 9);
     if (--((BF1_2_6 *)(((unsigned char *)g_dd80) + (v_4 * 2)))->f != 0) goto L_94d4;
-        *(int *)(g_dddc_uzmlc + 0x14) += 2 << *(int *)(g_dee4 + 0x24);
+        *(int *)(r_dDDc_uzmlc + 0x14) += 2 << *(int *)(g_dee4 + 0x24);
         f_3e0f(g_dd50, v_4 + v_8);
         f_3918(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
 L_94d4:;
@@ -624,8 +662,8 @@ L_9581:;
     if (a1 > a0) {
         g_8e20 = 2;
     }
-    g_dd58 = v_4;
-    g_dd5c = v_8;
+    g_dD58 = v_4;
+    p_Dd5C = v_8;
 L_95de:;
     return g_8e20;
 }

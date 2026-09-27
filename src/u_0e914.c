@@ -111,7 +111,6 @@ extern short g_7b14;
 extern short g_7b16;
 extern void f_ee65(int);
 extern void f_eda0(void);
-extern int g_7b00;
 
 extern int f_13944(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
@@ -147,6 +146,9 @@ void f_e813(void);
 void f_e855(short a0);
 
 void f_e88d(int left, int top, int right, int bottom);
+
+/* _DATA [0x7b00,0x7b04) */
+int g_7b00 = 0;
 
 void f_e914(int a, int b) {
     g_7b14 = g_7b16;
@@ -203,7 +205,6 @@ extern short g_75cc;
 extern struct VideoModeRecord g_75ce[16];
 extern struct VideoPresetRecord g_77ee[14];
 extern short g_7afe;
-extern int g_7b00;
 extern int g_7b04;
 extern int g_7b08;
 extern int g_7b0c;

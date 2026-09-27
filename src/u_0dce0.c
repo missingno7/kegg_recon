@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <i86.h>
 #include <string.h>
-extern int g_75b0;
-extern int g_75b4;
 extern unsigned int g_75b8;
 extern int g_75bc;
 extern unsigned int g_75c0;
@@ -21,6 +19,10 @@ unsigned int f_de3e(void);
 unsigned int f_dea6(int bytes);
 void f_df49(unsigned int value);
 unsigned int f_df7f(void);
+
+/* _DATA [0x75b0,0x75b8) */
+int g_75b0 = 0x5daf753b;
+int g_75b4 = -1001132175;
 
 void f_dce0(int a, int b) {
     extern int g_75b0, g_75b4;

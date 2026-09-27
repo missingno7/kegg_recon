@@ -13,7 +13,6 @@ void f_bd24(void);
 extern unsigned char g_7513;
 extern unsigned char g_7514;
 extern unsigned char g_74fd[];
-extern int g_7424;
 extern int g_7428;
 extern char *g_741c;
 extern void f_c3ab_euckgzihaj(void);
@@ -23,7 +22,6 @@ extern void f_df49(int);
 extern int f_b804(char *);
 extern void f_c011(void);
 extern void __far a_0(void);
-extern int g_7420;
 extern int g_74dd;
 extern int g_74e1;
 extern int g_74e5;
@@ -36,6 +34,10 @@ extern unsigned g_e31c;
 extern void __far f_11258(void);
 extern int f_da01(void *);
 extern unsigned f_dea6(int);
+
+/* _DATA [0x7420,0x7428) */
+int g_7420 = 0x500;
+int g_7424 = 0;
 
 void f_bd24(void)
 {

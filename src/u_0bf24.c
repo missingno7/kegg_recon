@@ -17,7 +17,6 @@ extern unsigned char g_7513;
 extern unsigned char g_7514;
 extern short g_74c4;
 extern int g_7424;
-extern int g_7428;
 extern char *g_741c;
 extern void f_c3ab_euckgzihaj(void);
 extern void f_d7b8(void *);
@@ -32,6 +31,9 @@ extern int g_7522;
 extern int g_7532;
 extern unsigned g_75c4;
 extern int f_da01(void *);
+
+/* _DATA [0x7428,0x742c) */
+int g_7428 = 0;
 
 short f_bf24(int a0, short a1)
 {

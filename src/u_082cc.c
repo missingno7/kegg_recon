@@ -2,11 +2,11 @@
 struct Iter24 { int first, second, start, count, step, unused; };
 struct Iter48 { int pad0, pad4, box, pad12, pad16; char *at20; int pad24, pad28, pad32, pad36, pad40, pad44; };
 extern unsigned char *g_e158_tpotbrbk;
-extern short g_e15c;
+extern short m_E15C;
 extern short g_e15e;
 extern short g_e160;
 extern short g_e162;
-extern struct Iter24 *g_e150;
+extern struct Iter24 *u_e150;
 extern int g_e148;
 extern int g_e14c;
 extern int g_e154;
@@ -25,7 +25,7 @@ extern short g_7b20;
 extern short g_7b22;
 extern short g_7b24;
 extern short g_7b26;
-extern unsigned char g_ab40_jbfxrqns[];
+extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
 extern void f_c8c0_pm(int, int, short, int, int);
@@ -47,7 +47,7 @@ extern void f_ed38(void);
 
 void f_82cc(void)
 {
-    struct Iter24 *p = g_e150;
+    struct Iter24 *p = u_e150;
     int i = 0;
     for (; i < g_e148; i++) {
         p->count = (p->second - p->first) / p->step;
@@ -62,7 +62,7 @@ void f_8345_wsdytbf(void)
     struct Iter24 *p;
     int i;
     ++g_e14c;
-    p = g_e150;
+    p = u_e150;
     i = 0;
     for (; i < g_e148; i++) {
         if (g_e14c >= p->step)
@@ -75,7 +75,7 @@ void f_8345_wsdytbf(void)
 
 void f_83b1(void)
 {
-    struct Iter48 *p = (struct Iter48 *)g_e150;
+    struct Iter48 *p = (struct Iter48 *)u_e150;
     int i = 0;
     for (; i < (g_e148 >> 1); i++) {
         *(int *)g_e2ec = (int)(p->at20 + g_e154);
@@ -89,7 +89,7 @@ void f_83b1(void)
 
 void f_843a(void)
 {
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)g_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     g_7b14 = g_7b20;
     g_7b16 = g_7b22;
     g_7b18 = g_7b24;

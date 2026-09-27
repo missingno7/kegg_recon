@@ -33,12 +33,8 @@ extern void f_eda0(void);
 extern int g_7b00;
 extern int f_13944(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
-extern int g_7b04;
-extern int g_7b08;
-extern int g_7b0c;
 extern void f_13a48(void *, int, int, int);
 extern void f_9d40(short);
-extern short g_7b10;
 extern int outp(int, int);
 extern int inp(int);
 extern void f_ec76(void *);
@@ -63,13 +59,19 @@ void f_ed38(void);
 void f_edd5(void);
 void f_ee33(int index);
 extern short g_7afe;
-extern short g_7b12;
 extern short g_7b18;
 extern short g_7b1a;
 extern short g_7b1c;
 extern short g_7b1e;
 extern short g_7b24;
 extern short g_7b26;
+
+/* _DATA [0x7b04,0x7b14) */
+int g_7b04 = 0;
+int g_7b08 = 0x100;
+int g_7b0c = 1;
+short g_7b10 = 0;
+short g_7b12 = 0;
 
 void f_e9dd(unsigned char value) {
     f_13964(0x17, 0, value);
