@@ -3060,8 +3060,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f690.c",
-   "src_sha256": "6cb0f1f0bacc560b4d6841c8accbde5a691cfbcffe749064b7a46759dfdf5967"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f6a1",
@@ -3070,8 +3071,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f6a1.c",
-   "src_sha256": "bfbcdf8f1cb34473aec952563530594ab7d307b952eba3a6ea8a9db060eaf270"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f6d9",
@@ -3080,8 +3082,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f6d9.c",
-   "src_sha256": "5401fb3b60c14c4d49eb7e402cb2801d1302b98f279d66f2347353f531fb567a"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f6f8",
@@ -3090,8 +3093,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f6f8.c",
-   "src_sha256": "9ca7a3aa7ec680dc3adfa88792934a337e00327fa6ee16756c5430bb0076e013"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f7e4",
@@ -3100,8 +3104,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f7e4.c",
-   "src_sha256": "ecafb2f05f2a7a624004114116b32901b67e7ae4ad7051d65cb13f46eb325520"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f82d",
@@ -3110,8 +3115,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f82d.c",
-   "src_sha256": "923d17c1d3c84c32d15cd170f863169556b630e7adaee98bc4a6a5aa580c91db"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f875",
@@ -3120,8 +3126,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f875.c",
-   "src_sha256": "fc7d8d5880488c609467583142d25bb42b84b3279ca6b0d438e57bc7f8f1a591"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f8bb",
@@ -3130,8 +3137,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f8bb.c",
-   "src_sha256": "867338395d311b9b2b015b519845f222b72ff050fcfd86275000c4276fc0b317"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_f905",
@@ -3140,8 +3148,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_f905.c",
-   "src_sha256": "ad02d9e15deaddc5fabf438de0ce4766b1b11030edd068793d9a2eb9eef4f4be"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fa42",
@@ -3150,8 +3159,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fa42.c",
-   "src_sha256": "c462b61e38e42479462edc2ec6934a8f05526355fdcb8d61d9365bc680fed832"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fb17",
@@ -3160,8 +3170,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fb17.c",
-   "src_sha256": "8ae1653594ea8569bd7eeed97fe1fdefe551fe010b9e8bf2385edeb405d2356b"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fb92",
@@ -3170,8 +3181,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fb92.c",
-   "src_sha256": "62d50f8f1d41cbb95ddf7d22320b16e79c525f3ba36cb6563402c0605ac7c750"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fbc0",
@@ -3180,8 +3192,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fbc0.c",
-   "src_sha256": "9e0ff8d0ba30659be0b38a7ba7f7b7edea5b2ef25bd9a35445e5c665d118f782"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fc1e",
@@ -3190,8 +3203,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fc1e.c",
-   "src_sha256": "08924efc534c057f11770e2757323049e8644a3497cfb0bccc66c0e822d4a125"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fc86",
@@ -3200,8 +3214,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fc86.c",
-   "src_sha256": "b57915b948c972fcef7be5d1b37d9396a92b4d9d4305e8b28a9ea78650320c51"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fcab",
@@ -3210,8 +3225,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fcab.c",
-   "src_sha256": "e9a88c720682c71f89168adb052dd33c973141d8087055e77d844eaa4ed39240"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fce4",
@@ -3220,8 +3236,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fce4.c",
-   "src_sha256": "1b9894687411e582267d42d748690179b840f5a20793b3e1c8f2d416ed30a0e4"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fd3b",
@@ -3230,8 +3247,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fd3b.c",
-   "src_sha256": "b2862ac1d47e320f7a003cf2a90b5ac508d1f5862c1d737254297cd8903539d4"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fd7b",
@@ -3240,8 +3258,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fd7b.c",
-   "src_sha256": "008926868bec6e8bc7ade77519fbf07ff98db1e01c51a37124bebfb04198ff06"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_fe6a",
@@ -3250,8 +3269,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_fe6a.c",
-   "src_sha256": "1db807696b4bb3abbda77e86e306d29162610eeca19aae977fd54e837d9cd689"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_ff0d",
@@ -3260,8 +3280,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ff0d.c",
-   "src_sha256": "4505bcb27275f893ceb31f27510e2465633562f76f57f2282ffc4f46d2e921eb"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_ff5c",
@@ -3270,8 +3291,9 @@
    "kind": "c-interrupt",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ff5c.c",
-   "src_sha256": "4d75a949fea24ebf1c8d50ed11ace13971fd8999d23e191a68cbe059571588e1"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_ff9d",
@@ -3280,8 +3302,9 @@
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
-   "src": "src/f_ff9d.c",
-   "src_sha256": "a07053cb20ebcd1a439c76487e36511e479a3ae8a43b8add9df3b71a08195f8f"
+   "src": "src/t16_keyboard.c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "unit": "T16"
   },
   {
    "name": "f_ffbe",
@@ -3456,7 +3479,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/t19_sys.c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "unit": "T19"
   },
   {
@@ -3467,7 +3490,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/t19_sys.c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "unit": "T19"
   },
   {
@@ -3478,7 +3501,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/t19_sys.c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "unit": "T19"
   },
   {
@@ -3489,7 +3512,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/t19_sys.c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "unit": "T19"
   },
   {
@@ -3500,7 +3523,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/t19_sys.c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "unit": "T19"
   },
   {
@@ -3511,7 +3534,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/t19_sys.c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "unit": "T19"
   },
   {
@@ -4851,8 +4874,6 @@
   "g_e4d0": "3:e4d0",
   "g_e4d4": "3:e4d4",
   "g_e4d8": "3:e4d8",
-  "g_e4dc": "3:e4dc",
-  "g_e4e0": "3:e4e0",
   "getch": "1:14793",
   "getenv": "1:1427c",
   "inp": "1:13fad",
@@ -4900,7 +4921,39 @@
   "f_9974": "1:9974",
   "f_11146": "1:11146",
   "f_fb17": "1:fb17",
-  "f_ee65": "1:ee65"
+  "f_ee65": "1:ee65",
+  "exit_code": "3:e4dc",
+  "exit_msg": "3:e4e0",
+  "f_d656": "1:d656",
+  "f_d7b8": "1:d7b8",
+  "f_f875": "1:f875",
+  "f_f7e4": "1:f7e4",
+  "f_f6a1": "1:f6a1",
+  "f_ff5c": "1:ff5c",
+  "f_da01": "1:da01",
+  "zz_1484": "3:e48c",
+  "f_f82d": "1:f82d",
+  "zz_1483": "3:e468",
+  "zz_1482": "3:e478",
+  "f_f905": "1:f905",
+  "zz_1486": "3:e48a",
+  "zz_1480": "3:e488",
+  "f_f8bb": "1:f8bb",
+  "zz_1487": "3:e489",
+  "zz_1488": "3:e48e",
+  "zz_1481": "3:e48f",
+  "zz_1489": "3:e48d",
+  "zz_1485": "3:e48b",
+  "f_fe6a": "1:fe6a",
+  "f_fbc0": "1:fbc0",
+  "f_fc1e": "1:fc1e",
+  "f_fb92": "1:fb92",
+  "f_fd3b": "1:fd3b",
+  "f_fd7b": "1:fd7b",
+  "f_fcab": "1:fcab",
+  "f_f690": "1:f690",
+  "f_ff0d": "1:ff0d",
+  "f_fce4": "1:fce4"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -5826,6 +5879,23 @@
    "note": "code only; data ownership open"
   },
   {
+   "id": "T16",
+   "src": "src/t16_keyboard.c",
+   "start": "0xf690",
+   "end": "0xffbe",
+   "profile": "game-c",
+   "src_sha256": "99d569e223ab012f4bccbf510f09fe6d9c945d891a8d007e00803d9ed8dc251d",
+   "data": [
+    "CONST@3:1260+0x1",
+    "_DATA@3:7b34+0xc8",
+    "_BSS@3:e468+0x28"
+   ],
+   "place": [
+    "CONST=0x1260"
+   ],
+   "note": "keyboard: _DATA 0x7b34+200 verified, CONST '' at 0x1260 placed; BSS 0xe468+40 base-consistent"
+  },
+  {
    "id": "T17",
    "src": "src/t17_mouse.c",
    "start": "0xffbe",
@@ -5856,12 +5926,13 @@
    "start": "0x108a9",
    "end": "0x11256",
    "profile": "game-c",
-   "src_sha256": "bbc47bd2a0e3d15ded9da48ec07f3f78c6a37dc0f78ab8bab3fd0c4e34bd51ea",
+   "src_sha256": "ce2cb45809847e8089178fb1ce618f216065f4a08873784d299c1b1d43d6f85b",
    "data": [
     "CONST@3:126c+0x11e6",
-    "_DATA@3:7c18+0x198"
+    "_DATA@3:7c18+0x198",
+    "_BSS@3:e4dc+0x8"
    ],
-   "note": "sys/messages: CONST 0x126c..0x2452 (4582 B) + _DATA 0x7c18..0x7db0 verified"
+   "note": "sys/messages: CONST 0x126c..0x2452 (4582 B) + _DATA 0x7c18..0x7db0 verified; BSS exit_code/exit_msg (names chosen so Watcom's symbol-hash BSS order matches)"
   }
  ]
 }

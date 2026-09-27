@@ -193,8 +193,8 @@ char **g_7d84[11] = {
     &g_7c18[90]
 };
 
-unsigned g_e4dc;
-unsigned g_e4e0;
+unsigned exit_code;
+unsigned exit_msg;
 
 #define g_7c1c g_7c18[1]
 #define g_7c20 g_7c18[2]
@@ -296,10 +296,10 @@ int f_11051(unsigned long flags) { int result=0; if(flags&2) { if(g_7bfc!=-1) { 
 void f_11146(void)
 {
     outp(0x21, inp(0x21) & -2);
-    if (g_e4dc == 0) goto L_111d4;
-    printf((char *)*(int *)((*(unsigned char * *)((unsigned char *)g_7d84 + (((int)(g_e4dc & 0xff00) >> 8) << 2))) + (((g_e4dc & 0xff) << 2) - 4)));
-    if (g_e4e0 == 0) goto L_111c1;
-    printf("%s\n", g_e4e0);
+    if (exit_code == 0) goto L_111d4;
+    printf((char *)*(int *)((*(unsigned char * *)((unsigned char *)g_7d84 + (((int)(exit_code & 0xff00) >> 8) << 2))) + (((exit_code & 0xff) << 2) - 4)));
+    if (exit_msg == 0) goto L_111c1;
+    printf("%s\n", exit_msg);
 L_111c1:;
     printf("\n\n<Press any key>\n");
     getch();
@@ -307,6 +307,6 @@ L_111d4:;
     _enable();
 }
 
-void f_111de(unsigned long a,unsigned long b) { g_e4dc=a; g_e4e0=b; exit(0); }
+void f_111de(unsigned long a,unsigned long b) { exit_code=a; exit_msg=b; exit(0); }
 
 void f_11209(int v) { if (v != -1) printf("(Version %x.%x%x)\n", v >> 8, (v >> 4) & 0xf, v & 0xf); else printf("\n"); }

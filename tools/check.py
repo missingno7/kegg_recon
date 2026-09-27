@@ -69,6 +69,20 @@ def check_data(mod, si, res):
     binds, probs = res["bindings"], res["problems"]
     out = []
     for di, seg in enumerate(mod.segments):
+        if seg and seg.cls.upper() == "BSS" and seg.size:
+            # no contents, but every bound symbol of the segment must imply the same segment base
+            bases = {}
+            for n, s_, o, _ in mod.publics:
+                if s_ == di and n in binds:
+                    ob, off = binds[n].split(":")
+                    bases.setdefault(f"{ob}:{(int(off, 16) - o) & 0xFFFFFFFF:x}", []).append(n)
+            if f"seg:{seg.name}" in binds:
+                bases.setdefault(binds[f"seg:{seg.name}"], []).append(f"seg:{seg.name}")
+            if len(bases) > 1:
+                probs.append(f"_BSS symbols imply different segment bases: {bases}")
+            elif bases:
+                out.append({"seg": seg.name, "base": next(iter(bases)), "size": seg.size, "status": "bss-base-consistent"})
+            continue
         if not seg or di == si or seg.size == 0 or seg.cls.upper() in ("CODE", "BSS", "DEBSYM", "DEBTYP")                 or seg.frame is not None:  # debug segments ($$SYMBOLS/$$TYPES) are dropped by WLINK without `debug`
             continue
         bases = set()
