@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <i86.h>
 extern int probe_cpu_environment(void);
-extern int f_d288(void);
-extern int f_ca6a(void);
+extern int read_dos_version(void);
+extern int detect_windows_environment(void);
 extern int f_d2f0(void);
 extern int f_d36c(void);
 extern int f_d408(void);
@@ -14,7 +14,7 @@ extern int f_d4ba(void);
 extern int f_df7f(void);
 extern int f_ddb9(int);
 extern int f_de21(int);
-extern int f_cb3f(void);
+extern int detect_sound_blaster(void);
 extern int f_ffbe(void);
 extern int f_eeac(void);
 extern void f_fa42(void);
@@ -38,28 +38,28 @@ extern unsigned int g_e314;
 extern unsigned int g_7c02;
 extern unsigned int g_7c08_orxezsknd;
 extern unsigned int g_7c10;
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct VideoState g_e324;
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct DisplayModeInfo g_e324;
 extern unsigned long g_754f;
 extern unsigned long g_7588;
 extern short g_7b14;
-extern unsigned int g_747e;
+extern unsigned int sound_blaster_mixer_test;
 extern short g_7536;
-extern unsigned char g_7486;
-extern unsigned char g_7487;
+extern unsigned char sound_blaster_irq;
+extern unsigned char sound_blaster_dma_channel;
 union KeyWord { unsigned short word; struct { unsigned char lo, hi; } bytes; };
 extern union KeyWord g_e478_6[8];
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48f;
-extern unsigned long g_7492;
-extern unsigned long g_7476;
+extern unsigned long dos_version_packed;
+extern unsigned long windows_mode_code;
 extern unsigned long g_749e;
 extern unsigned long g_74a6;
 extern unsigned long g_74ae;
 extern unsigned long g_74be;
 extern unsigned long g_74b6;
-extern unsigned long g_7482;
-extern short g_e2fc;
+extern unsigned long sound_blaster_dsp_version;
+extern short sound_blaster_base_port;
 extern short g_73a6;
 extern void restore_system_interrupt_vectors(void);
 extern void shutdown_with_exit_message(unsigned long, unsigned long);
@@ -79,7 +79,7 @@ extern void (*mouse_update_hook)(void);
 extern void (*sprite_update_hook)(void);
 extern short g_7bfc;
 extern short g_7498;
-extern short g_747c;
+extern short sound_blaster_detected;
 extern short g_7b28;
 extern void exit(int);
 
@@ -286,11 +286,11 @@ unsigned exit_msg;
 #define g_7d7c g_7c18[89]
 #define g_7d80 g_7c18[90]
 
-int f_108a9(int a,int b,unsigned long flags,int d) { int result=0; if((flags&1)==1) { probe_cpu_environment(); printf(g_7c60,cpu_type); printf((char*)g_7c54[cpu_mode],cpu_iopl); } if((flags&2)!=0) if(f_d288()==-1) { printf(g_7c64); f_11209(g_7492); } if((flags&4)!=0) if(f_ca6a()==-1) { printf(g_7c68); f_11209(g_7476); } if((flags&8)!=0) if(f_d2f0()==-1) printf(g_7c6c,g_749e); if((flags&0x10)!=0) if(f_d36c()==-1) { printf(g_7c70); f_11209(g_74a6); } if((flags&0x20)!=0) if(f_d408()==-1) { printf(g_7c74); f_11209(g_74ae); } if((flags&0x40)!=0) if(f_d5d0()==-1) { printf(g_7c78); f_11209(g_74be); } if((flags&0x80)!=0) if(f_d4ba()==-1) { printf(g_7c7c); f_11209(g_74b6); } if((flags&0x100)!=0) { if(f_dea6(a)==0) { result=-1; printf(g_7c40,a/1024); } if(g_75c4==0) f_df49(g_e31c); printf(g_7c9c,a/1024,f_df7f()/1024); } if((flags&0x200)!=0) { if(f_ddb9(b)==0) { result=-1; printf(g_7c44,b/1024); } if(g_75bc==0) f_de21(g_e314); f_dea6(a); printf(g_7ca0,b/1024,(int)f_de3e()/1024,(g_75c0-a)/1024); if(g_75c4==0) f_df49(g_e31c); } if((flags&0x400)!=0) if(f_ffbe()==-1) { printf(g_7c84); f_11209(g_7c02); } if((flags&0x800)!=0) if(f_eeac()==-1) printf(g_7c80,0x201); if((flags&0x2000)!=0) { if(f_cb3f()==-1) { if(g_747e==0) printf(g_7c88,(int)g_e2fc,g_7486,g_7487); else printf(g_7c8c,(int)g_e2fc,g_7486,g_7487); printf(g_7c90); f_11209(g_7482); } else if(g_e2fc>=0x200 && g_e2fc<0x300) { if(g_7486==0xff) printf(g_7c94,(int)g_e2fc,g_7486,g_7487); else if(g_7487==0xff) printf(g_7c98,(int)g_e2fc,g_7486,g_7487); printf(g_7c50); if(g_7536==-1) { do { f_fa42(); } while (g_e48d_c==g_e48f || g_e48f!=0x20); } else while(getch()!=0x20) {} } } if(flags&0x1000) if(f_9974()==-1) printf(g_7ca4,f_9f64()); return result; }
+int f_108a9(int a,int b,unsigned long flags,int d) { int result=0; if((flags&1)==1) { probe_cpu_environment(); printf(g_7c60,cpu_type); printf((char*)g_7c54[cpu_mode],cpu_iopl); } if((flags&2)!=0) if(read_dos_version()==-1) { printf(g_7c64); f_11209(dos_version_packed); } if((flags&4)!=0) if(detect_windows_environment()==-1) { printf(g_7c68); f_11209(windows_mode_code); } if((flags&8)!=0) if(f_d2f0()==-1) printf(g_7c6c,g_749e); if((flags&0x10)!=0) if(f_d36c()==-1) { printf(g_7c70); f_11209(g_74a6); } if((flags&0x20)!=0) if(f_d408()==-1) { printf(g_7c74); f_11209(g_74ae); } if((flags&0x40)!=0) if(f_d5d0()==-1) { printf(g_7c78); f_11209(g_74be); } if((flags&0x80)!=0) if(f_d4ba()==-1) { printf(g_7c7c); f_11209(g_74b6); } if((flags&0x100)!=0) { if(f_dea6(a)==0) { result=-1; printf(g_7c40,a/1024); } if(g_75c4==0) f_df49(g_e31c); printf(g_7c9c,a/1024,f_df7f()/1024); } if((flags&0x200)!=0) { if(f_ddb9(b)==0) { result=-1; printf(g_7c44,b/1024); } if(g_75bc==0) f_de21(g_e314); f_dea6(a); printf(g_7ca0,b/1024,(int)f_de3e()/1024,(g_75c0-a)/1024); if(g_75c4==0) f_df49(g_e31c); } if((flags&0x400)!=0) if(f_ffbe()==-1) { printf(g_7c84); f_11209(g_7c02); } if((flags&0x800)!=0) if(f_eeac()==-1) printf(g_7c80,0x201); if((flags&0x2000)!=0) { if(detect_sound_blaster()==-1) { if(sound_blaster_mixer_test==0) printf(g_7c88,(int)sound_blaster_base_port,sound_blaster_irq,sound_blaster_dma_channel); else printf(g_7c8c,(int)sound_blaster_base_port,sound_blaster_irq,sound_blaster_dma_channel); printf(g_7c90); f_11209(sound_blaster_dsp_version); } else if(sound_blaster_base_port>=0x200 && sound_blaster_base_port<0x300) { if(sound_blaster_irq==0xff) printf(g_7c94,(int)sound_blaster_base_port,sound_blaster_irq,sound_blaster_dma_channel); else if(sound_blaster_dma_channel==0xff) printf(g_7c98,(int)sound_blaster_base_port,sound_blaster_irq,sound_blaster_dma_channel); printf(g_7c50); if(g_7536==-1) { do { f_fa42(); } while (g_e48d_c==g_e48f || g_e48f!=0x20); } else while(getch()!=0x20) {} } } if(flags&0x1000) if(f_9974()==-1) printf(g_7ca4,f_9f64()); return result; }
 
-void f_10d72(int a,int b,int c,int d) { int x; int y; int i; atexit(restore_system_interrupt_vectors); g_7b47=shutdown_with_exit_message; kbd_state_ptr=&g_7b39; kbd_irq_hook=f_fb17; kbd_poll_hook=f_fa42; mouse_update_hook=f_10137_squghx; sprite_update_hook=f_efa0; f_ee65(g_7b14); outp(0x21,inp(0x21)|1); if(c==-1) printf(g_7cb0); if(b==-1) { if(c==-1) x=2; else x=4; y=f_f6f8(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_754f) { printf(g_7cac); if((g_754f&1)==1) printf("(REAL) "); if(g_754f&2) printf("(DPMI) "); if(g_754f&4) printf("(D4GW) "); printf("\n"); } } if(a==-1 && g_73a6==-1) { if(c==-1) x=2; else x=4; y=f_9b44(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_7588) { printf(g_7ca8); if((g_7588&1)==1) printf("(REAL) "); if(g_7588&2) printf("(DPMI) "); if(g_7588&4) printf("(D4GW) "); printf("\n"); } } for(i=0;i<50;i++) { f_9d40((int)1); if(g_e478_6[5].bytes.lo&0x80) i--; } if(d!=-1) { f_e095_ughrsvpfh(d); f_100fa(g_e324.e36e,g_e324.e372,g_e324.e376,g_e324.e37a); f_10502((g_e324.e36e+g_e324.e376)/2,(g_e324.e372+g_e324.e37a)/2); } }
+void f_10d72(int a,int b,int c,int d) { int x; int y; int i; atexit(restore_system_interrupt_vectors); g_7b47=shutdown_with_exit_message; kbd_state_ptr=&g_7b39; kbd_irq_hook=f_fb17; kbd_poll_hook=f_fa42; mouse_update_hook=f_10137_squghx; sprite_update_hook=f_efa0; f_ee65(g_7b14); outp(0x21,inp(0x21)|1); if(c==-1) printf(g_7cb0); if(b==-1) { if(c==-1) x=2; else x=4; y=f_f6f8(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_754f) { printf(g_7cac); if((g_754f&1)==1) printf("(REAL) "); if(g_754f&2) printf("(DPMI) "); if(g_754f&4) printf("(D4GW) "); printf("\n"); } } if(a==-1 && g_73a6==-1) { if(c==-1) x=2; else x=4; y=f_9b44(x); if(y) printf(g_7d84[(y&0xff00)>>8][(y&0xff)-1]); if(g_7588) { printf(g_7ca8); if((g_7588&1)==1) printf("(REAL) "); if(g_7588&2) printf("(DPMI) "); if(g_7588&4) printf("(D4GW) "); printf("\n"); } } for(i=0;i<50;i++) { f_9d40((int)1); if(g_e478_6[5].bytes.lo&0x80) i--; } if(d!=-1) { f_e095_ughrsvpfh(d); f_100fa(g_e324.left,g_e324.top,g_e324.right,g_e324.bottom); f_10502((g_e324.left+g_e324.right)/2,(g_e324.top+g_e324.bottom)/2); } }
 
-int f_11051(unsigned long flags) { int result=0; if(flags&2) { if(g_7bfc!=-1) { printf(g_7c24); result=-1; } } if((flags&1)==1) { if(g_7498!=-1) { printf(g_7c1c); result=-1; } } if(flags&4) { if(cpu_type<0x386) { printf(g_7c20); result=-1; } } if(flags&0x10) { if(g_747c!=-1) { printf(g_7c2c); result=-1; } } if(flags&0x20) { if(g_7b28!=-1) { printf(g_7c28); result=-1; } } return result; }
+int f_11051(unsigned long flags) { int result=0; if(flags&2) { if(g_7bfc!=-1) { printf(g_7c24); result=-1; } } if((flags&1)==1) { if(g_7498!=-1) { printf(g_7c1c); result=-1; } } if(flags&4) { if(cpu_type<0x386) { printf(g_7c20); result=-1; } } if(flags&0x10) { if(sound_blaster_detected!=-1) { printf(g_7c2c); result=-1; } } if(flags&0x20) { if(g_7b28!=-1) { printf(g_7c28); result=-1; } } return result; }
 
 void restore_system_interrupt_vectors(void)
 {

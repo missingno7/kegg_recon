@@ -29,9 +29,9 @@ extern unsigned char g_7536[];
 extern unsigned char g_756f[];
 extern void f_9afc(void);
 extern void f_9b44(int);
-extern void f_bd8b(void);
-extern int f_bdd3(int);
-extern void f_c2d0(int);
+extern void release_sound_system(void);
+extern int configure_sound_dma(int);
+extern void set_audio_transfer_mode(int);
 extern void f_dfc3(void);
 extern void f_e028(void);
 extern void f_ec9c(void);
@@ -43,8 +43,8 @@ extern int g_68f8_jwwqkwr;
 extern int g_6910;
 extern int g_6914;
 extern int g_693c;
-extern short g_746e;
-extern short g_747c;
+extern short image_color_depth;
+extern short sound_blaster_detected;
 extern int g_7b04;
 extern int g_7b08;
 extern short g_7b16;
@@ -68,8 +68,8 @@ extern int g_df4c;
 extern int g_df54;
 extern int h_df5c;
 extern int g_e1d8;
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct VideoState g_e324;
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct DisplayModeInfo g_e324;
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48e_0g;
@@ -92,12 +92,12 @@ extern void f_a810(void *, int);
 extern void f_b1df(int, int, int);
 extern void f_b541(int, int, unsigned char, int, int);
 extern void f_b57a(int, int, int, int);
-extern void f_c14b_lmdi(int, int, int, int);
-extern void f_c8c0_pm(int, int, short, int, int);
+extern void queue_audio(int, int, int, int);
+extern void set_img_buffers(int, int, short, int, int);
 extern int f_e095_ughrsvpfh();
 extern void f_ea9f(void *, int, int, int);
 void f_113c(void);
-extern int f_c3ab_euckgzihaj();
+extern int stop_audio_stream();
 void f_ea4(void);
 void f_ff0(void);
 extern int g_6904;
@@ -111,16 +111,16 @@ extern unsigned char *g_df70;
 extern int g_df74;
 extern unsigned char g_e144;
 extern void f_16bb(int);
-extern short g_746c_mmw;
+extern short image_buffer_error_code;
 extern void f_1202(void);
 extern void f_1227(void);
 extern void f_127e(void);
 extern void f_13aa(void);
 extern void f_1416(void);
-extern void f_c9ce(int, int);
+extern void redraw_image_region(int, int);
 extern void f_ed38(void);
 extern int f_b17e(void *, void *);
-extern unsigned char *g_e2ec;
+extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
 extern short g_e4c6;
 extern unsigned char g_6988[];
@@ -231,7 +231,7 @@ extern int g_6980;
 void f_ecdf(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int v_DF30;
 void f_2e4a(void);
-void f_c9f4(int, int, int, int, int);
+void render_image_with_options(int, int, int, int, int);
 extern unsigned char *u_e150;
 extern int g_6c08;
 void f_2eab(void);
@@ -286,7 +286,7 @@ void f_10502(int, int);
 extern char g_269c[];
 void f_b4a7(int, int, int, int, int);
 extern int g_8db0;
-void f_c20d(int);
+void submit_audio_request(int);
 extern unsigned char g_8e24;
 extern char g_2fec[];
 void f_3ba4(int, int);
@@ -351,15 +351,15 @@ void f_4066(void);
 void f_2f0c_cdhyn(void)
 {
     f_e855(g_7b1a);
-    g_746e = 8;
+    image_color_depth = 8;
     g_7b16 = g_7b1a;
     ++g_df38;
     if (g_df38 >= 0x29)
         g_df38 = 0;
     f_7f8a();
-    copy_screen_span_entry(g_7b1a, 0, g_7b18, 0, g_e324.e35a);
-    if (g_746c_mmw != 0)
-        shutdown_with_exit_message(g_746c_mmw, 0);
+    copy_screen_span_entry(g_7b1a, 0, g_7b18, 0, g_e324.buffer_size);
+    if (image_buffer_error_code != 0)
+        shutdown_with_exit_message(image_buffer_error_code, 0);
 }
 
 void f_2f9e_zo(void)
@@ -367,7 +367,7 @@ void f_2f9e_zo(void)
     int j;
     int i;
 
-    g_746e = 8;
+    image_color_depth = 8;
     g_7b16 = g_7b18;
     g_dd80 = (unsigned short *)&g_a608;
     g_dd78 = 0;
@@ -419,15 +419,15 @@ int f_3203_tjmv(void)
     f_339f_adddtkmk();
     g_7b34_cbzosabe = ((*(short *)&g_7b34_cbzosabe) & 0xfffe) & 0xfffd;
     g_7b3d_yrsiuxxd = 0;
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
 
 retry:
         f_10137_squghx();
         f_8345_wsdytbf();
         f_83b1();
-        f_c9ce(0, 0);
-        if (g_746c_mmw != 0)
-            shutdown_with_exit_message(g_746c_mmw, 0);
+        redraw_image_region(0, 0);
+        if (image_buffer_error_code != 0)
+            shutdown_with_exit_message(image_buffer_error_code, 0);
         f_ed38();
         f_9d40(1);
         handle_s_key();
@@ -458,10 +458,10 @@ loop_done:
     g_e14c = 0x2e;
     f_8345_wsdytbf();
     f_83b1();
-    f_c9ce(0, 0);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    redraw_image_region(0, 0);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
+    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     return result;
 }
 
@@ -486,12 +486,12 @@ void f_3406_qruj(void)
     if (g_e14c == 0x78) {
         u_e150 = (unsigned char *)&g_6b78;
         f_34b7();
-        if (g_746c_mmw != 0)
-            shutdown_with_exit_message(g_746c_mmw, 0);
+        if (image_buffer_error_code != 0)
+            shutdown_with_exit_message(image_buffer_error_code, 0);
         f_84a0(0x32);
     }
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
 }
 
 void f_34b7(void)
@@ -505,10 +505,10 @@ void f_34b7(void)
 
 void f_353f(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_61a6_vby();
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     f_10502(((int *)g_dee4)[0], ((int *)g_dee4)[1]);
 }
 
@@ -523,15 +523,15 @@ void f_35b5(void)
 void f_35e4_rqk(void)
 {
     f_b541((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     g_7b16 = g_7b18;
     r_dDDc_uzmlc[2] = -1;
     r_dDDc_uzmlc[6] = -1;
     f_b4a7(0x38, 4, r_dDDc_uzmlc[5], 10, 6);
     f_b4a7(0x99, 4, r_dDDc_uzmlc[1] / 0x71, 10, 2);
     f_b4a7(0x108, 4, *(int *)g_37fd, 10, 6);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b20;
 }
 
@@ -541,18 +541,18 @@ void f_3702(void)
     int saved_746e;
 
     saved_7b16 = (unsigned char)g_7b16;
-    saved_746e = g_746e;
-    g_746e = 8;
+    saved_746e = image_color_depth;
+    image_color_depth = 8;
     if (g_8db0 < r_dDDc_uzmlc[5]) {
         r_dDDc_uzmlc[1] += 0x71;
         g_8db0 += 0x7d0;
-        f_c20d(0x3c);
+        submit_audio_request(0x3c);
     }
 
     if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6] || r_dDDc_uzmlc[1] != r_dDDc_uzmlc[2]) {
         f_b541((int)g_269c, g_df20_rusvejgsscn, 0, 8, 8);
     }
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
 
     if (r_dDDc_uzmlc[5] != r_dDDc_uzmlc[6]) {
         r_dDDc_uzmlc[6] = r_dDDc_uzmlc[5];
@@ -571,7 +571,7 @@ void f_3702(void)
     }
 
     g_7b16 = saved_7b16;
-    g_746e = saved_746e;
+    image_color_depth = saved_746e;
 }
 
 void f_3918(int a, int b, int c, int d)
@@ -619,8 +619,8 @@ void f_3ac0(int a, int b, int c)
     int saved_746e;
 
     saved_7b16 = (unsigned char)g_7b16;
-    saved_746e = g_746e;
-    g_746e = 8;
+    saved_746e = image_color_depth;
+    image_color_depth = 8;
     x = a * 16 + 16;
     y = b / 18 * 8 + 24;
     g_e158_tpotbrbk = g_df24_krqpxkj + *(int *)(g_2fe4 + c * 8);
@@ -630,7 +630,7 @@ void f_3ac0(int a, int b, int c)
     draw_bob_sprite_entry(g_e158_tpotbrbk, x, y);
     g_7b16 = g_7b22;
     draw_bob_sprite_entry(g_e158_tpotbrbk, x, y);
-    g_746e = saved_746e;
+    image_color_depth = saved_746e;
     g_7b16 = saved_7b16;
 }
 
@@ -647,10 +647,10 @@ void f_3beb(int a)
     else
         value = g_7b22;
     g_7b16 = value;
-    copy_screen_span_entry(g_7b18, 0, g_7b16, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b16, 0, g_e324.buffer_size);
     f_ed38();
     f_9d40(0);
     f_ec76(a);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
 }

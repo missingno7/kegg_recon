@@ -65,7 +65,7 @@ int g_dd50;
 int g_dd54;
 
 extern int r_e250;
-extern unsigned char *g_e2ec;
+extern unsigned char *image_buffer_cursor;
 extern void f_8004(int *, int);
 void *memcpy(void *, const void *, size_t);
 
@@ -316,11 +316,11 @@ L_7db3:
             continue;
         }
 L_7dbd:
-        *(int *)g_e2ec = g_8db4;
-        *(short *)(g_e2ec + 4) = g_dd6c->a;
-        *(short *)(g_e2ec + 6) = g_dd6c->b;
-        *(short *)(g_e2ec + 8) = 0;
-        g_e2ec += 10;
+        *(int *)image_buffer_cursor = g_8db4;
+        *(short *)(image_buffer_cursor + 4) = g_dd6c->a;
+        *(short *)(image_buffer_cursor + 6) = g_dd6c->b;
+        *(short *)(image_buffer_cursor + 8) = 0;
+        image_buffer_cursor += 10;
         g_dd6c++;
     }
 }

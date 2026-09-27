@@ -35,9 +35,9 @@ extern unsigned char g_7536[];
 extern unsigned char g_756f[];
 extern void f_9afc(void);
 extern void f_9b44(int);
-extern void f_bd8b(void);
-extern int f_bdd3(int);
-extern void f_c2d0(int);
+extern void release_sound_system(void);
+extern int configure_sound_dma(int);
+extern void set_audio_transfer_mode(int);
 extern void f_dfc3(void);
 extern void f_e028(void);
 extern void f_ec9c(void);
@@ -49,8 +49,8 @@ extern int g_68f8_jwwqkwr;
 extern int g_6910;
 extern int g_6914;
 extern int g_693c;
-extern short g_746e;
-extern short g_747c;
+extern short image_color_depth;
+extern short sound_blaster_detected;
 extern int g_7b04;
 extern int g_7b08;
 extern short g_7b16;
@@ -74,8 +74,8 @@ extern int g_df4c;
 extern int g_df54;
 extern int h_df5c;
 extern int g_e1d8;
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct VideoState g_e324;
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct DisplayModeInfo g_e324;
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48e_0g;
@@ -98,12 +98,12 @@ extern void f_a810(void *, int);
 extern void f_b1df(int, int, int);
 extern void f_b541(int, int, unsigned char, int, int);
 extern void f_b57a(int, int, int, int);
-extern void f_c14b_lmdi(int, int, int, int);
-extern void f_c8c0_pm(int, int, short, int, int);
+extern void queue_audio(int, int, int, int);
+extern void set_img_buffers(int, int, short, int, int);
 extern int f_e095_ughrsvpfh();
 extern void f_ea9f(void *, int, int, int);
 void f_113c(void);
-extern void f_c3ab_euckgzihaj(void);
+extern void stop_audio_stream(void);
 void f_ea4(void);
 void f_ff0(void);
 extern int g_6904;
@@ -117,16 +117,16 @@ extern unsigned char *g_df70;
 extern int g_df74;
 extern unsigned char g_e144;
 extern void f_16bb(int);
-extern short g_746c_mmw;
+extern short image_buffer_error_code;
 extern void f_1202(void);
 extern void f_1227(void);
 extern void f_127e(void);
 extern void f_13aa(void);
 extern void f_1416(void);
-extern void f_c9ce(int, int);
+extern void redraw_image_region(int, int);
 extern void f_ed38(void);
 extern int f_b17e(void *, void *);
-extern unsigned char *g_e2ec;
+extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
 extern short g_e4c6;
 extern unsigned char g_6988[];
@@ -237,7 +237,7 @@ extern int g_6980;
 void f_ecdf(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int v_DF30;
 void f_2e4a(void);
-void f_c9f4(int, int, int, int, int);
+void render_image_with_options(int, int, int, int, int);
 extern unsigned char *u_e150;
 extern int g_6c08;
 void f_2eab(void);
@@ -292,7 +292,7 @@ void f_10502(int, int);
 extern char g_269c[];
 void f_b4a7(int, int, int, int, int);
 extern int g_8db0;
-void f_c20d(int);
+void submit_audio_request(int);
 extern char g_2fec[];
 void f_3ba4(int, int);
 void f_7e62(int, int, int, int, int, int, int);
@@ -363,7 +363,7 @@ extern unsigned char p_A990[];
 void f_8004(int *, int);
 int f_b5df(void *, void *);
 void f_4291(void);
-extern short g_7474;
+extern short windows_environment_detected;
 void f_4394(void);
 void f_5771(void);
 void f_4602_state_handler(void);
@@ -384,7 +384,7 @@ extern void f_1040c(int, int);
 extern void f_10487(int, int);
 extern int g_dee0;
 extern int g_67b0;
-extern int g_e270;
+extern int audio_request_table_8;
 extern int g_df3c;
 extern int g_8e48;
 extern Row16 g_6cbb[];
@@ -536,11 +536,11 @@ void f_4085(void)
                 continue;
             }
         }
-        *(int *)g_e2ec = g_8db4;
-        *(short *)(g_e2ec + 4) = *(short *)g_dda4;
-        *(short *)(g_e2ec + 6) = *(short *)(g_dda4 + 4);
-        *(short *)(g_e2ec + 8) = 0;
-        g_e2ec += 0xa;
+        *(int *)image_buffer_cursor = g_8db4;
+        *(short *)(image_buffer_cursor + 4) = *(short *)g_dda4;
+        *(short *)(image_buffer_cursor + 6) = *(short *)(g_dda4 + 4);
+        *(short *)(image_buffer_cursor + 8) = 0;
+        image_buffer_cursor += 0xa;
         g_dda4 += 0x12;
     }
 }
@@ -558,7 +558,7 @@ void f_42e1(unsigned char a, unsigned char b, int c, int d)
     if (g_ddc0 < 0x18 && a < 0x1c) {
         g_dda4 = p_A990;
         g_dda4 += g_ddc0 * 0x12;
-        if (g_7474 == -1)
+        if (windows_environment_detected == -1)
             g_ddc0 = 0x1388;
         *(int *)g_dda4 = c;
         *(int *)(g_dda4 + 4) = d;
@@ -566,7 +566,7 @@ void f_42e1(unsigned char a, unsigned char b, int c, int d)
         *(int *)(g_dda4 + 8) = 0;
         *(unsigned char *)(g_dda4 + 0x10) = b;
         *(unsigned char *)(g_dda4 + 0x11) = a;
-        f_c20d(0x1e);
+        submit_audio_request(0x1e);
         ++g_ddc0;
     }
 }
@@ -574,7 +574,7 @@ void f_42e1(unsigned char a, unsigned char b, int c, int d)
 void f_4394(void)
 {
     if (g_dDb8 > 0)
-        f_c20d(0x29);
+        submit_audio_request(0x29);
     *m_de5c |= 0x20;
     g_dee4->at_58 = 3;
     g_8e20 = g_dee4->at_1c + g_dDb8;
@@ -590,7 +590,7 @@ void f_4413(void)
     if (g_dee4->at_28 > 0) a = 1; else a = 0;
     if ((*m_de5c & 8) == 0) b = 1; else b = 0;
     if (b | a) {
-        f_c20d(0x27);
+        submit_audio_request(0x27);
         if (--g_dee4->at_28 < 0)
             f_5771();
     }
@@ -598,13 +598,13 @@ void f_4413(void)
 
 void f_4480_state_handler(void)
 {
-    f_c20d(0x4c);
+    submit_audio_request(0x4c);
     g_dee4->at_24 += g_dDb8;
 }
 
 void f_44a9_state_handler(void)
 {
-    f_c20d(0x5b);
+    submit_audio_request(0x5b);
     if ((*m_de5c & 8) == 0) {
         if ((*m_de5c & 0x10) == 0) {
             *m_de5c |= 0x10;
@@ -626,23 +626,23 @@ void f_4551_state_handler(void)
 
 void f_456d_state_handler(void)
 {
-    f_c20d(0x1f);
+    submit_audio_request(0x1f);
     f_7e62(0, 0, 0, 0, g_df34_nnyybtp, (int)g_5ec0, 13);
 }
 
 void f_45a6_state_handler(void)
 {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     r_dDDc_uzmlc[1] += g_dDb8 * 0x71;
 }
 
 void f_45d0_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     f_8fce(g_dee4->at_00, g_dee4->at_04);
 }
 
 void f_4602_state_handler(void) {
-    f_c20d(0x5c);
+    submit_audio_request(0x5c);
     g_ddb4 = g_df78;
     for (c_DDAC = 0; c_DDAC < g_dDa8; ++c_DDAC) {
         g_8e20 = g_ddb4->b[0x10] + g_dDb8;
@@ -654,14 +654,14 @@ void f_4602_state_handler(void) {
 }
 
 void f_469b_state_handler(void) {
-    f_c20d(0x56);
+    submit_audio_request(0x56);
     m_de5c[1] |= 8;
     write_dac_palette(g_ddd4_eoraaik, 0, 0x100, 0x20);
     g_dee4->at_30 += g_dDb8 << 7;
 }
 
 void f_46e7_state_handler(void) {
-    f_c20d(0x4c);
+    submit_audio_request(0x4c);
     g_8e1c = 3;
     g_ddb4 = g_df78;
     for (c_DDAC = 0; c_DDAC < g_dDa8; ++c_DDAC) {
@@ -676,7 +676,7 @@ void f_4745_state_handler(void) {
 }
 
 void f_4761_state_handler(void) {
-    f_c20d(0x33);
+    submit_audio_request(0x33);
     m_de5c[1] &= 0xfe;
     m_de5c[0] |= 8;
     g_dee4->at_34 = g_dDb8 << 10;
@@ -690,7 +690,7 @@ void f_4761_state_handler(void) {
 }
 
 void f_4802_state_handler(void) {
-    f_c20d(0x68);
+    submit_audio_request(0x68);
     if (!(m_de5c[1] & 4)) {
         g_dee4->at_04 = g_dee4->at_18;
         m_de5c[1] |= 4;
@@ -699,7 +699,7 @@ void f_4802_state_handler(void) {
 }
 
 void f_4847_state_handler(void) {
-    f_c20d(0x5b);
+    submit_audio_request(0x5b);
     if (!(m_de5c[0] & 8)) {
         m_de5c[1] |= 1;
         g_dee4->at_3c += g_dDb8 << 5;
@@ -707,7 +707,7 @@ void f_4847_state_handler(void) {
 }
 
 void f_4886(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     if (!g_dee4->at_28) {
         g_dee4->at_44 = 0;
         g_dee4->at_40 = 3;
@@ -716,7 +716,7 @@ void f_4886(void) {
 }
 
 void f_48d2_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[0] |= 0x80;
     g_dee4->at_60 = 0xf;
     g_dee4->at_64 = 0xf;
@@ -726,12 +726,12 @@ void f_48d2_state_handler(void) {
 }
 
 void f_4931_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[1] |= 0x10;
 }
 
 void f_4955_state_handler(void) {
-    f_c20d(0x67);
+    submit_audio_request(0x67);
     m_de5c[1] |= 0x20;
     g_dee4->at_2c += g_dDb8 << 9;
     g_ddb4 = g_df78;
@@ -742,13 +742,13 @@ void f_4955_state_handler(void) {
 }
 
 void f_49c7_state_handler(void) {
-    f_c20d(0x1f);
+    submit_audio_request(0x1f);
     m_de5c[1] |= 2;
     g_dee4->at_74 = g_dee4->at_00;
 }
 
 void f_49fb_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[0] |= 0x80;
     g_dee4->at_60 = 0xf;
     g_dee4->at_64 = 0xf;
@@ -770,13 +770,13 @@ void f_4a5a_state_handler(void) {
 }
 
 void f_4aca_state_handler(void) {
-    f_c20d(0x28);
+    submit_audio_request(0x28);
     g_dDb8 = -g_dDb8;
     f_4394();
 }
 
 void f_4af0_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[0] |= 0x80;
     g_dee4->at_60 = 4;
     g_dee4->at_64 = 4;
@@ -786,7 +786,7 @@ void f_4af0_state_handler(void) {
 }
 
 void f_4b4f_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[0] |= 0x80;
     g_dee4->at_60 = 6;
     g_dee4->at_64 = 6;
@@ -796,7 +796,7 @@ void f_4b4f_state_handler(void) {
 }
 
 void f_4bae(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[0] |= 0x80;
     g_dee4->at_60 = 4;
     g_dee4->at_64 = 4;
@@ -806,7 +806,7 @@ void f_4bae(void) {
 }
 
 void f_4c0d_state_handler(void) {
-    f_c20d(0x3c);
+    submit_audio_request(0x3c);
     m_de5c[0] |= 0x80;
     g_dee4->at_60 = 6;
     g_dee4->at_64 = 6;
@@ -816,7 +816,7 @@ void f_4c0d_state_handler(void) {
 }
 
 void f_4c6c_state_handler(void) {
-    f_c20d(0x57);
+    submit_audio_request(0x57);
     g_dd94 = g_a848;
     for (g_ddc4 = 0; g_ddc4 < g_ddcc; ++g_ddc4) {
         g_dd94->b[0x24] |= 2;

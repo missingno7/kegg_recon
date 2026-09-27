@@ -1,13 +1,13 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN g_746c_mmw:WORD
-EXTRN g_746e:WORD
+EXTRN image_buffer_error_code:WORD
+EXTRN image_color_depth:WORD
 EXTRN g_7b16:WORD
 EXTRN g_7b18:WORD
 EXTRN g_e2e4:DWORD
-EXTRN g_e2e8:DWORD
-EXTRN g_e2ec:DWORD
+EXTRN active_image_buffer_pointer_2:DWORD
+EXTRN image_buffer_cursor:DWORD
 EXTRN g_e324:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
@@ -135,11 +135,11 @@ L_12B7C:
 L_12B7E:
         mov eax, dword ptr [sprite_record_cursor]
 L_12B83:
-        mov dword ptr [g_e2e8], eax
+        mov dword ptr [active_image_buffer_pointer_2], eax
 L_12B88:
         mov eax, dword ptr [sprite_command_cursor]
 L_12B8D:
-        mov dword ptr [g_e2ec], eax
+        mov dword ptr [image_buffer_cursor], eax
 L_12B92:
         popad
 L_12B93:
@@ -236,11 +236,11 @@ L_12C4F:
 L_12C55:
         mov dword ptr [u_e2E0], esi
 L_12C5B:
-        cmp word ptr [g_746e], 4
+        cmp word ptr [image_color_depth], 4
 L_12C63:
         jne short L_12C8F
 L_12C65:
-        mov ebx, dword ptr [g_e2e8]
+        mov ebx, dword ptr [active_image_buffer_pointer_2]
 L_12C6B:
         mov dword ptr [sprite_record_cursor], ebx
 L_12C71:
@@ -329,7 +329,7 @@ L_12D1A:
 L_12D20:
         mov dword ptr [vga_draw_origin], esi
 L_12D26:
-        mov ebx, dword ptr [g_e2e8]
+        mov ebx, dword ptr [active_image_buffer_pointer_2]
 L_12D2C:
         mov dword ptr [sprite_record_cursor], ebx
 L_12D32:
@@ -343,7 +343,7 @@ L_12D3B:
 L_12D40:
         mov ebx, dword ptr [sprite_record_cursor]
 L_12D46:
-        mov dword ptr [g_e2e8], ebx
+        mov dword ptr [active_image_buffer_pointer_2], ebx
 L_12D4C:
         mov byte ptr [g_e324+61h], 0Fh
 L_12D53:
@@ -448,33 +448,33 @@ L_12DF8:
 L_12DFB:
         lea edi, [ebp + sprite_render_mode_table]
 L_12E01:
-        movsx ebp, word ptr [g_746e]
+        movsx ebp, word ptr [image_color_depth]
 L_12E08:
         mov ebp, dword ptr [ebp + edi]
 L_12E0C:
         jmp dword ptr [edi]
 L_12E0E:
-        mov word ptr [g_746c_mmw], 401h
+        mov word ptr [image_buffer_error_code], 401h
 L_12E17:
         jmp short L_12E50
 L_12E19:
-        mov word ptr [g_746c_mmw], 402h
+        mov word ptr [image_buffer_error_code], 402h
 L_12E22:
         jmp short L_12E50
 L_12E24:
-        mov word ptr [g_746c_mmw], 403h
+        mov word ptr [image_buffer_error_code], 403h
 L_12E2D:
         jmp short L_12E50
 L_12E2F:
-        mov word ptr [g_746c_mmw], 404h
+        mov word ptr [image_buffer_error_code], 404h
 L_12E38:
         jmp short L_12E50
 L_12E3A:
-        mov word ptr [g_746c_mmw], 405h
+        mov word ptr [image_buffer_error_code], 405h
 L_12E43:
         jmp short L_12E50
 L_12E45:
-        mov word ptr [g_746c_mmw], 406h
+        mov word ptr [image_buffer_error_code], 406h
 L_12E4E:
         jmp short L_12E50
 L_12E50:

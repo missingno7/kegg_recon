@@ -3,7 +3,7 @@
  */
 #include <i86.h>
 #include <conio.h>
-extern short g_7474;
+extern short windows_environment_detected;
 extern int f_9f64(void);
 extern unsigned char g_756f[];
 extern unsigned char g_7585;
@@ -88,7 +88,7 @@ int f_9974(void)
     int v_10;
     v_c = 0;
     v_10 = 0;
-    if (g_7474 != -1) goto L_99b2;
+    if (windows_environment_detected != -1) goto L_99b2;
     g_73a6 = 0;
     return g_73a6;
 L_99b2:;

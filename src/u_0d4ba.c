@@ -7,27 +7,27 @@ int g_e30c;
 #include <stdlib.h>
 #include <string.h>
 #include <i86.h>
-struct Config { unsigned char b[57]; };
-struct ChoiceList { unsigned char b[7]; };
-struct Defaults { unsigned char b[4]; };
-struct MapConfig { unsigned char opaque[0x2d]; char *allocation; unsigned int base; char *mapped; };
-extern short g_e2fc;
+struct SoundBlasterConfig { unsigned char b[57]; };
+struct SoundBlasterIrqChoices { unsigned char b[7]; };
+struct SoundBlasterDmaChoices { unsigned char b[4]; };
+struct DPMIMapRecord { unsigned char opaque[0x2d]; char *allocation; unsigned int base; char *mapped; };
+extern short sound_blaster_base_port;
 extern unsigned char g_7db2;
 extern unsigned char g_7db3;
-extern int g_e2f8;
-extern int f_ccd5(void);
-extern int f_cdee(void);
-extern int f_d010(void);
+extern int saved_sound_mixer_value;
+extern int select_sound_blaster_port(void);
+extern int detect_sound_blaster_irq(void);
+extern int detect_sound_blaster_dma(void);
 extern int f_1144d(void);
 extern int f_11420(void);
 extern int f_113f8(void);
 extern int f_11485(void);
-extern int g_e2f4;
+extern int sound_irq_test_complete_l;
 extern void f_d656(unsigned char *, int);
 extern int f_da01(unsigned char *);
 extern void f_d7b8(unsigned char *);
-extern void __interrupt f_d252(void);
-extern int g_e2f0;
+extern void __interrupt sound_test_irq_handler(void);
+extern int sound_dma_test_result;
 extern unsigned int g_e31c;
 extern unsigned int g_7db4;
 extern short g_7db8;
@@ -50,15 +50,15 @@ extern void f_14197(void *);
 extern int g_75c4;
 extern void f_13889(int, int, int);
 
-extern short g_747c;
-extern unsigned int g_747e;
-extern unsigned int g_7482;
-extern unsigned char g_7486;
-extern unsigned char g_7487;
+extern short sound_blaster_detected;
+extern unsigned int sound_blaster_mixer_test;
+extern unsigned int sound_blaster_dsp_version;
+extern unsigned char sound_blaster_irq;
+extern unsigned char sound_blaster_dma_channel;
 extern unsigned int u_7488;
-extern char *g_748c;
-extern short g_7490;
-extern unsigned long g_7492;
+extern char *sound_blaster_env_name;
+extern short dos_version_query_succeeded;
+extern unsigned long dos_version_packed;
 extern unsigned short u_7496;
 extern short g_7498;
 extern unsigned short u_749a;
@@ -272,8 +272,8 @@ int f_da01(unsigned char *p) {
         *(unsigned int *)(p + 0x29) = *(unsigned int *)(p + 0x25) - *(unsigned int *)(p + 0x21);
         if (*(unsigned int *)(p + 0x2d) = f_dea6(*(int *)(p + 0x29) + 0x10)) {
             *(unsigned int *)(p + 0x31) = g_e31c;
-            ((struct MapConfig *)p)->mapped =
-                ((struct MapConfig *)p)->allocation + 0xd;
+            ((struct DPMIMapRecord *)p)->mapped =
+                ((struct DPMIMapRecord *)p)->allocation + 0xd;
             f_13889(*(unsigned int *)(p + 0x21), *(unsigned int *)(p + 0x2d), *(unsigned int *)(p + 0x29));
             temp = *(int *)(p + 0x2d) + 7;
             *(unsigned short *)temp = *(int *)(p + 0x2d) >> 4;

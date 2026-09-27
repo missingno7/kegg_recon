@@ -1,20 +1,20 @@
 .386
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN g_742c:WORD
-EXTRN g_744c:DWORD
-EXTRN g_7458:DWORD
-EXTRN g_745c:DWORD
-EXTRN g_7486:BYTE
-EXTRN g_7487:BYTE
+EXTRN audio_stream_flag:WORD
+EXTRN active_audio_rate:DWORD
+EXTRN audio_dma_half_bytes:DWORD
+EXTRN last_audio_sample_rate:DWORD
+EXTRN sound_blaster_irq:BYTE
+EXTRN sound_blaster_dma_channel:BYTE
 EXTRN g_7dba:BYTE
 EXTRN g_7dbb:BYTE
-EXTRN g_e2fc:WORD
+EXTRN sound_blaster_base_port:WORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
 EXTRN f_11494:NEAR
 EXTRN f_114a0:NEAR
-EXTRN f_c3fb:NEAR
+EXTRN transfer_audio_stream_block:NEAR
         ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC f_11258
 f_11258 LABEL NEAR
@@ -33,19 +33,19 @@ L_11261:
 L_11265:
         mov ds, eax
 L_11267:
-        mov dx, word ptr [g_e2fc]
+        mov dx, word ptr [sound_blaster_base_port]
 L_1126E:
         add dx, 0Eh
 L_11272:
         in al, dx
 L_11273:
-        cmp dword ptr [g_7458], 0
+        cmp dword ptr [audio_dma_half_bytes], 0
 L_1127A:
         je short L_112CF
 L_1127C:
-        mov eax, dword ptr [g_744c]
+        mov eax, dword ptr [active_audio_rate]
 L_11281:
-        cmp dword ptr [g_745c], eax
+        cmp dword ptr [last_audio_sample_rate], eax
 L_11287:
         jne short L_112BF
 L_11289:
@@ -87,11 +87,11 @@ L_112B1:
 L_112B3:
         out dx, al
 L_112B4:
-        mov word ptr [g_742c], 0FFFFh
+        mov word ptr [audio_stream_flag], 0FFFFh
 L_112BD:
         jmp short L_112D8
 L_112BF:
-        mov dword ptr [g_745c], eax
+        mov dword ptr [last_audio_sample_rate], eax
 L_112C4:
         push eax
 L_112C5:
@@ -101,7 +101,7 @@ L_112CA:
 L_112CD:
         jmp short L_11289
 L_112CF:
-        mov word ptr [g_742c], 0
+        mov word ptr [audio_stream_flag], 0
 L_112D8:
         mov dx, es
 L_112DB:
@@ -117,7 +117,7 @@ L_112E3:
 L_112E4:
         call f_113bd
 L_112E9:
-        call f_c3fb
+        call transfer_audio_stream_block
 L_112EE:
         popad
 L_112EF:
@@ -166,7 +166,7 @@ L_11326:
 L_11327:
         mov byte ptr [g_7dba], 48h
 L_1132E:
-        mov al, byte ptr [g_7487]
+        mov al, byte ptr [sound_blaster_dma_channel]
 L_11333:
         mov byte ptr [g_7dbb], al
 L_11338:
@@ -182,7 +182,7 @@ L_1133F:
 L_11340:
         mov byte ptr [g_7dba], 58h
 L_11347:
-        mov al, byte ptr [g_7487]
+        mov al, byte ptr [sound_blaster_dma_channel]
 L_1134C:
         mov byte ptr [g_7dbb], al
 L_11351:
@@ -204,7 +204,7 @@ f_11365 LABEL NEAR
 L_11365:
         push eax
 L_11366:
-        mov al, byte ptr [g_7487]
+        mov al, byte ptr [sound_blaster_dma_channel]
 L_1136B:
         mov byte ptr [g_7dbb], al
 L_11370:
@@ -251,7 +251,7 @@ f_113bd LABEL NEAR
 a_113bd PROC NEAR
         push    eax
         mov     al,20h
-        cmp     byte ptr g_7486,8
+        cmp     byte ptr sound_blaster_irq,8
         jl      short L_113CB
         out     0A0h,al
 L_113CB:
@@ -284,7 +284,7 @@ f_113f8 LABEL NEAR
 a_113f8 PROC NEAR
         push    ecx
         push    edx
-        mov     dx,word ptr g_e2fc
+        mov     dx,word ptr sound_blaster_base_port
         add     dx,0Eh
         mov     ecx,3E8h
 L_1140A:
@@ -308,7 +308,7 @@ f_11420 LABEL NEAR
 a_11420 PROC NEAR
         push    eax
         push    edx
-        mov     dx,word ptr g_e2fc
+        mov     dx,word ptr sound_blaster_base_port
         add     dx,0Ch
         in      al,dx
         test    al,80h
@@ -337,7 +337,7 @@ a_11420 ENDP
 f_1144d LABEL NEAR
 a_1144d PROC NEAR
         push    edx
-        mov     dx,word ptr g_e2fc
+        mov     dx,word ptr sound_blaster_base_port
         add     dx,6
         mov     al,1
         out     dx,al
@@ -364,7 +364,7 @@ a_1144d ENDP
 f_11485 LABEL NEAR
 a_11485 PROC NEAR
         push    edx
-        mov     dx,word ptr g_e2fc
+        mov     dx,word ptr sound_blaster_base_port
         add     dx,0Eh
         in      al,dx
         pop     edx

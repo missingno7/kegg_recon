@@ -2,9 +2,9 @@
 #include <i86.h>
 #include <stdlib.h>
 struct VideoModeRecord { int mode_id; short bios_mode; short reserved; union { int dword; short word; unsigned char bytes[4]; } video_mode; unsigned char mode_flags; unsigned char mode_class; int width; int height; int row_bytes; int image_size; int buffer_size; };
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 struct VideoPresetRecord { unsigned char flags; unsigned char reserved[3]; unsigned char regs[48]; int mode_id; };
-struct VideoState g_e324;
+struct DisplayModeInfo g_e324;
 extern void f_9afc(void);
 extern void f_9b44(int);
 extern void f_e028(void);
@@ -93,8 +93,8 @@ void f_e028(void) {
     if (g_75ca == -1) {
         f_9afc();
         regs.h.ah = 0;
-        g_e324.e381 = g_e324.e382;
-        regs.h.al = g_e324.e381;
+        g_e324.video_mode_low = g_e324.e382;
+        regs.h.al = g_e324.video_mode_low;
         int386(0x10, &regs, &regs);
         g_75ca = 1;
         if (old_756f == -1)
@@ -129,22 +129,22 @@ L_e0e9:;
     f_9afc();
     f_ec9c();
     clear_video_bytes_entry(0xa0000, 0x10000);
-    if (g_e324.e381 == g_75ce[v_c].video_mode.dword) goto L_e168;
-    g_e324.e381 = g_75ce[v_c].video_mode.bytes[0];
+    if (g_e324.video_mode_low == g_75ce[v_c].video_mode.dword) goto L_e168;
+    g_e324.video_mode_low = g_75ce[v_c].video_mode.bytes[0];
     *(short *)v_3c = g_75ce[v_c].video_mode.word;
     *(short *)(v_3c + 4) = g_75ce[v_c].bios_mode;
     int386(0x10, (void *)v_3c, (void *)v_3c);
 L_e168:;
     clear_video_bytes_entry(0xa0000, 0x10000);
-    g_e324.e366 = g_75ce[v_c].width;
-    g_e324.e36a = g_75ce[v_c].height;
-    g_e324.e35e = g_75ce[v_c].row_bytes;
-    g_e324.e362 = g_e324.e36a;
-    g_e324.e36e = 0;
-    g_e324.e372 = 0;
-    g_e324.e376 = g_e324.e366 - 1;
-    g_e324.e37a = g_e324.e36a - 1;
-    g_e324.e35a = g_75ce[v_c].buffer_size;
+    g_e324.width = g_75ce[v_c].width;
+    g_e324.height = g_75ce[v_c].height;
+    g_e324.row_stride_bytes = g_75ce[v_c].row_bytes;
+    g_e324.resolution_height = g_e324.height;
+    g_e324.left = 0;
+    g_e324.top = 0;
+    g_e324.right = g_e324.width - 1;
+    g_e324.bottom = g_e324.height - 1;
+    g_e324.buffer_size = g_75ce[v_c].buffer_size;
     switch (g_75ce[v_c].mode_class) {
         case 0:
 L_e211:;
@@ -166,7 +166,7 @@ L_e245:;
         g_e324.state = 0;
     }
 L_e266:;
-    g_e324.e37e = g_75ce[v_c].mode_flags;
+    g_e324.mode_flags = g_75ce[v_c].mode_flags;
     v_1c = 0;
     v_10 = 0;
 L_e283:;
@@ -176,12 +176,12 @@ L_e28e:;
     v_10++;
     goto L_e283;
 L_e296:;
-    *(int *)(g_e324.e326 + (v_10 << 2)) = v_18;
-    g_e324.e336[v_10] = v_1c;
-    g_e324.e346[v_10] = 0;
-    *(unsigned char *)(g_e324.e356 + v_10) = g_75ce[v_c].mode_class;
+    *(int *)(g_e324.plane_addresses + (v_10 << 2)) = v_18;
+    g_e324.page_offsets[v_10] = v_1c;
+    g_e324.page_adjustments[v_10] = 0;
+    *(unsigned char *)(g_e324.page_mode_classes + v_10) = g_75ce[v_c].mode_class;
     v_1c += g_75ce[v_c].image_size;
-    if ((v_1c + g_e324.e35a) <= v_4) goto L_e2ff;
+    if ((v_1c + g_e324.buffer_size) <= v_4) goto L_e2ff;
     v_1c -= g_75ce[v_c].image_size;
 L_e2ff:;
     f_e855((short)v_10);
@@ -317,17 +317,17 @@ void f_e813(void)
 
 void f_e855(short a0)
 {
-    fill_clipped_vga_rectangle((short)a0, g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a, 0);
+    fill_clipped_vga_rectangle((short)a0, g_e324.left, g_e324.top, g_e324.right, g_e324.bottom, 0);
 }
 
 void f_e88d(int left, int top, int right, int bottom) {
     int t;
     if (left > right) { t = left; left = right; right = t; }
     if (top > bottom) { t = top; top = bottom; bottom = t; }
-    g_e324.e36e = left;
-    g_e324.e376 = right;
-    g_e324.e372 = top;
-    g_e324.e37a = bottom;
-    g_e324.e36a = g_e324.e37a - g_e324.e372 + 1;
-    g_e324.e366 = g_e324.e376 - g_e324.e36e + 1;
+    g_e324.left = left;
+    g_e324.right = right;
+    g_e324.top = top;
+    g_e324.bottom = bottom;
+    g_e324.height = g_e324.bottom - g_e324.top + 1;
+    g_e324.width = g_e324.right - g_e324.left + 1;
 }

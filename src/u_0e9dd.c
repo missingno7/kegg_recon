@@ -2,9 +2,9 @@
 #include <i86.h>
 #include <stdlib.h>
 struct VideoModeRecord { int mode_id; short bios_mode; short reserved; union { int dword; short word; unsigned char bytes[4]; } video_mode; unsigned char mode_flags; unsigned char mode_class; int width; int height; int row_bytes; int image_size; int buffer_size; };
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 struct VideoPresetRecord { unsigned char flags; unsigned char reserved[3]; unsigned char regs[48]; int mode_id; };
-extern struct VideoState g_e324;
+extern struct DisplayModeInfo g_e324;
 extern short g_75ca;
 extern short g_75c8;
 extern void f_9afc(void);

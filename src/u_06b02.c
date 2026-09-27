@@ -10,8 +10,8 @@ int g_94a8;
 int g_94ac;
 
 extern unsigned char g_67b4[];
-extern short g_742c;
-extern short g_746c_mmw;
+extern short audio_stream_flag;
+extern short image_buffer_error_code;
 extern short g_7b14;
 extern short g_7b18;
 extern short g_7b20;
@@ -24,8 +24,8 @@ extern unsigned char g_d340_schtgisj[];
 extern int x_dd40_xbukycw;
 extern int k_DD48_jbwjbqarofg;
 extern unsigned char *g_dd4c_ilunphmaok;
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct VideoState g_e324;
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct DisplayModeInfo g_e324;
 void f_dfc3(void);
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48e_0g;
@@ -67,9 +67,9 @@ int g_9488;
 int g_948c;
 
 extern void f_a810(void *, int);
-extern void f_c20d(int);
-extern void f_c8c0_pm(int, int, short, int, int);
-extern void f_c9ce(int, int);
+extern void submit_audio_request(int);
+extern void set_img_buffers(int, int, short, int, int);
+extern void redraw_image_region(int, int);
 extern int f_dd53(int, int);
 extern void f_ea9f(void *, int, int, int);
 extern void f_ed38(void);
@@ -126,7 +126,7 @@ extern short g_e4bc;
 extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void write_dac_palette(void *, int, int, int);
 extern int g_68f4;
-extern unsigned char *g_e2ec;
+extern unsigned char *image_buffer_cursor;
 extern unsigned char g_6864[];
 extern void f_78dd(int, int, int, int, int, int, int);
 extern int f_b17e(void *, void *);
@@ -176,14 +176,14 @@ int f_6b02(void)
 {
     g_9468 = 0x118;
     g_9484 = 0;
-    g_947c = g_e324.e37a;
-    g_e324.e37a = 0xa6;
+    g_947c = g_e324.bottom;
+    g_e324.bottom = 0xa6;
     f_ea9f((void *)x_dd40_xbukycw, 0, 0x3f, 8);
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
     f_6156();
     f_61a6_vby();
     *(unsigned char *)&g_7b34_cbzosabe &= 0xf8;
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     f_7112_ngllzczwwhoqgnyg();
     f_7032();
     f_704d();
@@ -191,8 +191,8 @@ int f_6b02(void)
     f_9d40(0);
     f_9d40(0);
     f_a810((void *)k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b14 = g_7b18;
     f_6f66();
     f_798c();
@@ -206,9 +206,9 @@ L_6c3d:;
     f_7532();
     f_73c0();
     f_7bd5();
-    f_c9ce(0, 0);
-    if (g_746c_mmw == 0) goto L_6c91;
-    shutdown_with_exit_message(g_746c_mmw, 0);
+    redraw_image_region(0, 0);
+    if (image_buffer_error_code == 0) goto L_6c91;
+    shutdown_with_exit_message(image_buffer_error_code, 0);
 L_6c91:;
     f_ed38();
     if (g_94a8 <= 0) goto L_6cac;
@@ -218,8 +218,8 @@ L_6cac:;
     --g_9470;
     if (g_9470 > 0) goto L_6db7;
     if (g_94a8 > 0) goto L_6d4d;
-    if (g_742c != 0) goto L_6ce6;
-    f_c20d(0x6b);
+    if (audio_stream_flag != 0) goto L_6ce6;
+    submit_audio_request(0x6b);
 L_6ce6:;
     g_9470 = 0;
 L_6cf0:;
@@ -235,8 +235,8 @@ L_6d41:;
     g_9470 = 8;
     goto L_6db7;
 L_6d4d:;
-    if (g_742c != 0) goto L_6d61;
-    f_c20d(0x6a);
+    if (audio_stream_flag != 0) goto L_6d61;
+    submit_audio_request(0x6a);
 L_6d61:;
     f_7e62(f_dd53(-0x10, 0x10) + (g_e4c6 + 4), (m_E4c4 + 8) + f_dd53(-0x10, 0x10), 0, 0, (int)g_dd4c_ilunphmaok, (int)g_67b4, 1);
     g_9470 = 0x19;
@@ -259,11 +259,11 @@ L_6dfe:;
     return f_6e2e();
 }
 
-void f_6e13(void) { g_e324.e37a = g_947c; }
+void f_6e13(void) { g_e324.bottom = g_947c; }
 
 int f_6e2e(void)
 {
-    f_c20d(0xb);
+    submit_audio_request(0xb);
     g_7b0c = 2;
     g_8e1c = 0;
 L_6e58:;
@@ -296,7 +296,7 @@ L_6ecf:;
 
 int f_6ee8(void)
 {
-    f_c20d(0x26);
+    submit_audio_request(0x26);
     if (g_e13b == 0)
         *(int *)((unsigned char *)r_dDDc_uzmlc + 20) += (5000 / g_94a0) * g_9490 + 5000;
     g_7b0c = 3;
@@ -393,10 +393,10 @@ void f_7184(void)
 L_71cb:;
     if (g_9490 == g_94b0) goto L_72c0;
     g_94b0 = g_9490;
-    g_e324.e37a = g_947c;
+    g_e324.bottom = g_947c;
     fill_clipped_vga_rectangle(g_7b16, ((g_9490 * 0x6f) / g_94a0) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
     fill_clipped_vga_rectangle(g_7b14, ((g_9490 * 0x6f) / g_94a0) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
-    g_e324.e37a = 0xa6;
+    g_e324.bottom = 0xa6;
     g_8e20 = 0;
 L_7272:;
     if (g_8e20 < 0x300) goto L_7289;
@@ -411,7 +411,7 @@ L_72aa:;
     goto L_7280;
 L_72ac:;
     g_9484 = 1;
-    f_c20d(0x69);
+    submit_audio_request(0x69);
 L_72c0:;
     if (g_94a8 == g_9494) goto L_738f;
     if (g_94a8 >= 0) goto L_72ee;
@@ -419,12 +419,12 @@ L_72c0:;
     g_94b4 = 0x1388;
 L_72ee:;
     g_9494 = g_94a8;
-    g_e324.e37a = g_947c;
+    g_e324.bottom = g_947c;
     fill_clipped_vga_rectangle(g_7b16, ((g_94a8 * 0x6f) / g_94a4) + 0xb4, 0xb3, 0x123, 0xb9, 0);
     fill_clipped_vga_rectangle(g_7b14, ((g_94a8 * 0x6f) / g_94a4) + 0xb4, 0xb3, 0x123, 0xb9, 0);
-    g_e324.e37a = 0xa6;
+    g_e324.bottom = 0xa6;
     g_9484 += 8;
-    f_c20d(0x25);
+    submit_audio_request(0x25);
 L_738f:;
     if (g_9484 <= 0) goto L_73bb;
     write_dac_palette((void *)x_dd40_xbukycw, 0, 0x100, -g_9484);
@@ -446,7 +446,7 @@ first_compare:
 second_gate:
     goto second_side;
 first_side:
-    f_c20d(0x66);
+    submit_audio_request(0x66);
     f_78dd(0, 4, g_e4c6, m_E4c4, 0x40, 0, (int)g_6864);
     g_e4ba -= 7;
     g_68f4 = 1;
@@ -457,7 +457,7 @@ second_side:
 second_skip:
     goto second_exit;
 second_actions:
-    f_c20d(0x66);
+    submit_audio_request(0x66);
     f_78dd(0, 1, g_e4c6, m_E4c4, 0x60, 0x18, (int)g_6864);
     f_78dd(0, 1, g_e4c6, m_E4c4, 0x60, -0x18, (int)g_6864);
     g_e4ba -= 7;
@@ -467,11 +467,11 @@ second_exit:
 reset_flag:
     g_68f4 = 0;
 bottom:
-    *(int *)g_e2ec = (int)(g_dd4c_ilunphmaok + 0x35d6);
-    *(short *)(g_e2ec + 4) = g_e4c6;
-    *(short *)(g_e2ec + 6) = m_E4c4;
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 10;
+    *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + 0x35d6);
+    *(short *)(image_buffer_cursor + 4) = g_e4c6;
+    *(short *)(image_buffer_cursor + 6) = m_E4c4;
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 10;
 }
 
 void f_7532(void) { if (g_9488) f_7551(); }
@@ -519,7 +519,7 @@ L_7630:;
     goto L_7583;
 L_7701:;
     if (((*(int *)(g_9478 + 4) >> 4) + 5) <= *(int *)(g_91ac + ((*(int *)(g_9478 + 8) >> 4) << 2))) goto L_776c;
-    f_c20d(0x57);
+    submit_audio_request(0x57);
     f_7e62(*(int *)(g_9478 + 4) >> 4, *(int *)(g_9478 + 8) >> 4, 0, 0, (int)g_dd4c_ilunphmaok, (int)g_67b4, 1);
     f_788d();
     goto L_7583;
@@ -539,11 +539,11 @@ L_77f9:;
     f_788d();
     goto L_7583;
 L_7835:;
-    *(int *)g_e2ec = v_8;
-    *(short *)(g_e2ec + 4) = (unsigned short)(*(int *)(g_9478 + 4) >> 4);
-    *(short *)(g_e2ec + 6) = (unsigned short)(*(int *)(g_9478 + 8) >> 4);
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 0xa;
+    *(int *)image_buffer_cursor = v_8;
+    *(short *)(image_buffer_cursor + 4) = (unsigned short)(*(int *)(g_9478 + 4) >> 4);
+    *(short *)(image_buffer_cursor + 6) = (unsigned short)(*(int *)(g_9478 + 8) >> 4);
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 0xa;
     g_9478 += 0x24;
     goto L_7583;
 }
@@ -587,11 +587,11 @@ void f_798c(void)
     if (g_94a8 <= 0) goto L_7b95;
     --g_94b4;
     if (g_94b4 > 0) goto L_7af8;
-    *(int *)g_e2ec = (int)(g_dd4c_ilunphmaok + 0x43b6);
-    *(short *)(g_e2ec + 4) = 0xf6;
-    *(short *)(g_e2ec + 6) = 0x46;
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 0xa;
+    *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + 0x43b6);
+    *(short *)(image_buffer_cursor + 4) = 0xf6;
+    *(short *)(image_buffer_cursor + 6) = 0x46;
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 0xa;
     v_14 = 1;
     --g_9498;
     if (g_9498 > 0) goto L_7af8;
@@ -600,7 +600,7 @@ void f_798c(void)
     v_10 = ((f_dd53(-0x1e, 0x1e) + (m_E4c4 - v_8)) << 4) / 0x28;
     f_78dd(1, g_94ac, v_4, v_8, v_c, v_10, (int)g_687c);
     if (g_9490 <= 0) goto L_7aaf;
-    f_c20d(0x58);
+    submit_audio_request(0x58);
 L_7aaf:;
     --g_948c;
     if (g_948c > 0) goto L_7af8;
@@ -616,24 +616,24 @@ L_7af8:;
     if (g_94b4 < 0xf) goto L_7b1b;
     if ((g_949c - 0x14) >= g_94b4) goto L_7b58;
 L_7b1b:;
-    *(int *)g_e2ec = (int)(g_dd4c_ilunphmaok + 0x3e70);
-    *(short *)(g_e2ec + 4) = 0xf6;
-    *(short *)(g_e2ec + 6) = 0x46;
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 0xa;
+    *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + 0x3e70);
+    *(short *)(image_buffer_cursor + 4) = 0xf6;
+    *(short *)(image_buffer_cursor + 6) = 0x46;
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 0xa;
     goto L_7b93;
 L_7b58:;
-    *(int *)g_e2ec = (int)(g_dd4c_ilunphmaok + 0x395c);
-    *(short *)(g_e2ec + 4) = 0xf6;
-    *(short *)(g_e2ec + 6) = 0x46;
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 0xa;
+    *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + 0x395c);
+    *(short *)(image_buffer_cursor + 4) = 0xf6;
+    *(short *)(image_buffer_cursor + 6) = 0x46;
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 0xa;
 L_7b93:;
     return;
 L_7b95:;
-    *(int *)g_e2ec = (int)(g_dd4c_ilunphmaok + 0x43b6);
-    *(short *)(g_e2ec + 4) = 0xf6;
-    *(short *)(g_e2ec + 6) = 0x46;
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 0xa;
+    *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + 0x43b6);
+    *(short *)(image_buffer_cursor + 4) = 0xf6;
+    *(short *)(image_buffer_cursor + 6) = 0x46;
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 0xa;
 }

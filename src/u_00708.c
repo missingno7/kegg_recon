@@ -22,9 +22,9 @@ extern unsigned char g_7536[];
 extern unsigned char g_756f[];
 extern void f_9afc(void);
 extern void f_9b44(int);
-extern void f_bd8b(void);
-extern int f_bdd3(int);
-extern void f_c2d0(int);
+extern void release_sound_system(void);
+extern int configure_sound_dma(int);
+extern void set_audio_transfer_mode(int);
 extern void f_dfc3(void);
 extern void f_e028(void);
 extern void f_ec9c(void);
@@ -36,8 +36,8 @@ extern int g_68f8_jwwqkwr;
 extern int g_6910;
 extern int g_6914;
 extern int g_693c;
-extern short g_746e;
-extern short g_747c;
+extern short image_color_depth;
+extern short sound_blaster_detected;
 extern int g_7b04;
 extern int g_7b08;
 extern short g_7b16;
@@ -61,8 +61,8 @@ extern int g_df4c;
 extern int g_df54;
 extern int h_df5c;
 extern int g_e1d8;
-struct VideoState { short state; unsigned char e326[16]; int e336[4]; int e346[4]; unsigned char e356[4]; int e35a; int e35e; int e362; int e366; int e36a; int e36e; int e372; int e376; int e37a; unsigned char e37e; unsigned char e37f; unsigned char e380; unsigned char e381; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct VideoState g_e324;
+struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
+extern struct DisplayModeInfo g_e324;
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48e_0g;
@@ -85,12 +85,12 @@ extern void f_a810(void *, int);
 extern void f_b1df(int, int, int);
 extern void f_b541(int, int, unsigned char, int, int);
 extern void f_b57a(int, int, int, int);
-extern void f_c14b_lmdi(int, int, int, int);
-extern void f_c8c0_pm(int, int, short, int, int);
+extern void queue_audio(int, int, int, int);
+extern void set_img_buffers(int, int, short, int, int);
 extern int f_e095_ughrsvpfh();
 extern void f_ea9f(void *, int, int, int);
 void f_113c(void);
-extern int f_c3ab_euckgzihaj();
+extern int stop_audio_stream();
 void f_ea4(void);
 void f_ff0(void);
 extern int g_6904;
@@ -104,16 +104,16 @@ extern unsigned char *g_df70;
 extern int g_df74;
 extern unsigned char g_e144;
 extern void f_16bb(int);
-extern short g_746c_mmw;
+extern short image_buffer_error_code;
 extern void f_1202(void);
 extern void f_1227(void);
 extern void f_127e(void);
 extern void f_13aa(void);
 extern void f_1416(void);
-extern void f_c9ce(int, int);
+extern void redraw_image_region(int, int);
 extern void f_ed38(void);
 extern int f_b17e(void *, void *);
-extern unsigned char *g_e2ec;
+extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
 extern short g_e4c6;
 extern unsigned char g_6988[];
@@ -227,7 +227,7 @@ extern int g_6980;
 void f_ecdf(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int v_DF30;
 void f_2e4a(void);
-void f_c9f4(int, int, int, int, int);
+void render_image_with_options(int, int, int, int, int);
 extern unsigned char *u_e150;
 extern int g_6c08;
 void f_2eab(void);
@@ -282,7 +282,7 @@ void f_10502(int, int);
 extern char g_269c[];
 void f_b4a7(int, int, int, int, int);
 extern int g_8db0;
-void f_c20d(int);
+void submit_audio_request(int);
 extern unsigned char g_8e24;
 extern char g_2fec[];
 void f_3ba4(int, int);
@@ -1521,7 +1521,7 @@ void f_8d3_szjtcdqild(void);
 void f_951_vbfkytgovb(void);
 extern int g_68fc_ifhyqlddj;
 extern int g_6900;
-extern short g_742c;
+extern short audio_stream_flag;
 extern char *g_388a;
 extern char *g_38fe;
 void f_708(void);
@@ -1566,12 +1566,12 @@ void f_708(void) {
 
 void f_7e9(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_81d_psgpolkaxl();
     f_e095_ughrsvpfh(5);
     f_8d3_szjtcdqild();
     f_951_vbfkytgovb();
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
 }
 
 void f_81d_psgpolkaxl(void)
@@ -1583,19 +1583,19 @@ void f_81d_psgpolkaxl(void)
     shutdown_with_exit_message(g_8428, g_68fc_ifhyqlddj);
     }
 L_86d:;
-    if ((short)g_747c != -1) goto L_8ce;
+    if ((short)sound_blaster_detected != -1) goto L_8ce;
     g_dd44 = g_e4d0_wfmxdlyju;
     g_8428 = f_1085a_eklzmb(g_6900);
     if (g_8428) {
     shutdown_with_exit_message(g_8428, g_6900);
     }
 L_8b3:;
-    f_c14b_lmdi(g_dd44, g_e4c8, 8000, 0);
+    queue_audio(g_dd44, g_e4c8, 8000, 0);
 L_8ce:;
 }
 
 void f_8d3_szjtcdqild(void) {
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.e35a;
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
     f_ea9f(x_dd40_xbukycw, 0, -63, -1);
     g_7b14 = g_7b20;
     f_a810(k_DD48_jbwjbqarofg, g_7b14);
@@ -1625,8 +1625,8 @@ L_9c6:;
 L_9c8:;
     goto L_9e0;
 L_9ca:;
-    if (g_747c == 0) goto L_976;
-    if (g_742c == -1) goto L_976;
+    if (sound_blaster_detected == 0) goto L_976;
+    if (audio_stream_flag == -1) goto L_976;
 L_9e0:;
     f_ea9f(x_dd40_xbukycw, 0, 0x3f, 3);
 }
@@ -1639,10 +1639,10 @@ void f_9f9(void)
     v_4 = *(short *)g_756f;
     v_8 = *(short *)g_7536;
     v_c = *(short *)g_74c4;
-    f_c2d0(0);
+    set_audio_transfer_mode(0);
     f_9afc();
     f_f6d9();
-    f_bd8b();
+    release_sound_system();
     f_e028();
     spawnlp(0, (char *)("", "printord.bat"), (char *)"", 0);
     f_ec9c();
@@ -1654,9 +1654,9 @@ L_a73:;
     f_f6f8(0);
 L_a83:;
     if (v_c != -1) goto L_a93;
-    f_bdd3(0);
+    configure_sound_dma(0);
 L_a93:;
-    f_c2d0(-1);
+    set_audio_transfer_mode(-1);
 }
 
 void f_aa2(void)
@@ -1681,31 +1681,31 @@ L_b36:;
     if (g_8428 == 0) goto L_b75;
     shutdown_with_exit_message(g_8428, g_e4d4);
 L_b75:;
-    if (g_747c != -1) goto L_bd6;
+    if (sound_blaster_detected != -1) goto L_bd6;
     g_dd44 = (int)g_e4d0_wfmxdlyju;
     g_8428 = f_1085a_eklzmb((void *)g_693c);
     if (g_8428 == 0) goto L_bbb;
     shutdown_with_exit_message(g_8428, g_e4d4);
 L_bbb:;
-    f_c14b_lmdi(g_dd44, g_e4c8, 0x1d4c, -1);
+    queue_audio(g_dd44, g_e4c8, 0x1d4c, -1);
 L_bd6:;
     v_4 = *(signed char *)&g_7b16;
-    v_8 = g_746e;
+    v_8 = image_color_depth;
     f_ec9c();
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
     f_b541((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    f_b57a((int)(g_e324.e36e + 6), (int)(g_e324.e372 + 4), g_e324.e376 - 6, g_e324.e37a - 2);
+    f_b57a((int)(g_e324.left + 6), (int)(g_e324.top + 4), g_e324.right - 6, g_e324.bottom - 2);
     g_7b16 = g_7b18;
-    g_746e = 8;
+    image_color_depth = 8;
     f_b1df(8, 8, g_38c6);
     g_7b16 = (unsigned short)v_4;
-    g_746e = (unsigned short)v_8;
+    image_color_depth = (unsigned short)v_8;
     f_3beb(g_e1d8);
     g_7b04 = 1;
     g_7b08 = 0xbf;
     f_ea9f((void *)(g_e1d8 + 3), 0, -0x3f, -3);
     f_ea9f(x_dd40_xbukycw + 3, -0x3f, 0, 3);
-    f_100fa((int)g_e324.e36e, (int)g_e324.e372, g_e324.e376, 0xc4);
+    f_100fa((int)g_e324.left, (int)g_e324.top, g_e324.right, 0xc4);
     g_df4c = 0xa;
     g_df48 = 0;
     g_df54 = 0x1c0;
@@ -1714,7 +1714,7 @@ L_bd6:;
     g_7b34_cbzosabe = (((g_7b34_cbzosabe & 0xfffe) & 0xfffd) & 0xfffb) & 0xff7f;
     h_df5c = 0;
     g_7b3d_yrsiuxxd = 0;
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
 L_d7a:;
     f_9d40(3);
     if (g_e48d_c == 0x50) goto L_d9a;
@@ -1755,12 +1755,12 @@ L_e57:;
 
 void f_e70(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_ea4();
     f_e095_ughrsvpfh(2);
     f_ff0();
     f_113c();
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
 }
 
 void f_ea4(void)
@@ -1776,13 +1776,13 @@ L_ef4:;
     if (g_8428 == 0) goto L_f2e;
     shutdown_with_exit_message(g_8428, g_6908);
 L_f2e:;
-    if (g_747c != -1) goto L_f8f;
+    if (sound_blaster_detected != -1) goto L_f8f;
     g_dd44 = (int)g_e4d0_wfmxdlyju;
     g_8428 = f_1085a_eklzmb((void *)g_690c);
     if (g_8428 == 0) goto L_f74;
     shutdown_with_exit_message(g_8428, g_690c);
 L_f74:;
-    f_c14b_lmdi(g_dd44, g_e4c8, 0x1f40, -1);
+    queue_audio(g_dd44, g_e4c8, 0x1f40, -1);
 L_f8f:;
     x_dd40_xbukycw = g_e4d0_wfmxdlyju + 0xc00;
     g_8428 = f_1085a_eklzmb((void *)g_68f8_jwwqkwr);
@@ -1797,18 +1797,18 @@ void f_ff0(void)
     unsigned char v_4;
     int v_8;
     v_4 = *(signed char *)&g_7b16;
-    v_8 = g_746e;
+    v_8 = image_color_depth;
     f_ec9c();
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
     f_b541((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    f_b57a((int)g_e324.e36e, (int)g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a((int)g_e324.left, (int)g_e324.top, g_e324.right, g_e324.bottom);
     g_7b16 = g_7b18;
-    g_746e = 8;
+    image_color_depth = 8;
     f_b1df(0x10, 0x36, g_38ca);
     g_7b16 = (unsigned short)v_4;
-    g_746e = (unsigned short)v_8;
-    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.e35a));
-    f_100fa((int)g_e324.e36e, (int)g_e324.e372, g_e324.e376, 0xc4);
+    image_color_depth = (unsigned short)v_8;
+    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size));
+    f_100fa((int)g_e324.left, (int)g_e324.top, g_e324.right, 0xc4);
     g_df60 = 1;
     g_df70 = (unsigned char *)g_390c_lmsbkmaaant;
     g_df4c = 2;
@@ -1827,7 +1827,7 @@ void f_113c(void)
     g_7b34_cbzosabe = (((g_7b34_cbzosabe & 0xfffe) & 0xfffd) & 0xfffb) & 0xff7f;
     h_df5c = 0;
     g_7b3d_yrsiuxxd = 0;
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
 L_1194:;
     if (h_df5c != 0) goto L_11fd;
     f_9d40(3);
@@ -1838,9 +1838,9 @@ L_1194:;
     f_127e();
     f_13aa();
     f_1416();
-    f_c9ce(0, 0);
-    if (g_746c_mmw == 0) goto L_11f6;
-    shutdown_with_exit_message(g_746c_mmw, 0);
+    redraw_image_region(0, 0);
+    if (image_buffer_error_code == 0) goto L_11f6;
+    shutdown_with_exit_message(image_buffer_error_code, 0);
 L_11f6:;
     f_ed38();
     goto L_1194;
@@ -1852,11 +1852,11 @@ void f_1202(void) {
 }
 
 void f_1227(void) {
-    *(int *)g_e2ec = (int)(g_dd4c_ilunphmaok + *(int *)g_df70);
-    *(short *)(g_e2ec + 4) = g_e4c6;
-    *(short *)(g_e2ec + 6) = m_E4c4;
-    *(short *)(g_e2ec + 8) = 0;
-    g_e2ec += 10;
+    *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + *(int *)g_df70);
+    *(short *)(image_buffer_cursor + 4) = g_e4c6;
+    *(short *)(image_buffer_cursor + 6) = m_E4c4;
+    *(short *)(image_buffer_cursor + 8) = 0;
+    image_buffer_cursor += 10;
 }
 
 void f_127e(void)
@@ -1869,11 +1869,11 @@ L_129c:;
 L_12b5:;
     goto L_12c6;
 L_12b7:;
-    if (g_e4ba == (int)g_e324.e36e) goto L_12c8;
+    if (g_e4ba == (int)g_e324.left) goto L_12c8;
 L_12c6:;
     goto L_12d7;
 L_12c8:;
-    if (g_e4bc == (int)g_e324.e372) goto L_12d9;
+    if (g_e4bc == (int)g_e324.top) goto L_12d9;
 L_12d7:;
     goto L_12ea;
 L_12d9:;
@@ -2015,17 +2015,17 @@ void f_16bb(int a0)
     unsigned char v_4;
     int v_8;
     v_4 = *(signed char *)&g_7b16;
-    v_8 = g_746e;
+    v_8 = image_color_depth;
     f_b541((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    f_b57a(0x10, 0xda, g_e324.e376, g_e324.e37a);
-    g_746e = 8;
+    f_b57a(0x10, 0xda, g_e324.right, g_e324.bottom);
+    image_color_depth = 8;
     g_7b16 = g_7b20;
     copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
     f_b1df(0x10, 0xda, a0);
     g_7b16 = g_7b22;
     copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
     f_b1df(0x10, 0xda, a0);
-    g_746e = (unsigned short)v_8;
+    image_color_depth = (unsigned short)v_8;
     g_7b16 = (unsigned short)v_4;
 }
 
@@ -2066,31 +2066,31 @@ void f_18bc(void)
 
 void f_19b9(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_1af4();
     f_e095_ughrsvpfh(1);
     f_1b7e();
     f_1d80();
     g_7b16 = g_7b18;
     f_1bc2();
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b22;
     f_ee33((short)g_7b16);
     f_1e87();
     g_7b16 = g_7b18;
     f_1bc2();
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b20;
     f_ed38();
-    if (g_746c_mmw) {
-    shutdown_with_exit_message((short)g_746c_mmw, 0);
+    if (image_buffer_error_code) {
+    shutdown_with_exit_message((short)image_buffer_error_code, 0);
     }
 L_1adb:;
     g_df6c = 1400;
     f_20f4();
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
 }
 
 void f_1af4(void)
@@ -2100,18 +2100,18 @@ void f_1af4(void)
     f_a574_wrvhrpegbz(g_6918);
     g_dd4c_ilunphmaok = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_691c);
-    if ((short)g_747c != -1) goto L_1b79;
+    if ((short)sound_blaster_detected != -1) goto L_1b79;
     g_dd44 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6920);
-    f_c14b_lmdi(g_dd44, g_e4c8, 8000, -1);
+    queue_audio(g_dd44, g_e4c8, 8000, -1);
 L_1b79:;
 }
 
 void f_1b7e(void)
 {
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.e35a));
-    g_746e = 8;
+    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size));
+    image_color_depth = 8;
 }
 
 void f_1bc2(void)
@@ -2120,7 +2120,7 @@ void f_1bc2(void)
     int v_8;
     int v_c;
     f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     f_b1df(0x32, 0x10, g_388e);
     v_8 = 0x32;
     g_e141 = 1;
@@ -2247,11 +2247,11 @@ L_1fc9:;
 L_1fd0:;
     if (g_e13d == 0) goto L_202b;
     g_e13d = 0;
-    copy_clipped_screen_rectangle(g_7b18, 0xe, 0x32, g_e324.e376, 0xa5, g_7b16, 0xe, 0x32);
+    copy_clipped_screen_rectangle(g_7b18, 0xe, 0x32, g_e324.right, 0xa5, g_7b16, 0xe, 0x32);
     f_b1df(0x36, (g_e208.v20d * g_dedc) + 0x32, (int)g_6984);
 L_202b:;
     if (g_dF68 != 0x23) goto L_2083;
-    copy_clipped_screen_rectangle(g_7b18, 0x24, 0xae, g_e324.e376, 0xc5, g_7b16, 0x24, 0xae);
+    copy_clipped_screen_rectangle(g_7b18, 0x24, 0xae, g_e324.right, 0xc5, g_7b16, 0x24, 0xae);
     if (g_df64 >= 0) goto L_2083;
     f_b1df(0x24, 0xae, g_3892);
 L_2083:;
@@ -2363,7 +2363,7 @@ L_23be:;
 
 void f_240f(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_2484();
     f_e095_ughrsvpfh(1);
     f_251c();
@@ -2372,7 +2372,7 @@ void f_240f(void)
     f_2565(g_38a6);
     f_2565(g_38aa);
     f_2565(g_38ae);
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
 }
 
 void f_2484(void)
@@ -2383,33 +2383,33 @@ void f_2484(void)
     f_1085a_eklzmb(g_68f8_jwwqkwr);
     g_dd4c_ilunphmaok = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6938);
-    if ((short)g_747c != -1) goto L_2517;
+    if ((short)sound_blaster_detected != -1) goto L_2517;
     g_dd44 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_693c);
-    f_c14b_lmdi(g_dd44, g_e4c8, 7500, -1);
+    queue_audio(g_dd44, g_e4c8, 7500, -1);
 L_2517:;
 }
 
 void f_251c(void)
 {
     f_a810(k_DD48_jbwjbqarofg, (short)g_7b18);
-    f_3beb((int)((k_DD48_jbwjbqarofg + g_e324.e35a) + 1536));
-    g_746e = 8;
+    f_3beb((int)((k_DD48_jbwjbqarofg + g_e324.buffer_size) + 1536));
+    image_color_depth = 8;
 }
 
 void f_2565(int a0)
 {
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b14;
     f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     f_b1df(0x40, 0xa, g_389a);
     f_b541((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 0xa, 0xd);
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     f_b1df(7, 0x1e, a0);
-    if (g_746c_mmw == 0) goto L_2675;
-    shutdown_with_exit_message(g_746c_mmw, 0);
+    if (image_buffer_error_code == 0) goto L_2675;
+    shutdown_with_exit_message(image_buffer_error_code, 0);
 L_2675:;
     g_df6c = 0x834;
     f_20f4();
@@ -2417,7 +2417,7 @@ L_2675:;
 
 void f_2689(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_e095_ughrsvpfh(-1);
     f_26fe();
     f_2796();
@@ -2426,7 +2426,7 @@ void f_2689(void)
     f_27df(g_38ba);
     f_27df(g_38be);
     f_27df(g_38c2);
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
 }
 
 void f_26fe(void)
@@ -2435,10 +2435,10 @@ void f_26fe(void)
     k_DD48_jbwjbqarofg = g_e4d0_wfmxdlyju;
     f_a574_wrvhrpegbz(g_6928);
     f_1085a_eklzmb(g_68f8_jwwqkwr);
-    if ((short)g_747c == -1) {
+    if ((short)sound_blaster_detected == -1) {
     g_dd44 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6930);
-    f_c14b_lmdi(g_dd44, g_e4c8, 12000, -1);
+    queue_audio(g_dd44, g_e4c8, 12000, -1);
     }
 L_2779:;
     g_dd4c_ilunphmaok = g_e4d0_wfmxdlyju;
@@ -2448,23 +2448,23 @@ L_2779:;
 void f_2796(void)
 {
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.e35a + 0x900));
-    g_746e = 8;
+    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size + 0x900));
+    image_color_depth = 8;
 }
 
 void f_27df(int a)
 {
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     g_7b16 = g_7b14;
     f_b541((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 17, 23);
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     f_b1df(0x40, 10, g_389a);
     f_b541((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 10, 13);
-    f_b57a(g_e324.e36e, g_e324.e372, g_e324.e376, g_e324.e37a);
+    f_b57a(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
     f_b1df(7, 30, a);
-    if (g_746c_mmw != 0)
-        shutdown_with_exit_message(g_746c_mmw, 0);
+    if (image_buffer_error_code != 0)
+        shutdown_with_exit_message(image_buffer_error_code, 0);
     g_df6c = 0x5208;
     f_20f4();
 }
@@ -2477,12 +2477,12 @@ void f_2903(void)
     char *old1;
     char *old2;
 
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_e095_ughrsvpfh(1);
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
     f_ea9f(x_dd40_xbukycw, 0, 0x3f, 8);
     k_DD48_jbwjbqarofg = (char *)g_e4d0_wfmxdlyju;
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.e35a;
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
     f_a574_wrvhrpegbz(g_6978);
     old1 = g_e4d0_wfmxdlyju;
     f_a574_wrvhrpegbz(g_697c);
@@ -2490,10 +2490,10 @@ void f_2903(void)
     f_a574_wrvhrpegbz(g_6980);
     g_dd44 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6974);
-    f_c14b_lmdi(g_dd44, g_e4c8, 0x2ae4, -1);
+    queue_audio(g_dd44, g_e4c8, 0x2ae4, -1);
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
 
     for (i = 0; i < 0x40; i++)
         f_ecdf(1, (unsigned char)i, (unsigned char)i, (unsigned char)i);
@@ -2504,20 +2504,20 @@ void f_2903(void)
     f_ea9f(x_dd40_xbukycw, 0, -0x3f, -1);
 
     k_DD48_jbwjbqarofg = old1;
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.e35a;
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
     for (i = 0; i < 0x8c; i++)
         f_9d40(1);
     f_ea9f(x_dd40_xbukycw, 0, -0x3f, -3);
 
     k_DD48_jbwjbqarofg = old2;
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.e35a;
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
     f_a810(k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
     f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
     for (i = 0; i < 0x8c; i++)
         f_9d40(1);
@@ -2526,26 +2526,26 @@ void f_2903(void)
 
 void f_2c72_zyd(void)
 {
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
     f_2e4a();
-    f_c14b_lmdi(g_dd44, g_e4c8, 0x1f40, -1);
-    f_c9f4(g_7b14, 8, v_DF30 + 0x7102, 0xa0, 100);
+    queue_audio(g_dd44, g_e4c8, 0x1f40, -1);
+    render_image_with_options(g_7b14, 8, v_DF30 + 0x7102, 0xa0, 100);
 }
 
 void f_2ccc(void)
 {
-    copy_screen_span_entry(g_7b14, 0, g_7b18, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.e35a);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.e35a);
-    f_c3ab_euckgzihaj();
+    copy_screen_span_entry(g_7b14, 0, g_7b18, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
+    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
+    stop_audio_stream();
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
     f_2eab();
-    f_c14b_lmdi(g_dd44, g_e4c8, 0x1f40, -1);
+    queue_audio(g_dd44, g_e4c8, 0x1f40, -1);
     u_e150 = (unsigned char *)&g_6c08;
     f_35b5();
     g_7b34_cbzosabe = ((*(short *)&g_7b34_cbzosabe) & 0xfffe) & 0xfffd;
     f_84a0(0x8ca);
-    f_c3ab_euckgzihaj();
+    stop_audio_stream();
 }
 
 void f_2da3_ehlot(void)
@@ -2560,7 +2560,7 @@ void f_2da3_ehlot(void)
     if (g_e4c8 != 0x8958)
         g_7c08_orxezsknd = 0;
     g_dd44 = g_e4d0_wfmxdlyju;
-    if (g_747c == -1)
+    if (sound_blaster_detected == -1)
         f_1085a_eklzmb(g_6968);
     g_e4d0_wfmxdlyju = b_DF40_omuefnnbqp;
 }
@@ -2571,7 +2571,7 @@ void f_2e4a(void)
     v_DF30 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6954);
     g_dd44 = g_e4d0_wfmxdlyju;
-    if (g_747c == -1)
+    if (sound_blaster_detected == -1)
         f_1085a_eklzmb(g_6970);
     g_e4d0_wfmxdlyju = b_DF40_omuefnnbqp;
 }
@@ -2582,7 +2582,7 @@ void f_2eab(void)
     v_DF30 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6954);
     g_dd44 = g_e4d0_wfmxdlyju;
-    if (g_747c == -1)
+    if (sound_blaster_detected == -1)
         f_1085a_eklzmb(g_696c);
     g_e4d0_wfmxdlyju = b_DF40_omuefnnbqp;
 }

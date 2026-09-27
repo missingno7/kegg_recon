@@ -10,7 +10,7 @@ extern struct Iter24 *u_e150;
 extern int g_e148;
 extern int g_e14c;
 extern int g_e154;
-extern unsigned char *g_e2ec;
+extern unsigned char *image_buffer_cursor;
 void f_95ee(void);
 void f_8004(int *rect, unsigned char *info);
 void f_8066(int *rect, unsigned char *info);
@@ -28,7 +28,7 @@ extern short g_7b26;
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
-extern void f_c8c0_pm(int, int, short, int, int);
+extern void set_img_buffers(int, int, short, int, int);
 extern short g_7b34_cbzosabe;
 extern short g_7b3d_yrsiuxxd;
 extern unsigned short g_7bfe;
@@ -42,7 +42,7 @@ extern unsigned char g_e48e_0g;
 extern unsigned char g_e48f;
 extern void handle_s_key(void);
 extern void f_9d40(unsigned char);
-extern void f_c9ce(int, int);
+extern void redraw_image_region(int, int);
 extern void f_ed38(void);
 
 void f_82cc(void)
@@ -78,18 +78,18 @@ void f_83b1(void)
     struct Iter48 *p = (struct Iter48 *)u_e150;
     int i = 0;
     for (; i < (g_e148 >> 1); i++) {
-        *(int *)g_e2ec = (int)(p->at20 + g_e154);
-        *(short *)(g_e2ec + 4) = (short)(p->box >> 4);
-        *(short *)(g_e2ec + 6) = (short)(p->pad32 >> 4);
-        *(short *)(g_e2ec + 8) = 0;
-        g_e2ec += 10;
+        *(int *)image_buffer_cursor = (int)(p->at20 + g_e154);
+        *(short *)(image_buffer_cursor + 4) = (short)(p->box >> 4);
+        *(short *)(image_buffer_cursor + 6) = (short)(p->pad32 >> 4);
+        *(short *)(image_buffer_cursor + 8) = 0;
+        image_buffer_cursor += 10;
         ++p;
     }
 }
 
 void f_843a(void)
 {
-    f_c8c0_pm((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     g_7b14 = g_7b20;
     g_7b16 = g_7b22;
     g_7b18 = g_7b24;
@@ -103,15 +103,15 @@ void f_84a0(int a0)
 L_84c5:;
     f_9d40(3);
     g_e1bc = 0;
-    g_e1b8 = (int)g_e2ec;
+    g_e1b8 = (int)image_buffer_cursor;
 L_84e6:;
-    g_e2ec = (unsigned char *)g_e1b8;
+    image_buffer_cursor = (unsigned char *)g_e1b8;
     handle_s_key();
     f_8345_wsdytbf();
     f_83b1();
     ++g_e1bc;
     if (g_e1bc < g_e1c0) goto L_84e6;
-    f_c9ce(0, 0);
+    redraw_image_region(0, 0);
     f_ed38();
     if (g_e48d_c == g_e48f) goto L_853c;
     if (g_e48f == 0x20) goto L_8556;
