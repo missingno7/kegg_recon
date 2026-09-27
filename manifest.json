@@ -3928,7 +3928,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12a9c_12f30.asm",
-   "src_sha256": "4403092934c1fc2e33e92346941a599961f98c9da0b26167852a3b4a9bbec3b6",
+   "src_sha256": "7887243b9018530a1e02d7a74c4d78ef0dffed3298ea7d85b6dd1e269d3fc8a4",
    "unit": "M_12a9c"
   },
   {
@@ -3939,7 +3939,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12a9c_12f30.asm",
-   "src_sha256": "4403092934c1fc2e33e92346941a599961f98c9da0b26167852a3b4a9bbec3b6",
+   "src_sha256": "7887243b9018530a1e02d7a74c4d78ef0dffed3298ea7d85b6dd1e269d3fc8a4",
    "unit": "M_12a9c"
   },
   {
@@ -3950,7 +3950,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12a9c_12f30.asm",
-   "src_sha256": "4403092934c1fc2e33e92346941a599961f98c9da0b26167852a3b4a9bbec3b6",
+   "src_sha256": "7887243b9018530a1e02d7a74c4d78ef0dffed3298ea7d85b6dd1e269d3fc8a4",
    "unit": "M_12a9c"
   },
   {
@@ -3961,7 +3961,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12f30_12f9c.asm",
-   "src_sha256": "69f74e4829e998709d42cdd720f1595d9ae2495a16b21df95e8d5ff2292d280e",
+   "src_sha256": "f9fdae5d2b27cdbcd29c98519dd69a0fc6de2ea47d1ee5d3ea6dec37e836146d",
    "unit": "M_12f30"
   },
   {
@@ -3972,7 +3972,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12f9c_13324.asm",
-   "src_sha256": "619a389fd5f55b68b224ca50dea3d9d513148c346789de0100e4ea9f9ebb1a3e",
+   "src_sha256": "4c9dfa8f0d525a81e3175b1d5e2d1edb1cf10a183b525e67cc71190b99c10577",
    "unit": "M_12f9c"
   },
   {
@@ -6723,8 +6723,8 @@
    "start": "0x12a9c",
    "end": "0x12f30",
    "profile": "game-asm-tasm31",
-   "src_sha256": "4403092934c1fc2e33e92346941a599961f98c9da0b26167852a3b4a9bbec3b6",
-   "note": "readability pass: names and explanatory comments"
+   "src_sha256": "7887243b9018530a1e02d7a74c4d78ef0dffed3298ea7d85b6dd1e269d3fc8a4",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12f30",
@@ -6732,7 +6732,7 @@
    "start": "0x12f30",
    "end": "0x12f9c",
    "profile": "game-asm-tasm31",
-   "src_sha256": "69f74e4829e998709d42cdd720f1595d9ae2495a16b21df95e8d5ff2292d280e",
+   "src_sha256": "f9fdae5d2b27cdbcd29c98519dd69a0fc6de2ea47d1ee5d3ea6dec37e836146d",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6741,7 +6741,7 @@
    "start": "0x12f9c",
    "end": "0x13324",
    "profile": "game-asm-tasm31",
-   "src_sha256": "619a389fd5f55b68b224ca50dea3d9d513148c346789de0100e4ea9f9ebb1a3e",
+   "src_sha256": "4c9dfa8f0d525a81e3175b1d5e2d1edb1cf10a183b525e67cc71190b99c10577",
    "note": "object plan (build/workers/objects)"
   },
   {
