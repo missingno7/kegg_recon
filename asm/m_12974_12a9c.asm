@@ -7,7 +7,7 @@ EXTRN sprite_clip_top:DWORD
 EXTRN sprite_clip_left:DWORD
 EXTRN sprite_clip_right:DWORD
 EXTRN g_e2e4:DWORD
-EXTRN g_e324:WORD
+EXTRN vga_state:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
@@ -53,7 +53,7 @@ L_129B6:
 L_129B8:
         add edx, dword ptr [sprite_clip_right]
 L_129BE:
-        mov eax, dword ptr [g_e324+3Ah]
+        mov eax, dword ptr [vga_state+3Ah]
 L_129C3:
         sub eax, ebx
 L_129C5:
@@ -256,7 +256,7 @@ L_12A7A:
 L_12A7D:
         and ebp, 0FFFFFFFCh
 L_12A80:
-        mov eax, dword ptr [g_e324+3Ah]
+        mov eax, dword ptr [vga_state+3Ah]
 L_12A85:
         sub eax, ebp
 L_12A87:

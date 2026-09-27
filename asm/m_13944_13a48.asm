@@ -1,5 +1,5 @@
 .386
-EXTRN g_e324:WORD
+EXTRN vga_state:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
@@ -192,7 +192,7 @@ L_139CB:
 L_139CE:
         and ah, 0Fh
 L_139D1:
-        mov byte ptr [g_e324+61h], ah
+        mov byte ptr [vga_state+61h], ah
 L_139D7:
         mov dx, 3C4h
 L_139DB:
@@ -230,7 +230,7 @@ L_139F3:
 L_139F5:
         and ah, 0Fh
 L_139F8:
-        mov byte ptr [g_e324+61h], ah
+        mov byte ptr [vga_state+61h], ah
 L_139FE:
         mov dx, 3C4h
 L_13A02:
@@ -262,7 +262,7 @@ L_13A11:
 L_13A14:
         and ah, 3
 L_13A17:
-        mov byte ptr [g_e324+62h], ah
+        mov byte ptr [vga_state+62h], ah
 L_13A1D:
         mov dx, 3CEh
 L_13A21:
@@ -292,7 +292,7 @@ L_13A2E:
 L_13A30:
         mov ah, byte ptr [ebp + 8]
 L_13A33:
-        mov byte ptr [g_e324+60h], ah
+        mov byte ptr [vga_state+60h], ah
 L_13A39:
         mov dx, 3CEh
 L_13A3D:

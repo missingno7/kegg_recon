@@ -17,12 +17,12 @@ void f_8066(int *rect, unsigned char *info);
 void f_82cc(void);
 void f_8345_wsdytbf(void);
 void f_83b1(void);
-extern short g_7b14;
-extern short g_7b16;
-extern short g_7b18;
-extern short g_7b1a;
-extern short g_7b20;
-extern short g_7b22;
+extern short disp_idx;
+extern short draw_idx;
+extern short page2;
+extern short page3;
+extern short flip_src;
+extern short flip_dst;
 extern short g_7b24;
 extern short g_7b26;
 extern unsigned char h_ab40_jbfxrqns[];
@@ -43,7 +43,7 @@ extern unsigned char g_e48f;
 extern void handle_s_key(void);
 extern void f_9d40(unsigned char);
 extern void redraw_image_region(int, int);
-extern void f_ed38(void);
+extern void show_page(void);
 
 void f_82cc(void)
 {
@@ -90,10 +90,10 @@ void f_83b1(void)
 void f_843a(void)
 {
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
-    g_7b14 = g_7b20;
-    g_7b16 = g_7b22;
-    g_7b18 = g_7b24;
-    g_7b1a = g_7b26;
+    disp_idx = flip_src;
+    draw_idx = flip_dst;
+    page2 = g_7b24;
+    page3 = g_7b26;
 }
 
 void f_84a0(int a0)
@@ -112,7 +112,7 @@ L_84e6:;
     ++g_e1bc;
     if (g_e1bc < g_e1c0) goto L_84e6;
     redraw_image_region(0, 0);
-    f_ed38();
+    show_page();
     if (g_e48d_c == g_e48f) goto L_853c;
     if (g_e48f == 0x20) goto L_8556;
 L_853c:;

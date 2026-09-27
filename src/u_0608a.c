@@ -78,7 +78,7 @@ extern short g_e4c6;
 extern short m_E4c4;
 extern void f_42e1(int, int, int, int);
 extern void f_7e62(int, int, int, int, int, int, int);
-extern int f_dd01();
+extern int next_random_value();
 extern void f_5f71(int, int, int, int);
 extern void f_5aaf(void);
 extern int b_DF40_omuefnnbqp;

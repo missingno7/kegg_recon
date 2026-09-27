@@ -6,13 +6,13 @@ unsigned char *g_Ddd8;
 struct Iter24 { int first, second, start, count, step, unused; };
 struct Iter48 { int pad0, pad4, box, pad12, pad16, at20; int pad24, pad28, pad32, pad36, pad40, pad44; };
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct DisplayModeInfo g_e324;
+extern struct DisplayModeInfo vga_state;
 int g_ddc0;
 int g_ddc4;
 int g_dDc8;
 int g_ddcc;
 
-void f_dfc3(void);
+void save_bios(void);
 extern int g_df38;
 extern int g_2e9c[];
 extern void draw_bob_sprite_entry(unsigned char *, int, int);
@@ -49,7 +49,7 @@ extern unsigned char *x_dd40_xbukycw;
 extern void *r_dDDc_uzmlc;
 extern int g_8e1c;
 extern int g_8e20;
-extern int g_7b0c;
+extern int fade_delay;
 extern int g_94a0;
 extern int g_9490;
 extern int g_94a4;
@@ -71,22 +71,22 @@ extern int g_6884[];
 extern int g_6888[];
 extern int g_688c[];
 extern int g_6890[];
-extern short g_7b20;
-extern short g_7b22;
+extern short flip_src;
+extern short flip_dst;
 extern short g_7b24;
 extern short g_7b26;
-extern short g_7b14;
-extern short g_7b16;
-extern short g_7b18;
-extern short g_7b1a;
+extern short disp_idx;
+extern short draw_idx;
+extern short page2;
+extern short page3;
 extern unsigned short g_7bfe;
 extern unsigned short g_7c00;
 extern short g_e4a8;
 extern short n_e4c2;
 extern void submit_audio_request(int);
-extern void f_ec76(void *);
+extern void write_pal(void *);
 extern void f_9d40(int);
-extern void f_ea9f(void *, int, int, int);
+extern void fade_pal(void *, int, int, int);
 extern void f_10369(void);
 extern void f_103b9(void);
 extern void set_img_buffers();
@@ -101,9 +101,9 @@ void f_7f8a(void)
     int y;
     unsigned char *p;
     y = 16;
-    while (y < g_e324.height) {
+    while (y < vga_state.height) {
         x = 0;
-        while (x < g_e324.width) {
+        while (x < vga_state.width) {
             p = g_Ddd8 + g_2e9c[2 * g_df38];
             draw_bob_sprite_entry(p, x, y);
             x += *(short *)(p + 2);

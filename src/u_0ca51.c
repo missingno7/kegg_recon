@@ -13,9 +13,9 @@ void clear_and_rotate_image_buffer(void);
 extern short image_buffer_error_code;
 extern void process_sprite_update_list_entry();
 void render_image_region(int x, int y);
-extern short g_7b16;
+extern short draw_idx;
 extern void draw_bob_sprite_entry();
-extern short g_e324;
+extern short vga_state;
 extern short windows_environment_detected;
 extern int windows_mode_code;
 void set_img_buffers(int primary_buffer, int frame_limit, int color_depth, int front_buffer, int back_buffer);
@@ -23,4 +23,4 @@ void redraw_image_region(int x, int y);
 void render_image_with_options(int display_state, int color_depth, int render_arg1, int render_arg2, int render_arg3);
 int detect_windows_environment(void);
 
-void f_ca51(void) { if (g_e324) {} }
+void f_ca51(void) { if (vga_state) {} }

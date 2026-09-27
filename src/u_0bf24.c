@@ -10,7 +10,7 @@ extern int f_11530(int, int, int, int, int);
 extern void f_115da(void);
 extern void release_sound_callback(void);
 extern unsigned char g_75a8;
-extern unsigned char g_75ac;
+extern unsigned char slave_pic_vector_base;
 extern unsigned char g_74da;
 extern unsigned char g_74db;
 extern unsigned char g_7513;
@@ -20,7 +20,7 @@ extern int audio_dma_allocation_bytes;
 extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
 extern void f_d7b8(void *);
-extern void f_df49(int);
+extern void free_dpmi_memory(int);
 extern void f_d656(void *, void(*)(void));
 extern int save_screen_image(char *);
 void prepare_sound_callback(void);
@@ -69,7 +69,7 @@ void release_sound_callback(void)
     if (sound_blaster_detected == -1) {
         stop_audio_stream();
         f_d7b8(&g_74fd);
-        f_df49(sound_callback_allocation_size);
+        free_dpmi_memory(sound_callback_allocation_size);
         sound_callback_allocation_size = 0;
     }
 }

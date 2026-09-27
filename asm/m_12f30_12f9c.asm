@@ -1,5 +1,5 @@
 .386
-EXTRN g_e324:WORD
+EXTRN vga_state:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
@@ -12,11 +12,11 @@ copy_chunky_scanline_to_vga PROC NEAR
 L_12F31:
         lea ebp, [esp + 1Ch]
 L_12F35:
-        cmp byte ptr [g_e324+60h], 40h
+        cmp byte ptr [vga_state+60h], 40h
 L_12F3C:
         je short L_12F4F
 L_12F3E:
-        mov byte ptr [g_e324+60h], 40h
+        mov byte ptr [vga_state+60h], 40h
 L_12F45:
         mov ax, 4005h
 L_12F49:
@@ -26,7 +26,7 @@ L_12F4D:
 L_12F4F:
         mov ah, 1
 L_12F51:
-        mov byte ptr [g_e324+61h], ah
+        mov byte ptr [vga_state+61h], ah
 L_12F57:
         mov al, 2
 L_12F59:
@@ -58,11 +58,11 @@ L_12F7A:
 L_12F7D:
         jne short L_12F51
 L_12F7F:
-        cmp byte ptr [g_e324+61h], 0Fh
+        cmp byte ptr [vga_state+61h], 0Fh
 L_12F86:
         je short L_12F99
 L_12F88:
-        mov byte ptr [g_e324+61h], 0Fh
+        mov byte ptr [vga_state+61h], 0Fh
 L_12F8F:
         mov ax, 0F02h
 L_12F93:

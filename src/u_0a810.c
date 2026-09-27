@@ -17,7 +17,7 @@ struct DisplayModeInfo {
     unsigned char reserved_37e[9];
     unsigned char tail;
 };
-extern struct DisplayModeInfo g_e324;
+extern struct DisplayModeInfo vga_state;
 
 struct DecodedImage {
     unsigned char *pixels;
@@ -33,25 +33,25 @@ struct DecodedImage {
 
 extern void copy_chunky_scanline_to_vga(int, int, int);
 extern void f_13889(int, int, int);
-extern short g_7b14;
-extern short g_7b16;
+extern short disp_idx;
+extern short draw_idx;
 extern void write_vga_pixel_entry(int, int, int);
-extern void f_ec76(void *);
+extern void write_pal(void *);
 
 void plot_transformed_pixel(int pixel, int selector)
 {
-    if (g_e324.render_mode == 1) {
+    if (vga_state.render_mode == 1) {
         copy_chunky_scanline_to_vga(pixel,
-                (g_e324.transform_term_a[selector] +
-                 g_e324.transform_term_b[(unsigned)selector] +
-                 g_e324.transform_term_c[selector]) >> 2,
-                g_e324.draw_parameter);
+                (vga_state.transform_term_a[selector] +
+                 vga_state.transform_term_b[(unsigned)selector] +
+                 vga_state.transform_term_c[selector]) >> 2,
+                vga_state.draw_parameter);
     } else {
         f_13889(pixel,
-                g_e324.transform_term_a[selector] +
-                g_e324.transform_term_b[(unsigned)selector] +
-                g_e324.transform_term_c[selector],
-                g_e324.draw_parameter);
+                vga_state.transform_term_a[selector] +
+                vga_state.transform_term_b[(unsigned)selector] +
+                vga_state.transform_term_c[selector],
+                vga_state.draw_parameter);
     }
 }
 
@@ -62,14 +62,14 @@ void blit_indexed_image(unsigned char *image_bytes)
     int saved_palette;
     int pixel_address;
 
-    saved_palette = g_7b16;
-    g_7b16 = g_7b14;
-    f_ec76((void *)*(int *)(image_bytes + 4));
+    saved_palette = draw_idx;
+    draw_idx = disp_idx;
+    write_pal((void *)*(int *)(image_bytes + 4));
     pixel_address = *(int *)image_bytes;
     for (y = 0; y < *(int *)(image_bytes + 0xc); y++) {
         for (x = 0; x < *(int *)(image_bytes + 8); x++) {
             write_vga_pixel_entry(x, y, *(unsigned char *)(pixel_address++));
         }
     }
-    g_7b16 = (unsigned short)saved_palette;
+    draw_idx = (unsigned short)saved_palette;
 }

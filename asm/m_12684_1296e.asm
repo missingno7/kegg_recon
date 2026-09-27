@@ -9,7 +9,7 @@ EXTRN sprite_clip_left:DWORD
 EXTRN sprite_clip_right:DWORD
 EXTRN g_8388:DWORD
 EXTRN g_e2e4:DWORD
-EXTRN g_e324:WORD
+EXTRN vga_state:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
@@ -97,7 +97,7 @@ L_126F2:
 L_126F4:
         loop L_126E6
 L_126F6:
-        mov edx, dword ptr [g_e324+3Ah]
+        mov edx, dword ptr [vga_state+3Ah]
 L_126FC:
         sub edx, ebx
 L_126FE:
@@ -254,7 +254,7 @@ L_127A4:
 L_127A6:
         jne short L_12767
 L_127A8:
-        add edx, dword ptr [g_e324+3Ah]
+        add edx, dword ptr [vga_state+3Ah]
 L_127AE:
         inc ebp
 L_127AF:
@@ -336,7 +336,7 @@ L_127FC:
 L_127FE:
         jne short L_127BB
 L_12800:
-        add edx, dword ptr [g_e324+3Ah]
+        add edx, dword ptr [vga_state+3Ah]
 L_12806:
         inc ebp
 L_12807:
@@ -383,7 +383,7 @@ L_12847:
 L_1284E:
         jne near ptr L_12906
 L_12854:
-        mov edx, dword ptr [g_e324+3Ah]
+        mov edx, dword ptr [vga_state+3Ah]
 L_1285A:
         sub dx, word ptr [ebx + 4]
 L_1285E:
@@ -537,7 +537,7 @@ L_128F8:
 L_128FA:
         jne short L_128B1
 L_128FC:
-        add edx, dword ptr [g_e324+3Ah]
+        add edx, dword ptr [vga_state+3Ah]
 L_12902:
         inc ebp
 L_12903:
@@ -613,7 +613,7 @@ L_1294E:
 L_12950:
         jne short L_1290F
 L_12952:
-        add edx, dword ptr [g_e324+3Ah]
+        add edx, dword ptr [vga_state+3Ah]
 L_12958:
         inc ebp
 L_12959:
@@ -629,7 +629,7 @@ L_12960:
 L_12962:
         jne short L_1290F
 L_12964:
-        add edx, dword ptr [g_e324+3Ah]
+        add edx, dword ptr [vga_state+3Ah]
 L_1296A:
         inc ebp
 L_1296B:

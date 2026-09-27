@@ -13,7 +13,7 @@ EXTRN g_8390:DWORD
 EXTRN current_vga_plane_mask:BYTE
 EXTRN first_vga_plane_mask:BYTE
 EXTRN g_e2e4:DWORD
-EXTRN g_e324:WORD
+EXTRN vga_state:WORD
 EXTRN u_e2E0:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
@@ -135,7 +135,7 @@ L_1234D:
 L_1234F:
         loop L_12341
 L_12351:
-        mov edx, dword ptr [g_e324+3Ah]
+        mov edx, dword ptr [vga_state+3Ah]
 L_12357:
         sub edx, ebx
 L_12359:
@@ -229,7 +229,7 @@ L_123C2:
 L_123C8:
         sar dword ptr [sprite_clip_left], 2
 L_123CF:
-        mov edx, dword ptr [g_e324+3Ah]
+        mov edx, dword ptr [vga_state+3Ah]
 L_123D5:
         shr edx, 2
 L_123D8:
@@ -405,7 +405,7 @@ L_124C1:
 L_124C7:
         mov dword ptr [g_8390], edx
 L_124CD:
-        mov edx, dword ptr [g_e324+3Ah]
+        mov edx, dword ptr [vga_state+3Ah]
 L_124D3:
         shr edx, 2
 L_124D6:
@@ -602,7 +602,7 @@ L_125D7:
 L_125DA:
         shr edx, 2
 L_125DD:
-        mov eax, dword ptr [g_e324+3Ah]
+        mov eax, dword ptr [vga_state+3Ah]
 L_125E2:
         shr eax, 2
 L_125E5:
@@ -706,7 +706,7 @@ L_1265E:
 L_12660:
         jne short L_12637
 L_12662:
-        add ebp, dword ptr [g_e324+3Ah]
+        add ebp, dword ptr [vga_state+3Ah]
 L_12668:
         inc dl
 L_1266A:
@@ -722,7 +722,7 @@ L_12671:
 L_12673:
         jne short L_12637
 L_12675:
-        add ebp, dword ptr [g_e324+3Ah]
+        add ebp, dword ptr [vga_state+3Ah]
 L_1267B:
         inc dl
 L_1267D:

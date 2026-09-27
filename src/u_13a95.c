@@ -15,7 +15,7 @@ extern int f_11051(unsigned);
 extern void shutdown_with_exit_message(unsigned, unsigned);
 extern void f_708(void);
 extern void set_img_buffers(int, int, short, int, int);
-extern int f_ddb9(int);
+extern int alloc_heap_block(int);
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48f;
 extern void toggle_audio_transfer_mode(void);
@@ -32,7 +32,7 @@ void main(void)
         shutdown_with_exit_message(0, 0);
 
     f_10d72(-1, -1, 0, -1);
-    g_7c08_orxezsknd = f_ddb9(0x55730);
+    g_7c08_orxezsknd = alloc_heap_block(0x55730);
     g_e4d0_wfmxdlyju = (unsigned char *)g_7c08_orxezsknd;
     g_7c0c = g_7c08_orxezsknd + 0x55730;
     g_7c10 = (int)decode_and_verify_asset;

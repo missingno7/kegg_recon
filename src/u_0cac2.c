@@ -26,13 +26,13 @@ extern void f_d656(unsigned char *, int);
 extern int f_da01(unsigned char *);
 extern void f_d7b8(unsigned char *);
 extern void __interrupt sound_test_irq_handler(void);
-extern unsigned int g_e31c;
+extern unsigned int dpmi_linear_address_value;
 extern unsigned int g_7db4;
 extern short g_7db8;
 extern unsigned char g_7dba;
 extern unsigned char g_7dbb;
-extern unsigned int f_dea6(int);
-extern void f_df49(unsigned int);
+extern unsigned int allocate_dpmi_memory(int);
+extern void free_dpmi_memory(unsigned int);
 extern void f_11494(void);
 extern void f_114a0(void);
 extern void f_11377(unsigned int);
@@ -41,39 +41,39 @@ extern void f_113bd(void);
 extern unsigned int g_e300;
 extern unsigned int g_e304;
 extern unsigned int g_1258;
-int f_d2f0(void);
-int f_d36c(void);
-int f_d408(void);
-extern int g_e308;
-extern int g_e30c;
-extern int g_e310;
+int detect_vga_bios_mode(void);
+int detect_xms_driver(void);
+int check_ems_manager_signature(void);
+extern int dpmi_entry_selector;
+extern int dpmi_private_data_paragraphs;
+extern int dpmi_entry_offset;
 extern void f_14197(void *);
 extern int g_75c4;
 extern void f_13889(int, int, int);
 
-extern short g_7498;
+extern short vga_bios_mode_supported;
 extern unsigned short u_749a;
 extern unsigned short u_749c;
 extern unsigned long g_749e;
 extern unsigned short u_74a2;
-extern short g_74a4;
+extern short xms_driver_available;
 extern unsigned long g_74a6;
 extern unsigned short u_74aa;
-extern short g_74ac;
+extern short ems_manager_signature_found;
 extern unsigned long g_74ae;
 extern unsigned short u_74b2;
-extern short g_74b4;
-extern unsigned long g_74b6;
+extern short dpmi_host_available;
+extern unsigned long dpmi_version_bcd;
 extern unsigned short u_74ba;
-extern short g_74bc;
-extern unsigned long g_74be;
+extern short ems_manager_available;
+extern unsigned long ems_manager_handle;
 extern unsigned short u_74c2;
 extern unsigned char g_74c4[57];
 extern unsigned char g_74fd[57];
-extern unsigned char g_7536[57];
+extern unsigned char key_irq[57];
 extern unsigned char g_756f[57];
 extern unsigned int g_75a8;
-extern unsigned int g_75ac;
+extern unsigned int slave_pic_vector_base;
 /* Watcom emits const aggregates in _TEXT before the function bodies. */
 const unsigned char empty_sound_irq_config[57] = { 0 };
 const unsigned char sound_blaster_irq_candidates[7] = { 7, 5, 3, 10, 9, 2, 0xff };
@@ -198,7 +198,7 @@ int detect_sound_blaster_irq(void) {
         interrupt_config.bytes[0x17] = (unsigned char)(sound_blaster_irq + (unsigned char)g_75a8);
         interrupt_config.bytes[0x16] = interrupt_config.bytes[0x17];
         if (sound_blaster_irq >= 8)
-            interrupt_config.bytes[0x16] += (unsigned char)g_75ac - 8 - (unsigned char)g_75a8;
+            interrupt_config.bytes[0x16] += (unsigned char)slave_pic_vector_base - 8 - (unsigned char)g_75a8;
         *(unsigned int *)(interrupt_config.bytes + 0x19) = 4;
         f_d656(interrupt_config.bytes, 0);
         *(unsigned int *)(interrupt_config.bytes + 0x1d) = (unsigned int)sound_test_irq_handler;
@@ -248,10 +248,10 @@ int detect_sound_blaster_dma(void) {
     first_attempt = 0;
     allocation_bytes = 0;
     sound_dma_test_result = -1;
-    test_buffer = f_dea6(0x1080);
+    test_buffer = allocate_dpmi_memory(0x1080);
     if (test_buffer != 0) {
         test_buffer = (test_buffer + 0x3ffc) & 0xffffefff;
-        allocation_bytes = g_e31c;
+        allocation_bytes = dpmi_linear_address_value;
     } else {
         return sound_dma_test_result;
     }
@@ -274,7 +274,7 @@ int detect_sound_blaster_dma(void) {
     dma_config.bytes[0x17] = (unsigned char)(sound_blaster_irq + (unsigned char)g_75a8);
     dma_config.bytes[0x16] = dma_config.bytes[0x17];
     if (sound_blaster_irq >= 8)
-        dma_config.bytes[0x16] += (unsigned char)g_75ac - 8 - (unsigned char)g_75a8;
+        dma_config.bytes[0x16] += (unsigned char)slave_pic_vector_base - 8 - (unsigned char)g_75a8;
     *(unsigned int *)(dma_config.bytes + 0x19) = 4;
     f_d656(dma_config.bytes, 0);
     *(unsigned int *)(dma_config.bytes + 0x1d) = (unsigned int)sound_test_irq_handler;
@@ -305,7 +305,7 @@ int detect_sound_blaster_dma(void) {
     if (sound_dma_test_result != -1)
         break;
     }
-    f_df49(allocation_bytes);
+    free_dpmi_memory(allocation_bytes);
     allocation_bytes = 0;
     return sound_dma_test_result;
 }

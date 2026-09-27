@@ -15,23 +15,23 @@ int g_e234;
 int g_e238;
 int g_e23c;
 
-extern int g_75bc;
+extern int dos_memory_error;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct DisplayModeInfo g_e324;
-void f_dfc3(void);
-void f_e028(void);
-void f_e3e5(void);
+extern struct DisplayModeInfo vga_state;
+void save_bios(void);
+void restore_bios(void);
+void save_vga_state(void);
 extern unsigned char read_vga_pixel_entry(int, int);
 extern int f_107b6(char *, void *, unsigned int);
-extern void *f_ddb9(int);
-extern void f_de21(void *);
+extern void *alloc_heap_block(int);
+extern void free_heap_block(void *);
 extern void write_be32(int, int);
-extern void f_ebcd(unsigned char *);
+extern void read_vga_palette(unsigned char *);
 int save_screen_image(char *filename);
 extern signed short sound_blaster_detected;
 extern unsigned char sound_blaster_irq;
 extern unsigned char g_75a8;
-extern unsigned char g_75ac;
+extern unsigned char slave_pic_vector_base;
 extern unsigned char g_74da;
 extern unsigned char g_74db;
 extern unsigned char g_7513;
@@ -46,7 +46,7 @@ extern int sound_callback_allocation_size;
 extern void stop_audio_stream(void);
 extern void f_115da(void);
 extern void f_d7b8(void *);
-extern void f_df49(int);
+extern void free_dpmi_memory(int);
 extern void f_d656(void *, void(*)(void));
 extern void release_sound_callback(void);
 
@@ -77,9 +77,9 @@ int save_screen_image(char *filename)
     chunk_header_bytes = 4;
     bitmap_header_bytes = 0x14;
     palette_bytes = 0x300;
-    pixel_bytes = g_e324.height * ((g_e324.width + 1) & -2);
+    pixel_bytes = vga_state.height * ((vga_state.width + 1) & -2);
     file_bytes = ((((((pixel_bytes + 8) + palette_bytes) + 8) + bitmap_header_bytes) + 8) + chunk_header_bytes) + 8;
-    raw_bytes = g_e324.width * g_e324.height + 0x320;
+    raw_bytes = vga_state.width * vga_state.height + 0x320;
     {
     unsigned int format;
     format = screenshot_format;
@@ -97,35 +97,35 @@ L_b895:
     goto L_bc34;
 
 L_b89a:
-    raw_image = (unsigned char *)f_ddb9(raw_bytes);
+    raw_image = (unsigned char *)alloc_heap_block(raw_bytes);
     if (raw_image == 0)
-        return g_75bc;
+        return dos_memory_error;
     g_7b39 = -1;
     *(struct ScreenshotSignature *)raw_image = *(struct ScreenshotSignature *)"mhwanh\0\4";
     raw_image[6] = 0;
     raw_image[7] = 4;
-    write_be32((int)(raw_image + 8), (g_e324.width << 0x10) | g_e324.height);
+    write_be32((int)(raw_image + 8), (vga_state.width << 0x10) | vga_state.height);
     write_be32((int)(raw_image + 0xc), 0x1000000);
     memset(raw_image + 0xe, 0, 0x12);
     pixel = raw_image + 0x20;
-    f_ebcd(pixel);
+    read_vga_palette(pixel);
     for (x = 0; x < 0x300; x++)
         pixel[x] = pixel[x] << 2;
 
     pixel = raw_image + 0x320;
-    for (y = 0; y < g_e324.height; y++)
-        for (x = 0; x < g_e324.width; x++)
+    for (y = 0; y < vga_state.height; y++)
+        for (x = 0; x < vga_state.width; x++)
             *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
 
     result = f_107b6(filename, raw_image, raw_bytes);
     g_7b39 = (short)saved_video_mode;
-    f_de21(raw_image);
+    free_heap_block(raw_image);
     goto L_bc34;
 
 L_b9f9:
-    file_data = (unsigned char *)f_ddb9(file_bytes);
+    file_data = (unsigned char *)alloc_heap_block(file_bytes);
     if (file_data == 0)
-        return g_75bc;
+        return dos_memory_error;
     g_7b39 = -1;
     bitmap_header = file_data + chunk_header_bytes + 8;
     palette_chunk = bitmap_header + bitmap_header_bytes + 8;
@@ -135,7 +135,7 @@ L_b9f9:
     write_be32((int)(file_data + 8), 0x50424d20);
     write_be32((int)bitmap_header, 0x424d4844);
     write_be32((int)(bitmap_header + 4), bitmap_header_bytes);
-    write_be32((int)(bitmap_header + 8), (g_e324.width << 0x10) | g_e324.height);
+    write_be32((int)(bitmap_header + 8), (vga_state.width << 0x10) | vga_state.height);
     *(int *)(bitmap_header + 0xc) = 0;
     bitmap_header[0x11] = 0;
     bitmap_header[0x13] = 0;
@@ -143,22 +143,22 @@ L_b9f9:
     bitmap_header[0x10] = 8;
     bitmap_header[0x12] = 0;
     *(int *)(bitmap_header + 0x14) = 0x605ff00;
-    write_be32((int)(bitmap_header + 0x18), (g_e324.row_stride_bytes << 0x10) | g_e324.resolution_height);
+    write_be32((int)(bitmap_header + 0x18), (vga_state.row_stride_bytes << 0x10) | vga_state.resolution_height);
     write_be32((int)palette_chunk, 0x434d4150);
     write_be32((int)(palette_chunk + 4), palette_bytes);
-    f_ebcd(palette_chunk + 8);
+    read_vga_palette(palette_chunk + 8);
     for (x = 8; x < palette_bytes + 8; x++)
         palette_chunk[x] = palette_chunk[x] << 2;
     write_be32((int)pixel_chunk, 0x424f4459);
     write_be32((int)(pixel_chunk + 4), pixel_bytes);
     pixel = pixel_chunk + 8;
-    for (y = 0; y < g_e324.height; y++)
-        for (x = 0; x < ((g_e324.width + 1) & -2); x++)
+    for (y = 0; y < vga_state.height; y++)
+        for (x = 0; x < ((vga_state.width + 1) & -2); x++)
             *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
 
     result = f_107b6(filename, file_data, (file_bytes + 3) & -4);
     g_7b39 = (short)saved_video_mode;
-    f_de21(file_data);
+    free_heap_block(file_data);
 
 L_bc34:
     return result;

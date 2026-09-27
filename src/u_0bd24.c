@@ -5,7 +5,7 @@ extern unsigned char sound_blaster_irq;
 extern unsigned char g_74da;
 extern unsigned char g_74db;
 extern unsigned char g_75a8;
-extern unsigned char g_75ac;
+extern unsigned char slave_pic_vector_base;
 extern unsigned char g_74c4[];
 extern void f_d656(void *, void(*)(void));
 extern void release_sound_system(void);
@@ -18,7 +18,7 @@ extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
 extern void f_115da(void);
 extern void f_d7b8(void *);
-extern void f_df49(int);
+extern void free_dpmi_memory(int);
 extern int save_screen_image(char *);
 extern void release_sound_callback(void);
 extern void __far a_0(void);
@@ -30,10 +30,10 @@ extern int g_74f9;
 extern unsigned g_75c4;
 extern int audio_dma_memory;
 extern short sound_blaster_base_port;
-extern unsigned g_e31c;
+extern unsigned dpmi_linear_address_value;
 extern void __far f_11258(void);
 extern int f_da01(void *);
-extern unsigned f_dea6(int);
+extern unsigned allocate_dpmi_memory(int);
 
 /* _DATA [0x7420,0x7428) */
 int audio_dma_buffer_bytes = 0x500;
@@ -45,7 +45,7 @@ void prepare_sound_system(void)
         g_74db = sound_blaster_irq + g_75a8;
         g_74da = g_74db;
         if (sound_blaster_irq >= 8)
-            g_74da += g_75ac - 8 - g_75a8;
+            g_74da += slave_pic_vector_base - 8 - g_75a8;
         f_d656(&g_74c4, release_sound_system);
     }
 }
@@ -55,7 +55,7 @@ void release_sound_system(void)
     if (sound_blaster_detected == -1) {
         stop_audio_stream();
         f_d7b8(&g_74c4);
-        f_df49(audio_dma_allocation_bytes);
+        free_dpmi_memory(audio_dma_allocation_bytes);
         audio_dma_allocation_bytes = 0;
     }
 }
@@ -94,10 +94,10 @@ L_beb5:;
     return 0x607;
 L_bec7:;
     if (bytes_requested == 0) goto L_bf15;
-    audio_dma_memory = f_dea6(audio_dma_buffer_bytes + 0x1010);
+    audio_dma_memory = allocate_dpmi_memory(audio_dma_buffer_bytes + 0x1010);
     if (audio_dma_memory == 0) goto L_bf0c;
     audio_dma_memory = (audio_dma_memory + 0xfff) & 0xffffefff;
-    audio_dma_allocation_bytes = g_e31c;
+    audio_dma_allocation_bytes = dpmi_linear_address_value;
     goto L_bf15;
 L_bf0c:;
     return 0x607;

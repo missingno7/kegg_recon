@@ -1,17 +1,17 @@
 .386
-EXTRN g_7b14:WORD
-EXTRN g_e324:WORD
-EXTRN g_7b16:WORD
+EXTRN disp_idx:WORD
+EXTRN vga_state:WORD
+EXTRN draw_idx:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         PUBLIC fill_planar_video_rows
 ; Fill successive VGA scan-line spans with one repeated pixel value.
 fill_planar_video_rows:
-        cmp byte ptr [g_e324+61h], 0Fh
+        cmp byte ptr [vga_state+61h], 0Fh
 L_13719:
         je short L_1372C
 L_1371B:
-        mov byte ptr [g_e324+61h], 0Fh
+        mov byte ptr [vga_state+61h], 0Fh
 L_13722:
         mov ax, 0F02h
 L_13726:
@@ -19,11 +19,11 @@ L_13726:
 L_1372A:
         out dx, ax
 L_1372C:
-        cmp byte ptr [g_e324+60h], 40h
+        cmp byte ptr [vga_state+60h], 40h
 L_13733:
         je short L_13746
 L_13735:
-        mov byte ptr [g_e324+60h], 40h
+        mov byte ptr [vga_state+60h], 40h
 L_1373C:
         mov ax, 4005h
 L_13740:
@@ -31,7 +31,7 @@ L_13740:
 L_13744:
         out dx, ax
 L_13746:
-        mov ecx, dword ptr [g_e324+3Ah]
+        mov ecx, dword ptr [vga_state+3Ah]
 L_1374C:
         mov eax, dword ptr [ebp + 10h]
 L_1374F:
@@ -45,11 +45,11 @@ L_13756:
 L_13759:
         shl ebx, 2
 L_1375C:
-        add edi, dword ptr [ebx + g_e324+2h]
+        add edi, dword ptr [ebx + vga_state+2h]
 L_13762:
-        add edi, dword ptr [ebx + g_e324+12h]
+        add edi, dword ptr [ebx + vga_state+12h]
 L_13768:
-        add edi, dword ptr [ebx + g_e324+22h]
+        add edi, dword ptr [ebx + vga_state+22h]
 L_1376E:
         mov edx, dword ptr [ebp - 10h]
 L_13771:

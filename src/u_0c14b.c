@@ -24,14 +24,14 @@ void queue_audio(int source, int byte_count, int sample_rate, int playback_mode)
 extern int audio_dma_buffer_bytes;
 extern short g_7db8;
 extern int g_7db4;
-extern int f_dd53(int, int);
+extern int rand_rng(int, int);
 extern void submit_audio_request(int);
 extern void transfer_audio_stream_block(void);
 extern void start_audio_stream_dma(void);
 extern void f_1133f(void);
 extern void f_11377(int);
-extern void *f_ddb9(int);
-extern void f_de21(void *);
+extern void *alloc_heap_block(int);
+extern void free_heap_block(void *);
 extern int f_11df8();
 extern short g_7db0;
 extern void f_11358(void);
@@ -98,7 +98,7 @@ void submit_audio_request(int index)
 
 void play_audio_request_at(int request_x, int request_y)
 {
-    submit_audio_request(f_dd53(request_x, request_y));
+    submit_audio_request(rand_rng(request_x, request_y));
 }
 
 void toggle_audio_transfer_mode(void)

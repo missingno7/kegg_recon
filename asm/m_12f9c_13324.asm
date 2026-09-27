@@ -1,5 +1,5 @@
 .386
-EXTRN g_e324:WORD
+EXTRN vga_state:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
@@ -20,15 +20,15 @@ L_12FA7:
 L_12FA8:
         ret
 L_12FA9:
-        cmp word ptr [g_e324], 0
+        cmp word ptr [vga_state], 0
 L_12FB1:
         je near ptr L_1303B
 L_12FB7:
-        cmp byte ptr [g_e324+61h], 0Fh
+        cmp byte ptr [vga_state+61h], 0Fh
 L_12FBE:
         je short L_12FD1
 L_12FC0:
-        mov byte ptr [g_e324+61h], 0Fh
+        mov byte ptr [vga_state+61h], 0Fh
 L_12FC7:
         mov ax, 0F02h
 L_12FCB:
@@ -36,15 +36,15 @@ L_12FCB:
 L_12FCF:
         out dx, ax
 L_12FD1:
-        cmp word ptr [g_e324], 1
+        cmp word ptr [vga_state], 1
 L_12FD9:
         jne short L_12FF5
 L_12FDB:
-        cmp byte ptr [g_e324+60h], 41h
+        cmp byte ptr [vga_state+60h], 41h
 L_12FE2:
         je short L_12FF5
 L_12FE4:
-        mov byte ptr [g_e324+60h], 41h
+        mov byte ptr [vga_state+60h], 41h
 L_12FEB:
         mov ax, 4105h
 L_12FEF:
@@ -60,11 +60,11 @@ L_12FFB:
 L_12FFE:
         shl ebx, 2
 L_13001:
-        mov esi, dword ptr [ebx + g_e324+2h]
+        mov esi, dword ptr [ebx + vga_state+2h]
 L_13007:
-        add esi, dword ptr [ebx + g_e324+12h]
+        add esi, dword ptr [ebx + vga_state+12h]
 L_1300D:
-        add esi, dword ptr [ebx + g_e324+22h]
+        add esi, dword ptr [ebx + vga_state+22h]
 L_13013:
         add esi, dword ptr [ebp + 0Ch]
 L_13016:
@@ -72,11 +72,11 @@ L_13016:
 L_13019:
         shl ebx, 2
 L_1301C:
-        mov edi, dword ptr [ebx + g_e324+2h]
+        mov edi, dword ptr [ebx + vga_state+2h]
 L_13022:
-        add edi, dword ptr [ebx + g_e324+12h]
+        add edi, dword ptr [ebx + vga_state+12h]
 L_13028:
-        add edi, dword ptr [ebx + g_e324+22h]
+        add edi, dword ptr [ebx + vga_state+22h]
 L_1302E:
         add edi, dword ptr [ebp + 14h]
 L_13031:
@@ -90,11 +90,11 @@ L_13039:
 L_1303A:
         ret
 L_1303B:
-        cmp byte ptr [g_e324+61h], 0Fh
+        cmp byte ptr [vga_state+61h], 0Fh
 L_13042:
         je short L_13055
 L_13044:
-        mov byte ptr [g_e324+61h], 0Fh
+        mov byte ptr [vga_state+61h], 0Fh
 L_1304B:
         mov ax, 0F02h
 L_1304F:
@@ -102,11 +102,11 @@ L_1304F:
 L_13053:
         out dx, ax
 L_13055:
-        cmp byte ptr [g_e324+60h], 40h
+        cmp byte ptr [vga_state+60h], 40h
 L_1305C:
         je short L_1306F
 L_1305E:
-        mov byte ptr [g_e324+60h], 40h
+        mov byte ptr [vga_state+60h], 40h
 L_13065:
         mov ax, 4005h
 L_13069:
@@ -118,11 +118,11 @@ L_1306F:
 L_13072:
         shl ebx, 2
 L_13075:
-        mov esi, dword ptr [ebx + g_e324+2h]
+        mov esi, dword ptr [ebx + vga_state+2h]
 L_1307B:
-        add esi, dword ptr [ebx + g_e324+12h]
+        add esi, dword ptr [ebx + vga_state+12h]
 L_13081:
-        add esi, dword ptr [ebx + g_e324+22h]
+        add esi, dword ptr [ebx + vga_state+22h]
 L_13087:
         add esi, dword ptr [ebp + 0Ch]
 L_1308A:
@@ -130,11 +130,11 @@ L_1308A:
 L_1308D:
         shl ebx, 2
 L_13090:
-        mov edi, dword ptr [ebx + g_e324+2h]
+        mov edi, dword ptr [ebx + vga_state+2h]
 L_13096:
-        add edi, dword ptr [ebx + g_e324+12h]
+        add edi, dword ptr [ebx + vga_state+12h]
 L_1309C:
-        add edi, dword ptr [ebx + g_e324+22h]
+        add edi, dword ptr [ebx + vga_state+22h]
 L_130A2:
         add edi, dword ptr [ebp + 14h]
 L_130A5:
@@ -193,35 +193,35 @@ L_130DB:
 L_130DE:
         mov dword ptr [ebp + 18h], edx
 L_130E1:
-        cmp eax, dword ptr [g_e324+4Ah]
+        cmp eax, dword ptr [vga_state+4Ah]
 L_130E7:
         jge short L_130F1
 L_130E9:
-        mov eax, dword ptr [g_e324+4Ah]
+        mov eax, dword ptr [vga_state+4Ah]
 L_130EE:
         mov dword ptr [ebp + 0Ch], eax
 L_130F1:
-        cmp ebx, dword ptr [g_e324+52h]
+        cmp ebx, dword ptr [vga_state+52h]
 L_130F7:
         jle short L_13102
 L_130F9:
-        mov ebx, dword ptr [g_e324+52h]
+        mov ebx, dword ptr [vga_state+52h]
 L_130FF:
         mov dword ptr [ebp + 14h], ebx
 L_13102:
-        cmp ecx, dword ptr [g_e324+4Eh]
+        cmp ecx, dword ptr [vga_state+4Eh]
 L_13108:
         jge short L_13113
 L_1310A:
-        mov ecx, dword ptr [g_e324+4Eh]
+        mov ecx, dword ptr [vga_state+4Eh]
 L_13110:
         mov dword ptr [ebp + 10h], ecx
 L_13113:
-        cmp edx, dword ptr [g_e324+56h]
+        cmp edx, dword ptr [vga_state+56h]
 L_13119:
         jle short L_13124
 L_1311B:
-        mov edx, dword ptr [g_e324+56h]
+        mov edx, dword ptr [vga_state+56h]
 L_13121:
         mov dword ptr [ebp + 18h], edx
 L_13124:
@@ -241,11 +241,11 @@ L_13130:
 L_13133:
         mov ebx, dword ptr [ebp + 24h]
 L_13136:
-        cmp eax, dword ptr [g_e324+4Ah]
+        cmp eax, dword ptr [vga_state+4Ah]
 L_1313C:
         jge short L_13146
 L_1313E:
-        mov eax, dword ptr [g_e324+4Ah]
+        mov eax, dword ptr [vga_state+4Ah]
 L_13143:
         mov dword ptr [ebp + 20h], eax
 L_13146:
@@ -253,11 +253,11 @@ L_13146:
 L_13149:
         add edx, eax
 L_1314B:
-        sub edx, dword ptr [g_e324+52h]
+        sub edx, dword ptr [vga_state+52h]
 L_13151:
         jle short L_1316E
 L_13153:
-        mov ecx, dword ptr [g_e324+52h]
+        mov ecx, dword ptr [vga_state+52h]
 L_13159:
         sub ecx, eax
 L_1315B:
@@ -273,11 +273,11 @@ L_13168:
 L_1316B:
         add dword ptr [ebp + 14h], ecx
 L_1316E:
-        cmp ebx, dword ptr [g_e324+4Eh]
+        cmp ebx, dword ptr [vga_state+4Eh]
 L_13174:
         jge short L_1317F
 L_13176:
-        mov ebx, dword ptr [g_e324+4Eh]
+        mov ebx, dword ptr [vga_state+4Eh]
 L_1317C:
         mov dword ptr [ebp + 24h], ebx
 L_1317F:
@@ -285,11 +285,11 @@ L_1317F:
 L_13182:
         add edx, ebx
 L_13184:
-        sub edx, dword ptr [g_e324+56h]
+        sub edx, dword ptr [vga_state+56h]
 L_1318A:
         jle short L_131A7
 L_1318C:
-        mov ecx, dword ptr [g_e324+56h]
+        mov ecx, dword ptr [vga_state+56h]
 L_13192:
         sub ecx, ebx
 L_13194:
@@ -305,15 +305,15 @@ L_131A1:
 L_131A4:
         add dword ptr [ebp + 18h], ecx
 L_131A7:
-        cmp word ptr [g_e324], 0
+        cmp word ptr [vga_state], 0
 L_131AF:
         je near ptr L_13275
 L_131B5:
-        cmp byte ptr [g_e324+61h], 0Fh
+        cmp byte ptr [vga_state+61h], 0Fh
 L_131BC:
         je short L_131CF
 L_131BE:
-        mov byte ptr [g_e324+61h], 0Fh
+        mov byte ptr [vga_state+61h], 0Fh
 L_131C5:
         mov ax, 0F02h
 L_131C9:
@@ -321,15 +321,15 @@ L_131C9:
 L_131CD:
         out dx, ax
 L_131CF:
-        cmp word ptr [g_e324], 1
+        cmp word ptr [vga_state], 1
 L_131D7:
         jne short L_131F3
 L_131D9:
-        cmp byte ptr [g_e324+60h], 41h
+        cmp byte ptr [vga_state+60h], 41h
 L_131E0:
         je short L_131F3
 L_131E2:
-        mov byte ptr [g_e324+60h], 41h
+        mov byte ptr [vga_state+60h], 41h
 L_131E9:
         mov ax, 4105h
 L_131ED:
@@ -337,7 +337,7 @@ L_131ED:
 L_131F1:
         out dx, ax
 L_131F3:
-        mov ecx, dword ptr [g_e324+3Ah]
+        mov ecx, dword ptr [vga_state+3Ah]
 L_131F9:
         mov eax, dword ptr [ebp + 10h]
 L_131FC:
@@ -349,21 +349,21 @@ L_13200:
 L_13203:
         shl ebx, 2
 L_13206:
-        add esi, dword ptr [ebx + g_e324+2h]
+        add esi, dword ptr [ebx + vga_state+2h]
 L_1320C:
-        add esi, dword ptr [ebx + g_e324+12h]
+        add esi, dword ptr [ebx + vga_state+12h]
 L_13212:
-        add esi, dword ptr [ebx + g_e324+22h]
+        add esi, dword ptr [ebx + vga_state+22h]
 L_13218:
         mov ebx, dword ptr [ebp + 1Ch]
 L_1321B:
         shl ebx, 2
 L_1321E:
-        mov edi, dword ptr [ebx + g_e324+2h]
+        mov edi, dword ptr [ebx + vga_state+2h]
 L_13224:
-        add edi, dword ptr [ebx + g_e324+12h]
+        add edi, dword ptr [ebx + vga_state+12h]
 L_1322A:
-        add edi, dword ptr [ebx + g_e324+22h]
+        add edi, dword ptr [ebx + vga_state+22h]
 L_13230:
         mov eax, dword ptr [ebp + 24h]
 L_13233:
@@ -427,11 +427,11 @@ L_13273:
 L_13274:
         ret
 L_13275:
-        cmp byte ptr [g_e324+61h], 0Fh
+        cmp byte ptr [vga_state+61h], 0Fh
 L_1327C:
         je short L_1328F
 L_1327E:
-        mov byte ptr [g_e324+61h], 0Fh
+        mov byte ptr [vga_state+61h], 0Fh
 L_13285:
         mov ax, 0F02h
 L_13289:
@@ -439,11 +439,11 @@ L_13289:
 L_1328D:
         out dx, ax
 L_1328F:
-        cmp byte ptr [g_e324+60h], 40h
+        cmp byte ptr [vga_state+60h], 40h
 L_13296:
         je short L_132A9
 L_13298:
-        mov byte ptr [g_e324+60h], 40h
+        mov byte ptr [vga_state+60h], 40h
 L_1329F:
         mov ax, 4005h
 L_132A3:
@@ -451,7 +451,7 @@ L_132A3:
 L_132A7:
         out dx, ax
 L_132A9:
-        mov ecx, dword ptr [g_e324+3Ah]
+        mov ecx, dword ptr [vga_state+3Ah]
 L_132AF:
         mov eax, dword ptr [ebp + 10h]
 L_132B2:
@@ -465,21 +465,21 @@ L_132B9:
 L_132BC:
         shl ebx, 2
 L_132BF:
-        add esi, dword ptr [ebx + g_e324+2h]
+        add esi, dword ptr [ebx + vga_state+2h]
 L_132C5:
-        add esi, dword ptr [ebx + g_e324+12h]
+        add esi, dword ptr [ebx + vga_state+12h]
 L_132CB:
-        add esi, dword ptr [ebx + g_e324+22h]
+        add esi, dword ptr [ebx + vga_state+22h]
 L_132D1:
         mov ebx, dword ptr [ebp + 1Ch]
 L_132D4:
         shl ebx, 2
 L_132D7:
-        mov edi, dword ptr [ebx + g_e324+2h]
+        mov edi, dword ptr [ebx + vga_state+2h]
 L_132DD:
-        add edi, dword ptr [ebx + g_e324+12h]
+        add edi, dword ptr [ebx + vga_state+12h]
 L_132E3:
-        add edi, dword ptr [ebx + g_e324+22h]
+        add edi, dword ptr [ebx + vga_state+22h]
 L_132E9:
         mov eax, dword ptr [ebp + 24h]
 L_132EC:

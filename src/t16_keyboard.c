@@ -12,7 +12,7 @@ extern unsigned char g_754d;
 extern unsigned char g_754c;
 extern unsigned char g_75a8;
 struct InterruptRecord { short status; unsigned char opaque[0x33]; };
-extern struct InterruptRecord g_7536;
+extern struct InterruptRecord key_irq;
 extern void f_f6d9(void);
 extern void f_d656(unsigned char *, int);
 void f_f6a1(void);
@@ -80,10 +80,10 @@ void f_f690(void) { }
 void f_f6a1(void) {
     g_754d = 9;
     g_754c = g_75a8 + 1;
-    f_d656((unsigned char *)&g_7536, (int)f_f6d9);
+    f_d656((unsigned char *)&key_irq, (int)f_f6d9);
 }
 
-void f_f6d9(void) { f_d7b8((unsigned char *)&g_7536); }
+void f_f6d9(void) { f_d7b8((unsigned char *)&key_irq); }
 
 int f_f6f8(int mode) {
     int p;
@@ -91,7 +91,7 @@ int f_f6f8(int mode) {
         mode = g_754f;
         if (mode == 0) return 0;
     }
-    if (g_7536.status != -1) {
+    if (key_irq.status != -1) {
         f_f875();
         f_f7e4();
         g_754f = mode;
@@ -99,7 +99,7 @@ int f_f6f8(int mode) {
         g_7553 = (void (*)(void))f_ff5c;
         g_7557 = (void (*)(void))irq_110;
         g_755b = (void (*)(void))((unsigned char __far *)irq_110 + 0x39);
-        f_da01((int *)&g_7536);
+        f_da01((int *)&key_irq);
         if ((mode & 1) == 1) {
             int addr1;
             int addr2;
@@ -169,7 +169,7 @@ void f_f905(unsigned char key) {
 }
 
 void f_fa42(void) {
-    if (g_7536.status != -1) {
+    if (key_irq.status != -1) {
         f_f8bb();
         if (kbhit()) {
             g_e488 = (unsigned char)getch();

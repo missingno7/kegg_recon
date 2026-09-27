@@ -13,15 +13,15 @@ extern int last_audio_sample_rate;
 extern int active_audio_rate;
 extern short g_7db8;
 extern int g_7db4;
-extern int f_dd53(int, int);
+extern int rand_rng(int, int);
 extern void queue_audio(int, int, int, int);
 extern void submit_audio_request(int);
 extern void transfer_audio_stream_block(void);
 extern void start_audio_stream_dma(void);
 extern void f_1133f(void);
 extern void f_11377(int);
-extern void *f_ddb9(int);
-extern void f_de21(void *);
+extern void *alloc_heap_block(int);
+extern void free_heap_block(void *);
 extern int f_11df8(int, int, int, void *);
 
 int decoded_bitmap_bytes;
@@ -61,12 +61,12 @@ int f_c826(int source_size, int source_data, int image_state)
 {
     int result;
     void * workspace;
-    workspace = f_ddb9(0x6400);
+    workspace = alloc_heap_block(0x6400);
     if (!workspace) {
         return 0x909;
     } else {
         result = f_11df8(source_size, source_data, image_state, workspace);
-        f_de21(workspace);
+        free_heap_block(workspace);
         return result;
     }
 }

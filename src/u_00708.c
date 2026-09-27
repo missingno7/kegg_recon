@@ -18,16 +18,16 @@ typedef struct { unsigned char prefix : 2; unsigned char value : 6; } IndexBits;
 struct Cell { unsigned char lo : 2, hi : 6; unsigned char flag; };
 typedef struct { unsigned char prefix : 2; unsigned char code : 6; } CodeBits;
 extern unsigned char g_74c4[];
-extern unsigned char g_7536[];
+extern unsigned char key_irq[];
 extern unsigned char g_756f[];
 extern void f_9afc(void);
 extern void f_9b44(int);
 extern void release_sound_system(void);
 extern int configure_sound_dma(int);
 extern void set_audio_transfer_mode(int);
-extern void f_dfc3(void);
-extern void f_e028(void);
-extern void f_ec9c(void);
+extern void save_bios(void);
+extern void restore_bios(void);
+extern void clear_pal(void);
 extern void f_f6d9(void);
 extern int f_f6f8(int);
 void f_9f9(void);
@@ -38,10 +38,10 @@ extern int g_6914;
 extern int g_693c;
 extern short image_color_depth;
 extern short sound_blaster_detected;
-extern int g_7b04;
-extern int g_7b08;
-extern short g_7b16;
-extern short g_7b18;
+extern int fade_start;
+extern int fade_end;
+extern short draw_idx;
+extern short page2;
 extern short g_7b34_cbzosabe;
 extern short g_7b3d_yrsiuxxd;
 extern unsigned short g_7bfe;
@@ -62,7 +62,7 @@ extern int g_df54;
 extern int h_df5c;
 extern int g_e1d8;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
-extern struct DisplayModeInfo g_e324;
+extern struct DisplayModeInfo vga_state;
 extern unsigned char g_e48b_3;
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48e_0g;
@@ -87,8 +87,8 @@ extern void configure_text_renderer(int, int, unsigned char, int, int);
 extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
 extern void set_img_buffers(int, int, short, int, int);
-extern int f_e095_ughrsvpfh();
-extern void f_ea9f(void *, int, int, int);
+extern int set_display_mode();
+extern void fade_pal(void *, int, int, int);
 void f_113c(void);
 extern int stop_audio_stream();
 void f_ea4(void);
@@ -111,7 +111,7 @@ extern void f_127e(void);
 extern void f_13aa(void);
 extern void f_1416(void);
 extern void redraw_image_region(int, int);
-extern void f_ed38(void);
+extern void show_page(void);
 extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
 extern short m_E4c4;
@@ -137,8 +137,8 @@ extern int i_dF44;
 extern int g_df50;
 extern unsigned char g_e13b;
 int f_17d2(unsigned long a0);
-extern short g_7b20;
-extern short g_7b22;
+extern short flip_src;
+extern short flip_dst;
 extern void copy_clipped_screen_rectangle(int, int, int, int, int, int, int, int);
 extern unsigned int g_8dfc;
 extern unsigned int g_8e00;
@@ -156,7 +156,7 @@ void f_1bc2(void);
 void f_1d80(void);
 void f_1e87(void);
 void f_20f4(void);
-extern int f_ee33();
+extern int draw_page();
 extern int g_6918;
 extern int g_691c;
 extern int g_6920;
@@ -208,7 +208,7 @@ extern int g_6964;
 extern int g_6934;
 extern int g_6938;
 extern int g_389a;
-extern short g_7b14;
+extern short disp_idx;
 extern int g_38b2;
 extern int g_38b6;
 extern int g_38ba;
@@ -224,7 +224,7 @@ extern int g_6974;
 extern int g_6978;
 extern int g_697c;
 extern int g_6980;
-void f_ecdf(unsigned char, unsigned char, unsigned char, unsigned char);
+void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int v_DF30;
 void f_2e4a(void);
 void render_image_with_options(int, int, int, int, int);
@@ -241,9 +241,9 @@ extern int g_df28;
 extern int g_6968;
 extern int g_6970;
 extern int g_696c;
-extern short g_7b1a;
+extern short page3;
 extern int g_df38;
-void f_e855(int);
+void set_draw_page(int);
 void f_7f8a(void);
 extern unsigned char g_e142_baun;
 extern int g_ddb0;
@@ -272,7 +272,7 @@ extern int g_69c8;
 extern int g_e148;
 extern int g_ddd4_eoraaik;
 void f_82cc(void);
-void f_ec76(int);
+void write_pal(int);
 extern int g_6ae8;
 extern int g_6b78;
 void f_34b7(void);
@@ -1498,7 +1498,7 @@ void f_10(void);
 extern unsigned char g_e13e;
 extern unsigned char g_df04[];
 extern void f_6ca(int, int, int);
-extern int f_dd53(int, int);
+extern int rand_rng(int, int);
 extern int f_6b02(void);
 extern int g_6230;
 extern int g_dd84;
@@ -1568,7 +1568,7 @@ void f_7e9(void)
 {
     stop_audio_stream();
     f_81d_psgpolkaxl();
-    f_e095_ughrsvpfh(5);
+    set_display_mode(5);
     f_8d3_szjtcdqild();
     f_951_vbfkytgovb();
     stop_audio_stream();
@@ -1595,12 +1595,12 @@ L_8ce:;
 }
 
 void f_8d3_szjtcdqild(void) {
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
-    f_ea9f(x_dd40_xbukycw, 0, -63, -1);
-    g_7b14 = g_7b20;
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b14);
-    f_ee33(g_7b14);
-    f_ea9f(x_dd40_xbukycw, -63, 0, 1);
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + vga_state.buffer_size;
+    fade_pal(x_dd40_xbukycw, 0, -63, -1);
+    disp_idx = flip_src;
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, disp_idx);
+    draw_page(disp_idx);
+    fade_pal(x_dd40_xbukycw, -63, 0, 1);
 }
 
 void f_951_vbfkytgovb(void)
@@ -1628,7 +1628,7 @@ L_9ca:;
     if (sound_blaster_detected == 0) goto L_976;
     if (audio_stream_flag == -1) goto L_976;
 L_9e0:;
-    f_ea9f(x_dd40_xbukycw, 0, 0x3f, 3);
+    fade_pal(x_dd40_xbukycw, 0, 0x3f, 3);
 }
 
 void f_9f9(void)
@@ -1637,16 +1637,16 @@ void f_9f9(void)
     int v_8;
     int v_c;
     v_4 = *(short *)g_756f;
-    v_8 = *(short *)g_7536;
+    v_8 = *(short *)key_irq;
     v_c = *(short *)g_74c4;
     set_audio_transfer_mode(0);
     f_9afc();
     f_f6d9();
     release_sound_system();
-    f_e028();
+    restore_bios();
     spawnlp(0, (char *)("", "printord.bat"), (char *)"", 0);
-    f_ec9c();
-    f_dfc3();
+    clear_pal();
+    save_bios();
     if (v_4 != -1) goto L_a73;
     f_9b44(0);
 L_a73:;
@@ -1664,7 +1664,7 @@ void f_aa2(void)
     unsigned char v_4;
     int v_8;
 L_aae:;
-    f_e095_ughrsvpfh(2);
+    set_display_mode(2);
     g_e4d0_wfmxdlyju = (unsigned char *)g_7c08_orxezsknd;
     k_DD48_jbwjbqarofg = g_e4d0_wfmxdlyju;
     g_8428 = f_a574_wrvhrpegbz(g_6910);
@@ -1689,23 +1689,23 @@ L_b75:;
 L_bbb:;
     queue_audio(g_dd44, g_e4c8, 0x1d4c, -1);
 L_bd6:;
-    v_4 = *(signed char *)&g_7b16;
+    v_4 = *(signed char *)&draw_idx;
     v_8 = image_color_depth;
-    f_ec9c();
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
+    clear_pal();
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
     configure_text_renderer((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    set_text_clip_rect((int)(g_e324.left + 6), (int)(g_e324.top + 4), g_e324.right - 6, g_e324.bottom - 2);
-    g_7b16 = g_7b18;
+    set_text_clip_rect((int)(vga_state.left + 6), (int)(vga_state.top + 4), vga_state.right - 6, vga_state.bottom - 2);
+    draw_idx = page2;
     image_color_depth = 8;
     draw_text(8, 8, g_38c6);
-    g_7b16 = (unsigned short)v_4;
+    draw_idx = (unsigned short)v_4;
     image_color_depth = (unsigned short)v_8;
     f_3beb(g_e1d8);
-    g_7b04 = 1;
-    g_7b08 = 0xbf;
-    f_ea9f((void *)(g_e1d8 + 3), 0, -0x3f, -3);
-    f_ea9f(x_dd40_xbukycw + 3, -0x3f, 0, 3);
-    f_100fa((int)g_e324.left, (int)g_e324.top, g_e324.right, 0xc4);
+    fade_start = 1;
+    fade_end = 0xbf;
+    fade_pal((void *)(g_e1d8 + 3), 0, -0x3f, -3);
+    fade_pal(x_dd40_xbukycw + 3, -0x3f, 0, 3);
+    f_100fa((int)vga_state.left, (int)vga_state.top, vga_state.right, 0xc4);
     g_df4c = 0xa;
     g_df48 = 0;
     g_df54 = 0x1c0;
@@ -1749,15 +1749,15 @@ L_e3a:;
 L_e52:;
     goto L_d7a;
 L_e57:;
-    g_7b04 = 0;
-    g_7b08 = 0x100;
+    fade_start = 0;
+    fade_end = 0x100;
 }
 
 void f_e70(void)
 {
     stop_audio_stream();
     f_ea4();
-    f_e095_ughrsvpfh(2);
+    set_display_mode(2);
     f_ff0();
     f_113c();
     stop_audio_stream();
@@ -1796,19 +1796,19 @@ void f_ff0(void)
 {
     unsigned char v_4;
     int v_8;
-    v_4 = *(signed char *)&g_7b16;
+    v_4 = *(signed char *)&draw_idx;
     v_8 = image_color_depth;
-    f_ec9c();
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
+    clear_pal();
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
     configure_text_renderer((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    set_text_clip_rect((int)g_e324.left, (int)g_e324.top, g_e324.right, g_e324.bottom);
-    g_7b16 = g_7b18;
+    set_text_clip_rect((int)vga_state.left, (int)vga_state.top, vga_state.right, vga_state.bottom);
+    draw_idx = page2;
     image_color_depth = 8;
     draw_text(0x10, 0x36, g_38ca);
-    g_7b16 = (unsigned short)v_4;
+    draw_idx = (unsigned short)v_4;
     image_color_depth = (unsigned short)v_8;
-    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size));
-    f_100fa((int)g_e324.left, (int)g_e324.top, g_e324.right, 0xc4);
+    f_3beb((int)(k_DD48_jbwjbqarofg + vga_state.buffer_size));
+    f_100fa((int)vga_state.left, (int)vga_state.top, vga_state.right, 0xc4);
     g_df60 = 1;
     g_df70 = (unsigned char *)g_390c_lmsbkmaaant;
     g_df4c = 2;
@@ -1842,7 +1842,7 @@ L_1194:;
     if (image_buffer_error_code == 0) goto L_11f6;
     shutdown_with_exit_message(image_buffer_error_code, 0);
 L_11f6:;
-    f_ed38();
+    show_page();
     goto L_1194;
 L_11fd:;
 }
@@ -1869,11 +1869,11 @@ L_129c:;
 L_12b5:;
     goto L_12c6;
 L_12b7:;
-    if (g_e4ba == (int)g_e324.left) goto L_12c8;
+    if (g_e4ba == (int)vga_state.left) goto L_12c8;
 L_12c6:;
     goto L_12d7;
 L_12c8:;
-    if (g_e4bc == (int)g_e324.top) goto L_12d9;
+    if (g_e4bc == (int)vga_state.top) goto L_12d9;
 L_12d7:;
     goto L_12ea;
 L_12d9:;
@@ -2014,19 +2014,19 @@ void f_16bb(int a0)
 {
     unsigned char v_4;
     int v_8;
-    v_4 = *(signed char *)&g_7b16;
+    v_4 = *(signed char *)&draw_idx;
     v_8 = image_color_depth;
     configure_text_renderer((int)g_3be4_zpjqcrvwahs, (int)g_dd4c_ilunphmaok, 1, 1, 3);
-    set_text_clip_rect(0x10, 0xda, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(0x10, 0xda, vga_state.right, vga_state.bottom);
     image_color_depth = 8;
-    g_7b16 = g_7b20;
-    copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
+    draw_idx = flip_src;
+    copy_clipped_screen_rectangle(page2, 0, 0xd7, 0x13f, 0xef, draw_idx, 0, 0xd7);
     draw_text(0x10, 0xda, a0);
-    g_7b16 = g_7b22;
-    copy_clipped_screen_rectangle(g_7b18, 0, 0xd7, 0x13f, 0xef, g_7b16, 0, 0xd7);
+    draw_idx = flip_dst;
+    copy_clipped_screen_rectangle(page2, 0, 0xd7, 0x13f, 0xef, draw_idx, 0, 0xd7);
     draw_text(0x10, 0xda, a0);
     image_color_depth = (unsigned short)v_8;
-    g_7b16 = (unsigned short)v_4;
+    draw_idx = (unsigned short)v_4;
 }
 
 int f_17d2(unsigned long a0)
@@ -2068,22 +2068,22 @@ void f_19b9(void)
 {
     stop_audio_stream();
     f_1af4();
-    f_e095_ughrsvpfh(1);
+    set_display_mode(1);
     f_1b7e();
     f_1d80();
-    g_7b16 = g_7b18;
+    draw_idx = page2;
     f_1bc2();
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.buffer_size);
-    g_7b16 = g_7b22;
-    f_ee33((short)g_7b16);
+    copy_screen_span_entry((short)page2, 0, (short)flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry((short)page2, 0, (short)flip_dst, 0, vga_state.buffer_size);
+    draw_idx = flip_dst;
+    draw_page((short)draw_idx);
     f_1e87();
-    g_7b16 = g_7b18;
+    draw_idx = page2;
     f_1bc2();
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry((short)g_7b18, 0, (short)g_7b22, 0, g_e324.buffer_size);
-    g_7b16 = g_7b20;
-    f_ed38();
+    copy_screen_span_entry((short)page2, 0, (short)flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry((short)page2, 0, (short)flip_dst, 0, vga_state.buffer_size);
+    draw_idx = flip_src;
+    show_page();
     if (image_buffer_error_code) {
     shutdown_with_exit_message((short)image_buffer_error_code, 0);
     }
@@ -2109,8 +2109,8 @@ L_1b79:;
 
 void f_1b7e(void)
 {
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
-    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size));
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
+    f_3beb((int)(k_DD48_jbwjbqarofg + vga_state.buffer_size));
     image_color_depth = 8;
 }
 
@@ -2120,7 +2120,7 @@ void f_1bc2(void)
     int v_8;
     int v_c;
     configure_text_renderer((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
-    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(0x32, 0x10, g_388e);
     v_8 = 0x32;
     g_e141 = 1;
@@ -2247,11 +2247,11 @@ L_1fc9:;
 L_1fd0:;
     if (g_e13d == 0) goto L_202b;
     g_e13d = 0;
-    copy_clipped_screen_rectangle(g_7b18, 0xe, 0x32, g_e324.right, 0xa5, g_7b16, 0xe, 0x32);
+    copy_clipped_screen_rectangle(page2, 0xe, 0x32, vga_state.right, 0xa5, draw_idx, 0xe, 0x32);
     draw_text(0x36, (g_text_render_state.v20d * g_dedc) + 0x32, (int)g_6984);
 L_202b:;
     if (g_dF68 != 0x23) goto L_2083;
-    copy_clipped_screen_rectangle(g_7b18, 0x24, 0xae, g_e324.right, 0xc5, g_7b16, 0x24, 0xae);
+    copy_clipped_screen_rectangle(page2, 0x24, 0xae, vga_state.right, 0xc5, draw_idx, 0x24, 0xae);
     if (g_df64 >= 0) goto L_2083;
     draw_text(0x24, 0xae, g_3892);
 L_2083:;
@@ -2262,7 +2262,7 @@ L_20a7:;
     strcpy((char *)((unsigned char *)g_37f4 + (g_dedc * 0x19)), (char *)g_6984);
     g_dedc = 0xffffffff;
 L_20ce:;
-    g_7b16 = g_7b18;
+    draw_idx = page2;
     draw_text(0x32, 0xae, g_3896);
 }
 
@@ -2271,7 +2271,7 @@ void f_20f4(void)
     g_7b3d_yrsiuxxd = 0;
     *(unsigned char *)&g_7b34_cbzosabe &= 0xfc;
     *(unsigned char *)&g_7b34_cbzosabe |= 4;
-    f_ed38();
+    show_page();
     f_10137_squghx();
 L_2121:;
     f_9d40(3);
@@ -2365,7 +2365,7 @@ void f_240f(void)
 {
     stop_audio_stream();
     f_2484();
-    f_e095_ughrsvpfh(1);
+    set_display_mode(1);
     f_251c();
     f_2565(g_389e);
     f_2565(g_38a2);
@@ -2392,21 +2392,21 @@ L_2517:;
 
 void f_251c(void)
 {
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, (short)g_7b18);
-    f_3beb((int)((k_DD48_jbwjbqarofg + g_e324.buffer_size) + 1536));
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, (short)page2);
+    f_3beb((int)((k_DD48_jbwjbqarofg + vga_state.buffer_size) + 1536));
     image_color_depth = 8;
 }
 
 void f_2565(int a0)
 {
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
-    g_7b16 = g_7b14;
+    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    draw_idx = disp_idx;
     configure_text_renderer((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 0x11, 0x17);
-    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(0x40, 0xa, g_389a);
     configure_text_renderer((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 0xa, 0xd);
-    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(7, 0x1e, a0);
     if (image_buffer_error_code == 0) goto L_2675;
     shutdown_with_exit_message(image_buffer_error_code, 0);
@@ -2418,7 +2418,7 @@ L_2675:;
 void f_2689(void)
 {
     stop_audio_stream();
-    f_e095_ughrsvpfh(-1);
+    set_display_mode(-1);
     f_26fe();
     f_2796();
     f_27df(g_38b2);
@@ -2447,21 +2447,21 @@ L_2779:;
 
 void f_2796(void)
 {
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
-    f_3beb((int)(k_DD48_jbwjbqarofg + g_e324.buffer_size + 0x900));
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
+    f_3beb((int)(k_DD48_jbwjbqarofg + vga_state.buffer_size + 0x900));
     image_color_depth = 8;
 }
 
 void f_27df(int a)
 {
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
-    g_7b16 = g_7b14;
+    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    draw_idx = disp_idx;
     configure_text_renderer((int)g_43ec_jxwzisjgagn, (int)g_dd4c_ilunphmaok, 0, 17, 23);
-    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(0x40, 10, g_389a);
     configure_text_renderer((int)g_4bf4_pbqzadnradd, (int)g_dd4c_ilunphmaok, 0, 10, 13);
-    set_text_clip_rect(g_e324.left, g_e324.top, g_e324.right, g_e324.bottom);
+    set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(7, 30, a);
     if (image_buffer_error_code != 0)
         shutdown_with_exit_message(image_buffer_error_code, 0);
@@ -2478,11 +2478,11 @@ void f_2903(void)
     char *old2;
 
     stop_audio_stream();
-    f_e095_ughrsvpfh(1);
+    set_display_mode(1);
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
-    f_ea9f(x_dd40_xbukycw, 0, 0x3f, 8);
+    fade_pal(x_dd40_xbukycw, 0, 0x3f, 8);
     k_DD48_jbwjbqarofg = (char *)g_e4d0_wfmxdlyju;
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + vga_state.buffer_size;
     f_a574_wrvhrpegbz(g_6978);
     old1 = g_e4d0_wfmxdlyju;
     f_a574_wrvhrpegbz(g_697c);
@@ -2491,37 +2491,37 @@ void f_2903(void)
     g_dd44 = g_e4d0_wfmxdlyju;
     f_1085a_eklzmb(g_6974);
     queue_audio(g_dd44, g_e4c8, 0x2ae4, -1);
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
+    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
 
     for (i = 0; i < 0x40; i++)
-        f_ecdf(1, (unsigned char)i, (unsigned char)i, (unsigned char)i);
+        set_pal_rgb(1, (unsigned char)i, (unsigned char)i, (unsigned char)i);
     for (i = 0; i < 0x15e; i++)
         f_9d40(1);
     for (i = 0; i < 0x80; i++)
         write_dac_palette(x_dd40_xbukycw, 0x80, 0x80, 0x3f - i / 2);
-    f_ea9f(x_dd40_xbukycw, 0, -0x3f, -1);
+    fade_pal(x_dd40_xbukycw, 0, -0x3f, -1);
 
     k_DD48_jbwjbqarofg = old1;
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
-    f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + vga_state.buffer_size;
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
+    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    fade_pal(x_dd40_xbukycw, -0x3f, 0, 1);
     for (i = 0; i < 0x8c; i++)
         f_9d40(1);
-    f_ea9f(x_dd40_xbukycw, 0, -0x3f, -3);
+    fade_pal(x_dd40_xbukycw, 0, -0x3f, -3);
 
     k_DD48_jbwjbqarofg = old2;
-    x_dd40_xbukycw = k_DD48_jbwjbqarofg + g_e324.buffer_size;
-    plot_transformed_pixel(k_DD48_jbwjbqarofg, g_7b18);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
-    f_ea9f(x_dd40_xbukycw, -0x3f, 0, 1);
+    x_dd40_xbukycw = k_DD48_jbwjbqarofg + vga_state.buffer_size;
+    plot_transformed_pixel(k_DD48_jbwjbqarofg, page2);
+    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    fade_pal(x_dd40_xbukycw, -0x3f, 0, 1);
     for (i = 0; i < 0x8c; i++)
         f_9d40(1);
-    f_ea9f(x_dd40_xbukycw, 0, -0x3f, -3);
+    fade_pal(x_dd40_xbukycw, 0, -0x3f, -3);
 }
 
 void f_2c72_zyd(void)
@@ -2529,14 +2529,14 @@ void f_2c72_zyd(void)
     stop_audio_stream();
     f_2e4a();
     queue_audio(g_dd44, g_e4c8, 0x1f40, -1);
-    render_image_with_options(g_7b14, 8, v_DF30 + 0x7102, 0xa0, 100);
+    render_image_with_options(disp_idx, 8, v_DF30 + 0x7102, 0xa0, 100);
 }
 
 void f_2ccc(void)
 {
-    copy_screen_span_entry(g_7b14, 0, g_7b18, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b20, 0, g_e324.buffer_size);
-    copy_screen_span_entry(g_7b18, 0, g_7b22, 0, g_e324.buffer_size);
+    copy_screen_span_entry(disp_idx, 0, page2, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
     stop_audio_stream();
     g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
     f_2eab();

@@ -1,5 +1,5 @@
 struct Grad { short x, y; unsigned char r0, g0, b0, r1, g1, b1; };
-extern void f_ecdf(unsigned char, unsigned char, unsigned char, unsigned char);
+extern void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 
 void f_9640(struct Grad *c, unsigned char *p)
 {
@@ -19,7 +19,7 @@ void f_9640(struct Grad *c, unsigned char *p)
         if (c->y < 0) break;
         if (c->y > 255) break;
         if (p == 0)
-            f_ecdf(c->x, c->r0, c->g0, c->b0);
+            set_pal_rgb(c->x, c->r0, c->g0, c->b0);
         else {
             *p++ = c->r0;
             *p++ = c->g0;
@@ -42,7 +42,7 @@ void f_9640(struct Grad *c, unsigned char *p)
             b = db * i / n + c->b0;
             if (p == 0) {
                 idx += step;
-                f_ecdf(idx, r, g, b);
+                set_pal_rgb(idx, r, g, b);
             } else {
                 *p++ = r;
                 *p++ = g;
