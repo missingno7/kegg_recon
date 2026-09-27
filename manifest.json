@@ -3731,7 +3731,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_11258_11494.asm",
    "unit": "M_11258",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32"
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4"
   },
   {
    "name": "sound_blaster_dma_start_entry",
@@ -3741,7 +3741,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3752,7 +3752,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3763,7 +3763,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3774,7 +3774,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3785,7 +3785,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3796,7 +3796,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3807,7 +3807,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3818,7 +3818,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3829,7 +3829,7 @@
    "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_11258_11494.asm",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "unit": "M_11258"
   },
   {
@@ -3841,7 +3841,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_11494_11530.asm",
    "unit": "M_11494",
-   "src_sha256": "0c0c924a240a3dcdcee0b1d06dcdc0c5ef44439c4b9b929657105349772e3134"
+   "src_sha256": "90c0fd1a1fe6685c1ece2c261ea9263c11059d4d421f77285b1f5f55dfeca3f3"
   },
   {
    "name": "parse_protracker_module",
@@ -3863,7 +3863,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_11df8_12288.asm",
    "unit": "M_11df8",
-   "src_sha256": "4966a1770f35286db96096cf6130d756b241dbd10e4ff112f48462c9421f7c2f"
+   "src_sha256": "1d9dd75e9fe051471085f5ca4c2c8561c99f209a5ceea6f57d773c1382fd858c"
   },
   {
    "name": "render_sprite_record_kind_5",
@@ -6642,7 +6642,7 @@
    "start": "0x11258",
    "end": "0x11494",
    "profile": "game-asm-tasm31",
-   "src_sha256": "f48ead1a1ce20ded35cb2f9f9d8f88fdec2145e566e4812fcbdb9bacf7437c32",
+   "src_sha256": "fdf1b12137ea6277f050acf9df4ebf1d8a094d1b6a4819e89dd70f11d2b0efd4",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6651,7 +6651,7 @@
    "start": "0x11494",
    "end": "0x11530",
    "profile": "game-asm-tasm31",
-   "src_sha256": "0c0c924a240a3dcdcee0b1d06dcdc0c5ef44439c4b9b929657105349772e3134",
+   "src_sha256": "90c0fd1a1fe6685c1ece2c261ea9263c11059d4d421f77285b1f5f55dfeca3f3",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6669,7 +6669,7 @@
    "start": "0x11df8",
    "end": "0x12288",
    "profile": "game-asm-tasm31",
-   "src_sha256": "4966a1770f35286db96096cf6130d756b241dbd10e4ff112f48462c9421f7c2f",
+   "src_sha256": "1d9dd75e9fe051471085f5ca4c2c8561c99f209a5ceea6f57d773c1382fd858c",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -7503,15 +7503,15 @@
   "a_11df8": "decode_gif_image_entry",
   "f_11d7e": "protracker_irq_handler",
   "g_8314": "gif_reserved_state",
-  "g_8316": "gif_previous_lzw_code",
+  "g_8316": "gif_lzw_current_code",
   "g_8318": "gif_image_width",
   "g_831a": "gif_image_height",
-  "g_831c": "gif_has_local_color_table",
-  "g_831d": "gif_local_color_table_size",
-  "g_831e": "gif_initial_lzw_code_width",
-  "g_8320": "gif_output_buffer",
-  "g_8324": "gif_output_buffer_plane_1",
-  "g_8328": "gif_output_buffer_plane_2",
+  "g_831c": "gif_has_global_color_table",
+  "g_831d": "gif_color_resolution_bits",
+  "g_831e": "gif_color_index_bits",
+  "g_8320": "gif_lzw_expansion_stack",
+  "g_8324": "gif_lzw_prefix_table",
+  "g_8328": "gif_lzw_suffix_table",
   "g_832c": "gif_lzw_code_width",
   "g_832e": "gif_lzw_next_code_width",
   "g_8330": "gif_lzw_first_available_code",
@@ -7526,11 +7526,11 @@
   "g_8343": "gif_lzw_saved_codes",
   "g_8349": "gif_lzw_clear_code",
   "g_834b": "gif_lzw_end_code",
-  "g_834d": "gif_output_end",
+  "g_834d": "gif_pixel_output_start",
   "g_8351": "gif_compressed_data_cursor",
   "g_8355": "gif_decode_error_code",
-  "g_8357": "gif_lzw_dictionary_bytes",
-  "g_835b": "gif_compressed_data_start",
+  "g_8357": "gif_global_color_table_bytes",
+  "g_835b": "gif_global_color_table_source",
   "exit_with_message": "fatal_exit",
   "f_608a_ujonj": "load_palette",
   "f_60e5_grt": "load_enemy",
@@ -7917,6 +7917,54 @@
   "i_dF44": "code_index",
   "v_DF30": "fill_sprite_data",
   "u_e150": "track_data",
-  "m_E15C": "x_delta"
+  "m_E15C": "x_delta",
+  "L_11289": "wait_for_dsp_write_before_block_command",
+  "L_11292": "wait_for_dsp_write_before_block_length_low",
+  "L_1129F": "wait_for_dsp_write_before_block_length_high",
+  "L_112AC": "wait_for_dsp_write_before_block_length_upper",
+  "L_112BF": "sample_rate_changed",
+  "L_112CF": "no_audio_dma_block_pending",
+  "L_112D8": "restore_irq_data_segments",
+  "L_113B8": "sample_rate_done",
+  "L_113CB": "send_master_pic_eoi",
+  "L_1140A": "wait_for_dsp_response",
+  "L_1141D": "dsp_response_timeout",
+  "L_11438": "wait_for_dsp_write_ready",
+  "L_11443": "write_dsp_command_byte",
+  "L_1144A": "dsp_write_done",
+  "L_11461": "dsp_reset_delay",
+  "L_11484": "dsp_reset_result",
+  "L_11509": "retry_unstable_dma_count_sample",
+  "L_11EE6": "after_global_color_table",
+  "L_11F0E": "validate_gif_image_width",
+  "L_11F2D": "validate_gif_image_height",
+  "L_11F68": "compact_next_gif_data_subblock",
+  "L_11F6F": "compact_subblock_word_tail",
+  "L_11F75": "compact_subblock_dword_tail",
+  "L_11F7C": "gif_data_subblocks_compacted",
+  "L_12021": "decode_next_lzw_code",
+  "L_1205C": "save_refilled_lzw_input_cursor",
+  "L_12062": "extract_lzw_code_from_bit_buffer",
+  "L_120FC": "save_clear_code_refill_cursor",
+  "L_12102": "extract_code_after_lzw_clear",
+  "L_1213C": "decode_non_clear_lzw_code",
+  "L_1215A": "expand_lzw_code_string",
+  "L_1216A": "follow_lzw_prefix_chain",
+  "L_12186": "lzw_prefix_chain_done",
+  "L_12199": "copy_lzw_string_in_reverse",
+  "L_121A6": "add_lzw_dictionary_entry",
+  "L_12221": "lzw_end_code_reached",
+  "L_12222": "finish_gif_decode",
+  "L_12278": "convert_global_palette_to_vga_dac",
+  "gif_has_local_color_table": "gif_has_global_color_table",
+  "gif_local_color_table_size": "gif_color_resolution_bits",
+  "gif_initial_lzw_code_width": "gif_color_index_bits",
+  "gif_previous_lzw_code": "gif_lzw_current_code",
+  "gif_output_buffer": "gif_lzw_expansion_stack",
+  "gif_output_buffer_plane_1": "gif_lzw_prefix_table",
+  "gif_output_buffer_plane_2": "gif_lzw_suffix_table",
+  "gif_output_end": "gif_pixel_output_start",
+  "gif_lzw_dictionary_bytes": "gif_global_color_table_bytes",
+  "gif_compressed_data_start": "gif_global_color_table_source"
  }
 }

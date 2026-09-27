@@ -1,604 +1,380 @@
 .386
 DGROUP GROUP _DATA
+; GIF87a and its 256-entry global table feed 8-bit pixels and six-bit VGA DAC values.
+gif87a_signature_dword EQU 38464947h
+gif87a_version_word EQU 6137h
+gif_image_separator_byte EQU 2Ch
+gif_error_signature_dword EQU 901h
+gif_error_version_word EQU 902h
+gif_error_color_table_size EQU 905h
+gif_error_image_separator EQU 906h
+gif_error_image_width EQU 903h
+gif_error_image_height EQU 904h
+gif_error_local_color_table EQU 907h
+gif_error_image_data EQU 908h
+gif_max_image_width EQU 140h
+gif_max_image_height EQU 0C8h
+gif_required_color_index_bits EQU 8
+gif_descriptor_color_resolution_shift EQU 4
+gif_descriptor_low_three_bits_mask EQU 7
+gif_image_interlace_flag_bit EQU 6
+gif_odd_output_length_mask EQU 1
+gif_rgb_components_per_entry EQU 3
+gif_bits_per_input_byte EQU 8
+gif_lzw_max_code_width EQU 0Ch
+gif_lzw_code_width_after_clear EQU 9
+gif_lzw_code_limit_after_clear EQU 200h
+gif_lzw_first_code_after_clear EQU 102h
+gif_lzw_mask_after_clear EQU 1FFh
+gif_palette_entry_count EQU 100h
+gif_rgb_to_vga_dac_shift EQU 2
+gif_image_state_decoded_bytes_offset EQU 10h
+gif_lzw_stack_to_prefix_table_offset EQU 1400h
+gif_prefix_to_suffix_table_offset EQU 2800h
+
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN gif_decoded_image_state:BYTE
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-; Validate a GIF87a frame and expand LZW indices into VGA output buffers.
+; Validate GIF87a, compact size-prefixed image-data blocks, expand LZW pixels, and append a VGA DAC palette.
         PUBLIC decode_gif_image_entry
         PUBLIC decode_gif_image
 decode_gif_image LABEL NEAR
 decode_gif_image_entry:
         pushad
-L_11DF9:
         lea ebp, [esp + 1Ch]
-L_11DFD:
         mov eax, dword ptr [ebp + 14h]
-L_11E00:
-        mov dword ptr [gif_output_buffer], eax
-L_11E05:
-        lea eax, [eax + 1400h]
-L_11E0B:
-        mov dword ptr [gif_output_buffer_plane_1], eax
-L_11E10:
-        lea eax, [eax + 2800h]
-L_11E16:
-        mov dword ptr [gif_output_buffer_plane_2], eax
-L_11E1B:
-        lea eax, [eax + 2800h]
-L_11E21:
-        mov word ptr [gif_lzw_code_width], 0Ch
-L_11E2A:
+        mov dword ptr [gif_lzw_expansion_stack], eax
+        lea eax, [eax + gif_lzw_stack_to_prefix_table_offset]
+        mov dword ptr [gif_lzw_prefix_table], eax
+        lea eax, [eax + gif_prefix_to_suffix_table_offset]
+        mov dword ptr [gif_lzw_suffix_table], eax
+        lea eax, [eax + gif_prefix_to_suffix_table_offset]
+        mov word ptr [gif_lzw_code_width], gif_lzw_max_code_width
         mov ebx, dword ptr [ebp + 0Ch]
-L_11E2D:
-        mov dword ptr [gif_output_end], ebx
-L_11E33:
+        mov dword ptr [gif_pixel_output_start], ebx
         mov esi, dword ptr [ebp + 8]
-L_11E36:
         mov word ptr [gif_reserved_state], 0
-L_11E3F:
         lodsd
-L_11E40:
-        mov word ptr [gif_decode_error_code], 901h
-L_11E49:
-        cmp eax, 38464947h
-L_11E4E:
-        jne near ptr L_12222
-L_11E54:
+        mov word ptr [gif_decode_error_code], gif_error_signature_dword
+        cmp eax, gif87a_signature_dword
+        jne near ptr finish_gif_decode
         lodsw
-L_11E56:
-        mov word ptr [gif_decode_error_code], 902h
-L_11E5F:
-        cmp ax, 6137h
-L_11E63:
-        jne near ptr L_12222
-L_11E69:
+        mov word ptr [gif_decode_error_code], gif_error_version_word
+        cmp ax, gif87a_version_word
+        jne near ptr finish_gif_decode
         lodsw
-L_11E6B:
         mov word ptr [gif_image_width], ax
-L_11E71:
         lodsw
-L_11E73:
         mov word ptr [gif_image_height], ax
-L_11E79:
         lodsb
-L_11E7A:
         or al, al
-L_11E7C:
-        sets byte ptr [gif_has_local_color_table]
-L_11E83:
+        sets byte ptr [gif_has_global_color_table]
         mov bl, al
-L_11E85:
         xor bh, bh
-L_11E87:
-        shr bl, 4
-L_11E8A:
-        and bl, 7
-L_11E8D:
+; Packed-screen fields carry color resolution and global palette index width.
+        shr bl,gif_descriptor_color_resolution_shift
+        and bl,gif_descriptor_low_three_bits_mask
         inc bl
-L_11E8F:
-        mov byte ptr [gif_local_color_table_size], bl
-L_11E95:
+        mov byte ptr [gif_color_resolution_bits], bl
         mov bl, al
-L_11E97:
-        and bl, 7
-L_11E9A:
+        and bl,gif_descriptor_low_three_bits_mask
         inc bl
-L_11E9C:
-        mov word ptr [gif_decode_error_code], 905h
-L_11EA5:
-        cmp bx, 8
-L_11EA9:
-        jne near ptr L_12222
-L_11EAF:
-        mov word ptr [gif_initial_lzw_code_width], bx
-L_11EB6:
+        mov word ptr [gif_decode_error_code], gif_error_color_table_size
+        cmp bx, gif_required_color_index_bits
+        jne near ptr finish_gif_decode
+        mov word ptr [gif_color_index_bits], bx
         lodsb
-L_11EB7:
         lodsb
-L_11EB8:
-        cmp byte ptr [gif_has_local_color_table], 0
-L_11EBF:
-        je short L_11EE6
-L_11EC1:
+        cmp byte ptr [gif_has_global_color_table], 0
+        je short after_global_color_table
         mov bx, 1
-L_11EC5:
-        mov cx, word ptr [gif_initial_lzw_code_width]
-L_11ECC:
+        mov cx, word ptr [gif_color_index_bits]
         shl bx, cl
-L_11ECF:
         movzx ecx, bx
-L_11ED2:
         mov eax, ecx
-L_11ED4:
         shl ecx, 1
-L_11ED6:
         add ecx, eax
-L_11ED8:
-        mov dword ptr [gif_lzw_dictionary_bytes], ecx
-L_11EDE:
-        mov dword ptr [gif_compressed_data_start], esi
-L_11EE4:
+        mov dword ptr [gif_global_color_table_bytes], ecx
+        mov dword ptr [gif_global_color_table_source], esi
         add esi, ecx
-L_11EE6:
+after_global_color_table:
         lodsb
-L_11EE7:
-        mov word ptr [gif_decode_error_code], 906h
-L_11EF0:
-        cmp al, 2Ch
-L_11EF2:
-        jne near ptr L_12222
-L_11EF8:
+        mov word ptr [gif_decode_error_code], gif_error_image_separator
+        cmp al, gif_image_separator_byte
+        jne near ptr finish_gif_decode
         lodsw
-L_11EFA:
         lodsw
-L_11EFC:
         lodsw
-L_11EFE:
         cmp word ptr [gif_image_width], 0
-L_11F06:
-        jne short L_11F0E
-L_11F08:
+        jne short validate_gif_image_width
         mov word ptr [gif_image_width], ax
-L_11F0E:
-        mov word ptr [gif_decode_error_code], 903h
-L_11F17:
-        cmp ax, 140h
-L_11F1B:
+validate_gif_image_width:
+        mov word ptr [gif_decode_error_code], gif_error_image_width
+        cmp ax, gif_max_image_width
         lodsw
-L_11F1D:
         cmp word ptr [gif_image_height], 0
-L_11F25:
-        jne short L_11F2D
-L_11F27:
+        jne short validate_gif_image_height
         mov word ptr [gif_image_height], ax
-L_11F2D:
-        mov word ptr [gif_decode_error_code], 904h
-L_11F36:
-        cmp ax, 0C8h
-L_11F3A:
+validate_gif_image_height:
+        mov word ptr [gif_decode_error_code], gif_error_image_height
+        cmp ax, gif_max_image_height
         lodsw
-L_11F3C:
-        mov word ptr [gif_decode_error_code], 907h
-L_11F45:
+        mov word ptr [gif_decode_error_code], gif_error_local_color_table
         or al, al
-L_11F47:
-        js near ptr L_12222
-L_11F4D:
-        mov word ptr [gif_decode_error_code], 908h
-L_11F56:
-        bt ax, 6
-L_11F5B:
+        js near ptr finish_gif_decode
+        mov word ptr [gif_decode_error_code], gif_error_image_data
+        bt ax,gif_image_interlace_flag_bit
         push edi
-L_11F5C:
         push esi
-L_11F5D:
         mov edi, esi
-L_11F5F:
         xor eax, eax
-L_11F61:
         mov ecx, eax
-L_11F63:
         lodsb
-L_11F64:
         or al, al
-L_11F66:
-        je short L_11F7C
-L_11F68:
+        je short gif_data_subblocks_compacted
+; Remove each data-sub-block length in place to form contiguous LZW input.
+compact_next_gif_data_subblock:
         mov cl, al
-L_11F6A:
         shr cl, 1
-L_11F6C:
-        jae short L_11F6F
-L_11F6E:
+        jae short compact_subblock_word_tail
         movsb
-L_11F6F:
+compact_subblock_word_tail:
         shr cl, 1
-L_11F71:
-        jae short L_11F75
-L_11F73:
+        jae short compact_subblock_dword_tail
         movsw
-L_11F75:
+compact_subblock_dword_tail:
         rep movsd
-L_11F77:
         lodsb
-L_11F78:
         or al, al
-L_11F7A:
-        jne short L_11F68
-L_11F7C:
+        jne short compact_next_gif_data_subblock
+gif_data_subblocks_compacted:
         xor eax, eax
-L_11F7E:
         mov ebx, eax
-L_11F80:
         pop esi
-L_11F81:
         pop edi
-L_11F82:
         mov al, byte ptr [esi - 1]
-L_11F85:
         mov ecx, eax
-L_11F87:
         inc eax
-L_11F88:
         mov word ptr [gif_lzw_code_width], ax
-L_11F8E:
         mov word ptr [gif_lzw_next_code_width], ax
-L_11F94:
         mov eax, 1
-L_11F99:
         shl ax, cl
-L_11F9C:
         mov word ptr [gif_lzw_clear_code], ax
-L_11FA2:
         inc ax
-L_11FA4:
         mov word ptr [gif_lzw_end_code], ax
-L_11FAA:
         inc ax
-L_11FAC:
         mov word ptr [gif_lzw_first_available_code], ax
-L_11FB2:
         mov word ptr [gif_lzw_next_code], ax
-L_11FB8:
         mov eax, 1
-L_11FBD:
         mov cx, word ptr [gif_lzw_code_width]
-L_11FC4:
         shl ax, cl
-L_11FC7:
         mov word ptr [gif_lzw_code_limit], ax
-L_11FCD:
         mov word ptr [gif_lzw_code_limit_shadow], ax
-L_11FD3:
         dec ax
-L_11FD5:
         mov word ptr [gif_lzw_code_mask], ax
-L_11FDB:
         mov eax, 1
-L_11FE0:
-        mov cx, word ptr [gif_initial_lzw_code_width]
-L_11FE7:
+        mov cx, word ptr [gif_color_index_bits]
         shl ax, cl
-L_11FEA:
         dec ax
-L_11FEC:
         mov word ptr [gif_color_index_mask], ax
-L_11FF2:
         mov dword ptr [gif_lzw_bit_buffer], 0
-L_11FFC:
         mov word ptr [gif_lzw_bits_buffered], 0
-L_12005:
         mov dword ptr [gif_compressed_data_cursor], esi
-L_1200B:
-        mov ebx, dword ptr [gif_output_buffer]
-L_12011:
-        mov edi, dword ptr [gif_output_end]
-L_12017:
+        mov ebx, dword ptr [gif_lzw_expansion_stack]
+        mov edi, dword ptr [gif_pixel_output_start]
         mov word ptr [gif_decode_error_code], 0
-L_12020:
         push ebp
-L_12021:
+decode_next_lzw_code:
         mov edx, dword ptr [gif_lzw_bit_buffer]
-L_12027:
         mov cx, word ptr [gif_lzw_bits_buffered]
-L_1202E:
         mov esi, dword ptr [gif_compressed_data_cursor]
-L_12034:
         cmp cx, word ptr [gif_lzw_code_width]
-L_1203B:
-        jge short L_12062
-L_1203D:
+        jge short extract_lzw_code_from_bit_buffer
         xor eax, eax
-L_1203F:
         lodsb
-L_12040:
         shl eax, cl
-L_12042:
         add edx, eax
-L_12044:
-        add cx, 8
-L_12048:
+        add cx, gif_bits_per_input_byte
         cmp cx, word ptr [gif_lzw_code_width]
-L_1204F:
-        jge short L_1205C
-L_12051:
+        jge short save_refilled_lzw_input_cursor
         xor eax, eax
-L_12053:
         lodsb
-L_12054:
         shl eax, cl
-L_12056:
         add edx, eax
-L_12058:
-        add cx, 8
-L_1205C:
+        add cx, gif_bits_per_input_byte
+save_refilled_lzw_input_cursor:
         mov dword ptr [gif_compressed_data_cursor], esi
-L_12062:
+extract_lzw_code_from_bit_buffer:
         mov eax, edx
-L_12064:
         and dx, word ptr [gif_lzw_code_mask]
-L_1206B:
         sub cx, word ptr [gif_lzw_code_width]
-L_12072:
         mov word ptr [gif_lzw_bits_buffered], cx
-L_12079:
         mov cx, word ptr [gif_lzw_code_width]
-L_12080:
         shr eax, cl
-L_12082:
         mov dword ptr [gif_lzw_bit_buffer], eax
-L_12087:
         mov eax, edx
-L_12089:
         cmp ax, word ptr [gif_lzw_end_code]
-L_12090:
-        je near ptr L_12221
-L_12096:
+        je near ptr lzw_end_code_reached
         cmp ax, word ptr [gif_lzw_clear_code]
-L_1209D:
-        jne near ptr L_1213C
-L_120A3:
-        mov word ptr [gif_lzw_code_width], 9
-L_120AC:
-        mov word ptr [gif_lzw_code_limit], 200h
-L_120B5:
-        mov word ptr [gif_lzw_next_code], 102h
-L_120BE:
-        mov word ptr [gif_lzw_code_mask], 1FFh
-L_120C7:
+        jne near ptr decode_non_clear_lzw_code
+        mov word ptr [gif_lzw_code_width], gif_lzw_code_width_after_clear
+        mov word ptr [gif_lzw_code_limit], gif_lzw_code_limit_after_clear
+        mov word ptr [gif_lzw_next_code], gif_lzw_first_code_after_clear
+        mov word ptr [gif_lzw_code_mask], gif_lzw_mask_after_clear
         mov edx, dword ptr [gif_lzw_bit_buffer]
-L_120CD:
         mov cx, word ptr [gif_lzw_bits_buffered]
-L_120D4:
         cmp cx, word ptr [gif_lzw_code_width]
-L_120DB:
-        jge short L_12102
-L_120DD:
+        jge short extract_code_after_lzw_clear
         xor eax, eax
-L_120DF:
         lodsb
-L_120E0:
         shl eax, cl
-L_120E2:
         add edx, eax
-L_120E4:
-        add cx, 8
-L_120E8:
+        add cx, gif_bits_per_input_byte
         cmp cx, word ptr [gif_lzw_code_width]
-L_120EF:
-        jge short L_120FC
-L_120F1:
+        jge short save_clear_code_refill_cursor
         xor eax, eax
-L_120F3:
         lodsb
-L_120F4:
         shl eax, cl
-L_120F6:
         add edx, eax
-L_120F8:
-        add cx, 8
-L_120FC:
+        add cx, gif_bits_per_input_byte
+save_clear_code_refill_cursor:
         mov dword ptr [gif_compressed_data_cursor], esi
-L_12102:
+extract_code_after_lzw_clear:
         mov eax, edx
-L_12104:
         and dx, word ptr [gif_lzw_code_mask]
-L_1210B:
         sub cx, word ptr [gif_lzw_code_width]
-L_12112:
         mov word ptr [gif_lzw_bits_buffered], cx
-L_12119:
         mov cx, word ptr [gif_lzw_code_width]
-L_12120:
         shr eax, cl
-L_12122:
         mov dword ptr [gif_lzw_bit_buffer], eax
-L_12127:
         mov word ptr [gif_lzw_saved_codes], dx
-L_1212E:
         mov byte ptr [gif_previous_literal], dl
-L_12134:
         mov al, dl
-L_12136:
         stosb
-L_12137:
-        jmp near ptr L_12021
-L_1213C:
-        mov word ptr [gif_previous_lzw_code], ax
-L_12142:
+        jmp near ptr decode_next_lzw_code
+decode_non_clear_lzw_code:
+        mov word ptr [gif_lzw_current_code], ax
         cmp ax, word ptr [gif_lzw_next_code]
-L_12149:
-        jl short L_1215A
-L_1214B:
+        jl short expand_lzw_code_string
         mov ax, word ptr [gif_lzw_saved_codes]
-L_12151:
         mov dl, byte ptr [gif_previous_literal]
-L_12157:
         mov byte ptr [ebx], dl
-L_12159:
         inc ebx
-L_1215A:
+expand_lzw_code_string:
         movzx ebp, word ptr [gif_color_index_mask]
-L_12161:
         cmp ax, bp
-L_12164:
-        jle short L_12186
-L_12166:
+        jle short lzw_prefix_chain_done
         movzx eax, ax
-L_12169:
         push ecx
-L_1216A:
-        mov ecx, dword ptr [gif_output_buffer_plane_2]
-L_12170:
+; Prefix entries are words; suffix entries are bytes.
+follow_lzw_prefix_chain:
+        mov ecx, dword ptr [gif_lzw_suffix_table]
         mov dl, byte ptr [eax + ecx]
-L_12173:
         mov byte ptr [ebx], dl
-L_12175:
         inc ebx
-L_12176:
-        mov ecx, dword ptr [gif_output_buffer_plane_1]
-L_1217C:
+        mov ecx, dword ptr [gif_lzw_prefix_table]
         mov ax, word ptr [ecx + eax*2]
-L_12180:
         cmp ax, bp
-L_12183:
-        jg short L_1216A
-L_12185:
+        jg short follow_lzw_prefix_chain
         pop ecx
-L_12186:
+lzw_prefix_chain_done:
         and ax, bp
-L_12189:
         mov byte ptr [gif_previous_literal], al
-L_1218E:
         stosb
-L_1218F:
-        mov ebp, dword ptr [gif_output_buffer]
-L_12195:
+        mov ebp, dword ptr [gif_lzw_expansion_stack]
         cmp ebx, ebp
-L_12197:
-        je short L_121A6
-L_12199:
+        je short add_lzw_dictionary_entry
+copy_lzw_string_in_reverse:
         dec ebx
-L_1219A:
         mov al, byte ptr [ebx]
-L_1219C:
         stosb
-L_1219D:
         cmp ebx, ebp
-L_1219F:
-        jne short L_12199
-L_121A1:
+        jne short copy_lzw_string_in_reverse
         mov al, byte ptr [gif_previous_literal]
-L_121A6:
+add_lzw_dictionary_entry:
         movzx edx, word ptr [gif_lzw_next_code]
-L_121AD:
         push ecx
-L_121AE:
-        mov ecx, dword ptr [gif_output_buffer_plane_2]
-L_121B4:
+        mov ecx, dword ptr [gif_lzw_suffix_table]
         mov byte ptr [edx + ecx], al
-L_121B7:
         mov ax, word ptr [gif_lzw_saved_codes]
-L_121BD:
-        mov ecx, dword ptr [gif_output_buffer_plane_1]
-L_121C3:
+        mov ecx, dword ptr [gif_lzw_prefix_table]
         mov word ptr [ecx + edx*2], ax
-L_121C7:
         pop ecx
-L_121C8:
         add edx, edx
-L_121CA:
-        mov ax, word ptr [gif_previous_lzw_code]
-L_121D0:
+        mov ax, word ptr [gif_lzw_current_code]
         mov word ptr [gif_lzw_saved_codes], ax
-L_121D6:
         inc word ptr [gif_lzw_next_code]
-L_121DD:
         mov ax, word ptr [gif_lzw_next_code]
-L_121E3:
         cmp ax, word ptr [gif_lzw_code_limit]
-L_121EA:
-        jne near ptr L_12021
-L_121F0:
+        jne near ptr decode_next_lzw_code
         cmp word ptr [gif_lzw_code_width], 0Ch
-L_121F8:
-        je near ptr L_12021
-L_121FE:
+        je near ptr decode_next_lzw_code
         inc word ptr [gif_lzw_code_width]
-L_12205:
         mov ax, word ptr [gif_lzw_code_limit]
-L_1220B:
         add ax, ax
-L_1220E:
         mov word ptr [gif_lzw_code_limit], ax
-L_12214:
         dec ax
-L_12216:
         mov word ptr [gif_lzw_code_mask], ax
-L_1221C:
-        jmp near ptr L_12021
-L_12221:
+        jmp near ptr decode_next_lzw_code
+lzw_end_code_reached:
         pop ebp
-L_12222:
+finish_gif_decode:
         mov eax, edi
-L_12224:
         sub eax, dword ptr [ebp + 0Ch]
-L_12227:
-        mov dword ptr [gif_decoded_image_state+10h], eax
-L_1222C:
-        and eax, 1
-L_1222F:
+        mov dword ptr [gif_decoded_image_state+gif_image_state_decoded_bytes_offset], eax
+        and eax,gif_odd_output_length_mask
         sub edi, eax
-L_12231:
-        sub dword ptr [gif_decoded_image_state+10h], eax
-L_12237:
-        mov ecx, dword ptr [gif_lzw_dictionary_bytes]
-L_1223D:
-        add dword ptr [gif_decoded_image_state+10h], ecx
-L_12243:
-        mov esi, dword ptr [gif_compressed_data_start]
-L_12249:
+        sub dword ptr [gif_decoded_image_state+gif_image_state_decoded_bytes_offset], eax
+        mov ecx, dword ptr [gif_global_color_table_bytes]
+        add dword ptr [gif_decoded_image_state+gif_image_state_decoded_bytes_offset], ecx
+        mov esi, dword ptr [gif_global_color_table_source]
         mov ebx, dword ptr [ebp + 10h]
-L_1224C:
         mov eax, dword ptr [ebp + 0Ch]
-L_1224F:
         mov dword ptr [ebx], eax
-L_12251:
         mov eax, edi
-L_12253:
         mov dword ptr [ebx + 4], eax
-L_12256:
         movzx eax, word ptr [gif_image_width]
-L_1225D:
         mov dword ptr [ebx + 8], eax
-L_12260:
         movzx eax, word ptr [gif_image_height]
-L_12267:
         mov dword ptr [ebx + 0Ch], eax
-L_1226A:
-        mov dword ptr [ebx + 14h], 100h
-L_12271:
-        mov dword ptr [ebx + 10h], 3
-L_12278:
+        mov dword ptr [ebx + 14h], gif_palette_entry_count
+        mov dword ptr [ebx + 10h], gif_rgb_components_per_entry
+; Convert each global RGB component from 8-bit to VGA's six-bit DAC range.
+convert_global_palette_to_vga_dac:
         lodsb
-L_12279:
-        shr al, 2
-L_1227C:
+        shr al, gif_rgb_to_vga_dac_shift
         stosb
-L_1227D:
-        loop L_12278
-L_1227F:
+        loop convert_global_palette_to_vga_dac
         popad
-L_12280:
         movzx eax, word ptr [gif_decode_error_code]
-L_12287:
         ret
 _TEXT ENDS
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+; This word is reset by the decoder; other uses are not established.
         PUBLIC gif_reserved_state
 gif_reserved_state	DW 0
-        PUBLIC gif_previous_lzw_code
-gif_previous_lzw_code	DW 0
+        PUBLIC gif_lzw_current_code
+gif_lzw_current_code	DW 0
         PUBLIC gif_image_width
 gif_image_width	DW 0
         PUBLIC gif_image_height
 gif_image_height	DW 0
-        PUBLIC gif_has_local_color_table
-gif_has_local_color_table	DB 0
-        PUBLIC gif_local_color_table_size
-gif_local_color_table_size	DB 0
-        PUBLIC gif_initial_lzw_code_width
-gif_initial_lzw_code_width	DW 0
-        PUBLIC gif_output_buffer
-gif_output_buffer LABEL DWORD
+        PUBLIC gif_has_global_color_table
+gif_has_global_color_table	DB 0
+        PUBLIC gif_color_resolution_bits
+gif_color_resolution_bits	DB 0
+        PUBLIC gif_color_index_bits
+gif_color_index_bits	DW 0
+        PUBLIC gif_lzw_expansion_stack
+gif_lzw_expansion_stack LABEL DWORD
         DB 1h, 0h, 0h, 0h
-        PUBLIC gif_output_buffer_plane_1
-gif_output_buffer_plane_1 LABEL DWORD
+        PUBLIC gif_lzw_prefix_table
+gif_lzw_prefix_table LABEL DWORD
         DB 1h, 0h, 0h, 0h
-        PUBLIC gif_output_buffer_plane_2
-gif_output_buffer_plane_2 LABEL DWORD
+        PUBLIC gif_lzw_suffix_table
+gif_lzw_suffix_table LABEL DWORD
         DB 1h, 0h, 0h, 0h
         PUBLIC gif_lzw_code_width
 gif_lzw_code_width	DW 0
@@ -628,16 +404,16 @@ gif_lzw_saved_codes	DW 3 DUP (0)
 gif_lzw_clear_code	DW 0
         PUBLIC gif_lzw_end_code
 gif_lzw_end_code	DW 0
-        PUBLIC gif_output_end
-gif_output_end	DD 0
+        PUBLIC gif_pixel_output_start
+gif_pixel_output_start	DD 0
         PUBLIC gif_compressed_data_cursor
 gif_compressed_data_cursor	DD 0
         PUBLIC gif_decode_error_code
 gif_decode_error_code	DW 0
-        PUBLIC gif_lzw_dictionary_bytes
-gif_lzw_dictionary_bytes	DD 0
-        PUBLIC gif_compressed_data_start
-gif_compressed_data_start LABEL DWORD
+        PUBLIC gif_global_color_table_bytes
+gif_global_color_table_bytes	DD 0
+        PUBLIC gif_global_color_table_source
+gif_global_color_table_source LABEL DWORD
         DB 0h, 0h, 0h, 0h, 0h
 _DATA ENDS
         END

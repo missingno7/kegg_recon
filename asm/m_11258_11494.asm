@@ -1,5 +1,33 @@
 .386
 DGROUP GROUP _DATA
+; Sound Blaster DSP register offsets, status and command values.
+sb_dsp_reset_port_offset EQU 6
+sb_dsp_write_status_offset EQU 0Ch
+sb_dsp_read_status_irq_ack_offset EQU 0Eh
+sb_dsp_read_data_offset EQU 0Ah
+sb_dsp_status_bit_7 EQU 80h
+sb_dsp_io_poll_count EQU 3E8h
+sb_dsp_reset_delay_count EQU 0FFh
+sb_dsp_reset_enable EQU 1
+sb_dsp_reset_disable EQU 0
+sb_dsp_reset_ack_byte EQU 0AAh
+sb_dsp_sample_rate_divisor EQU 0F42h
+sb_dsp_rate_rounding_bias EQU 7Fh
+sb_dsp_time_constant_base EQU 100h
+sb_dsp_set_time_constant_command EQU 40h
+sb_dsp_start_dma_command EQU 14h
+sb_dsp_dma_length_low EQU 7Fh
+sb_dsp_dma_length_high EQU 2
+sb_dsp_halt_8bit_dma_command EQU 0D0h
+sb_dsp_speaker_on_command EQU 0D1h
+sb_dsp_speaker_off_command EQU 0D3h
+pic_master_command_port EQU 20h
+pic_slave_command_port EQU 0A0h
+pic_end_of_interrupt_command EQU 20h
+pic_slave_irq_base EQU 8
+sound_dma_mode_single_transfer EQU 48h
+sound_dma_mode_single_auto_init_transfer EQU 58h
+
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN audio_stream_flag:WORD
 EXTRN active_audio_rate:DWORD
@@ -16,124 +44,75 @@ EXTRN mask_sound_dma_channel:NEAR
 EXTRN program_sound_dma_channel:NEAR
 EXTRN transfer_audio_stream_block:NEAR
         ASSUME CS:_TEXT, DS:DGROUP
-; Service the DSP IRQ, update DMA/rate state, and hand the frame to the game callback.
+; Acknowledge the DSP IRQ, start a 640-byte block when audio is active, then call the stream handler.
+; The DSP status loops are bounded; the IRQ is enabled before the game callback.
         PUBLIC sound_blaster_irq_handler
 sound_blaster_irq_handler LABEL NEAR
 sound_blaster_irq_entry PROC NEAR
         push eax
-L_11259:
         push ecx
-L_1125A:
         push edx
-L_1125B:
         mov dx, ds
-L_1125E:
         rol edx, 10h
-L_11261:
         mov ax, SEG DGROUP
-L_11265:
         mov ds, eax
-L_11267:
         mov dx, word ptr [sound_blaster_base_port]
-L_1126E:
-        add dx, 0Eh
-L_11272:
+        add dx, sb_dsp_read_status_irq_ack_offset
         in al, dx
-L_11273:
         cmp dword ptr [audio_dma_half_bytes], 0
-L_1127A:
-        je short L_112CF
-L_1127C:
+        je short no_audio_dma_block_pending
         mov eax, dword ptr [active_audio_rate]
-L_11281:
         cmp dword ptr [last_audio_sample_rate], eax
-L_11287:
-        jne short L_112BF
-L_11289:
-        add dx, -2
-L_1128D:
-        mov ecx, 3E8h
-L_11292:
+        jne short sample_rate_changed
+wait_for_dsp_write_before_block_command:
+        add dx, sb_dsp_write_status_offset-sb_dsp_read_status_irq_ack_offset
+        mov ecx, sb_dsp_io_poll_count
+wait_for_dsp_write_before_block_length_low:
         in al, dx
-L_11293:
-        test al, 80h
-L_11295:
-        loopne L_11292
-L_11297:
-        mov al, 14h
-L_11299:
+        test al, sb_dsp_status_bit_7
+        loopne wait_for_dsp_write_before_block_length_low
+        mov al, sb_dsp_start_dma_command
         out dx, al
-L_1129A:
-        mov ecx, 3E8h
-L_1129F:
+        mov ecx, sb_dsp_io_poll_count
+wait_for_dsp_write_before_block_length_high:
         in al, dx
-L_112A0:
-        test al, 80h
-L_112A2:
-        loopne L_1129F
-L_112A4:
-        mov al, 7Fh
-L_112A6:
+        test al, sb_dsp_status_bit_7
+        loopne wait_for_dsp_write_before_block_length_high
+        mov al,sb_dsp_dma_length_low
         out dx, al
-L_112A7:
-        mov ecx, 3E8h
-L_112AC:
+        mov ecx, sb_dsp_io_poll_count
+wait_for_dsp_write_before_block_length_upper:
         in al, dx
-L_112AD:
-        test al, 80h
-L_112AF:
-        loopne L_112AC
-L_112B1:
-        mov al, 2
-L_112B3:
+        test al, sb_dsp_status_bit_7
+        loopne wait_for_dsp_write_before_block_length_upper
+        mov al,sb_dsp_dma_length_high
         out dx, al
-L_112B4:
         mov word ptr [audio_stream_flag], 0FFFFh
-L_112BD:
-        jmp short L_112D8
-L_112BF:
+        jmp short restore_irq_data_segments
+sample_rate_changed:
         mov dword ptr [last_audio_sample_rate], eax
-L_112C4:
         push eax
-L_112C5:
         call set_sound_blaster_sample_rate
-L_112CA:
         add esp, 4
-L_112CD:
-        jmp short L_11289
-L_112CF:
+        jmp short wait_for_dsp_write_before_block_command
+no_audio_dma_block_pending:
         mov word ptr [audio_stream_flag], 0
-L_112D8:
+restore_irq_data_segments:
         mov dx, es
-L_112DB:
         cld
-L_112DC:
         mov ax, SEG DGROUP
-L_112E0:
         mov es, eax
-L_112E2:
         pushad
-L_112E3:
         sti
-L_112E4:
         call send_pic_end_of_interrupt
-L_112E9:
         call transfer_audio_stream_block
-L_112EE:
         popad
-L_112EF:
         mov es, edx
-L_112F1:
         rol edx, 10h
-L_112F4:
         mov ds, edx
-L_112F6:
         pop edx
-L_112F7:
         pop ecx
-L_112F8:
         pop eax
-L_112F9:
         iretd
 sound_blaster_irq_entry ENDP
 
@@ -143,82 +122,49 @@ sound_blaster_irq_entry ENDP
 start_sound_blaster_dma_playback LABEL NEAR
 sound_blaster_dma_start_entry PROC NEAR
         push eax
-L_112FB:
-        mov byte ptr [sound_blaster_command_byte], 14h
-L_11302:
+        mov byte ptr [sound_blaster_command_byte], sb_dsp_start_dma_command
         call write_sound_blaster_byte
-L_11307:
         mov ax, word ptr [sound_dma_block_length]
-L_1130D:
         dec ax
-L_1130F:
         mov byte ptr [sound_blaster_command_byte], al
-L_11314:
         call write_sound_blaster_byte
-L_11319:
         mov byte ptr [sound_blaster_command_byte], ah
-L_1131F:
         call write_sound_blaster_byte
-L_11324:
         pop eax
-L_11325:
         ret
-L_11326:
         push eax
-L_11327:
-        mov byte ptr [sound_dma_mode_bits], 48h
-L_1132E:
+        mov byte ptr [sound_dma_mode_bits],sound_dma_mode_single_transfer
         mov al, byte ptr [sound_blaster_dma_channel]
-L_11333:
         mov byte ptr [sound_dma_channel], al
-L_11338:
         call program_sound_dma_channel
-L_1133D:
         pop eax
-L_1133E:
         ret
 ; Configure the selected DMA channel for the sample stream.
         PUBLIC configure_sound_dma_input
 configure_sound_dma_input LABEL NEAR
-L_1133F:
         push eax
-L_11340:
-        mov byte ptr [sound_dma_mode_bits], 58h
-L_11347:
+        mov byte ptr [sound_dma_mode_bits],sound_dma_mode_single_auto_init_transfer
         mov al, byte ptr [sound_blaster_dma_channel]
-L_1134C:
         mov byte ptr [sound_dma_channel], al
-L_11351:
         call program_sound_dma_channel
-L_11356:
         pop eax
-L_11357:
         ret
         PUBLIC stop_sound_blaster_dma
 stop_sound_blaster_dma LABEL NEAR
-L_11358:
-        mov byte ptr [sound_blaster_command_byte], 0D0h
-L_1135F:
+        mov byte ptr [sound_blaster_command_byte], sb_dsp_halt_8bit_dma_command
         call write_sound_blaster_byte
-L_11364:
         ret
         PUBLIC mask_active_sound_dma_channel
 mask_active_sound_dma_channel LABEL NEAR
-L_11365:
         push eax
-L_11366:
         mov al, byte ptr [sound_blaster_dma_channel]
-L_1136B:
         mov byte ptr [sound_dma_channel], al
-L_11370:
         call mask_sound_dma_channel
-L_11375:
         pop eax
-L_11376:
         ret
 sound_blaster_dma_start_entry ENDP
         PUBLIC sound_blaster_rate_entry
-; Send the requested sample rate to the DSP.
+; Convert the requested rate to the DSP time constant (the 0F42h scaled divisor).
         PUBLIC set_sound_blaster_sample_rate
 set_sound_blaster_sample_rate LABEL NEAR
 sound_blaster_rate_entry PROC NEAR
@@ -228,21 +174,21 @@ sound_blaster_rate_entry PROC NEAR
         push    ebx
         push    edx
         sub     dx,dx
-        mov     ax,0F42h
+        mov ax,sb_dsp_sample_rate_divisor
         mov     ebx,[ebp+8]
-        add     bx,7Fh
+        add bx,sb_dsp_rate_rounding_bias
         shr     bx,8
         or      bx,bx
-        jz      short L_113B8
+        jz      short sample_rate_done
         div     bx
-        mov     bx,100h
+        mov bx,sb_dsp_time_constant_base
         sub     bx,ax
-        mov     byte ptr sound_blaster_command_byte,40h
+        mov byte ptr sound_blaster_command_byte,sb_dsp_set_time_constant_command
         call    write_sound_blaster_byte
-        jc      short L_113B8
+        jc      short sample_rate_done
         mov     byte ptr sound_blaster_command_byte,bl
         call    write_sound_blaster_byte
-L_113B8:
+sample_rate_done:
         pop     edx
         pop     ebx
         pop     eax
@@ -254,12 +200,12 @@ sound_blaster_rate_entry ENDP
 send_pic_end_of_interrupt LABEL NEAR
 pic_eoi_entry PROC NEAR
         push    eax
-        mov     al,20h
-        cmp     byte ptr sound_blaster_irq,8
-        jl      short L_113CB
-        out     0A0h,al
-L_113CB:
-        out     20h,al
+        mov al,pic_end_of_interrupt_command
+        cmp byte ptr sound_blaster_irq,pic_slave_irq_base
+        jl      short send_master_pic_eoi
+        out     pic_slave_command_port,al
+send_master_pic_eoi:
+        out     pic_master_command_port,al
         pop     eax
         ret
 pic_eoi_entry ENDP
@@ -268,7 +214,7 @@ pic_eoi_entry ENDP
 enable_sound_blaster_speaker LABEL NEAR
 sound_blaster_speaker_on_entry PROC NEAR
         call    reset_sound_blaster_dsp
-        mov     byte ptr sound_blaster_command_byte,0D1h
+        mov byte ptr sound_blaster_command_byte,sb_dsp_speaker_on_command
         call    write_sound_blaster_byte
         ret
 sound_blaster_speaker_on_entry ENDP
@@ -278,7 +224,7 @@ stop_sound_blaster_playback LABEL NEAR
 sound_blaster_stop_entry PROC NEAR
         call    stop_sound_blaster_dma
         call    reset_sound_blaster_dsp
-        mov     byte ptr sound_blaster_command_byte,0D3h
+        mov byte ptr sound_blaster_command_byte,sb_dsp_speaker_off_command
         call    write_sound_blaster_byte
         ret
 sound_blaster_stop_entry ENDP
@@ -289,19 +235,19 @@ sound_blaster_read_entry PROC NEAR
         push    ecx
         push    edx
         mov     dx,word ptr sound_blaster_base_port
-        add     dx,0Eh
-        mov     ecx,3E8h
-L_1140A:
+        add dx, sb_dsp_read_status_irq_ack_offset
+        mov ecx,sb_dsp_io_poll_count
+wait_for_dsp_response:
         in      al,dx
-        test    al,80h
-        loope   short L_1140A
+        test al,sb_dsp_status_bit_7
+        loope   short wait_for_dsp_response
         stc
-        jecxz   short L_1141D
-        add     dx,-4
+        jecxz   short dsp_response_timeout
+        add dx, sb_dsp_read_data_offset-sb_dsp_read_status_irq_ack_offset
         in      al,dx
         mov     byte ptr sound_blaster_response_byte,al
         clc
-L_1141D:
+dsp_response_timeout:
         pop     edx
         pop     ecx
         ret
@@ -313,25 +259,25 @@ sound_blaster_write_entry PROC NEAR
         push    eax
         push    edx
         mov     dx,word ptr sound_blaster_base_port
-        add     dx,0Ch
+        add dx, sb_dsp_write_status_offset
         in      al,dx
-        test    al,80h
-        je      short L_11443
+        test al,sb_dsp_status_bit_7
+        je      short write_dsp_command_byte
         push    ecx
-        mov     ecx,3E8h
-L_11438:
+        mov ecx,sb_dsp_io_poll_count
+wait_for_dsp_write_ready:
         in      al,dx
-        test    al,80h
-        loopne  short L_11438
+        test al,sb_dsp_status_bit_7
+        loopne  short wait_for_dsp_write_ready
         stc
         or      ecx,ecx
         pop     ecx
-        je      short L_1144A
-L_11443:
+        je      short dsp_write_done
+write_dsp_command_byte:
         mov     al,byte ptr sound_blaster_command_byte
         out     dx,al
         clc
-L_1144A:
+dsp_write_done:
         pop     edx
         pop     eax
         ret
@@ -342,25 +288,25 @@ reset_sound_blaster_dsp LABEL NEAR
 sound_blaster_reset_entry PROC NEAR
         push    edx
         mov     dx,word ptr sound_blaster_base_port
-        add     dx,6
-        mov     al,1
+        add dx, sb_dsp_reset_port_offset
+        mov al,sb_dsp_reset_enable
         out     dx,al
         push    eax
-        mov     ax,0FFh
-L_11461:
+        mov ax,sb_dsp_reset_delay_count
+dsp_reset_delay:
         dec     ax
-        jne     short L_11461
+        jne     short dsp_reset_delay
         pop     eax
-        mov     al,0
+        mov al,sb_dsp_reset_disable
         out     dx,al
         pop     edx
         call    sound_blaster_read_entry
         mov     eax,0
-        jb      short L_11484
-        cmp     byte ptr sound_blaster_response_byte,0AAh
-        je      short L_11484
+        jb      short dsp_reset_result
+        cmp byte ptr sound_blaster_response_byte,sb_dsp_reset_ack_byte
+        je      short dsp_reset_result
         mov     eax,0FFFFFFFFh
-L_11484:
+dsp_reset_result:
         ret
 sound_blaster_reset_entry ENDP
         PUBLIC sound_blaster_ack_entry
@@ -369,7 +315,7 @@ acknowledge_sound_blaster_irq LABEL NEAR
 sound_blaster_ack_entry PROC NEAR
         push    edx
         mov     dx,word ptr sound_blaster_base_port
-        add     dx,0Eh
+        add dx, sb_dsp_read_status_irq_ack_offset
         in      al,dx
         pop     edx
         ret
