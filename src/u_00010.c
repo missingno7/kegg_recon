@@ -87,15 +87,15 @@ extern unsigned short mouse_btn_old;
 extern int file_error_state;
 extern int temp;
 extern int frames;
-extern unsigned char frnt_pg_upd_buf[];
-extern unsigned char back_pg_upd_buf[];
+extern unsigned char front_page_bufs[];
+extern unsigned char back_page_queue[];
 extern unsigned char sprite_commands[];
 extern int sfx_data_ptr;
 extern int timed_change_count;
 extern int remaining_brick_count;
 extern int current_ball_count;
 extern int spell_count;
-extern struct GameProgressState *racket_state;
+extern struct GameProgressState *score_state;
 extern unsigned char *player_key_flags;
 extern unsigned char life_lost_flag;
 extern unsigned char arcade;
@@ -134,10 +134,10 @@ extern void load_palette(void);
 extern void load_enemy(void);
 extern void prep_level(void);
 extern void shot_cd(void);
-extern void upd_ani(void);
-extern void rkt_mv(void);
+extern void animate(void);
+extern void adjust(void);
 extern void handle_keyboard_controls(void);
-extern void upd_bl(void);
+extern void update(void);
 extern void f_9d40(unsigned char); /* Frozen T06 wait_for_tick entry; arguments select its wait mode. */
 extern void queue_audio(int, int, int, int);
 extern void stop_audio_stream(void);
@@ -634,7 +634,7 @@ void run_gameplay_session(void)
         stop_audio_stream();
         set_display_mode(DISPLAY_MODE_GAMEPLAY);
         next_lvl();
-        if (racket_state->life_balance < 0) goto session_failed_to_menu; /* Shared session cleanup. */
+        if (score_state->life_balance < 0) goto session_failed_to_menu; /* Shared session cleanup. */
         if (level_number >= GAME_LEVEL_COUNT) goto session_finished; /* Exit to shared session cleanup. */
         g_e4d0_wfmxdlyju = file_error_state;
         load_palette();
@@ -663,7 +663,7 @@ start_round_after_load:;
         *(unsigned char *)&hook_flags_word |= GAMEPLAY_HOOK_FLAG;
         *(unsigned char *)&hook_flags_word &= GAMEPLAY_HOOK_OPTION_CLEAR_MASK;
         *(unsigned char *)&hook_flags_word |= GAMEPLAY_HOOK_ENABLE_MASK;
-        set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+        set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
         f_9d40(0);
         f_9d40(0);
         for (temp = 0; temp < 4; ++temp) {
@@ -680,7 +680,7 @@ gameplay_frame_loop:;
             image_buffer_cursor = (unsigned char *)g_e1b8;
             handle_s_key();
             ++frames;
-            rkt_mv();
+            adjust();
             update_racket_state();
             if (keyboard_cheat_flags & PALETTE_FLASH_CHEAT_FLAG) {
                 set_vga_palette_rgb(0, 0, 0x2a, 0);
@@ -688,7 +688,7 @@ gameplay_frame_loop:;
             if (arcade) {
                 player_key_flags[0] |= PLAYER_KEY_FIRE_FLAG;
             }
-            upd_bl();
+            update();
             if (keyboard_cheat_flags & PALETTE_FLASH_CHEAT_FLAG) {
                 set_vga_palette_rgb(0, 0, 0x15, 0);
             }
@@ -697,7 +697,7 @@ gameplay_frame_loop:;
                 player_key_flags[0] &= ~PLAYER_KEY_FIRE_FLAG;
             }
             update_falling_spells();
-            upd_ani();
+            animate();
             update_enemy_projectiles();
             process_timed_level_changes();
             ++g_e1bc;
@@ -721,7 +721,7 @@ gameplay_frame_loop:;
     if (arcade && (mouse_btn_old != mouse_btn || keyboard_scan_byte == KEY_SPACE_SCAN_CODE)) goto session_finished; /* User exits arcade play. */
     if (!life_lost_flag) goto gameplay_frame_loop; /* Resume without reinitializing the round. */
     if (!arcade) {
-        if ((racket_state->life_balance -= LIFE_BALANCE_LOSS_PER_MISS) >= 0) goto start_round_after_load; /* Retry this round. */
+        if ((score_state->life_balance -= LIFE_BALANCE_LOSS_PER_MISS) >= 0) goto start_round_after_load; /* Retry this round. */
 session_failed_to_menu:;
         *(unsigned char *)&hook_flags_word &= GAMEPLAY_HOOK_CLEAR_MASK;
         reset_keyboard_action_handlers();
@@ -730,7 +730,7 @@ session_failed_to_menu:;
 session_finished:;
     if (arcade) {
         arcade = 0;
-        racket_state->score = 0;
+        score_state->score = 0;
     }
     *(unsigned char *)&hook_flags_word &= GAMEPLAY_HOOK_CLEAR_MASK;
     reset_keyboard_action_handlers();
@@ -744,7 +744,7 @@ void init_game(void) {
         level_number = (unsigned char)(random_in_range(0, FINAL_RANDOM_LEVEL_INDEX) - 1);
         temp = 0;
     }
-    racket_state = (struct GameProgressState *)score_storage;
+    score_state = (struct GameProgressState *)score_storage;
     set_game_progress(1, temp, 0);
     if (start_decade) {
         difficulty_tier_index = 1;
@@ -776,7 +776,7 @@ check_level_code:;
                 encode_restart_code();
                 codeok = 0xff;
             } else {
-                racket_state->life_balance = -1;
+                score_state->life_balance = -1;
             }
             return;
         }
@@ -832,9 +832,9 @@ void init_round(void)
 
 /* Store the progress marker, encoded life balance, and score. */
 void set_game_progress(int progress_marker, int lives, int score) {
-    racket_state->progress_marker = progress_marker;
-    racket_state->life_balance = lives * LIFE_BALANCE_PER_LIFE;
-    racket_state->score = score;
+    score_state->progress_marker = progress_marker;
+    score_state->life_balance = lives * LIFE_BALANCE_PER_LIFE;
+    score_state->score = score;
     next_extra_life_score = INITIAL_EXTRA_LIFE_SCORE;
 }
 

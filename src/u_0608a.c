@@ -158,7 +158,7 @@ extern int scratch;
 extern int ptrbuf;
 extern int bonus_animations_by_type[];
 extern unsigned char spell_slots[];
-extern struct GameProgressState *racket_state;
+extern struct GameProgressState *score_state;
 extern unsigned char collision_animation_frames[];
 extern unsigned char racket_spell_animation_frames[];
 extern unsigned char spell_impact_animation_frames[];
@@ -352,7 +352,7 @@ void update_player_shots(void)
                         } else if (current_brick_code >= 0xfa && current_brick_code <= 0x100) {
                             play_audio_request_at(1, 9);
                             if (!--cell_cursor[row_y].drop_value) {
-                                racket_state->score += 2 << racket_object->reward_level;
+                                score_state->score += 2 << racket_object->reward_level;
                                 queue_timed_level_change(current_brick_code, row_y + row_offset);
                                 process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
                             }

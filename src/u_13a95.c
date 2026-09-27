@@ -13,8 +13,8 @@ extern short audio_stream_stop_flag;
 extern int file_error_state;
 extern unsigned g_7c0c;
 extern int (*decode_hook)();
-extern unsigned char frnt_pg_upd_buf[];
-extern unsigned char back_pg_upd_buf[];
+extern unsigned char front_page_bufs[];
+extern unsigned char back_page_queue[];
 extern unsigned char sprite_commands[];
 extern unsigned char *g_e4d0_wfmxdlyju;
 extern int decode_and_verify_asset(void);
@@ -48,7 +48,7 @@ void main(void)
     audio_stream_stop_flag = -1;
     /* Register the arena and load the protected-mode game support code. */
     set_image_pages(sprite_commands, INITIAL_SPRITE_UPDATE_LIMIT, PLANAR_COLOR_DEPTH,
-                    frnt_pg_upd_buf, back_pg_upd_buf);
+                    front_page_bufs, back_page_queue);
     run_main_menu();
     fatal_exit(0, 0);
     exit(0);

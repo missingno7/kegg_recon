@@ -198,8 +198,8 @@ extern unsigned short mouse_btn_old;
 extern int file_error_state;
 extern int file_operation_result;
 extern unsigned char screen_palette_buffer[];
-extern unsigned char frnt_pg_upd_buf[];
-extern unsigned char back_pg_upd_buf[];
+extern unsigned char front_page_bufs[];
+extern unsigned char back_page_queue[];
 extern unsigned char sprite_commands[];
 extern unsigned char *vga_buffer_base;
 extern int sfx_data_ptr;
@@ -224,8 +224,8 @@ extern void fatal_exit(unsigned, unsigned);
 extern void write_dac_palette(void *, int, int, int);
 extern void handle_s_key(void);
 extern void refresh_video_pages(int);
-extern void rkt_mv(void);
-extern void set_pg(void);
+extern void adjust(void);
+extern void set_page(void);
 extern void apply_palette_gradients(void *, void *);
 extern void f_9d40(unsigned char);
 extern int load_picture_keep();
@@ -293,7 +293,7 @@ extern unsigned int decade;
 extern unsigned int restart_word;
 extern unsigned char lives;
 extern unsigned char start_decade;
-extern GameProgressState *racket_state;
+extern GameProgressState *score_state;
 extern unsigned char level_number;
 char *itoa(int, char *, int);
 extern int screen_timer;
@@ -379,7 +379,7 @@ extern unsigned char *transition_track_data;
 extern int main_menu_return_transition_tracks;
 void load_return_screen_assets(void);
 void prepare_game_asset_read(void);
-void wait_input(int);
+void await_input(int);
 extern int file_mark;
 extern int tile_art_base;
 extern int fill_sprite_filename;
@@ -1638,9 +1638,9 @@ extern void update_enemy_projectiles(void);
 extern void load_palette(void);
 extern void load_enemy(void);
 extern void shot_cd(void);
-extern void upd_ani(void);
+extern void animate(void);
 extern void handle_keyboard_controls(void);
-extern void upd_bl(void);
+extern void update(void);
 extern void reset_keyboard_action_handlers(void);
 void run_gameplay_session(void);
 extern unsigned char difficulty_tier_index;
@@ -1690,9 +1690,9 @@ void run_main_menu(void) {
         switch (selected_menu_item) {
         case 0:
             run_gameplay_session();
-            if (level_number >= 60 && racket_state->life_balance >= 0)
+            if (level_number >= 60 && score_state->life_balance >= 0)
                 show_ending_pages();
-            points = racket_state->score;
+            points = score_state->score;
             show_game_over_screen();
             break;
         case 1:
@@ -1844,17 +1844,17 @@ void show_high_score_screen(void)
         palette_cycle_offset = 0;
         palette_entries = 0x1c0;
         apply_palette_gradients(order_info_palette_gradient, screen_palette_buffer);
-        set_pg();
+        set_page();
         hook_flags_word = (((hook_flags_word & 0xfffe) & 0xfffd) & 0xfffb) & 0xff7f;
         menu_result = 0;
         space_pressed = 0;
-        set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+        set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
 order_screen_poll:;
         f_9d40(3);
         if (prior_key_ascii == 0x50 || current_ascii != 0x50) break;
         launch_print_order_form();
     }
-    rkt_mv();
+    adjust();
     handle_s_key();
     write_dac_palette((palette_cycle_offset * 3) + screen_palette_buffer, 0xc0, 0x40, 0);
     --palette_cycle_delay;
@@ -1938,7 +1938,7 @@ void draw_title_screen(void)
         draw_restart_code_text((int)last_code_prompt);
         prompt_timeout = 0x15e;
     }
-    set_pg();
+    set_page();
 }
 
 void run_title_screen_loop(void)
@@ -1946,10 +1946,10 @@ void run_title_screen_loop(void)
     hook_flags_word = (((hook_flags_word & 0xfffe) & 0xfffd) & 0xfffb) & 0xff7f;
     menu_result = 0;
     space_pressed = 0;
-    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
     while (menu_result == 0) {
         f_9d40(3);
-        rkt_mv();
+        adjust();
         handle_s_key();
         update_menu_sprite_animation();
         queue_menu_sprite();
@@ -2112,7 +2112,7 @@ int decode_restart_code(unsigned long encoded_restart_code)
 
 void encode_restart_code(void)
 {
-    scratch = racket_state->life_balance & RESTART_CODE_VALUE_MASK;
+    scratch = score_state->life_balance & RESTART_CODE_VALUE_MASK;
     decade = (level_number / 0xa) & 7;
     parity = ((decade ^ (((unsigned)scratch >> 1) ^ ((unsigned)scratch >> 3))) ^ (decade >> 1)) & 1;
     restart_word = ~((~(decade + 2) << RESTART_CODE_CHECK_SHIFT) ^ scratch) & RESTART_CODE_VALUE_MASK;
@@ -2528,7 +2528,7 @@ void return_to_main_menu(void)
     transition_track_data = (unsigned char *)&main_menu_return_transition_tracks;
     prepare_game_asset_read();
     hook_flags_word = ((*(short *)&hook_flags_word) & 0xfffe) & 0xfffd;
-    wait_input(0x8ca);
+    await_input(0x8ca);
     stop_audio_stream();
 }
 

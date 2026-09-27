@@ -1,7 +1,9 @@
-/* Sprite offset and display duration pairs; the last record loops back through the sequence. */
-struct SpriteAnimationFrame { unsigned sprite_offset; int duration_ticks; };
+/* A negative terminal delta steps from the sentinel back into the frame sequence. */
+struct SpriteFrame { unsigned image_offset; int duration_or_delta; };
 
-struct SpriteAnimationFrame collision_animation_frames[22] = {
+#define COLLISION_ANIMATION_LOOP_BACK (-21)
+
+struct SpriteFrame collision_animation_frames[22] = {
     { 0x4a96, 2 },
     { 0x4af4, 2 },
     { 0x4ba8, 2 },
@@ -23,5 +25,5 @@ struct SpriteAnimationFrame collision_animation_frames[22] = {
     { 0x72cc, 2 },
     { 0x75c4, 2 },
     { 0x78b2, 2 },
-    { 0, -21 }
+    { 0, COLLISION_ANIMATION_LOOP_BACK }
 };

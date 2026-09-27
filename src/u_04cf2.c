@@ -162,7 +162,7 @@ extern int scratch;
 extern int ptrbuf;
 extern int bonus_animations_by_type[];
 extern unsigned char spell_slots[];
-extern struct GameProgressState *racket_state;
+extern struct GameProgressState *score_state;
 
 void update_racket_state(void)
 {

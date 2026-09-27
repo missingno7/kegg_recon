@@ -39,15 +39,15 @@ extern short hook_flags_word;
 extern short space_pressed;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
-extern unsigned char frnt_pg_upd_buf[];
-extern unsigned char back_pg_upd_buf[];
+extern unsigned char front_page_bufs[];
+extern unsigned char back_page_queue[];
 extern struct SpriteDrawCommand sprite_commands[];
 extern struct DisplayModeInfo vga_state;
 extern unsigned char keyboard_scan_byte;
 extern void fatal_exit(unsigned, unsigned);
 extern void handle_s_key(void);
 extern void refresh_video_pages(int);
-extern void set_pg(void);
+extern void set_page(void);
 /* Address-named timing/phase helper; observed callers here pass 0 or 1. */
 extern void f_9d40(unsigned char);
 extern void configure_text_renderer(int, int, unsigned char, int, int);
@@ -60,7 +60,7 @@ extern void show_page(void);
 extern short src_page;
 extern short dst_page;
 extern void copy_clipped_screen_rectangle(int, int, int, int, int, int, int, int);
-extern struct GameProgressState *racket_state;
+extern struct GameProgressState *score_state;
 extern unsigned char level_number;
 extern void copy_screen_span_entry(int, int, int, int, int);
 extern int brick_art_start;
@@ -71,7 +71,7 @@ extern short page_idx;
 extern int fill_sprite_data;
 extern struct TransitionTrack *transition_track_data;
 void prepare_game_asset_read(void);
-void wait_input(int);
+void await_input(int);
 extern int tile_art_base;
 extern int level_data_cursor;
 extern short page3;
@@ -224,7 +224,7 @@ int wait_level(void)
     init_stage_palette();
     hook_flags_word = (hook_flags_word & 0xfffe) & 0xfffd;
     space_pressed = 0;
-    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
     while (1) {
         update_mouse();
         advance_tracks();
@@ -250,13 +250,13 @@ int wait_level(void)
     redraw_image_region(0, 0);
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
-    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
     return level_wait_result;
 }
 
 void init_stage_palette(void)
 {
-    set_pg();
+    set_page();
     sprite_base = tile_art_base;
     transition_track_data = (struct TransitionTrack *)&level_palette_transition_tracks;
     path_count = 12;
@@ -268,16 +268,16 @@ void init_stage_palette(void)
 
 void entry_prompt(void)
 {
-    set_pg();
+    set_page();
     transition_track_data = (struct TransitionTrack *)&level_number_transition_tracks_a;
     write_level_number_glyphs();
-    wait_input(0x78);
+    await_input(0x78);
     if (tick == LEVEL_PROMPT_TIMEOUT_TICKS) {
         transition_track_data = (struct TransitionTrack *)&tracks;
         write_level_number_glyphs();
         if (image_buffer_error_code != 0)
             fatal_exit(image_buffer_error_code, 0);
-        wait_input(LEVEL_PROMPT_FALLBACK_TICKS);
+        await_input(LEVEL_PROMPT_FALLBACK_TICKS);
     }
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
@@ -305,7 +305,7 @@ void prepare_game_asset_read(void)
 {
     sprite_base = fill_sprite_data;
     path_count = 4;
-    set_pg();
+    set_page();
     init_tracks();
 }
 
@@ -314,10 +314,10 @@ void draw_status(void)
     configure_text_renderer((int)monster_font_glyph_metrics, monster_art, 0, 8, 8);
     set_text_clip_rect(vga_state.viewport_left, vga_state.viewport_top, vga_state.viewport_right_or_width, vga_state.viewport_bottom_or_height);
     drawpage = page2;
-    racket_state->opaque_08 = -1;
-    racket_state->tail = -1;
-    draw_zero_padded_number(0x38, 4, racket_state->score, 10, 6);
-    draw_zero_padded_number(0x99, 4, racket_state->life_balance / POINTS_PER_SCORE_UNIT, 10, 2);
+    score_state->opaque_08 = -1;
+    score_state->tail = -1;
+    draw_zero_padded_number(0x38, 4, score_state->score, 10, 6);
+    draw_zero_padded_number(0x99, 4, score_state->life_balance / POINTS_PER_SCORE_UNIT, 10, 2);
     draw_zero_padded_number(0x108, 4, high_score_values, 10, 6);
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
@@ -332,29 +332,29 @@ void update_game_status_panel(void)
     saved_draw_page = (unsigned char)drawpage;
     saved_image_color_depth = image_color_depth;
     image_color_depth = 8;
-    if (next_extra_life_score < racket_state->score) {
-        racket_state->life_balance += POINTS_PER_SCORE_UNIT;
+    if (next_extra_life_score < score_state->score) {
+        score_state->life_balance += POINTS_PER_SCORE_UNIT;
         next_extra_life_score += EXTRA_LIFE_SCORE_STEP;
         submit_audio_request(0x3c);
     }
 
-    if (racket_state->score != racket_state->tail || racket_state->life_balance != racket_state->opaque_08) {
+    if (score_state->score != score_state->tail || score_state->life_balance != score_state->opaque_08) {
         configure_text_renderer((int)monster_font_glyph_metrics, monster_art, 0, 8, 8);
     }
     set_text_clip_rect(vga_state.viewport_left, vga_state.viewport_top, vga_state.viewport_right_or_width, vga_state.viewport_bottom_or_height);
 
-    if (racket_state->score != racket_state->tail) {
-        racket_state->tail = racket_state->score;
+    if (score_state->score != score_state->tail) {
+        score_state->tail = score_state->score;
         drawpage = page2;
-        draw_zero_padded_number(0x38, 4, racket_state->score, 10, 6);
+        draw_zero_padded_number(0x38, 4, score_state->score, 10, 6);
         copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, src_page, 0x38, 4);
         copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, dst_page, 0x38, 4);
     }
 
-    if (racket_state->life_balance != racket_state->opaque_08) {
-        racket_state->opaque_08 = racket_state->life_balance;
+    if (score_state->life_balance != score_state->opaque_08) {
+        score_state->opaque_08 = score_state->life_balance;
         drawpage = page2;
-        draw_zero_padded_number(0x99, 4, racket_state->life_balance / POINTS_PER_SCORE_UNIT, 10, 2);
+        draw_zero_padded_number(0x99, 4, score_state->life_balance / POINTS_PER_SCORE_UNIT, 10, 2);
         copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, src_page, 0x99, 4);
         copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, dst_page, 0x99, 4);
     }
@@ -372,7 +372,7 @@ void process_brick_hit(int column, int cell_index, int velocity_x, int velocity_
     saved_draw_page = (unsigned char)drawpage;
     pixel_x = column * LEVEL_TILE_WIDTH + LEVEL_TILE_ORIGIN_X;
     pixel_y = cell_index / 18 * 8 + 24;
-    racket_state->score += 1 << racket_object->reward_level;
+    score_state->score += 1 << racket_object->reward_level;
     drawpage = page2;
     copy_tile_to_page(pixel_x, pixel_y);
     drawpage = src_page;

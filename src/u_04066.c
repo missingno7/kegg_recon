@@ -41,7 +41,7 @@ extern int next_packed_table_value(void *, void *);
 extern struct SpriteDrawCommand *image_buffer_cursor;
 extern short mouse_y_mean_recent;
 extern short mouse_x_average_recent;
-extern struct GameProgressState *racket_state;
+extern struct GameProgressState *score_state;
 extern int spell_art_base;
 extern unsigned char bonus_index;
 extern void *palette_base;
@@ -273,7 +273,7 @@ void move_falling_spells(void)
                     temp -= SPELL_EFFECT_HANDLER_COUNT;
                 current_spell_effect_handler = spell_effect_handlers[temp];
                 current_spell_effect_handler();
-                racket_state->score += SPELL_REWARD_BASE_SCORE << racket_object->reward_level;
+                score_state->score += SPELL_REWARD_BASE_SCORE << racket_object->reward_level;
                 remove_falling_spell();
                 continue;
             }
@@ -375,7 +375,7 @@ void play_bonus_effect(void)
 void award_bonus_score(void)
 {
     submit_audio_request(AUDIO_ID_POWERUP);
-    racket_state->life_balance += motion_dir * POINTS_PER_SCORE_UNIT;
+    score_state->life_balance += motion_dir * POINTS_PER_SCORE_UNIT;
 }
 
 void spawn_side_bonus(void) {

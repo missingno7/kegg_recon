@@ -141,7 +141,7 @@ extern int enemy_cursor;
 extern int scratch;
 extern unsigned char ptrbuf[];
 extern unsigned char spell_slots[];
-extern struct GameProgressState *racket_state;
+extern struct GameProgressState *score_state;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
@@ -229,7 +229,7 @@ extern void update_level_hud(void);
 extern void upd_sh(void);
 extern void update_auxiliary_projectiles(void);
 extern void update_enemy_attack_cycle(void);
-extern void upd_ani(void);
+extern void animate(void);
 extern void f_9d40(unsigned char);
 extern void plot_transformed_pixel(void *, int);
 extern void f_c8c0(int, int, short, int, int);
@@ -258,8 +258,8 @@ extern short x_cursor_sensitivity;
 extern short mouse_sensitivity_y_axis;
 extern void query_mouse_sensitivity(void);
 extern void restore_mouse_driver_sensitivity(void);
-void rkt_mv(void);
-void set_pg(void);
+void adjust(void);
+void set_page(void);
 extern unsigned char open_brick_x_by_row[];
 extern unsigned char read_vga_pixel_entry(int, int);
 extern int enemy_projectile_count;
@@ -277,7 +277,7 @@ extern void f_10137(void);
 void *memmove(void *, const void *, size_t);
 void remove_auxiliary_projectile(void);
 void remove_animated_sprite(void);
-void upd_bl(void);
+void update(void);
 void remove_game_ball(void);
 extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
@@ -335,7 +335,7 @@ void shot_cd(void);
 int run_level(void);
 void draw_background_tiles(void);
 void handle_keyboard_controls(void);
-void wait_input(int input_mode);
+void await_input(int input_mode);
 
 void update_enemy_projectiles(void)
 {
@@ -476,7 +476,7 @@ void remove_enemy_projectile(void) {
                 break;
         }
     }
-    racket_state->score += 3 << racket_object->reward_level;
+    score_state->score += 3 << racket_object->reward_level;
     submit_audio_request(AUDIO_CUE_ENEMY_PROJECTILE_HIT);
     --moving_target_count;
     if (moving_target_number != moving_target_count)
