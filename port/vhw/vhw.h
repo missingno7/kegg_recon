@@ -27,12 +27,15 @@ void vhw_leave(void);
 int vcpu_interrupts_enabled(void);
 void vcpu_cli(void);
 void vcpu_sti(void);
+void vhw_cpu_poll_yield(void);     /* cooperative yield for long legacy memory polls */
+void vhw_cpu_poll_begin(void);
+void vhw_cpu_poll_end(void);
 void vhw_idle(uint64_t max_ns);  /* game thread waits for devices (blocking BIOS calls)   */
 void vhw_bind_game_thread(void);
 void vhw_bind_irq_thread(void);
 int vhw_on_irq_thread(void);
 void vhw_reset_nesting(void);   /* after ke_exit() abandons service/ISR frames          */
-extern volatile long vcpu_if_flag, vhw_game_depth, vhw_in_isr;
+extern volatile long vcpu_if_flag, vhw_game_depth, vhw_in_isr, vhw_cpu_polling;
 
 /* ---- port I/O (portio.c) --------------------------------------------------------------- */
 typedef uint32_t (*vhw_in_fn)(void *ctx, uint16_t port, int size);
