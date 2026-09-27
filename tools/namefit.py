@@ -136,7 +136,8 @@ def compile_audit(renames, plan):
     prof = {u["id"]: u.get("profile", "game-c") for u in man["units"]}
     units = c_units(plan)
     own = {u["id"] for u in (plan or {}).get("units", [])}
-    frozen_names = {o for o in renames if any(f and re.search(r"\b%s\b" % re.escape(o), t) for t, f in units.values())}
+    frozen_names = {o for o in renames if any(f and uid not in own and re.search(r"\b%s\b" % re.escape(o), t)
+                                              for uid, (t, f) in units.items())}
     for o in sorted(frozen_names):
         print(f"FROZEN  {o}: named in a byte-sensitive source; keep it (a `#pragma aux {renames[o]} \"{o}\"` alias is allowed)")
     renames = {o: n for o, n in renames.items() if o not in frozen_names}
@@ -159,8 +160,20 @@ def compile_audit(renames, plan):
             lo, hi = (mid, hi) if same else (lo, mid)
         return uid, order[hi - 1], rel
 
+    def own_layout(uid):
+        # the plan's own rewritten unit (all renames applied) must keep the canonical object layout: catches renames of
+        # functions called before their definition in the same TU and structural rewrites that move a chunk boundary
+        canon = (ROOT / next(u["src"] for u in man["units"] if u["id"] == uid)).read_text(encoding="latin-1")
+        base = compile_layout(canon, prof[uid], f"{uid}-canon")
+        return uid, compile_layout(sub(units[uid][0], renames), prof[uid], f"{uid}-plan") == base
+
     bad = 0
     with ThreadPoolExecutor(6) as ex:
+        for uid, same in ex.map(own_layout, sorted(own & set(units))):
+            if not same:
+                bad += 1
+                print(f"LAYOUT  {uid} (own plan unit): its object layout differs from the canonical unit's "
+                      f"(chunk boundaries/fixup order) - fix before the sandbox")
         for uid, culprit, rel in ex.map(one, jobs):
             if culprit is None:
                 print(f"OK      {uid}: {len(rel)} imported renames keep the layout")
@@ -169,7 +182,7 @@ def compile_audit(renames, plan):
                 d = len(rel[culprit]) - len(culprit)
                 print(f"LAYOUT  {uid}: first break at {culprit} -> {rel[culprit]} ({d:+d} chars); "
                       f"shorten/lengthen it or earlier imported names of {uid}{' (own plan unit)' if uid in own else ''}")
-    print(f"{len(jobs)} importing units compiled, {bad} change layout")
+    print(f"{len(jobs)} importing units + {len(own & set(units))} own plan units compiled, {bad} change layout")
     return 1 if bad else 0
 
 
