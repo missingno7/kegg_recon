@@ -104,7 +104,8 @@ def main(argv):
             dest = ROOT / u["dest"]
             dest.parent.mkdir(exist_ok=True)
             data = (ROOT / u["file"]).read_bytes()
-            pinned = bool(P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {}).get("host"))
+            prof_ = P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {})
+            pinned = bool(prof_.get("host")) and prof_.get("tool", "wcc386") == "wcc386"
             dest.write_bytes(data if pinned else lf(data))  # host-pinned profiles: exact bytes (CRLF) matter
             h = sha(dest)
             members = [f for f in man["functions"] if f.get("object", 1) == 1 and s0 <= int(f["start"], 16) < e0]

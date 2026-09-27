@@ -107,7 +107,8 @@ def promote_unit(cand: Path, uid: str, dest_rel: str, start: str, end: str, prof
     frozen_dir = ROOT / "build" / "promote" / f"{uid}-{stamp}"
     frozen_dir.mkdir(parents=True, exist_ok=True)
     frozen = frozen_dir / Path(dest_rel).name
-    verbatim = bool(dosrun.config()["profiles"].get(profile, {}).get("host"))
+    prof_ = dosrun.config()["profiles"].get(profile, {})
+    verbatim = bool(prof_.get("host")) and prof_.get("tool", "wcc386") == "wcc386"
     raw = cand.read_bytes()
     # host-pinned profiles (e.g. -ot literal padding = stale source-buffer bytes) depend on the exact file bytes,
     # CRLF included: keep them verbatim (and mark the file -text in .gitattributes)
