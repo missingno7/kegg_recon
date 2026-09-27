@@ -14,11 +14,11 @@ PIT_CHANNEL0_RATEGEN_LH     EQU 034h
 PIT_RELOAD_ALL_ONES         EQU 0FFFFh
 PIT_COUNTER_MODULUS         EQU 10000h
 PIT_SETTLE_LOOP_SEED        EQU 0FFFFFC18h
-EXTRN f_9e10:NEAR ; T06 helper that waits for vertical retrace.
-EXTRN f_9e54:NEAR ; T06 helper that advances the timer-event callbacks.
+EXTRN wait_for_vsync:NEAR ; T06 helper that waits for vertical retrace.
+EXTRN process_timer_events:NEAR ; T06 helper that advances the timer-event callbacks.
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-EXTRN g_73a8:DWORD ; Current PIT reload value supplied by T06.
-EXTRN g_e1b4_35:DWORD ; T06 global incremented once per PIT IRQ; higher-level meaning is unclear.
+EXTRN pit_rollover_value:DWORD ; Current PIT reload value supplied by T06.
+EXTRN timer_enabled09:DWORD ; T06 global incremented once per PIT IRQ; higher-level meaning is unclear.
         PUBLIC g_73d4
         PUBLIC g_pit_elapsed_ticks
 ; This separate initialized dword precedes the named sample result in the original data block.
@@ -58,8 +58,8 @@ rtc_index_write:
         mov     al,PIC_MASK_ALL
         out     PIC_MASTER_MASK_PORT,al
         out     PIC_SLAVE_MASK_PORT,al
-        call    f_9e10
-        call    f_9e10
+        call    wait_for_vsync
+        call    wait_for_vsync
         mov     al,PIT_CHANNEL0_RATEGEN_LH
         out     PIT_COMMAND_PORT,al
         jmp     short pit_mode_delay_1
@@ -100,7 +100,7 @@ pit_settle_spin:
         jne     short pit_settle_spin
         pop     eax
         pop     ecx
-        call    f_9e10
+        call    wait_for_vsync
         out     PIT_COMMAND_PORT,al
         jmp     short pit_latch_delay_1
 pit_latch_delay_1:
@@ -207,10 +207,10 @@ irq_pit_high_write:
         mov     ax,SEG DGROUP
         mov     ds,eax
         mov     es,eax
-        call    f_9e10
+        call    wait_for_vsync
         mov     al,PIT_CHANNEL0_RATEGEN_LH
         out     PIT_COMMAND_PORT,al
-        mov     eax,dword ptr g_73a8
+        mov     eax,dword ptr pit_rollover_value
         jmp     short irq_pit_reload_low_delay_1
 irq_pit_reload_low_delay_1:
         jmp     short irq_pit_reload_low_delay_2
@@ -227,8 +227,8 @@ irq_pit_reload_high_write:
         mov     al,ah
         out     PIT_CHANNEL0_PORT,al
         pushad
-        inc     dword ptr g_e1b4_35
-        call    f_9e54
+        inc     dword ptr timer_enabled09
+        call    process_timer_events
         popad
         mov     al,PIC_EOI_COMMAND
         out     PIC_MASTER_COMMAND_PORT,al

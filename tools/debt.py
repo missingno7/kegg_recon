@@ -5,7 +5,7 @@
 Columns: addr = address-derived identifiers (f_9d40, g_dDb8, x_dd40_xbukycw, ...), ploc = placeholder locals/params
 (v_10, a0, L_86a7 labels excluded), goto, raw = dereferences of casted pointer arithmetic (`*(int *)(p + 0x74)`),
 cast = pointer casts, hex = hex literals outside initialiser lines, hw = direct DOS/hardware touch points (port I/O,
-int386/intdos, DPMI, BIOS/VGA addresses), frozen = byte-sensitive source (host-pinned profile: do not edit).
+int386/intdos, DPMI, BIOS/VGA addresses), PINNED = host-pinned -ot source, editable only under the offset rule (docs/compiler-notes.md).
 --list KIND prints the distinct items of one kind per unit (addr, ploc, raw, hw).
 """
 from __future__ import annotations
@@ -88,7 +88,7 @@ def main(argv):
     tot = {c: 0 for c in cols}
     for r in rows:
         print(f"{r['id']:14} {r['src']:28} " + " ".join(f"{r.get(c, ''):>5}" for c in cols)
-              + ("  FROZEN" if r["frozen"] else "") + ("  asm" if r["kind"] == "asm" else ""))
+              + ("  PINNED(offset rule)" if r["frozen"] else "") + ("  asm" if r["kind"] == "asm" else ""))
         for c in cols:
             tot[c] += r.get(c, 0) or 0
     print(f"{'TOTAL':14} {'':28} " + " ".join(f"{tot[c]:>5}" for c in cols))

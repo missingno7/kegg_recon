@@ -18,9 +18,10 @@ layouts), docs/naming.md (rename mechanics). Current debt: `python tools/debt.py
   Comments, local variable names, parameter names, struct/enum TAG and member names, typedef names and macros
   (#define constants) do not reach code bytes in game-c/game-c-ot units — but a new typedef, enum constant or
   prototype is a symbol-table entry and can shift _BSS grouping: verify.
-- src/t06.c and src/t08.c (profile game-c-ot-dos) are FROZEN: their source text leaks into literal padding. Do not
-  edit them (a dedicated investigation owns them). Symbols they reference keep their linker names
-  (`#pragma aux readable "f_HEX"` alias in the defining unit is allowed).
+- src/t06.c and src/t08.c (profile game-c-ot-dos, DOSBox-X host) leak source bytes into literal padding: they are
+  editable ONLY under the proven offset rule in docs/compiler-notes.md ("-ot padding: exact source-offset rule"):
+  keep the anchor bytes at their offsets, the file length in its band, T08 CRLF. A plan that renames a symbol
+  they mention must include the T06/T08 unit itself (replan refuses textual edits to them otherwise).
 - TASM modules: label names, EQU constants, STRUC field names and comments do not change bytes as long as the
   instruction encodings stay identical — still verify every module.
 

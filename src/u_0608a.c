@@ -21,7 +21,7 @@ extern void update_racket_movement_bounds(void);
 extern void resize_racket(void);
 extern int get_racket_sprite_height(void);
 extern void load_next_file(int);
-extern void f_a574_wrvhrpegbz(int);
+extern void load_picture_keep(int);
 extern void stop_audio_stream(void);
 extern void spawn_player_shot(unsigned char, int, int, int);
 extern void update_player_shots(void);
@@ -147,7 +147,7 @@ void load_enemy(void) {
 void load_monster_art(void) {
     sprite_memory_base = g_e4d0_wfmxdlyju;
     vga_buffer_base = sprite_memory_base + 0xfa00;
-    f_a574_wrvhrpegbz(monster_anim_fname);
+    load_picture_keep(monster_anim_fname);
     game_sprite_base = g_e4d0_wfmxdlyju;
     load_next_file(monster_sprite_filename);
 }

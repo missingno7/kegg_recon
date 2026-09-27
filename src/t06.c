@@ -3,15 +3,20 @@
  */
 #include <i86.h>
 #include <conio.h>
+#pragma aux verify_timer "f_9974";
+#pragma aux timer_calibrated "g_73a6";
+#pragma aux start_timer "f_9b44";
+#pragma aux reset_timer_counter "f_9afc";
+#pragma aux wait_for_tick "f_9d40";
 extern short windows_environment_detected;
 extern int f_9f64(void);
 extern unsigned char g_756f[];
 extern unsigned char g_7585;
 extern unsigned char g_7586;
 extern unsigned char g_75a8;
-extern void f_9afc(void);
+extern void reset_timer_counter(void);
 extern void f_d656(void *, int);
-void f_9ac4(void);
+void install_timer_irq(void);
 extern int set_pit_channel0_reload(int);
 extern void f_d7b8(void *);
 extern unsigned g_7588;
@@ -21,8 +26,8 @@ extern int g_7594;
 extern int g_75a4;
 extern unsigned g_75c4;
 extern void __far pit_channel0_interrupt(void);
-void f_9d40(short a0);
-extern void f_9f48(void);
+void wait_for_tick(short wait_flags);
+extern void clear_timer_events(void);
 extern int f_da01(void *);
 extern void __far o2_103(void);
 extern void __far o2_e0(void);
@@ -30,332 +35,291 @@ extern void (*kbd_irq_hook)(void);
 extern void (*kbd_poll_hook)(void);
 extern void (*mouse_update_hook)(void);
 extern void (*sprite_update_hook)(void);
-extern void f_9e10(void);
-extern void f_9e54(void);
+extern void wait_for_vsync(void);
+extern void process_timer_events(void);
 
-struct T06Event { void (*callback)(void); int period; int elapsed; };
-int g_e164_6;
-struct T06Event g_e168_j[5];
+struct TimerEvent { void (*callback)(void); int period; int elapsed; };
+int pit_tick_accumulator5;
+struct TimerEvent timer_events4o[5];
+/* Timer state; role not established. */
 int g_e1a4_g;
-int g_e1a8_jn;
-int g_e1ac_j;
-int g_e1b0_2;
-int g_e1b4_35;
+int retrace_spin_count8;
+int pit_counter_snapshot2v;
+int timer_error_hundredths0z;
+int timer_enabled09;
+/* Shared timer state; role not established. */
 int g_e1b8;
+/* Shared timer state; role not established. */
 short g_e1bc;
-short g_e1be_9;
+short retrace_count5;
+/* Shared timer state; role not established. */
 short g_e1c0;
 
-void f_9960(void);
-short g_73a4 = 0;
-short g_73a6 = 0;
-int g_73a8 = 0xffff;
-unsigned g_73ac = 0xffff;
+void noop_callback(void);
+short keyboard_state_word = 0;
+short timer_calibrated = 0;
+int pit_rollover_value = 0xffff;
+unsigned timer_delta = 0xffff;
 unsigned g_73b0 = 0x445f0000UL;
-short *kbd_state_ptr = &g_73a4;
-void (*kbd_irq_hook)(void) = f_9960;
-void (*kbd_poll_hook)(void) = f_9960;
-void (*mouse_update_hook)(void) = f_9960;
-void (*sprite_update_hook)(void) = f_9960;
-unsigned char *g_73c8 = "\0";
-short g_73cc = 0;
+short *kbd_state_ptr = &keyboard_state_word;
+void (*kbd_irq_hook)(void) = noop_callback;
+void (*kbd_poll_hook)(void) = noop_callback;
+void (*mouse_update_hook)(void) = noop_callback;
+void (*sprite_update_hook)(void) = noop_callback;
+unsigned char *timer_sync_flag_ptr = "\0";
+short timer_event_count = 0;
 short g_73ce = 0x6d20;
-char *g_73d0 = "Please Wait, I am updating your clock...";
+char *clock_update_message = "Please Wait, I am updating your clock...";
 
 
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9960  empty default hook                                     лл
+  лл noop_callback  empty default hook                                     лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-void f_9960(void)
+void noop_callback(void)
 {
 }
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9974  measure the timer                                      лл
+  лл verify_timer  measure the timer                                      лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-int f_9974(void)
+int verify_timer(void)
 {
-    int v_4;
-    int v_8;
-    int v_c;
-    int v_10;
-    v_c = 0;
-    v_10 = 0;
-    if (windows_environment_detected != -1) goto L_99b2;
-    g_73a6 = 0;
-    return g_73a6;
-L_99b2:;
-    v_4 = 0;
-L_99b9:;
-    if (v_4 < 4) goto L_99cc;
-    goto L_9a51;
-L_99c4:;
-    v_4++;
-    goto L_99b9;
-L_99cc:;
-    v_8 = f_9f64();
-    v_10 += v_8;
-    if (v_8 > 0x61a8) goto L_99ec;
-    if (v_8 >= 0x2710) goto L_9a04;
-L_99ec:;
-    g_73a6 = 0;
-    return g_73a6;
-L_9a04:;
-    if (v_c == 0) goto L_9a46;
-    v_c -= v_8;
-    if (v_c >= 0) goto L_9a19;
-    v_c = -v_c;
-L_9a19:;
-    if ((v_c / 0x200) <= 0) goto L_9a46;
-    g_73a6 = 0;
-    return g_73a6;
-L_9a46:;
-    v_c = v_8;
-    goto L_99c4;
-L_9a51:;
-    v_10 = (v_10 / 4) - f_9f64();
-    if (v_10 >= 0) goto L_9a77;
-    v_10 = -v_10;
-L_9a77:;
-    if (((v_10 * 4) / 0x200) <= 0) goto L_9aa7;
-    g_73a6 = 0;
-    return g_73a6;
-L_9aa7:;
-    g_73a6 = -1;
-    return g_73a6;
+    int sample_index;
+    int timer_sample;
+    int previous_sample;
+    int total_samples;
+    previous_sample = 0;
+    total_samples = 0;
+    if (windows_environment_detected == -1) {
+        timer_calibrated = 0;
+        return timer_calibrated;
+    }
+    for (sample_index = 0; sample_index < 4; sample_index++) {
+        timer_sample = f_9f64();
+        total_samples += timer_sample;
+        if (timer_sample > 0x61a8 || timer_sample < 0x2710) {
+            timer_calibrated = 0;
+            return timer_calibrated;
+        }
+        if (previous_sample) {
+            previous_sample -= timer_sample;
+            if (previous_sample < 0) {
+                previous_sample = -previous_sample;
+            }
+            if ((previous_sample / 0x200) > 0) {
+                timer_calibrated = 0;
+                return timer_calibrated;
+            }
+        }
+        previous_sample = timer_sample;
+    }
+    total_samples = (total_samples / 4) - f_9f64();
+    if (total_samples < 0) {
+        total_samples = -total_samples;
+    }
+    if (((total_samples * 4) / 0x200) > 0) {
+        timer_calibrated = 0;
+        return timer_calibrated;
+    }
+    timer_calibrated = -1;
+    return timer_calibrated;
 }
 
-/*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9ac4                                                         лл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
+/* Timer routine. */
 
-void f_9ac4(void)
+void install_timer_irq(void)
 {
     g_7586 = 8;
     g_7585 = g_75a8;
-    f_d656(g_756f, (int)f_9afc);
+    f_d656(g_756f, (int)reset_timer_counter);
 }
 
-/*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9afc                                                         лл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
+/* Timer routine. */
 
-void f_9afc(void)
+void reset_timer_counter(void)
 {
     _disable();
     f_d7b8(g_756f);
     set_pit_channel0_reload(0);
     _enable();
-    g_73ac = 0xffff;
-    g_73a8 = g_73ac;
+    timer_delta = 0xffff;
+    pit_rollover_value = timer_delta;
 }
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9b44                                                         лл
+  лл start_timer                                                         лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-int f_9b44(int a0)
+int start_timer(int timer_options)
 {
-    if (a0 != 0) goto L_9b70;
-    a0 = g_7588;
-    if (a0 != 0) goto L_9b70;
-    return 0;
-L_9b70:;
-    if (g_73a6 != -1) goto L_9b88;
-    if (*(short *)g_756f != -1) goto L_9b8d;
-L_9b88:;
-    goto L_9c81;
-L_9b8d:;
-    g_73ac = f_9f64();
-    if (g_73ac > 0x61a8) goto L_9baf;
-    if (g_73ac >= 0x2710) goto L_9bc4;
-L_9baf:;
-    g_73a6 = 0;
-    return 0;
-L_9bc4:;
-    g_7588 = a0;
-    f_9ac4();
-    g_73a8 = g_73ac - 0x100;
-    f_9f48();
-    g_e1b4_35 = 1;
-    g_e1be_9 = 1;
-    _disable();
-    g_758c = (int)pit_channel0_interrupt;
-    g_7590 = (int)o2_e0;
-    g_7594 = (int)o2_103;
-    f_da01(g_756f);
-    set_pit_channel0_reload(0xffff);
-    _enable();
-    if ((a0 & 1) != 1) goto L_9c59;
-    g_73c8 = (unsigned char *)g_75a4;
-L_9c59:;
-    if (g_75c4 == 0) goto L_9c6b;
-    return 0x502;
-L_9c6b:;
-    f_9d40(0);
-    f_9d40(0);
-L_9c81:;
-    return 0;
-}
-
-/*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9c90                                                         лл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
-
-void f_9c90(void)
-{
-}
-
-/*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9ca4                                                         лл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
-
-short f_9ca4(void)
-{
-    unsigned short lo, hi;
-    outp(0x43, 0);
-    lo = inp(0x40);
-    hi = inp(0x40);
-    g_e164_6 = g_e1ac_j;
-    g_e1ac_j = ((unsigned short)hi << 8) + (unsigned short)lo;
-    if (g_e1ac_j < g_e164_6) {
-    } else {
-        g_e164_6 += g_73a8;
+    if (!timer_options) {
+        timer_options = g_7588;
+        if (!timer_options) {
+            return 0;
+        }
     }
-    g_e1b0_2 = (g_e164_6 - g_e1ac_j) * 100 / 0x4280;
-    return g_e1b0_2;
+    if (timer_calibrated == -1 && *(short *)g_756f != -1) {
+        timer_delta = f_9f64();
+        if (timer_delta > 0x61a8 || timer_delta < 0x2710) {
+            timer_calibrated = 0;
+            return 0;
+        }
+        g_7588 = timer_options;
+        install_timer_irq();
+        pit_rollover_value = timer_delta - 0x100;
+        clear_timer_events();
+        timer_enabled09 = 1;
+        retrace_count5 = 1;
+        _disable();
+        g_758c = (int)pit_channel0_interrupt;
+        g_7590 = (int)o2_e0;
+        g_7594 = (int)o2_103;
+        f_da01(g_756f);
+        set_pit_channel0_reload(0xffff);
+        _enable();
+        if ((timer_options & 1) == 1) {
+            timer_sync_flag_ptr = (unsigned char *)g_75a4;
+        }
+        if (g_75c4) {
+            return 0x502;
+        }
+        wait_for_tick(0);
+        wait_for_tick(0);
+    }
+    return 0;
 }
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9d40                                                         лл
+  лл timer_noop                                                         лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-void f_9d40(short a0)
+void timer_noop(void)
 {
-    int v_4;
-    v_4 = g_e1be_9;
-    if ((unsigned short)(a0 & 1) != 1) goto L_9d6a;
-    (*kbd_irq_hook)();
-L_9d6a:;
-    if ((unsigned short)(a0 & 1) != 1) goto L_9d7e;
-    (*kbd_poll_hook)();
-L_9d7e:;
-    if ((a0 & 2) == 0) goto L_9d8c;
-    (*mouse_update_hook)();
-L_9d8c:;
-    if ((a0 & 4) == 0) goto L_9d9a;
-    (*sprite_update_hook)();
-L_9d9a:;
-    if (*(short *)g_756f != -1) goto L_9ddf;
-    g_e1a8_jn = 0;
-L_9db0:;
-    if (g_e1be_9 != v_4) goto L_9ddd;
-    ++g_e1a8_jn;
-    if (*(unsigned char *)g_73c8 == 0) goto L_9ddb;
-    ++g_e1be_9;
-    *(unsigned char *)g_73c8 = 0;
-L_9ddb:;
-    goto L_9db0;
-L_9ddd:;
-    goto L_9df3;
-L_9ddf:;
-    g_e1a8_jn = 0;
-    f_9e10();
-    f_9e54();
-L_9df3:;
-    g_e1c0 = g_e1be_9;
-    g_e1be_9 = 0;
 }
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9e10  wait for vertical retrace                              лл
+  лл read_pit_counter                                                         лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-void f_9e10(void)
+short read_pit_counter(void)
 {
-L_9e1c:;
-    if (((unsigned char)inp(0x3da) & 8) == 0) goto L_9e35;
-    ++g_e1a8_jn;
-    goto L_9e1c;
-L_9e35:;
-    if (((unsigned char)inp(0x3da) & 8) != 0) goto L_9e4e;
-    ++g_e1a8_jn;
-    goto L_9e35;
-L_9e4e:;
+    unsigned short counter_low, counter_high;
+    outp(0x43, 0);
+    counter_low = inp(0x40);
+    counter_high = inp(0x40);
+    pit_tick_accumulator5 = pit_counter_snapshot2v;
+    pit_counter_snapshot2v = ((unsigned short)counter_high << 8) + (unsigned short)counter_low;
+    if (pit_counter_snapshot2v < pit_tick_accumulator5) {
+    } else {
+        pit_tick_accumulator5 += pit_rollover_value;
+    }
+    timer_error_hundredths0z = (pit_tick_accumulator5 - pit_counter_snapshot2v) * 100 / 0x4280;
+    return timer_error_hundredths0z;
 }
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9e54                                                         лл
+  лл wait_for_tick                                                         лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-void f_9e54(void)
+void wait_for_tick(short wait_flags)
 {
-    unsigned short v_4;
-    if (*(short *)kbd_state_ptr != 0) goto L_9e72;
-    ++g_e1be_9;
-L_9e72:;
-    v_4 = 0;
-L_9e79:;
-    if ((unsigned short)v_4 < (unsigned short)g_73cc) goto L_9e8f;
-    return;
-L_9e87:;
-    v_4++;
-    goto L_9e79;
-L_9e8f:;
-    *(int *)(((unsigned char *)&g_e168_j[0].elapsed) + (v_4 * 0xc)) += g_73ac;
-    if ((unsigned)*(int *)(((unsigned char *)&g_e168_j[0].elapsed) + (v_4 * 0xc)) < *(int *)(((unsigned char *)&g_e168_j[0].period) + (v_4 * 0xc))) goto L_9ee5;
-    *(int *)(((unsigned char *)&g_e168_j[0].elapsed) + (v_4 * 0xc)) -= *(int *)(((unsigned char *)&g_e168_j[0].period) + (v_4 * 0xc));
-    (*(int (**)())(((unsigned char *)g_e168_j) + (v_4 * 0xc)))();
-L_9ee5:;
-    goto L_9e87;
+    int starting_tick;
+    starting_tick = retrace_count5;
+    if ((unsigned short)(wait_flags & 1) == 1) {
+        (*kbd_irq_hook)();
+    }
+    if ((unsigned short)(wait_flags & 1) == 1) {
+        (*kbd_poll_hook)();
+    }
+    if (wait_flags & 2) {
+        (*mouse_update_hook)();
+    }
+    if (wait_flags & 4) {
+        (*sprite_update_hook)();
+    }
+    if (*(short *)g_756f == -1) {
+        retrace_spin_count8 = 0;
+        while (retrace_count5 == starting_tick) {
+            ++retrace_spin_count8;
+            if (*(unsigned char *)timer_sync_flag_ptr) {
+                ++retrace_count5;
+                *(unsigned char *)timer_sync_flag_ptr = 0;
+            }
+        }
+    } else {
+        retrace_spin_count8 = 0;
+        wait_for_vsync();
+        process_timer_events();
+    }
+    g_e1c0 = retrace_count5;
+    retrace_count5 = 0;
 }
 
 /*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9eec                                                         лл
+  лл wait_for_vsync  wait for vertical retrace                              лл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
   лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
 
-void f_9eec(int a0, int a1)
+void wait_for_vsync(void)
 {
-    if ((unsigned short)g_73cc >= 5) goto L_9f43;
-    *(int *)(((unsigned char *)g_e168_j) + ((unsigned short)g_73cc * 0xc)) = a0;
-    *(int *)(((unsigned char *)&g_e168_j[0].period) + ((unsigned short)g_73cc * 0xc)) = a1;
-    *(int *)(((unsigned char *)&g_e168_j[0].elapsed) + ((unsigned short)g_73cc * 0xc)) = 0;
-    ++g_73cc;
-L_9f43:;
+    while ((unsigned char)inp(0x3da) & 8) {
+        ++retrace_spin_count8;
+    }
+    while (!((unsigned char)inp(0x3da) & 8)) {
+        ++retrace_spin_count8;
+    }
 }
 
-/*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл f_9f48                                                         лл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
+/* Timer routine. */
 
-void f_9f48(void)
+void process_timer_events(void)
 {
-    g_73cc = 0;
+    unsigned short event_index;
+    if (!*(short *)kbd_state_ptr) {
+        ++retrace_count5;
+    }
+    for (event_index = 0; (unsigned short)event_index < (unsigned short)timer_event_count; event_index++) {
+        timer_events4o[event_index].elapsed += timer_delta;
+        if ((unsigned)timer_events4o[event_index].elapsed >= timer_events4o[event_index].period) {
+            timer_events4o[event_index].elapsed -= timer_events4o[event_index].period;
+            timer_events4o[event_index].callback();
+        }
+    }
 }
+
+/* Timer routine. */
+
+void schedule_timer_event(int callback_address, int period_ticks)
+{
+    if ((unsigned short)timer_event_count < 5) {
+        timer_events4o[(unsigned short)timer_event_count].callback = (void (*)(void))callback_address;
+        timer_events4o[(unsigned short)timer_event_count].period = period_ticks;
+        timer_events4o[(unsigned short)timer_event_count].elapsed = 0;
+        ++timer_event_count;
+    }
+}
+
+/* Timer routine. */
+
+void clear_timer_events(void)
+{
+    timer_event_count = 0;
+}
+/* Watcom -ot sentinel: keep the source byte at file offset 10336 as CP437 block.
+               л*/

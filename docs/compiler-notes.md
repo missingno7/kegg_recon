@@ -336,3 +336,15 @@ ones, so the tool keeps such declarations in a `{ }` block around the statements
 - `goto` to a label that is not the loop's continue point (U04CF2 `goto L_5153` before the loop tail).
 HYPOTHESIS: no C construct compiled by these rules produces those layouts without a goto (templates only jump to a
 construct's own entry/exit/continue positions), so these are most likely real gotos in the 1994 source.
+
+## `-ot` padding: exact source-offset rule (worker `otfree`, probes in build/workers/otfree/probes/)
+PROVEN on the pinned DOSBox-X host with the fixed `game-c-ot-dos` invocation: a `-ot` literal pad at CONST offset
+`k` reads index `i = 2141 + k` of the compiler's 4096-byte main-source read buffer, which holds `file[4096*m + i]`
+for the greatest `m` with `4096*m + i < source_length` (a short final read overwrites only the prefix it reaches).
+CONST offset 2 is a compiler-written `01`; the last literal has no pad. Consequences:
+- T06 leaks one byte: CONST[3] <- `file[10336]` (0xDB). Keep that byte and the file length in 10337..14432.
+- T08 leaks 15 bytes: source offsets 2146-2148, 2154-2156, 2162-2164, 2170-2172, 2178-2180 (all 0xDB). Keep them
+  and the length in 2181..6242. T08 is CRLF: LF conversion moves the offsets (and changes the pads).
+- Everything else in these files may change freely (renames, structure, comments) while the anchors stay; the
+  canonical files hold the anchors in explicit block-character comment banners. Include context matters (adding
+  `#include <string.h>` changed the pads).

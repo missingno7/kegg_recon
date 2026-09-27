@@ -57,7 +57,7 @@ extern void update_racket_movement_bounds(void);
 extern void resize_racket(void);
 extern int get_racket_sprite_height(void);
 extern void load_next_file(int);
-extern void f_a574_wrvhrpegbz(int);
+extern void load_picture_keep(int);
 extern void stop_audio_stream(void);
 extern void spawn_player_shot(unsigned char, int, int, int);
 extern void update_player_shots(void);

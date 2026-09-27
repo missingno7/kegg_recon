@@ -539,7 +539,7 @@ extern short sound_blaster_detected;
 extern int file_operation_result;
 extern unsigned char *sprite_memory_base;
 extern int load_next_file();
-extern int f_a574_wrvhrpegbz();
+extern int load_picture_keep();
 extern unsigned char *vga_buffer_base;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
