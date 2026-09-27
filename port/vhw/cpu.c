@@ -26,9 +26,19 @@ static DWORD calibration_clock_owner;
 static uint64_t calibration_clock_ns;
 static volatile LONG if_owner_tid;
 #define CALIBRATION_CLOCK_STEP_NS 5000ull
-static __thread uint64_t irq_clock_ns;
-static __thread uint64_t irq_wall_ns;
-static __thread int irq_clock_active;
+/* A deliverable IRQ0 freezes the shared PIT/VGA clock at its scheduled edge until the
+ * handler starts. Host delivery delay is accumulated as clock debt and repaid at a bounded
+ * rate after delivery, so the clock resumes smoothly without losing long-run wall pace. */
+#define CLOCK_CATCHUP_PPM 200000ull
+#define IRQ_CLOCK_MAX_STEP_NS 20000ull
+static uint64_t clock_catchup_debt_ns;
+static uint64_t clock_catchup_fraction;
+static int irq0_hold_active;
+static uint64_t irq0_hold_ns;
+static uint64_t irq0_hold_wall_ns;
+static int irq_clock_active;
+static uint64_t irq_clock_ns;
+static uint64_t irq_wall_ns;
 static __thread unsigned poll_yield_count;
 
 /* ---- lockstep mode (docs/port/lockstep.md) ---------------------------------------------
@@ -53,10 +63,11 @@ void vhw_lockstep_advance(uint64_t ns)
         vhw_lockstep_ms_hook();
 }
 
-/* One monotonic machine clock feeds both the PIT and VGA raster. A calibration entered by
+/* One shared machine clock feeds both the PIT and VGA raster. A calibration entered by
  * programming channel 0 in mode 2 while IF=0 gets a per-CPU clock: device-time observations
  * advance by fixed steps, so host preemption cannot change a 3DA/PIT poll. Outside calibration
- * the clock follows wall time. IRQ0 retains its edge-time scope. */
+ * the clock follows wall time. A deliverable IRQ0 holds time at its PIT edge until delivery;
+ * its edge-time scope advances through the ISR and delivery delay is smoothed back in. */
 static BOOL CALLBACK machine_clock_init(PINIT_ONCE once, PVOID parameter, PVOID *context)
 {
     (void)once;
@@ -73,11 +84,48 @@ static void ensure_machine_clock(void)
     InitOnceExecuteOnce(&machine_clock_once, machine_clock_init, NULL, NULL);
 }
 
-static void machine_clock_sync_wall(uint64_t now)
+static void machine_clock_sync_wall(uint64_t now, int smooth_catchup)
 {
-    if (now >= machine_wall_ns)
-        machine_clock_ns += now - machine_wall_ns;
+    if (now >= machine_wall_ns) {
+        uint64_t elapsed = now - machine_wall_ns;
+        uint64_t extra = 0;
+        if (smooth_catchup && clock_catchup_debt_ns && elapsed) {
+            uint64_t whole = (elapsed / 1000000ull) * CLOCK_CATCHUP_PPM;
+            uint64_t fraction = (elapsed % 1000000ull) * CLOCK_CATCHUP_PPM +
+                                clock_catchup_fraction;
+            extra = whole + fraction / 1000000ull;
+            clock_catchup_fraction = fraction % 1000000ull;
+            if (extra >= clock_catchup_debt_ns) {
+                extra = clock_catchup_debt_ns;
+                clock_catchup_fraction = 0;
+            }
+            clock_catchup_debt_ns -= extra;
+        }
+        machine_clock_ns += elapsed + extra;
+    }
     machine_wall_ns = now;
+}
+
+static void clock_add_catchup_debt(uint64_t ns)
+{
+    uint64_t max = ~(uint64_t)0;
+    if (max - clock_catchup_debt_ns < ns)
+        clock_catchup_debt_ns = max;
+    else
+        clock_catchup_debt_ns += ns;
+}
+
+/* A long host scheduling gap while the IRQ thread is in a VGA poll is not emulated CPU
+ * execution. Bound each observation's advance and repay the ignored wall interval later. */
+static uint64_t irq_clock_advance_to(uint64_t now)
+{
+    uint64_t elapsed = now > irq_wall_ns ? now - irq_wall_ns : 0;
+    uint64_t advance = elapsed > IRQ_CLOCK_MAX_STEP_NS ? IRQ_CLOCK_MAX_STEP_NS : elapsed;
+    if (elapsed > advance)
+        clock_add_catchup_debt(elapsed - advance);
+    irq_clock_ns += advance;
+    irq_wall_ns = now;
+    return irq_clock_ns;
 }
 
 uint64_t vhw_clock_now_ns(void)
@@ -88,20 +136,40 @@ uint64_t vhw_clock_now_ns(void)
         return vhw_lockstep_ns;
     now = ke_now_ns();
     tid = GetCurrentThreadId();
-    if (irq_clock_active)
-        return now >= irq_wall_ns ? irq_clock_ns + (now - irq_wall_ns) : irq_clock_ns;
-
     ensure_machine_clock();
     EnterCriticalSection(&machine_clock_lock);
-    if (calibration_clock_active && tid == calibration_clock_owner && !vcpu_if_flag) {
+    if (irq_clock_active) {
+        result = irq_clock_advance_to(now);
+    } else if (irq0_hold_active) {
+        result = irq0_hold_ns;
+    } else if (calibration_clock_active && tid == calibration_clock_owner && !vcpu_if_flag) {
         calibration_clock_ns += CALIBRATION_CLOCK_STEP_NS;
         result = calibration_clock_ns;
     } else {
-        machine_clock_sync_wall(now);
+        machine_clock_sync_wall(now, 1);
         result = machine_clock_ns;
     }
     LeaveCriticalSection(&machine_clock_lock);
     return result;
+}
+
+/* Convert a virtual-clock interval to host wait time. The PIT's waitable timer must honor
+ * the same temporary slew as vhw_clock_now_ns or it would deliver edges late during recovery. */
+uint64_t vhw_clock_wall_delay_ns(uint64_t clock_delta_ns)
+{
+    uint64_t extra = 0, denominator = 1000000ull + CLOCK_CATCHUP_PPM;
+    if (vhw_lockstep || !clock_delta_ns)
+        return clock_delta_ns;
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (clock_catchup_debt_ns) {
+        extra = (clock_delta_ns / denominator) * CLOCK_CATCHUP_PPM +
+                ((clock_delta_ns % denominator) * CLOCK_CATCHUP_PPM) / denominator;
+        if (extra > clock_catchup_debt_ns)
+            extra = clock_catchup_debt_ns;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
+    return clock_delta_ns - extra;
 }
 
 void vhw_clock_begin_calibration(uint64_t start_ns)
@@ -114,7 +182,7 @@ void vhw_clock_begin_calibration(uint64_t start_ns)
     ensure_machine_clock();
     EnterCriticalSection(&machine_clock_lock);
     if (!vcpu_if_flag && tid == (DWORD)InterlockedCompareExchange(&if_owner_tid, 0, 0)) {
-        machine_clock_sync_wall(now);
+        machine_clock_sync_wall(now, 0);
         calibration_clock_ns = start_ns;
         calibration_clock_owner = tid;
         calibration_clock_active = 1;
@@ -141,7 +209,7 @@ static void vhw_clock_end_calibration(DWORD tid)
     ensure_machine_clock();
     EnterCriticalSection(&machine_clock_lock);
     if (calibration_clock_active && calibration_clock_owner == tid) {
-        machine_clock_sync_wall(now);
+        machine_clock_sync_wall(now, 0);
         if (calibration_clock_ns > machine_clock_ns)
             machine_clock_ns = calibration_clock_ns;
         calibration_clock_active = 0;
@@ -151,16 +219,98 @@ static void vhw_clock_end_calibration(DWORD tid)
     LeaveCriticalSection(&machine_clock_lock);
 }
 
+void vhw_clock_irq0_pending(uint64_t edge_ns)
+{
+    uint64_t now;
+    if (vhw_lockstep)
+        return;
+    now = ke_now_ns();
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (!irq0_hold_active && !irq_clock_active) {
+        machine_clock_sync_wall(now, 1);
+        if (edge_ns && edge_ns < machine_clock_ns) {
+            clock_add_catchup_debt(machine_clock_ns - edge_ns);
+            irq0_hold_ns = edge_ns;
+        } else {
+            irq0_hold_ns = machine_clock_ns;
+        }
+        irq0_hold_wall_ns = now;
+        machine_clock_ns = irq0_hold_ns;
+        machine_wall_ns = now;
+        irq0_hold_active = 1;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
+}
+
+int vhw_clock_irq0_held(void)
+{
+    int held;
+    if (vhw_lockstep)
+        return 0;
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    held = irq0_hold_active;
+    LeaveCriticalSection(&machine_clock_lock);
+    return held;
+}
+
+void vhw_clock_irq0_release(void)
+{
+    uint64_t now;
+    int released = 0;
+    if (vhw_lockstep)
+        return;
+    now = ke_now_ns();
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (irq0_hold_active && !irq_clock_active) {
+        if (now > irq0_hold_wall_ns)
+            clock_add_catchup_debt(now - irq0_hold_wall_ns);
+        machine_clock_ns = irq0_hold_ns;
+        machine_wall_ns = now;
+        irq0_hold_active = 0;
+        released = 1;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
+    if (released)
+        vpit_clock_changed();
+}
+
 void vhw_clock_irq0_enter(uint64_t edge_ns)
 {
-    irq_clock_ns = edge_ns;
-    irq_wall_ns = ke_now_ns();
-    irq_clock_active = 1;
+    uint64_t now;
+    if (vhw_lockstep)
+        return;
+    now = ke_now_ns();
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (irq0_hold_active && !irq_clock_active) {
+        irq_clock_ns = edge_ns > irq0_hold_ns ? edge_ns : irq0_hold_ns;
+        irq_wall_ns = now;
+        if (now > irq0_hold_wall_ns)
+            clock_add_catchup_debt(now - irq0_hold_wall_ns);
+        irq_clock_active = 1;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
 }
 
 void vhw_clock_irq0_leave(void)
 {
-    irq_clock_active = 0;
+    uint64_t now;
+    if (vhw_lockstep)
+        return;
+    now = ke_now_ns();
+    ensure_machine_clock();
+    EnterCriticalSection(&machine_clock_lock);
+    if (irq_clock_active) {
+        machine_clock_ns = irq_clock_advance_to(now);
+        machine_wall_ns = now;
+        irq0_hold_ns = machine_clock_ns;
+        irq0_hold_wall_ns = now;
+        irq_clock_active = 0;
+    }
+    LeaveCriticalSection(&machine_clock_lock);
 }
 
 void vhw_bind_game_thread(void) { game_tid = GetCurrentThreadId(); }
@@ -199,6 +349,7 @@ void vcpu_cli(void)
     DWORD tid = GetCurrentThreadId();
     InterlockedExchange(&if_owner_tid, (LONG)tid);
     InterlockedExchange(&vcpu_if_flag, 0);
+    vhw_clock_irq0_release();
 }
 
 void vcpu_sti(void)

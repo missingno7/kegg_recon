@@ -30,6 +30,10 @@ void vcpu_sti(void);
 void vhw_cpu_poll_yield(void);     /* cooperative yield for long legacy memory polls */
 void vhw_idle(uint64_t max_ns);  /* game thread waits for devices (blocking BIOS calls)   */
 uint64_t vhw_clock_now_ns(void); /* shared PIT/VGA clock, with IRQ0 edge-time scope        */
+uint64_t vhw_clock_wall_delay_ns(uint64_t clock_delta_ns);
+void vhw_clock_irq0_pending(uint64_t edge_ns);
+int vhw_clock_irq0_held(void);
+void vhw_clock_irq0_release(void);
 void vhw_clock_irq0_enter(uint64_t edge_ns);
 void vhw_clock_irq0_leave(void);
 void vhw_clock_begin_calibration(uint64_t start_ns);
@@ -85,6 +89,7 @@ void vpic_isr_exit_redirect(int code);    /* ke_exit() called inside an ISR on I
 
 /* ---- 8253 PIT (pit.c) ------------------------------------------------------------------ */
 void vpit_init(void);
+void vpit_clock_changed(void);
 void vpit_shutdown(void);
 #define VPIT_HZ 1193182u
 
@@ -132,6 +137,7 @@ void vdma_init(void);
 int vdma_read(int channel, uint8_t *dst, int len, int *terminal);
 /* Write `len` copies of a device sample to an 8-bit channel; returns bytes, *terminal at TC. */
 int vdma_write(int channel, uint8_t sample, int len, int *terminal);
+uint32_t vdma_current_linear(int channel);
 void vsb_init(void);
 void vsb_shutdown(void);
 

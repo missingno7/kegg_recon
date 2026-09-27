@@ -658,7 +658,7 @@ static int test_pm_snapshot_scanout(void)
 static int measure_mode_timing(const char *name, const uint8_t crtc[25], uint8_t misc,
                                double expected_hz, uint32_t expected_pit_ticks)
 {
-    uint32_t frame_start;
+    uint32_t frame_start, frames_elapsed;
     uint64_t start_ns, elapsed_ns, deadline;
     double measured_hz;
     int sample, i;
@@ -678,11 +678,12 @@ static int measure_mode_timing(const char *name, const uint8_t crtc[25], uint8_t
     while (vga_frame_counter() - frame_start < 20 && ke_now_ns() < deadline)
         SwitchToThread();
     elapsed_ns = ke_now_ns() - start_ns;
-    if (vga_frame_counter() - frame_start < 20 || !elapsed_ns) {
+    frames_elapsed = vga_frame_counter() - frame_start;
+    if (frames_elapsed < 20 || !elapsed_ns) {
         printf("    %s retrace counter did not advance\n", name);
         return 1;
     }
-    measured_hz = 20.0 * 1e9 / (double)elapsed_ns;
+    measured_hz = frames_elapsed * 1e9 / (double)elapsed_ns;
     if (measured_hz < expected_hz * 0.99 || measured_hz > expected_hz * 1.01) {
         printf("    %s retrace rate %.3f Hz expected %.3f Hz\n", name, measured_hz,
                expected_hz);

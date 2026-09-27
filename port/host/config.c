@@ -294,6 +294,7 @@ void ke_config_load(int argc, char **argv)
     int parsed;
     memset(&ke_config, 0, sizeof ke_config);
     ke_config.irq_async = 1;
+    ke_config.sound_blaster = 1;
     ke_config.scale = 3;
     ke_config.aspect = 1;
     ke_config.log_level = KE_LOG_INFO;

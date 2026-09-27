@@ -77,6 +77,14 @@ static void update_cascade_locked(void)
         pics[0].irr &= (uint8_t)~4;
 }
 
+/* A clock hold represents host delivery latency only. Guest CLI/PIC masking leaves the
+ * physical PIT and raster running, so release the hold as soon as IRQ0 cannot be delivered. */
+static void release_irq0_clock_if_unavailable_locked(void)
+{
+    if (!vcpu_if_flag || pick_locked() != 0)
+        vhw_clock_irq0_release();
+}
+
 void vpic_raise_irq(int irq)
 {
     if (irq < 0 || irq >= 16)
@@ -112,6 +120,8 @@ void vpic_raise_irq_at(int irq, uint64_t edge_ns)
         pics[1].irr |= (uint8_t)(1u << (irq - 8));
         update_cascade_locked();
     }
+    if (irq == 0 && edge_ns && vcpu_if_flag && pick_locked() == 0)
+        vhw_clock_irq0_pending(edge_ns);
     LeaveCriticalSection(&pic_lock);
     if (irq_event)
         SetEvent(irq_event);
@@ -129,6 +139,8 @@ void vpic_lower_irq(int irq)
         update_cascade_locked();
     }
     irq_edge_ns[irq] = 0;
+    if (irq == 0)
+        vhw_clock_irq0_release();
     LeaveCriticalSection(&pic_lock);
 }
 
@@ -223,6 +235,7 @@ static void pic_out(void *ctx, uint16_t port, uint32_t value, int size)
         p->isr &= (uint8_t)~(1u << (value & 7));
     }
     update_cascade_locked();
+    release_irq0_clock_if_unavailable_locked();
     LeaveCriticalSection(&pic_lock);
     if (irq_event && (changed_mask || !(port & 1)))
         SetEvent(irq_event);
@@ -278,7 +291,7 @@ static int deliver_one(void)
     LeaveCriticalSection(&pic_lock);
 
     saved_if = InterlockedExchange(&vcpu_if_flag, 0);   /* INT clears IF, IRET restores */
-    clock_scoped = irq == 0 && edge_ns && vhw_on_irq_thread();
+    clock_scoped = irq == 0 && edge_ns && vhw_clock_irq0_held();
     if (clock_scoped)
         vhw_clock_irq0_enter(edge_ns);
     off = pm_vectors[vector].off;
@@ -308,7 +321,17 @@ int vpic_deliver_pending(void)
         n++;
         stats_sync++;
     }
+    EnterCriticalSection(&pic_lock);
+    release_irq0_clock_if_unavailable_locked();
+    LeaveCriticalSection(&pic_lock);
     return n;
+}
+
+static void release_irq0_clock_if_unavailable(void)
+{
+    EnterCriticalSection(&pic_lock);
+    release_irq0_clock_if_unavailable_locked();
+    LeaveCriticalSection(&pic_lock);
 }
 
 /* ---- asynchronous delivery thread --------------------------------------------------- */
@@ -368,6 +391,8 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
             int delivered = 0;
             if (!vcpu_if_flag || vhw_game_depth || vhw_in_isr) {
                 stats_blocked++;
+                if (!vcpu_if_flag)
+                    release_irq0_clock_if_unavailable();
                 break;             /* sync delivery at vhw_leave/STI will handle it */
             }
             if (SuspendThread(game) == (DWORD)-1)
@@ -384,6 +409,7 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
                     InterlockedExchange(&vcpu_if_flag, 1);
                     InterlockedExchange(&vhw_in_isr, 0);
                     vhw_clock_irq0_leave();
+                    vhw_clock_irq0_release();
                     redirect_game_to_exit(game, (int)isr_exit_code);
                     ResumeThread(game);
                     return 0;
@@ -391,6 +417,9 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
                 stats_async += delivered;
             } else {
                 stats_blocked++;
+            }
+            if (delivered) {
+                release_irq0_clock_if_unavailable();
             }
             ResumeThread(game);
             if (!delivered) {
