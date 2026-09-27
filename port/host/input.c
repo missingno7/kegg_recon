@@ -1,6 +1,7 @@
 /* input.c - SDL3 events -> XT keyboard controller / mouse / gameport. */
 #include <SDL3/SDL.h>
 #include "ke_port.h"
+#include "replay.h"
 #include "../vhw/vhw.h"
 
 static SDL_Window *input_window;
@@ -177,6 +178,30 @@ static void update_gameport(void)
     int i;
     for (i = 0; i < 4; ++i)
         vjoy_set(i, gamepad_axes[i], gamepad_button_bits);
+}
+
+/* Deterministic smoke/replay injection enters through the same virtual devices as SDL. */
+void ke_input_set_mouse_position(int x, int y)
+{
+    union REGS r;
+    struct SREGS s;
+    memset(&r, 0, sizeof r);
+    memset(&s, 0, sizeof s);
+    r.w.ax = 0x04;
+    r.w.cx = (unsigned short)x;
+    r.w.dx = (unsigned short)y;
+    vmouse_int33(&r, &s);
+}
+
+void ke_input_set_mouse_buttons(int buttons)
+{
+    mouse_button_bits = buttons & 7;
+    vmouse_buttons(mouse_button_bits);
+}
+
+void ke_input_push_scancode(uint8_t code)
+{
+    vkbd_push_scancode(code);
 }
 
 static float normalize_gamepad_axis(Sint16 value)

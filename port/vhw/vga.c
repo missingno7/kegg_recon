@@ -84,7 +84,7 @@ static uint64_t elapsed_dot_clocks(uint64_t elapsed_ns)
 /* Returns the current scan line and the number of vertical-retrace edges seen. */
 static int current_line(uint64_t *retrace)
 {
-    uint64_t t = ke_now_ns() - timing_origin;
+    uint64_t t = vhw_clock_now_ns() - timing_origin;
     uint64_t lines = elapsed_dot_clocks(t) / horizontal_total_dots();
     int total = vertical_total_lines();
     int line = (int)(lines % (uint64_t)total);
@@ -116,7 +116,7 @@ static void restart_timing(void)
 {
     update_retrace_latch();
     timing_frame_base += timing_last_retrace;
-    timing_origin = ke_now_ns();
+    timing_origin = vhw_clock_now_ns();
     timing_last_retrace = 0;
 }
 
@@ -153,6 +153,8 @@ static uint8_t vga_status_poll(void)
         int distance = (vrs - line + total) % total;
         if (distance > 64 && !vhw_on_irq_thread()) {
             uint64_t wait_dots = (uint64_t)(distance - 48) * horizontal_total_dots();
+            /* Avoid host sleep in IRQ0: the handler must poll closely enough not to miss the
+             * retrace edge while servicing its scheduled PIT interrupt. */
             ke_sleep_ns(wait_dots * 1000000000ull / dot_clock_hz() / 4);
         }
     }
@@ -419,7 +421,7 @@ void vga_bios_set_mode(int mode)
     seq_index = gc_index = crtc_index = attr_index = attr_flipflop = 0;
     bios_mode = mode;
     display_start_latched = programmed_display_start();
-    timing_origin = ke_now_ns();
+    timing_origin = vhw_clock_now_ns();
     timing_last_retrace = 0;
     ke_lowmem_shadow[0x449] = (uint8_t)mode;
     ke_log(KE_LOG_INFO, "vga", "BIOS mode set %02Xh", mode);
@@ -534,7 +536,7 @@ void vga_oracle_load_snapshot(const uint8_t *plane_bytes, const uint8_t *crtc_by
     misc_output = misc;
     dac_pel_mask = 0xff;
     display_start_latched = display_start;
-    timing_origin = ke_now_ns();
+    timing_origin = vhw_clock_now_ns();
     timing_last_retrace = 0;
 }
 #endif
@@ -542,7 +544,7 @@ void vga_oracle_load_snapshot(const uint8_t *plane_bytes, const uint8_t *crtc_by
 void vga_init(void)
 {
     InitializeCriticalSection(&dac_lock);
-    timing_origin = ke_now_ns();
+    timing_origin = vhw_clock_now_ns();
     timing_frame_base = 0;
     timing_last_retrace = 0;
     display_start_latched = 0;

@@ -39,34 +39,133 @@ void oracle_trace_add(uint8_t kind, uint16_t port, uint32_t value, int size)
 
 static int is_vga_address(uint32_t address)
 {
-    return address >= 0xA0000u && address < 0xC0000u;
+    uintptr_t base = (uintptr_t)vga_guard;
+    return (address >= 0xA0000u && address < 0xC0000u) ||
+           (base && address >= base && address < base + 0x20000u);
+}
+
+static uint32_t canonical_vga_address(uint32_t address)
+{
+    uintptr_t base = (uintptr_t)vga_guard;
+    if (base && address >= base && address < base + 0x20000u)
+        return 0xA0000u + (address - (uint32_t)base);
+    return address;
+}
+
+static uint32_t relocate_vga_pointer(uint32_t address)
+{
+    if (vga_guard && address >= 0xA0000u && address < 0xC0000u)
+        return (uint32_t)(uintptr_t)vga_guard + (address - 0xA0000u);
+    return address;
+}
+
+uint32_t oracle_vga_host_address(uint32_t address)
+{
+    return relocate_vga_pointer(address);
+}
+
+uint32_t oracle_vga_guest_address(uint32_t address)
+{
+    return canonical_vga_address(address);
+}
+
+static int virtual_range_is_free(uintptr_t address, SIZE_T size)
+{
+    uintptr_t end = address + size;
+    while (address < end) {
+        MEMORY_BASIC_INFORMATION info;
+        uintptr_t region_end;
+        if (VirtualQuery((const void *)address, &info, sizeof info) != sizeof info ||
+            info.State != MEM_FREE)
+            return 0;
+        region_end = (uintptr_t)info.BaseAddress + info.RegionSize;
+        if (region_end <= address)
+            return 0;
+        address = region_end < end ? region_end : end;
+    }
+    return 1;
 }
 
 static int reserve_vga_window(void)
 {
-    void *wanted = (void *)(uintptr_t)0xA0000u;
+    const uintptr_t first_host_candidate = 0x000c0000u;
+    const uintptr_t search_limit = 0x10000000u;
+    const SIZE_T allocation_granularity = 0x10000u;
+    const SIZE_T vga_size = 0x20000u;
+    void *filler[4096];
+    unsigned filler_count = 0;
+    uintptr_t address, region_end, candidate;
+    DWORD error = ERROR_INVALID_ADDRESS;
+    MEMORY_BASIC_INFORMATION info;
+    SIZE_T queried;
     if (vga_guard)
         return 0;
-    vga_guard = VirtualAlloc(wanted, 0x20000u, MEM_RESERVE, PAGE_NOACCESS);
-    if (vga_guard != wanted) {
-        fprintf(stderr, "oracle: cannot reserve no-access VGA window A0000h..BFFFFh (%lu)\n",
-                (unsigned long)GetLastError());
-        vga_guard = NULL;
-        return -1;
+    /* Windows may reserve A0000h..BFFFFh for its own stacks or loader data before main().
+     * Keep the legacy range unavailable to later VirtualAlloc calls wherever an entire
+     * allocation-granularity block is free, then find the first free 128 KiB host window
+     * below 10000000h. Reserve isolated free blocks as we scan so later host buffers cannot
+     * land below the alias and change the original code's pointer ordering.
+     */
+    for (address = 0x0a0000u; address < 0x0c0000u; address += allocation_granularity) {
+        if (virtual_range_is_free(address, allocation_granularity) &&
+            VirtualAlloc((void *)address, allocation_granularity, MEM_RESERVE,
+                         PAGE_NOACCESS) != (void *)address) {
+            error = GetLastError();
+            fprintf(stderr, "oracle: cannot protect free legacy VGA block at %05lxh (%lu)\n",
+                    (unsigned long)address, (unsigned long)error);
+            return -1;
+        }
     }
-    return 0;
-}
-
-int oracle_vga_adopt_reserved_window(void)
-{
-    void *wanted = (void *)(uintptr_t)0xA0000u;
-    MEMORY_BASIC_INFORMATION info;
-    if (!VirtualQuery(wanted, &info, sizeof info) || info.BaseAddress != wanted ||
-        info.AllocationBase != wanted || info.State != MEM_RESERVE ||
-        info.AllocationProtect != PAGE_NOACCESS || info.RegionSize < 0x20000u)
-        return -1;
-    vga_guard = wanted;
-    return 0;
+    address = first_host_candidate;
+    while (address + vga_size <= search_limit) {
+        queried = VirtualQuery((const void *)address, &info, sizeof info);
+        if (queried != sizeof info) {
+            error = GetLastError();
+            break;
+        }
+        region_end = (uintptr_t)info.BaseAddress + info.RegionSize;
+        if (region_end <= address) {
+            error = ERROR_INVALID_ADDRESS;
+            break;
+        }
+        if (info.State != MEM_FREE) {
+            address = (region_end + allocation_granularity - 1) &
+                      ~((uintptr_t)allocation_granularity - 1);
+            continue;
+        }
+        candidate = (address + allocation_granularity - 1) &
+                    ~((uintptr_t)allocation_granularity - 1);
+        if (candidate + vga_size <= region_end && candidate + vga_size <= search_limit) {
+            void *reserved = VirtualAlloc((void *)candidate, vga_size, MEM_RESERVE, PAGE_NOACCESS);
+            if (reserved == (void *)candidate) {
+                vga_guard = reserved;
+                return 0;
+            }
+            error = GetLastError();
+        }
+        while (candidate + allocation_granularity <= region_end &&
+               candidate + allocation_granularity <= search_limit) {
+            void *reserved;
+            if (!virtual_range_is_free(candidate, allocation_granularity)) {
+                candidate += allocation_granularity;
+                continue;
+            }
+            reserved = VirtualAlloc((void *)candidate, allocation_granularity, MEM_RESERVE,
+                                    PAGE_NOACCESS);
+            if (reserved == (void *)candidate)
+                filler[filler_count++] = reserved;
+            else
+                error = GetLastError();
+            candidate += allocation_granularity;
+        }
+        address = (region_end + allocation_granularity - 1) &
+                  ~((uintptr_t)allocation_granularity - 1);
+    }
+    while (filler_count)
+        VirtualFree(filler[--filler_count], 0, MEM_RELEASE);
+    fprintf(stderr, "oracle: cannot reserve relocated VGA window below %08lxh (%lu)\n",
+            (unsigned long)search_limit, (unsigned long)error);
+    return -1;
 }
 
 int oracle_vga_window_reserved(void) { return vga_guard != NULL; }
@@ -195,7 +294,8 @@ static uint32_t read_memory_width(uint32_t address, int size)
     int i;
     for (i = 0; i < size; i++) {
         uint32_t a = address + (uint32_t)i;
-        uint8_t b = is_vga_address(a) ? vga_mem_read8(a) : *(volatile uint8_t *)(uintptr_t)a;
+        uint8_t b = is_vga_address(a) ? vga_mem_read8(canonical_vga_address(a))
+                                      : *(volatile uint8_t *)(uintptr_t)a;
         value |= (uint32_t)b << (i * 8);
     }
     return value;
@@ -208,7 +308,7 @@ static void write_memory_width(uint32_t address, uint32_t value, int size)
         uint32_t a = address + (uint32_t)i;
         uint8_t b = (uint8_t)(value >> (i * 8));
         if (is_vga_address(a))
-            vga_mem_write8(a, b);
+            vga_mem_write8(canonical_vga_address(a), b);
         else
             *(volatile uint8_t *)(uintptr_t)a = b;
     }
@@ -469,14 +569,65 @@ static void set_accumulator_part(DWORD *reg, uint32_t v, int size)
     else *reg = v;
 }
 
+static int oracle_emulate_int(CONTEXT *c, const uint8_t *p, int prefix_len)
+{
+    union REGS r;
+    struct SREGS s;
+    memset(&s, 0, sizeof s);
+    r.x.eax = c->Eax; r.x.ebx = c->Ebx; r.x.ecx = c->Ecx;
+    r.x.edx = c->Edx; r.x.esi = c->Esi; r.x.edi = c->Edi;
+    r.x.cflag = c->EFlags & 1;
+    oracle_trace_add('N', p[0], c->Eax, 4);
+    vhw_int(p[0], &r, &r, &s);
+    c->Eax = r.x.eax; c->Ebx = r.x.ebx; c->Ecx = r.x.ecx;
+    c->Edx = r.x.edx; c->Esi = r.x.esi; c->Edi = r.x.edi;
+    c->EFlags = (c->EFlags & ~1u) | (r.x.cflag ? 1u : 0u);
+    c->Eip += (DWORD)(prefix_len + 2);
+    return 1;
+}
+
 static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
 {
     CONTEXT *c = ep->ContextRecord;
     DWORD code = ep->ExceptionRecord->ExceptionCode;
     const uint8_t *p = (const uint8_t *)(uintptr_t)c->Eip;
     int opsize = 4, len = 0;
-    if (code == EXCEPTION_ACCESS_VIOLATION)
-        return oracle_emulate_vga_memory(ep) ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+    if (code == EXCEPTION_ACCESS_VIOLATION) {
+        const uint8_t *opcode = p;
+        int prefix_len = 0;
+        if (!IsBadReadPtr(opcode, 1) && *opcode == 0x66) {
+            opcode++;
+            prefix_len = 1;
+        }
+        /* Some Windows builds report user-mode INT n as an access violation, not #GP. */
+        if (!IsBadReadPtr(opcode, 2) && opcode[0] == 0xcd) {
+            oracle_emulate_int(c, opcode + 1, prefix_len);
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+        if (oracle_emulate_vga_memory(ep))
+            return EXCEPTION_CONTINUE_EXECUTION;
+        if (ep->ExceptionRecord->NumberParameters >= 2) {
+            ULONG_PTR fault = ep->ExceptionRecord->ExceptionInformation[1];
+            if (is_vga_address((uint32_t)fault)) {
+                fprintf(stderr, "oracle: unhandled VGA access %s at %08lx from %08lx bytes",
+                        ep->ExceptionRecord->ExceptionInformation[0] ? "write" : "read",
+                        (unsigned long)fault, (unsigned long)c->Eip);
+                if (!IsBadReadPtr(p, 8)) {
+                    int i;
+                    for (i = 0; i < 8; i++)
+                        fprintf(stderr, " %02x", p[i]);
+                }
+                fprintf(stderr, " eax=%08lx ecx=%08lx edx=%08lx ebx=%08lx esi=%08lx edi=%08lx\n",
+                        (unsigned long)c->Eax, (unsigned long)c->Ecx,
+                        (unsigned long)c->Edx, (unsigned long)c->Ebx,
+                        (unsigned long)c->Esi, (unsigned long)c->Edi);
+            } else {
+                fprintf(stderr, "oracle: unhandled access violation at %08lx from %08lx\n",
+                        (unsigned long)fault, (unsigned long)c->Eip);
+            }
+        }
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
     if (code != EXCEPTION_PRIV_INSTRUCTION)
         return EXCEPTION_CONTINUE_SEARCH;
     if (IsBadReadPtr(p, 4))
@@ -520,19 +671,8 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
         len += 1;
         break;
     case 0xcd: {                                             /* INT nn */
-        union REGS r;
-        struct SREGS s;
-        memset(&s, 0, sizeof s);
-        r.x.eax = c->Eax; r.x.ebx = c->Ebx; r.x.ecx = c->Ecx;
-        r.x.edx = c->Edx; r.x.esi = c->Esi; r.x.edi = c->Edi;
-        r.x.cflag = c->EFlags & 1;
-        oracle_trace_add('N', p[1], c->Eax, 4);
-        vhw_int(p[1], &r, &r, &s);
-        c->Eax = r.x.eax; c->Ebx = r.x.ebx; c->Ecx = r.x.ecx;
-        c->Edx = r.x.edx; c->Esi = r.x.esi; c->Edi = r.x.edi;
-        c->EFlags = (c->EFlags & ~1u) | (r.x.cflag ? 1u : 0u);
-        len += 2;
-        break;
+        oracle_emulate_int(c, p + 1, len);
+        return EXCEPTION_CONTINUE_EXECUTION;
     }
     case 0x8e:                                               /* MOV Sreg, r/m16 */
         len += 1 + modrm_length(p + 1);
@@ -562,6 +702,49 @@ static int read_file(const char *path, uint8_t **data, size_t *size)
 
 static uint32_t rd32(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
 
+typedef struct OracleVgaPatch {
+    uint8_t object;
+    uint32_t offset;
+    uint32_t expected;
+} OracleVgaPatch;
+
+/* 32-bit absolute operands in the frozen LE object 1. The 0A0000h values point at the
+ * aperture; 0B0000h values are its exclusive end in clear_video_bytes/mov_mem. Verify the
+ * source bytes before patching so an image-layout change cannot silently corrupt code.
+ */
+static const OracleVgaPatch vga_patches[] = {
+    {1, 0x0e10a, 0x0a0000}, {1, 0x0e16e, 0x0a0000},
+    {1, 0x0e21b, 0x0a0000}, {1, 0x0e24f, 0x0a0000},
+    {1, 0x13832, 0x0b0000}, {1, 0x1383a, 0x0a0000},
+    {1, 0x138a7, 0x0b0000}, {1, 0x138af, 0x0a0000},
+    {1, 0x138b7, 0x0b0000}, {1, 0x138bf, 0x0a0000},
+    {1, 0x138ed, 0x0b0000}, {1, 0x138f5, 0x0a0000}
+};
+
+static int relocate_vga_operands(void)
+{
+    uint32_t i, base = (uint32_t)(uintptr_t)vga_guard;
+    for (i = 0; i < sizeof vga_patches / sizeof vga_patches[0]; i++) {
+        const OracleVgaPatch *patch = &vga_patches[i];
+        uint32_t value, relocated;
+        if (!object_base[patch->object] || patch->offset + 4 > object_size[patch->object]) {
+            fprintf(stderr, "oracle: VGA relocation site obj%u+%05lx is outside the image\n",
+                    patch->object, (unsigned long)patch->offset);
+            return -1;
+        }
+        value = rd32(object_base[patch->object] + patch->offset);
+        if (value != patch->expected) {
+            fprintf(stderr, "oracle: VGA relocation site obj%u+%05lx expected %08lx, got %08lx\n",
+                    patch->object, (unsigned long)patch->offset,
+                    (unsigned long)patch->expected, (unsigned long)value);
+            return -1;
+        }
+        relocated = base + patch->expected - 0x0a0000u;
+        memcpy(object_base[patch->object] + patch->offset, &relocated, sizeof relocated);
+    }
+    return 0;
+}
+
 int oracle_load(const char *image_path, const char *symbols_path)
 {
     uint8_t *img;
@@ -570,8 +753,8 @@ int oracle_load(const char *image_path, const char *symbols_path)
     uint16_t ds_selector;
     FILE *sf;
     char line[256];
-    /* Protect the VGA aperture before allocating the image buffer; the CRT heap may
-     * otherwise reserve A0000h..BFFFFh before the memory-backed oracle is installed. */
+    /* Reserve the relocated VGA alias before allocating the image buffer; early heap
+     * allocations can otherwise change which low address is available for the alias. */
     if (reserve_vga_window() != 0)
         return -1;
     if (read_file(image_path, &img, &size) != 0 || memcmp(img, "KEIM", 4) != 0) {
@@ -602,6 +785,10 @@ int oracle_load(const char *image_path, const char *symbols_path)
         } else if (kind == 2) {
             memcpy(site, &ds_selector, 2);
         }
+    }
+    if (relocate_vga_operands() != 0) {
+        free(img);
+        return -1;
     }
     free(img);
     sf = fopen(symbols_path, "r");
@@ -644,18 +831,22 @@ uint32_t oracle_call(void *fn, int argc, const uint32_t *a)
     typedef uint32_t (*F4)(uint32_t, uint32_t, uint32_t, uint32_t);
     typedef uint32_t (*F5)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
     typedef uint32_t (*F6)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+    uint32_t args[6] = {0, 0, 0, 0, 0, 0};
+    int i;
     if (!fn) {
         fprintf(stderr, "oracle_call: NULL function (symbol not in ke_symbols.txt?)\n");
         exit(3);
     }
+    for (i = 0; a && i < argc && i < 6; i++)
+        args[i] = relocate_vga_pointer(a[i]);
     switch (argc) {
     case 0: return ((F0)fn)();
-    case 1: return ((F1)fn)(a[0]);
-    case 2: return ((F2)fn)(a[0], a[1]);
-    case 3: return ((F3)fn)(a[0], a[1], a[2]);
-    case 4: return ((F4)fn)(a[0], a[1], a[2], a[3]);
-    case 5: return ((F5)fn)(a[0], a[1], a[2], a[3], a[4]);
-    default: return ((F6)fn)(a[0], a[1], a[2], a[3], a[4], a[5]);
+    case 1: return ((F1)fn)(args[0]);
+    case 2: return ((F2)fn)(args[0], args[1]);
+    case 3: return ((F3)fn)(args[0], args[1], args[2]);
+    case 4: return ((F4)fn)(args[0], args[1], args[2], args[3]);
+    case 5: return ((F5)fn)(args[0], args[1], args[2], args[3], args[4]);
+    default: return ((F6)fn)(args[0], args[1], args[2], args[3], args[4], args[5]);
     }
 }
 

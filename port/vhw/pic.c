@@ -3,9 +3,9 @@
  * Delivery model (docs/port/architecture.md, "Interrupts"):
  *   - devices call vpic_raise_irq() from any thread (timer thread, audio thread, SDL main);
  *   - the IRQ thread (KE_IRQ=async, default) suspends the game thread; if the game thread is
- *     executing game code (inside the exe's .text, not in a DLL), has IF=1, is not inside a
- *     vhw service and no handler is running, the handler is called on the IRQ thread while
- *     the game thread stays frozen at that instruction boundary, then the game resumes;
+ *     executing game code (inside the exe's .text, not in a DLL) or is at the explicit
+ *     scheduler wait point, has IF=1, is not inside a vhw service and no handler is running,
+ *     the handler is called on the IRQ thread while the game thread stays frozen, then resumes;
  *   - otherwise the interrupt stays pending and is delivered synchronously on the game thread
  *     at the end of the next vhw service (vhw_leave) or on STI (_enable).
  * Handlers are plain cdecl functions (Watcom __interrupt dropped): the PM vector offset is
@@ -34,6 +34,7 @@ static struct { uint16_t seg, off; } rm_vectors[256];
 static HANDLE irq_event, irq_thread;
 static volatile LONG irq_stop;
 static uint32_t text_lo, text_hi;           /* game thread interruptible EIP range     */
+static uint64_t irq_edge_ns[16];            /* original device edge for pending IRQs     */
 static jmp_buf isr_abandon;                 /* IRQ thread: leave a handler that exited  */
 static volatile LONG isr_exit_code = -1;
 static long stats_async, stats_sync, stats_blocked;
@@ -74,10 +75,36 @@ static void update_cascade_locked(void)
 
 void vpic_raise_irq(int irq)
 {
+    if (irq < 0 || irq >= 16)
+        return;
     EnterCriticalSection(&pic_lock);
-    if (irq < 8)
+    if (irq < 8) {
+        if (!(pics[0].irr & (uint8_t)(1u << irq)))
+            irq_edge_ns[irq] = 0;
         pics[0].irr |= (uint8_t)(1u << irq);
-    else {
+    } else {
+        if (!(pics[1].irr & (uint8_t)(1u << (irq - 8))))
+            irq_edge_ns[irq] = 0;
+        pics[1].irr |= (uint8_t)(1u << (irq - 8));
+        update_cascade_locked();
+    }
+    LeaveCriticalSection(&pic_lock);
+    if (irq_event)
+        SetEvent(irq_event);
+}
+
+void vpic_raise_irq_at(int irq, uint64_t edge_ns)
+{
+    if (irq < 0 || irq >= 16)
+        return;
+    EnterCriticalSection(&pic_lock);
+    if (irq < 8) {
+        if (!(pics[0].irr & (uint8_t)(1u << irq)))
+            irq_edge_ns[irq] = edge_ns;
+        pics[0].irr |= (uint8_t)(1u << irq);
+    } else {
+        if (!(pics[1].irr & (uint8_t)(1u << (irq - 8))))
+            irq_edge_ns[irq] = edge_ns;
         pics[1].irr |= (uint8_t)(1u << (irq - 8));
         update_cascade_locked();
     }
@@ -88,6 +115,8 @@ void vpic_raise_irq(int irq)
 
 void vpic_lower_irq(int irq)
 {
+    if (irq < 0 || irq >= 16)
+        return;
     EnterCriticalSection(&pic_lock);
     if (irq < 8)
         pics[0].irr &= (uint8_t)~(1u << irq);
@@ -95,6 +124,7 @@ void vpic_lower_irq(int irq)
         pics[1].irr &= (uint8_t)~(1u << (irq - 8));
         update_cascade_locked();
     }
+    irq_edge_ns[irq] = 0;
     LeaveCriticalSection(&pic_lock);
 }
 
@@ -216,7 +246,9 @@ static void default_handler(int irq)
 static int deliver_one(void)
 {
     int irq, vector;
+    int clock_scoped;
     uint32_t off;
+    uint64_t edge_ns;
     LONG saved_if;
     EnterCriticalSection(&pic_lock);
     irq = pick_locked();
@@ -224,6 +256,8 @@ static int deliver_one(void)
         LeaveCriticalSection(&pic_lock);
         return 0;
     }
+    edge_ns = irq_edge_ns[irq];
+    irq_edge_ns[irq] = 0;
     if (irq >= 8) {
         pics[1].irr &= (uint8_t)~(1u << (irq - 8));
         pics[1].isr |= (uint8_t)(1u << (irq - 8));
@@ -239,6 +273,9 @@ static int deliver_one(void)
     LeaveCriticalSection(&pic_lock);
 
     saved_if = InterlockedExchange(&vcpu_if_flag, 0);   /* INT clears IF, IRET restores */
+    clock_scoped = irq == 0 && edge_ns && vhw_on_irq_thread();
+    if (clock_scoped)
+        vhw_clock_irq0_enter(edge_ns);
     off = pm_vectors[vector].off;
     /* A vector counts as hooked only when it holds a flat-model code address; saved and
      * restored BIOS defaults (F000:xxxx, 0:0) run the built-in default handler. */
@@ -246,6 +283,8 @@ static int deliver_one(void)
         ((void (*)(void))(uintptr_t)off)();
     else
         default_handler(irq);
+    if (clock_scoped)
+        vhw_clock_irq0_leave();
     InterlockedExchange(&vcpu_if_flag, saved_if);
     InterlockedExchange(&vhw_in_isr, 0);
     return 1;
@@ -316,7 +355,7 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
         while (vpic_has_deliverable() && !irq_stop) {
             CONTEXT ctx;
             int delivered = 0;
-            if (!vcpu_if_flag || vhw_game_depth || vhw_in_isr || vhw_cpu_polling) {
+            if (!vcpu_if_flag || vhw_game_depth || vhw_in_isr) {
                 stats_blocked++;
                 break;             /* sync delivery at vhw_leave/STI will handle it */
             }
@@ -325,14 +364,15 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
             memset(&ctx, 0, sizeof ctx);
             ctx.ContextFlags = CONTEXT_CONTROL;
             if (GetThreadContext(game, &ctx) && vcpu_if_flag && !vhw_game_depth &&
-                !vhw_in_isr && !vhw_cpu_polling &&
-                ctx.Eip >= text_lo && ctx.Eip < text_hi) {
+                !vhw_in_isr &&
+                ((ctx.Eip >= text_lo && ctx.Eip < text_hi) || vhw_cpu_poll_waiting)) {
                 if (setjmp(isr_abandon) == 0) {
                     delivered = deliver_one();
                 } else {
                     /* the handler called exit(): the game thread performs it */
                     InterlockedExchange(&vcpu_if_flag, 1);
                     InterlockedExchange(&vhw_in_isr, 0);
+                    vhw_clock_irq0_leave();
                     redirect_game_to_exit(game, (int)isr_exit_code);
                     ResumeThread(game);
                     return 0;
@@ -389,6 +429,7 @@ void vpic_init(void)
 {
     int v;
     InitializeCriticalSection(&pic_lock);
+    memset(irq_edge_ns, 0, sizeof irq_edge_ns);
     irq_event = CreateEventW(NULL, FALSE, FALSE, NULL);
     memset(pics, 0, sizeof pics);
     pics[0].base = 0x08;       /* as reported by DOS/4GW (DPMI 0400h DH/DL) */

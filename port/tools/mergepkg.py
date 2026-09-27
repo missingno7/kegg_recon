@@ -67,7 +67,8 @@ def main(branches):
             rc, out = run(g)
             if rc:
                 run(["git", "reset", "--hard", head])
-                print(f"{br}: GATE FAILED {' '.join(g)} -> merge undone\n  " + "\n  ".join(out[-15:]))
+                fails = [l for l in out if "FAIL" in l or "mismatch" in l.lower()]
+                print(f"{br}: GATE FAILED {' '.join(g)} -> merge undone\n  " + "\n  ".join(fails[:20] + out[-8:]))
                 return 1
         print(f"{br}: merged, all gates pass ({out[-1] if out else ''})")
     return 0

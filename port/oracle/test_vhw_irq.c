@@ -187,6 +187,7 @@ static int test_async_irq(void)
     uint64_t cpu_before, cpu_after;
     LONG before, after_cli, after_sti;
     uint64_t frame_start, frame_end;
+    uint64_t frame_ticks;
     uint64_t retrace_start_ns, retrace_end_ns;
     uint64_t probe_start_ns, probe_elapsed_ns;
     uint32_t measured_sample;
@@ -258,7 +259,6 @@ static int test_async_irq(void)
         failures++;
     }
     pit_rollover_value = (int)measured_sample - 0x100;
-    pit_rollover_value -= 0x500;       /* PORT latency compensation used by start_timer */
     timer_enabled09 = 0;
     retrace_count5 = 0;
     vpic_lower_irq(0);
@@ -320,13 +320,14 @@ static int test_async_irq(void)
     WaitForSingleObject(retrace_timer, 1000);
     CloseHandle(retrace_timer);
     frame_end = vga_frame_counter();
+    frame_ticks = frame_end - frame_start;
     outp(0x21, inp(0x21) | 1);
     memcpy(tmr_rec, saved_game_timer_record, sizeof saved_game_timer_record);
     printf("    game timer: %ld PIT edges, %d wait_for_tick returns, %d IRQ0 handler calls, "
            "%llu virtual retraces in %.3f s "
            "(%.3f / %.3f Hz)\n",
            vpit_oracle_irq_count, game_wait_ticks, timer_enabled09,
-           (unsigned long long)(frame_end - frame_start),
+           (unsigned long long)frame_ticks,
            (retrace_end_ns - retrace_start_ns) / 1e9,
            game_wait_ticks * 1e9 / (double)(retrace_end_ns - retrace_start_ns),
            (frame_end - frame_start) * 1e9 / (double)(retrace_end_ns - retrace_start_ns));
@@ -338,9 +339,12 @@ static int test_async_irq(void)
                    vpit_oracle_irq_reload[i]);
         printf("\n");
     }
-    if (frame_end <= frame_start || game_wait_ticks <= 0 ||
+    printf("    IRQ0 ticks per retrace: %.4f\n",
+           frame_ticks ? (double)timer_enabled09 / (double)frame_ticks : 0.0);
+    if (!frame_ticks || game_wait_ticks <= 0 ||
         fabs(game_wait_ticks - (double)(frame_end - frame_start)) >
-            (frame_end - frame_start) * 0.005)
+            frame_ticks * 0.005 ||
+        fabs((double)timer_enabled09 - (double)frame_ticks) > frame_ticks * 0.005)
         failures++;
     vhw_shutdown();
     return failures;

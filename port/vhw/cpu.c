@@ -13,10 +13,34 @@
 volatile LONG vcpu_if_flag = 1;      /* IF: 1 = interrupts enabled                            */
 volatile LONG vhw_game_depth;        /* nesting of vhw services on the game thread            */
 volatile LONG vhw_in_isr;            /* an interrupt handler is running (either thread)       */
-volatile LONG vhw_cpu_polling;       /* game is in a memory-poll loop with explicit CPU yields */
 static DWORD game_tid;
 static DWORD irq_tid;
 static __thread HANDLE poll_timer;
+volatile LONG vhw_cpu_poll_waiting;
+static __thread uint64_t irq_clock_ns;
+static __thread uint64_t irq_wall_ns;
+static __thread int irq_clock_active;
+static __thread unsigned poll_yield_count;
+
+/* IRQ0 is entered from a host thread after the device edge. Start VHW time at that edge,
+ * then let it advance with ISR execution; the scheduler delay before dispatch is excluded. */
+uint64_t vhw_clock_now_ns(void)
+{
+    uint64_t now = ke_now_ns();
+    return irq_clock_active && now >= irq_wall_ns ? irq_clock_ns + (now - irq_wall_ns) : now;
+}
+
+void vhw_clock_irq0_enter(uint64_t edge_ns)
+{
+    irq_clock_ns = edge_ns;
+    irq_wall_ns = ke_now_ns();
+    irq_clock_active = 1;
+}
+
+void vhw_clock_irq0_leave(void)
+{
+    irq_clock_active = 0;
+}
 
 void vhw_bind_game_thread(void) { game_tid = GetCurrentThreadId(); }
 void vhw_bind_irq_thread(void) { irq_tid = GetCurrentThreadId(); }
@@ -36,7 +60,7 @@ void vhw_leave(void)
     if (vhw_game_depth == 1 && !vhw_in_isr) {
         if (vcpu_if_flag && vpic_has_deliverable())
             vpic_deliver_pending();
-        if (ke_quit_requested() && !vhw_cpu_polling)
+        if (ke_quit_requested())
             ke_check_quit();
     }
     InterlockedDecrement(&vhw_game_depth);
@@ -47,7 +71,6 @@ void vhw_reset_nesting(void)
 {
     InterlockedExchange(&vhw_game_depth, 0);
     InterlockedExchange(&vhw_in_isr, 0);
-    InterlockedExchange(&vhw_cpu_polling, 0);
 }
 
 void vcpu_cli(void) { InterlockedExchange(&vcpu_if_flag, 0); }
@@ -56,46 +79,22 @@ void vcpu_sti(void) { InterlockedExchange(&vcpu_if_flag, 1); }
 /* The original wait_for_tick path polls a memory flag without entering the vhw. */
 void vhw_cpu_poll_yield(void)
 {
-    if (GetCurrentThreadId() == game_tid) {
+    if (GetCurrentThreadId() == game_tid && !(++poll_yield_count & 0x0fffu)) {
         LARGE_INTEGER due;
-        /* Honor quit before spending time delivering more pending virtual IRQs. */
         if (ke_quit_requested())
             ke_check_quit();
-        /* Give pending IRQs the same instruction-boundary opportunity as a vhw access. */
-        vhw_enter();
-        vhw_leave();
-        /* Polling remains on the virtual CPU boundary, but yields for 100 us so this
-         * legacy memory spin does not occupy a host core. PIT and VGA clocks keep running. */
+        /* This is a safe game-code boundary: the PIC may run an IRQ handler while this
+         * host wait is in progress. Device edges keep their original scheduled timestamps. */
         if (!poll_timer)
             poll_timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                                                 TIMER_ALL_ACCESS);
-        if (poll_timer) {
-            due.QuadPart = -1000;       /* 100 us in 100 ns units */
-            if (SetWaitableTimer(poll_timer, &due, 0, NULL, NULL, FALSE))
-                WaitForSingleObject(poll_timer, INFINITE);
-            else
-                Sleep(1);
-        } else {
-            Sleep(1);
-        }
-    }
-}
-
-void vhw_cpu_poll_begin(void)
-{
-    if (GetCurrentThreadId() == game_tid) {
-        vhw_enter();
-        InterlockedExchange(&vhw_cpu_polling, 1);
-        vhw_leave();
-    }
-}
-
-void vhw_cpu_poll_end(void)
-{
-    if (GetCurrentThreadId() == game_tid) {
-        vhw_enter();
-        InterlockedExchange(&vhw_cpu_polling, 0);
-        vhw_leave();                /* take an IRQ raised at the end of the poll loop */
+        InterlockedExchange(&vhw_cpu_poll_waiting, 1);
+        due.QuadPart = -1000;           /* wait 100 us once per 4096 polls */
+        if (poll_timer && SetWaitableTimer(poll_timer, &due, 0, NULL, NULL, FALSE))
+            WaitForSingleObject(poll_timer, INFINITE);
+        else
+            Sleep(1);                   /* bounded safe-point wait if high-res timers fail */
+        InterlockedExchange(&vhw_cpu_poll_waiting, 0);
     }
 }
 

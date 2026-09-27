@@ -21,8 +21,10 @@ Reference images: `pf_pm_title.png` (title 640x480 4:3, no stripes), `pf_pm_scre
 `pf_pm_screen.png` (gameplay). Every snapshot: `pm_planes.bin` (4 planes x 64 KiB, plane-major) + `dac_hex` +
 CRTC/SEQ/GC state -> a deterministic scan-out test for port/vhw/vga.c.
 
-## Sound (their evidence; CONFLICT: they found no MOD/ProTracker player — our asm/m_11530 is one, verify whether it
-is reached at all)
+## Sound
+Confirmed by the user (who knows the game): Krypton Egg has NO MOD music, only PCM - the ProTracker player in
+asm/m_11530 is linked-in library code that the game does not use (worker A10 checks the call sites). The port's
+audio fidelity rests entirely on the PCM path below.
 - SB 2.0 class, 0x220 / IRQ7 / DMA1, DSP 2.01 (`game.json:31-46`). All sound incl. music = one 8-bit unsigned mono
   PCM stream; a new sound replaces the current one (PF `docs/16-kegg-native-audio.md:18-44`).
 - DSP: reset base+6 1/0 wait 0xAA; D1/D3 speaker on/off, D0 halt; rate via 0x40, TC = 256 - 3906/((rate+127)>>8)

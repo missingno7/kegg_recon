@@ -23,6 +23,7 @@ void register_m_13944_tests(void);
 void register_m_13a48_tests(void);
 void register_m_11258_tests(void);
 void register_m_11494_tests(void);
+void register_m_11530_tests(void);
 void register_m_11df8_tests(void);
 void register_m_13324_tests(void);
 void register_m_13712_tests(void);
@@ -35,70 +36,65 @@ void register_vga_tests(void);
 static struct { const char *name; oracle_test_fn fn; } tests[128];
 static int test_count;
 
-/* Reserve the oracle's VGA aperture in the suspended child before its CRT startup. */
-static int relaunch_with_vga_reserved(int *exit_code)
-{
-    STARTUPINFOW startup;
-    PROCESS_INFORMATION process;
-    WCHAR path[MAX_PATH];
-    void *wanted = (void *)(uintptr_t)0xA0000u;
-    void *reserved = NULL;
-    DWORD result = 2, last_error = 0;
-    int attempt, started = 0;
-
-    if (getenv("KE_ORACLE_CHILD")) {
-        if (oracle_vga_adopt_reserved_window() != 0) {
-            fprintf(stderr, "oracle: child did not inherit the reserved VGA window\n");
-            *exit_code = 2;
-            return 1;
-        }
-        return 0;
-    }
-
-    SetEnvironmentVariableA("KE_ORACLE_CHILD", "1");
-    if (!GetModuleFileNameW(NULL, path, MAX_PATH)) {
-        fprintf(stderr, "oracle: cannot get executable path (%lu)\n", GetLastError());
-        *exit_code = 2;
-        return 1;
-    }
-    memset(&startup, 0, sizeof startup);
-    startup.cb = sizeof startup;
-    for (attempt = 0; attempt < 8; attempt++) {
-        if (!CreateProcessW(path, GetCommandLineW(), NULL, NULL, FALSE, CREATE_SUSPENDED,
-                            NULL, NULL, &startup, &process)) {
-            last_error = GetLastError();
-            continue;
-        }
-        reserved = VirtualAllocEx(process.hProcess, wanted, 0x20000u, MEM_RESERVE, PAGE_NOACCESS);
-        if (reserved == wanted) {
-            started = 1;
-            break;
-        }
-        last_error = GetLastError();
-        TerminateProcess(process.hProcess, 2);
-        CloseHandle(process.hThread);
-        CloseHandle(process.hProcess);
-    }
-    if (!started) {
-        fprintf(stderr, "oracle: cannot start child with reserved VGA window after 8 attempts "
-                "(%lu)\n", last_error);
-        *exit_code = 2;
-        return 1;
-    }
-    ResumeThread(process.hThread);
-    WaitForSingleObject(process.hProcess, INFINITE);
-    GetExitCodeProcess(process.hProcess, &result);
-    CloseHandle(process.hThread);
-    CloseHandle(process.hProcess);
-    *exit_code = (int)result;
-    return 1;
-}
-
 void oracle_register(const char *name, oracle_test_fn fn)
 {
     tests[test_count].name = name;
     tests[test_count].fn = fn;
     test_count++;
+}
+
+/* Match the game launcher: DOS memory must be reserved in a suspended child before the
+ * Windows loader creates its heaps, TLS and initial thread stack in that address range. */
+static int relaunch_with_low_memory_reserved(int *exit_code)
+{
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+    WCHAR path[MAX_PATH];
+    void *reserved;
+    DWORD code = 1;
+    char child[8];
+    if (GetEnvironmentVariableA("KE_ORACLE_CHILD", child, sizeof child) != 0)
+        return 0;
+    SetEnvironmentVariableA("KE_ORACLE_CHILD", "1");
+    if (!GetModuleFileNameW(NULL, path, MAX_PATH)) {
+        SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+        fprintf(stderr, "ke_oracle: cannot resolve executable path (%lu)\n",
+                (unsigned long)GetLastError());
+        return -1;
+    }
+    memset(&si, 0, sizeof si);
+    si.cb = sizeof si;
+    if (!CreateProcessW(path, GetCommandLineW(), NULL, NULL, TRUE, CREATE_SUSPENDED,
+                        NULL, NULL, &si, &pi)) {
+        DWORD error = GetLastError();
+        SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+        fprintf(stderr, "ke_oracle: cannot start reserved-memory child (%lu)\n",
+                (unsigned long)error);
+        return -1;
+    }
+    reserved = VirtualAllocEx(pi.hProcess, (void *)LOWMEM_BASE,
+                              LOWMEM_END - LOWMEM_BASE, MEM_RESERVE, PAGE_READWRITE);
+    if (reserved != (void *)LOWMEM_BASE) {
+        DWORD error = GetLastError();
+        fprintf(stderr, "ke_oracle: cannot reserve low memory in child (%lu)\n",
+                (unsigned long)error);
+        TerminateProcess(pi.hProcess, 1);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+        return -1;
+    }
+    ResumeThread(pi.hThread);
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    SetEnvironmentVariableA("KE_ORACLE_CHILD", NULL);
+    if (code != 0)
+        fprintf(stderr, "ke_oracle: reserved-memory child exited with code %08lXh\n",
+                (unsigned long)code);
+    *exit_code = (int)code;
+    return 1;
 }
 
 /* The oracle links the whole port; the historical main() is never run here. */
@@ -108,16 +104,16 @@ int main(int argc, char **argv)
     const char *dir = argc > 1 ? argv[1] : "build/port/oracle";
     const char *filter = argc > 2 ? argv[2] : NULL;
     int i, failed = 0, run = 0;
-    int child_exit;
-    if (relaunch_with_vga_reserved(&child_exit))
-        return child_exit;
+    int child_exit, relaunch = relaunch_with_low_memory_reserved(&child_exit);
+    if (relaunch != 0)
+        return relaunch > 0 ? child_exit : 2;
     setvbuf(stdout, NULL, _IONBF, 0);
     snprintf(image, sizeof image, "%s/ke_image.bin", dir);
     snprintf(symbols, sizeof symbols, "%s/ke_symbols.txt", dir);
     if (oracle_load(image, symbols) != 0)
         return 2;
-    /* oracle_load reserves A0000h before its first allocations; keep config and logging
-     * startup after that guard so their CRT bookkeeping cannot claim the VGA aperture. */
+    /* oracle_load reserves its relocated VGA alias before image/config allocations; keep
+     * config and logging startup after it so they cannot claim the alias. */
     ke_config_load(1, argv);
     ke_config.log_level = KE_LOG_WARN;
     ke_log_init(NULL);
@@ -141,6 +137,7 @@ int main(int argc, char **argv)
     /* A9 trace fixtures replace PIC port callbacks, so run the live PIC test first. */
     register_m_11258_tests();
     register_m_11494_tests();
+    register_m_11530_tests();
     for (i = 0; i < test_count; i++) {
         int f;
         if (filter && !strstr(tests[i].name, filter))
