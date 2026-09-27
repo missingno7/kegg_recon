@@ -135,6 +135,11 @@ static void wake_pit_thread(void)
         SetEvent(pit_wake);
 }
 
+void vpit_clock_changed(void)
+{
+    wake_pit_thread();
+}
+
 static void pit_reprogram(PitChannel *c, uint32_t value)
 {
     c->reload = value ? value : 65536;
@@ -308,7 +313,7 @@ static void wait_pit_deadline(HANDLE timer, uint64_t deadline)
         LARGE_INTEGER due;
         if (pit_stop || now >= deadline)
             return;
-        remain = deadline - now;
+        remain = vhw_clock_wall_delay_ns(deadline - now);
         if (remain > 100000) {
             DWORD wait_result;
             due.QuadPart = -(LONGLONG)((remain - 50000) / 100);

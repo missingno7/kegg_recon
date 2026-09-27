@@ -112,6 +112,13 @@ one VHW clock for PIT and VGA while its handler runs. VGA status polls far from 
 on elapsed time outside the IRQ thread; IRQ0 keeps polling tightly so a host sleep cannot
 skip a retrace edge while the handler is running.
 
+When IRQ0 is unmasked and deliverable, the shared clock is held at its scheduled edge until
+the handler starts; the handler then observes elapsed time from that edge. Time lost to host
+delivery delay or a scheduling gap during the handler becomes catch-up debt, repaid at no more
+than 20% extra clock rate. The PIT waitable timer converts virtual deadlines to the active
+rate and is woken when a hold ends. An IRQ0 pending under CLI or a PIC mask does not hold time,
+and lockstep mode bypasses the wall-clock hold and slew.
+
 ### Memory
 
 - Linear address == host address (the game stores pointers in `int`).
