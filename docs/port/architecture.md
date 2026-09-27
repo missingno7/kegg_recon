@@ -213,3 +213,11 @@ Verifiability per module (`python port/tools/asm_inventory.py`):
   are off by default; text mode is not displayed.
 - The keyboard translation is a table for the common keys; E1 Pause sequence simplified.
 - The oracle cannot yet run routines that touch the VGA window.
+
+## Known screen modes (ground truth from the game's author/players)
+All screens are 256-colour VGA; several use unchained "mode X" layouts:
+- intro: 320x400 (mode X, 400 lines)
+- main menu: 320x240 (mode X)
+- gameplay: 320x200
+Presentation must scan these out at their native geometry (aspect 4:3 on screen). A 320x400 frame is expected
+during the intro, not a doubled 320x200.
