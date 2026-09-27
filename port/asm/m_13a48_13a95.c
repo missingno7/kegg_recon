@@ -36,7 +36,8 @@ void write_dac_palette(void *rgb_source, int start_index, int color_count, int b
     uint32_t edi = (uint32_t)brightness;
 
     out8(VGA_DAC_WRITE_INDEX_PORT, (uint8_t)eax);
-    while (ecx != 0) {
+    /* LOOP tests after the first body: zero components underflows and iterates 2^32 times. */
+    do {
         /* LODSB replaces AL only; SUB uses all 32 bits of EAX, as in the original. */
         eax = (eax & 0xffffff00u) | *esi++;
         eax -= edi;
@@ -45,8 +46,7 @@ void write_dac_palette(void *rgb_source, int start_index, int color_count, int b
         else if ((int32_t)eax > VGA_DAC_COMPONENT_MAX)
             eax = VGA_DAC_COMPONENT_MAX;
         out8(VGA_DAC_COMPONENT_PORT, (uint8_t)eax);
-        ecx--;
-    }
+    } while (--ecx != 0);
 }
 void write_dac_palette_entry(void *rgb_source, int start_index, int color_count, int brightness)
 {
