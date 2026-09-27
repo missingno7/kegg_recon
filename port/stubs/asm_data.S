@@ -466,6 +466,14 @@ _sprite_command_cursor:
     .fill 10, 1, 0
 /* m_12a9c_12f30 _DATA: 0xb8 bytes */
 
+/* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
+
+/* m_12f9c_13324: owned by port/asm/m_12f9c_13324.c */
+
+/* m_13324_13712: owned by port/asm/m_13324_13712.c */
+
+/* m_13712_137a8: owned by port/asm/m_13712_137a8.c */
+
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 
 /* m_13a48_13a95.asm _DATA */

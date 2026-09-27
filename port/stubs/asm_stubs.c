@@ -71,22 +71,13 @@ KE_ASM_STUB(draw_bob_sprite, "m_12a9c_12f30")
 KE_ASM_STUB(draw_bob_sprite_entry, "m_12a9c_12f30")
 KE_ASM_STUB(clip_and_dispatch_sprite_record, "m_12a9c_12f30")
 
-KE_ASM_STUB(copy_chunky_scanline_to_vga, "m_12f30_12f9c")
-KE_ASM_STUB(copy_chunky_scanline_to_vga_entry, "m_12f30_12f9c")
+/* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
 
-KE_ASM_STUB(copy_screen_span, "m_12f9c_13324")
-KE_ASM_STUB(copy_screen_span_entry, "m_12f9c_13324")
-KE_ASM_STUB(copy_clipped_screen_rectangle, "m_12f9c_13324")
+/* m_12f9c_13324: owned by port/asm/m_12f9c_13324.c */
 
-KE_ASM_STUB(read_vga_pixel, "m_13324_13712")
-KE_ASM_STUB(read_vga_pixel_entry, "m_13324_13712")
-KE_ASM_STUB(write_vga_pixel, "m_13324_13712")
-KE_ASM_STUB(write_vga_pixel_entry, "m_13324_13712")
-KE_ASM_STUB(fill_vga_span, "m_13324_13712")
-KE_ASM_STUB(fill_vga_span_entry, "m_13324_13712")
-KE_ASM_STUB(fill_clipped_vga_rectangle, "m_13324_13712")
+/* m_13324_13712: owned by port/asm/m_13324_13712.c */
 
-KE_ASM_STUB(fill_planar_video_rows, "m_13712_137a8")
+/* m_13712_137a8: owned by port/asm/m_13712_137a8.c */
 
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 
