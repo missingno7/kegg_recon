@@ -175,6 +175,8 @@ def main() -> int:
     ap.add_argument("--shot-dir", default=None, help="directory for --shots BMP files")
     ap.add_argument("--timer-diag", action="store_true",
                     help="report and validate the game's timer calibration at shutdown")
+    ap.add_argument("--audio-dump", default=None,
+                    help="record samples submitted to SDL as WAV (plus a .dsp.log sidecar)")
     ap.add_argument("--replay", default=None, help="input-only PF JSON replay or legacy input script to convert and run")
     ap.add_argument("--replay-start-ms", type=int, default=None, help="arm occurrence zero at this process time (default 11500 ms)")
     ap.add_argument("--build", default=str(ROOT / "build" / "port"))
@@ -200,9 +202,13 @@ def main() -> int:
     env = dict(os.environ)
     for name in ("KE_AUTOKEYS", "KE_AUTOMOUSE", "KE_AUTOCLICKS", "KE_SCREENSHOT",
                  "KE_SCREENSHOTS", "KE_FRAME_SHOTS", "KE_REPLAY", "KE_REPLAY_START_MS",
-                 "KE_EXIT_AFTER_MS", "KE_TIMER_DIAG"):
+                 "KE_EXIT_AFTER_MS", "KE_TIMER_DIAG", "KE_AUDIO_DUMP"):
         env.pop(name, None)
     env["KE_AUTOKEYS"] = ",".join(f"{ms}:{code:x}" for ms, code in keys)
+    if a.audio_dump:
+        audio_path = Path(a.audio_dump).resolve()
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        env["KE_AUDIO_DUMP"] = str(audio_path)
     if mouse_moves:
         env["KE_AUTOMOUSE"] = ",".join(f"{ms}:{x}:{y}" for ms, x, y in mouse_moves)
 
@@ -272,6 +278,9 @@ def main() -> int:
     faults = [line for line in log if "fault" in line and "ERROR" in line]
     bt = next((line for line in log if "game thread (" in line), None)
     print(f"exit code {r.returncode}; {len(stubs)} stubs reached: {', '.join(stubs)}")
+    if a.audio_dump:
+        audio_path = Path(a.audio_dump).resolve()
+        print(f"audio dump: {audio_path} (+ {audio_path}.dsp.log)")
     if bt:
         addrs = bt.split("addresses:")[1].split()
         res = subprocess.run(["addr2line", "-f", "-s", "-e", str(exe)] + addrs,
