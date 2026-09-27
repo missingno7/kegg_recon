@@ -4,6 +4,16 @@ Branch `portable-sdl3`, started from tag `historical-exact-clean-v1` (the byte-e
 reconstruction, docs/freeze.md). Status markers follow AGENTS.md: **PROVEN** (checked by a
 tool or test named here), **STRONG** (consistent evidence), **HYPOTHESIS**.
 
+## Rule: original game code, mechanical conversions only (set by the project owner)
+The port runs the ORIGINAL game code. Allowed changes to historical `src/*.c`: only mechanical conversions needed to
+compile and run on modern C/SDL3 - `PORT:`-marked address remapping (KE_LOWMEM), prototypes/types gcc requires,
+explicit widths where Watcom and gcc differ, hook calls with no behavioural effect. NOT allowed: changing game logic,
+constants, timing values or control flow to compensate for host behaviour - fix the emulation (port/vhw) instead so
+the game sees the same machine it saw in 1994. Assembly modules are literal translations verified against the
+original machine code. Behavioural quirks of the original (e.g. the Sound Blaster time-constant rounding that plays
+8000 Hz requests at 7936 Hz) are preserved, never "corrected". Every `PORT:` line is listed in docs/port/src-delta.md
+with its justification.
+
 ## Principle
 
 The historical `src/*.c` stay in place and are compiled as they are; the port delta in

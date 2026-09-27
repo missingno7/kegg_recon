@@ -70,7 +70,7 @@ void ke_exit(int code)
 void ke_check_quit(void)
 {
     if (quit_requested && ke_on_game_thread() && !exiting) {
-        int log_quit = !vhw_cpu_polling;
+        int log_quit = 1;
         if (log_quit)
             ke_log(KE_LOG_INFO, "game", "window closed: unwinding the game thread");
         /* Host window shutdown owns virtual-device cleanup; game atexit handlers may
