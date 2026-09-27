@@ -22,6 +22,7 @@ void register_m_13944_tests(void);
 void register_m_13a48_tests(void);
 void register_m_11258_tests(void);
 void register_m_11494_tests(void);
+void register_m_11530_tests(void);
 void register_m_11df8_tests(void);
 void register_m_13324_tests(void);
 void register_m_13712_tests(void);
@@ -133,6 +134,7 @@ int main(int argc, char **argv)
     /* A9 trace fixtures replace PIC port callbacks, so run the live PIC test first. */
     register_m_11258_tests();
     register_m_11494_tests();
+    register_m_11530_tests();
     for (i = 0; i < test_count; i++) {
         int f;
         if (filter && !strstr(tests[i].name, filter))

@@ -16,6 +16,9 @@ static PortDevice devices[32];
 static int device_count;
 static uint8_t port_map[0x10000];   /* 0 = unclaimed, else device index + 1 */
 static uint8_t port_logged[0x10000 / 8]; /* unclaimed ports already reported */
+static vhw_in_fn port_override_in;
+static vhw_out_fn port_override_out;
+static void *port_override_ctx;
 
 static int first_report(uint16_t port)
 {
@@ -41,9 +44,18 @@ void vhw_register_ports(uint16_t first, uint16_t last, vhw_in_fn in, vhw_out_fn 
         port_map[p] = (uint8_t)device_count;
 }
 
+void vhw_set_port_override(vhw_in_fn in, vhw_out_fn out, void *ctx)
+{
+    port_override_in = in;
+    port_override_out = out;
+    port_override_ctx = ctx;
+}
+
 uint32_t vhw_port_in(uint16_t port, int size)
 {
     int d = port_map[port];
+    if (port_override_in)
+        return port_override_in(port_override_ctx, port, size);
     if (d && devices[d - 1].in)
         return devices[d - 1].in(devices[d - 1].ctx, port, size);
     if (first_report(port))
@@ -54,6 +66,10 @@ uint32_t vhw_port_in(uint16_t port, int size)
 void vhw_port_out(uint16_t port, uint32_t value, int size)
 {
     int d = port_map[port];
+    if (port_override_out) {
+        port_override_out(port_override_ctx, port, value, size);
+        return;
+    }
     if (d && devices[d - 1].out) {
         devices[d - 1].out(devices[d - 1].ctx, port, value, size);
         return;
