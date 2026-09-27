@@ -12,7 +12,7 @@ extern void write_vga_pixel_entry();
 extern unsigned char read_vga_pixel_entry(short, short);
 extern int g_e200;
 extern int g_e204;
-extern unsigned char g_e208;
+extern unsigned char g_text_render_state;
 extern int g_e209;
 extern int g_e20d;
 extern int g_e219;

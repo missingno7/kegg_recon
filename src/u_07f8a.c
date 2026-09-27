@@ -67,7 +67,7 @@ int g_dd9c;
 
 extern int g_9498;
 extern int g_9474;
-extern int g_6884[];
+extern int gameplay_tuning_by_stage[];
 extern int g_6888[];
 extern int g_688c[];
 extern int g_6890[];

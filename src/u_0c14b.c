@@ -16,7 +16,7 @@ int g_e278;
 int g_e27c;
 
 extern unsigned char g_74c4[];
-extern void shutdown_with_exit_message(unsigned, unsigned);
+extern void exit_with_message(unsigned, unsigned);
 extern int configure_sound_dma(int);
 extern void initialize_audio_stream(void);
 extern void stop_audio_stream(void);
@@ -68,7 +68,7 @@ void queue_audio(int source, int byte_count, int sample_rate, int playback_mode)
         if (*(short *)g_74c4 != -1) {
             sound_status = configure_sound_dma(4);
             if (sound_status != 0)
-                shutdown_with_exit_message(sound_status, 0);
+                exit_with_message(sound_status, 0);
         }
         if (audio_stream_stop_flag == -1) {
             if (audio_stream_flag == -1)

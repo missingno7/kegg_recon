@@ -14,8 +14,8 @@ extern unsigned char g_e143_eayxx;
 extern unsigned char g_e48d_c;
 extern unsigned char g_e48e_0g;
 extern unsigned char g_e48f;
-extern void f_42e1(unsigned char, unsigned char, int, int);
-extern void f_58b0(void);
+extern void spawn_falling_spell(unsigned char, unsigned char, int, int);
+extern void update_racket_movement_bounds(void);
 
 void f_814b(void)
 {
@@ -29,14 +29,14 @@ L_8178:;
 L_8181:;
     goto L_81a0;
 L_8183:;
-    f_42e1((unsigned char)(g_e48f - 0x41), 0, 0xa0, 0x64);
+    spawn_falling_spell((unsigned char)(g_e48f - 0x41), 0, 0xa0, 0x64);
 L_81a0:;
     if (g_e48f != 0x25) goto L_81b2;
     if ((g_e48e_0g & 0x80) == 0) goto L_81b4;
 L_81b2:;
     goto L_81cc;
 L_81b4:;
-    f_42e1(0xf, 0, 0xa0, 0x64);
+    spawn_falling_spell(0xf, 0, 0xa0, 0x64);
 L_81cc:;
     if (g_e48f != 0x2e) goto L_81de;
     if ((g_e48e_0g & 0x80) == 0) goto L_81e0;
@@ -47,7 +47,7 @@ L_81e0:;
     *(unsigned char *)(m_de5c + 1) &= 0xfb;
     *(unsigned char *)m_de5c &= 0xbf;
     *(unsigned char *)m_de5c &= 0x7f;
-    f_58b0();
+    update_racket_movement_bounds();
 L_8206:;
     if ((g_7b36 & 2) == 0) goto L_8295;
     if (g_e48e_0g != 0x1b) goto L_823e;

@@ -12,8 +12,8 @@ extern int decode_and_verify_asset(void);
 extern int f_108a9(int, int, unsigned);
 extern void f_10d72(int, int, int, int);
 extern int f_11051(unsigned);
-extern void shutdown_with_exit_message(unsigned, unsigned);
-extern void f_708(void);
+extern void exit_with_message(unsigned, unsigned);
+extern void run_main_menu(void);
 extern void set_img_buffers(int, int, short, int, int);
 extern int alloc_heap_block(int);
 extern unsigned char g_e48d_c;
@@ -27,9 +27,9 @@ void main(void)
 {
     /* Run startup checks before reserving the game's main resource arena. */
     if (f_108a9(0x1f40, 0x55730, -1) != 0)
-        shutdown_with_exit_message(0, 0);
+        exit_with_message(0, 0);
     if (f_11051(7) != 0)
-        shutdown_with_exit_message(0, 0);
+        exit_with_message(0, 0);
 
     f_10d72(-1, -1, 0, -1);
     g_7c08_orxezsknd = alloc_heap_block(0x55730);
@@ -39,8 +39,8 @@ void main(void)
     audio_stream_stop_flag = -1;
     /* Register the arena and load the protected-mode game support code. */
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
-    f_708();
-    shutdown_with_exit_message(0, 0);
+    run_main_menu();
+    exit_with_message(0, 0);
     exit(0);
 }
 

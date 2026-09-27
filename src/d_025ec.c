@@ -1,8 +1,7 @@
-/* Animation frame list at _DATA 0x25ec: the first game object in link order (no code), before U00010.
-   { image offset, ticks } frames; the closing entry { 0, -21 } jumps back 21 frames (loop). */
-struct Frame { unsigned img; int time; };
+/* Sprite offset and display duration pairs; the last record loops back through the sequence. */
+struct SpriteAnimationFrame { unsigned sprite_offset; int duration_ticks; };
 
-struct Frame g_25ec[22] = {
+struct SpriteAnimationFrame collision_animation_frames[22] = {
     { 0x4a96, 2 },
     { 0x4af4, 2 },
     { 0x4ba8, 2 },

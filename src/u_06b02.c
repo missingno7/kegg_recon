@@ -37,7 +37,7 @@ int g_9498;
 int g_949c;
 
 extern int g_e4d0_wfmxdlyju;
-extern void shutdown_with_exit_message(unsigned, unsigned);
+extern void exit_with_message(unsigned, unsigned);
 extern void copy_screen_span_entry(int, int, int, int, int);
 extern void handle_s_key(void);
 extern void f_6156(void);
@@ -86,7 +86,7 @@ void save_vga_state(void);
 int g_9468;
 int g_946c;
 
-extern unsigned char g_6884[];
+extern unsigned char gameplay_tuning_by_stage[];
 extern short g_7b24;
 extern short g_7b26;
 extern short draw_idx;
@@ -208,7 +208,7 @@ L_6c3d:;
     f_7bd5();
     redraw_image_region(0, 0);
     if (image_buffer_error_code == 0) goto L_6c91;
-    shutdown_with_exit_message(image_buffer_error_code, 0);
+    exit_with_message(image_buffer_error_code, 0);
 L_6c91:;
     show_page();
     if (g_94a8 <= 0) goto L_6cac;
@@ -362,13 +362,13 @@ void f_704d(void) { g_dd84 = 0; }
 
 void f_7068(void)
 {
-    g_94a4 = *(int *)(g_6884 + (g_e13e << 4));
+    g_94a4 = *(int *)(gameplay_tuning_by_stage + (g_e13e << 4));
     g_94a8 = g_94a4;
     g_9494 = g_94a8;
-    g_94ac = *(int *)(g_6884 + 4 + ((g_e13e << 2) << 2));
-    g_946c = *(int *)(g_6884 + 8 + ((g_e13e << 2) << 2));
+    g_94ac = *(int *)(gameplay_tuning_by_stage + 4 + ((g_e13e << 2) << 2));
+    g_946c = *(int *)(gameplay_tuning_by_stage + 8 + ((g_e13e << 2) << 2));
     g_948c = g_946c;
-    g_949c = *(int *)(g_6884 + 12 + ((g_e13e << 2) << 2));
+    g_949c = *(int *)(gameplay_tuning_by_stage + 12 + ((g_e13e << 2) << 2));
     g_94b4 = 0;
     g_9498 = 7;
     g_9474 = 0xf;

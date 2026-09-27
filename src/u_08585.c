@@ -126,10 +126,10 @@ extern int g_dD68;
 extern int b_DD70;
 extern S2 *g_dd80;
 extern unsigned char *r_dDDc_uzmlc;
-extern void f_3918(int, int, int, int);
-extern void f_3ac0(int, int, int);
-extern void f_3e0f(int, int);
-extern void f_4394(void);
+extern void process_brick_hit(int, int, int, int);
+extern void draw_level_tile_on_pages(int, int, int);
+extern void queue_timed_level_change(int, int);
+extern void resize_racket(void);
 extern void play_audio_request_at(int, int);
 
 void f_8585(void) { if (g_dDa8) f_85a4(); }
@@ -582,12 +582,12 @@ L_9306:;
     }
     goto L_9344;
 L_931a:;
-    f_3918(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
+    process_brick_hit(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
     goto L_9377;
 L_9344:;
     g_dd50 -= 0x10;
     *(unsigned char *)(((unsigned char *)g_dd80) + ((v_4 * 2) + 1)) = *(unsigned char *)&g_dd50;
-    f_3ac0(v_4, v_8, g_dd50);
+    draw_level_tile_on_pages(v_4, v_8, g_dd50);
 L_9377:;
     play_audio_request_at(0xc, 0x19);
     *(int *)g_8e10 = (int)g_5e68;
@@ -600,7 +600,7 @@ L_9392:;
 L_93af:;
     *(int *)g_8e10 = (int)g_6098;
     if ((*(unsigned char *)(m_de5c + 1) & 0x10) != 0) {
-        f_3918(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
+        process_brick_hit(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
         goto L_94ec;
     }
     if (g_dd50 >= 0xf5) {
@@ -610,7 +610,7 @@ L_93af:;
 L_940b:;
     play_audio_request_at(0x2e, 0x32);
     g_dDb8 = -1;
-    f_4394();
+    resize_racket();
     goto L_94ec;
 L_942b:;
     if (g_dd50 >= 0xfa) {
@@ -621,8 +621,8 @@ L_9448:;
     play_audio_request_at(1, 9);
     if (--((BF1_2_6 *)(((unsigned char *)g_dd80) + (v_4 * 2)))->f != 0) goto L_94d4;
         *(int *)(r_dDDc_uzmlc + 0x14) += 2 << *(int *)(g_dee4 + 0x24);
-        f_3e0f(g_dd50, v_4 + v_8);
-        f_3918(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
+        queue_timed_level_change(g_dd50, v_4 + v_8);
+        process_brick_hit(v_4, v_8, *(int *)(g_ddb4 + 8) >> 3, *(int *)(g_ddb4 + 0xc) >> 3);
 L_94d4:;
     *(int *)g_8e10 = (int)g_5e68;
     goto L_94ec;
