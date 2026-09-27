@@ -329,13 +329,7 @@ def pack_constants(asm: str, source: str | None) -> str:
 
     def matching_bytes(obj: int, off: int, payload: bytes) -> bool:
         data = object_data[obj - 1]
-        if data[off:off + len(payload)] == payload:
-            return True
-        # Some decompiled printf literals omit only a final LF in GCC's pool. The
-        # original bytes and fixup target remain authoritative for the emitted span.
-        return (len(payload) > 1 and payload.endswith(b"\0") and
-                data[off:off + len(payload) - 1] == payload[:-1] and
-                data[off + len(payload) - 1] in (0x0a, 0x0d))
+        return data[off:off + len(payload)] == payload
 
     for record in records:
         if record["name"] in label_targets:
@@ -362,13 +356,15 @@ def pack_constants(asm: str, source: str | None) -> str:
         if len(candidates) == 1:
             label_targets[record["name"]] = candidates[0]
 
-    # Remaining duplicate literals are selected in original order. Translation units
-    # deduplicate equal literals, so an unresolved duplicate is an actual ambiguity.
+    # Resolve duplicate literals in the order GCC emitted them. The original compiler
+    # also lays a unit's literals out in source order; a prior pass over all labels
+    # incorrectly let later unique labels advance the cursor past an earlier duplicate.
     previous = {1: -1, 3: start - 1}
     for record in records:
         if record["name"] in label_targets:
             obj, off = label_targets[record["name"]]
-            previous[obj] = max(previous[obj], off)
+            if off >= previous[obj]:
+                previous[obj] = off
             continue
         payload = bytes(record["bytes"])
         candidates = []
@@ -377,13 +373,16 @@ def pack_constants(asm: str, source: str | None) -> str:
             candidates.extend((obj, off) for off in offsets
                               if off >= previous[obj] and matching_bytes(obj, off, payload))
         if not candidates and payload:
-            candidates.extend((3, off) for off in range(0, max(0, const_limit - len(payload) + 1))
-                              if off >= previous[3] and matching_bytes(3, off, payload))
-        if len(candidates) != 1:
+            candidates.extend((3, off) for off in range(max(start, previous[3]),
+                                                          max(start, end - len(payload) + 1))
+                              if matching_bytes(3, off, payload))
+        if not candidates:
             raise ValueError(f"cannot map CONST label {record['name']} in {source_name}; "
-                             f"{len(candidates)} original locations match")
-        label_targets[record["name"]] = candidates[0]
-        obj, off = candidates[0]
+                             "no original locations match in source order")
+        # Object 3 is the normal CONST pool. When a unit has a same-byte code-object
+        # constant too, prefer the first reachable CONST occurrence, then object 1.
+        obj, off = min(candidates, key=lambda item: (item[0] != 3, item[1]))
+        label_targets[record["name"]] = (obj, off)
         previous[obj] = off
 
     for record in records:
@@ -594,16 +593,26 @@ def main(argv):
     if "-c" not in cmd or "-o" not in cmd:
         return subprocess.call(cmd)
     out = Path(cmd[cmd.index("-o") + 1])
+    raw = out.with_suffix(".raw.s")
     asm = out.with_suffix(".packed.s")
+    source = next((a for a in reversed(cmd) if a.lower().endswith(".c")), None)
     s_cmd = [a for a in cmd]
     s_cmd[s_cmd.index("-c")] = "-S"
-    s_cmd[s_cmd.index("-o") + 1] = str(asm)
+    s_cmd[s_cmd.index("-o") + 1] = str(raw)
+    # Keep source literals in GCC's CONST pool so their original bytes and offsets
+    # remain checkable. printf folding drops a final LF in t19_sys.c; strcat folding
+    # removes the "." literal in u_00708.c entirely.
+    source_flags = {
+        "t19_sys.c": ["-fno-builtin-printf"],
+        "u_00708.c": ["-fno-builtin-strcat"],
+    }
+    if source:
+        s_cmd.extend(source_flags.get(Path(source).name, []))
     rc = subprocess.call(s_cmd)
     if rc:
         return rc
-    source = next((a for a in reversed(cmd) if a.lower().endswith(".c")), None)
     try:
-        asm.write_text(pack(asm.read_text(), source))
+        asm.write_text(pack(raw.read_text(), source))
     except (KeyError, OSError, ValueError) as error:
         print(f"gcc_pack_data.py: {error}", file=sys.stderr)
         return 1

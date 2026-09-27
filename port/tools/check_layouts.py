@@ -157,8 +157,18 @@ def check_const(objs, objdump="objdump", objcopy="objcopy"):
     _const, const_limit, ranges, _targets, _symbols, _fixups, original_objects, _locations = \
         gcc_pack_data.original_const_layout()
     original3 = original_objects[2]
+    documented_stale_pads = [
+        (0x11bf, 0x11c0, bytes.fromhex("db")),
+        (0x11f1, 0x11f4, bytes.fromhex("db db db")),
+        (0x11f9, 0x11fc, bytes.fromhex("db db db")),
+        (0x1201, 0x1204, bytes.fromhex("db 0d 0a")),
+        (0x1209, 0x120c, bytes.fromhex("db db db")),
+        (0x1211, 0x1214, bytes.fromhex("db db db")),
+    ]
     checked = bad = 0
     aliases_checked = 0
+    content_checked = 0
+    source_intervals = []
     packed_ranges = []
     for obj in objs:
         packed = obj.with_suffix(".packed.s")
@@ -213,6 +223,50 @@ def check_const(objs, objdump="objdump", objcopy="objcopy"):
                     not re.fullmatch(rf"\.set\s+{re.escape(local_name)}\s*,\s*{re.escape(target_name)}", next_line)):
                 alias_bad = True
                 print(f"CONST {obj.name}: alias {local_name} does not resolve to original offset {offset:#x}")
+
+        source_aliases = [
+            (int(match.group(1), 16), match.group(2))
+            for line in lines
+            if (match := re.match(r"^# KE_CONST_ALIAS 3 (0x[0-9a-f]+) (\S+) (\S+)$", line))
+        ]
+        if source_aliases:
+            raw = obj.with_suffix(".raw.s")
+            if not raw.exists():
+                alias_bad = True
+                print(f"CONST {obj.name}: missing raw GCC assembly {raw.name}; cannot verify source bytes")
+            else:
+                records = gcc_pack_data._assembly_const_records(
+                    raw.read_text(encoding="utf-8", errors="replace").splitlines()
+                )
+                records_by_name = {record["name"]: record for record in records}
+                for offset, local_name in source_aliases:
+                    record = records_by_name.get(local_name)
+                    if record is None:
+                        alias_bad = True
+                        print(f"CONST {obj.name}: alias {local_name} at {offset:#x} has no raw GCC literal")
+                        continue
+                    if not record["known"]:
+                        alias_bad = True
+                        print(f"CONST {obj.name}: cannot decode GCC initializer {local_name} at {offset:#x}")
+                        continue
+                    payload = bytes(record["bytes"])
+                    end = offset + len(payload)
+                    if end > const_limit:
+                        alias_bad = True
+                        print(f"CONST {obj.name}: GCC initializer {local_name} at {offset:#x} exceeds CONST")
+                        continue
+                    content_checked += 1
+                    expected = original3[offset:end]
+                    if payload != expected:
+                        alias_bad = True
+                        mismatch = next((i for i, (a, b) in enumerate(zip(payload, expected)) if a != b),
+                                         min(len(payload), len(expected)))
+                        got = payload[mismatch:mismatch + 8].hex(" ")
+                        want = expected[mismatch:mismatch + 8].hex(" ")
+                        print(f"CONST {obj.name}: GCC {local_name} at {offset:#x} differs at +{mismatch:#x}; "
+                              f"GCC [{got}], original [{want}]")
+                    if payload:
+                        source_intervals.append((offset, end))
 
         if not markers and not alias_bad:
             continue
@@ -278,6 +332,52 @@ def check_const(objs, objdump="objdump", objcopy="objcopy"):
         if cursor != const_limit:
             bad += 1
             print(f"CONST global order ends at {cursor:#x}, expected {const_limit:#x}")
+    gaps = []
+    cursor = 0
+    for start, end in sorted(source_intervals):
+        if start > cursor:
+            gaps.append((cursor, start))
+        cursor = max(cursor, end)
+    if cursor < const_limit:
+        gaps.append((cursor, const_limit))
+    pad_bytes = sum(end - start for start, end in gaps)
+    print(f"{content_checked} GCC CONST literals/initializers checked byte-for-byte; "
+          f"{pad_bytes} original-only bytes in {len(gaps)} gaps:")
+    for start, end in gaps:
+        if start == 0:
+            kind = "CONST segment prefix"
+        elif end == const_limit and end - start > 3:
+            kind = "untranslated runtime CONST tail"
+        else:
+            kind = "alignment / -ot gap"
+        print(f"  {kind} [{start:#06x},{end:#06x}) {end - start} bytes: "
+              f"{original3[start:end].hex(' ')}")
+        gap_data = original3[start:end]
+        if (start, end) == (0, 4):
+            # Watcom's segment prefix precedes the first source-owned CONST byte.
+            if gap_data != bytes.fromhex("01 01 01 00"):
+                bad += 1
+                print("CONST segment prefix differs from the original object-3 prefix")
+        elif end == const_limit and end - start > 3:
+            # The untranscribed DOS/4GW startup/runtime pool follows the game TUs.
+            if start != 0x2452:
+                bad += 1
+                print(f"CONST unexpected unaliased runtime tail begins at {start:#x}")
+        elif end - start > 3 or any(byte not in {0x00, 0x01, 0x0a, 0x0d, 0xdb}
+                                    for byte in gap_data):
+            bad += 1
+            print(f"CONST unaliased non-padding source bytes at [{start:#x},{end:#x})")
+    for start, end, expected in documented_stale_pads:
+        actual = original3[start:end]
+        is_gap = any(gap_start <= start and end <= gap_end for gap_start, gap_end in gaps)
+        if actual != expected or not is_gap:
+            bad += 1
+            print(f"CONST documented -ot stale pad [{start:#06x},{end:#06x}) "
+                  f"is {actual.hex(' ')}, expected {expected.hex(' ')} in original-only gap")
+    print("documented -ot stale pad bytes (docs/compiler-notes.md): " + ", ".join(
+        f"[{start:#06x},{end:#06x})={original3[start:end].hex(' ')}"
+        for start, end, _expected in documented_stale_pads
+    ))
     print(f"{checked} original CONST range checked byte-for-byte and by label offset; "
           f"{aliases_checked} cross-unit labels checked; {bad} differ")
     return bad
