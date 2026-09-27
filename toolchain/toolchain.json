@@ -11,7 +11,8 @@
     "sha256": "7bf0b04c1d076400bf998a8ad2e2fe1fb7e4d61382b7079b07ed5b282e17a27b",
     "md5": "7a876667255c405555fd3dce132e63ac",
     "subdir": "WATCOM",
-    "derivation": "7z x zip; install = WATCOM/ verbatim (lower-case file names as archived)"
+    "derivation": "7z x zip; install = WATCOM/ verbatim (lower-case file names as archived)",
+    "corroboration": "Independent tree 'Sybase - Watcom C++ 10.0.zip' (DiscMaster 43408; IA watcom-c-cpp-compilers-collection), sha256 8e5869e78cda5c42b1fd5aa0675abe52ed03217b4f835bfe4a9dc133d26158aa: wcc386/wlink/wstub/dos4gw/clib3s byte-identical. Retail GA media not found."
    },
    "hosts": {
     "wcc386": {
@@ -258,13 +259,14 @@
    }
   },
   "asm_tasm31": {
-   "product": "Borland Turbo Assembler 3.1 (banner 'Turbo Assembler Version 3.1, Copyright (c) 1988, 1992 Borland')",
+   "product": "Borland Turbo Assembler 3.1 (from Borland C++ & Application Frameworks 3.1 floppy media)",
    "status": "candidate",
    "dir": "watcom-10.0/BIN",
    "source": {
     "origin": "file WATCOM/BIN/TASM.EXE (dated 2011-09-18) inside the pinned archive download/watcom/deaddoomer_WATCOM.zip (sha256 7bf0b04c...); a third-party addition to that installed tree, NOT pristine Borland media",
     "local": "download/watcom/deaddoomer_WATCOM.zip",
-    "sha256": "7bf0b04c1d076400bf998a8ad2e2fe1fb7e4d61382b7079b07ed5b282e17a27b"
+    "sha256": "7bf0b04c1d076400bf998a8ad2e2fe1fb7e4d61382b7079b07ed5b282e17a27b",
+    "provenance": "Identical binary (sha256 80534cd6...) on Borland C++ & Application Frameworks 3.1 floppy image set https://archive.org/details/borland-cpp-and-app-frameworks-31 (disk 6 sha256 13ae88eaaa494cbb61caf22bcabd33d22128495b2035f667f779b8aaa7405176); corroborated by IA borland-cpp-3.1-with-disk-images-preinstalled... and bcpp31 (build/workers/prov/REPORT.md)"
    },
    "hosts": {
     "tasm": {
