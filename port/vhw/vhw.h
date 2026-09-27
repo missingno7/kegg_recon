@@ -41,6 +41,18 @@ void vhw_reset_nesting(void);   /* after ke_exit() abandons service/ISR frames  
 extern volatile long vcpu_if_flag, vhw_game_depth, vhw_in_isr;
 extern volatile long vhw_cpu_poll_waiting; /* game thread is at the scheduler's safe wait point */
 
+/* ---- lockstep mode (cpu.c; docs/port/lockstep.md) ------------------------------------ */
+extern int vhw_lockstep;                  /* set before vhw init: no device threads        */
+extern uint64_t vhw_lockstep_ns;          /* the deterministic machine clock               */
+extern void (*vhw_lockstep_idle_hook)(void); /* blocking BIOS wait (getch) on no input     */
+extern void (*vhw_lockstep_ms_hook)(void);   /* each emulated millisecond (replay pump)     */
+#define VHW_LOCKSTEP_IO_NS 1000ull        /* one ISA I/O cycle                              */
+#define VHW_LOCKSTEP_POLL_NS 1000ull      /* minimum cost of one memory-poll iteration      */
+#define VHW_LOCKSTEP_POLL_MAX_NS 1000000ull
+void vhw_lockstep_advance(uint64_t ns);
+void vpit_lockstep_update(void);          /* raise IRQ0 for PIT edges up to the clock      */
+uint64_t vpit_lockstep_next_edge(void);   /* next channel-0 edge time (UINT64_MAX: none)   */
+
 /* ---- port I/O (portio.c) --------------------------------------------------------------- */
 typedef uint32_t (*vhw_in_fn)(void *ctx, uint16_t port, int size);
 typedef void (*vhw_out_fn)(void *ctx, uint16_t port, uint32_t value, int size);
@@ -49,6 +61,9 @@ void vhw_register_ports(uint16_t first, uint16_t last, vhw_in_fn in, vhw_out_fn 
 /* Temporary high-priority I/O hooks for oracle fixtures; NULL callbacks use the device map. */
 void vhw_set_port_override(vhw_in_fn in, vhw_out_fn out, void *ctx);
 uint32_t vhw_port_in(uint16_t port, int size);
+extern volatile uint32_t vhw_last_inp_value; /* AL left by the last Watcom inp() call    */
+/* Diagnostics (lockstep --io-trace): every port access ('I'/'O') and INT service ('N'). */
+extern void (*vhw_io_trace_hook)(char kind, uint16_t port, uint32_t value);
 void vhw_port_out(uint16_t port, uint32_t value, int size);
 
 /* ---- 8259 PIC pair + vector tables (pic.c) --------------------------------------------- */
@@ -83,6 +98,15 @@ int vga_bios_mode(void);
 int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, int *out_h);
 void vga_palette_rgb888(uint8_t rgb[256][3]);   /* DAC (6-bit) expanded to 8-bit        */
 uint32_t vga_frame_counter(void);         /* completed virtual retraces                    */
+#define VGA_DEBUG_REGS 108
+extern void (*vga_write_trace_hook)(uint32_t linear, uint8_t value, void *caller);
+extern uint32_t vga_trace_caller;
+void vga_debug_state(uint8_t *planes_out /* 4x64K */, uint8_t *regs_out /* VGA_DEBUG_REGS */,
+                     uint8_t *dac_out /* 768 */);
+void vpit_debug_state(uint32_t out[16]);
+void vpic_debug_state(uint8_t out[10]);
+extern void (*vpic_isr_invoker)(uint32_t offset); /* NULL: handlers are cdecl functions   */
+extern uint16_t vpic_extra_code_selector; /* also counts as a hooked PM vector selector  */
 
 /* ---- keyboard controller + BIOS keyboard (kbd.c) --------------------------------------- */
 void vkbd_init(void);

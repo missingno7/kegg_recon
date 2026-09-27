@@ -116,3 +116,18 @@ target_link_libraries(ke_oracle PRIVATE SDL3::SDL3 winmm)
 target_link_options(ke_oracle PRIVATE -mconsole -Wl,--disable-dynamicbase -Wl,--image-base,0x00400000)
 add_custom_command(TARGET ke_oracle POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${KE_SDL3_DIR}/bin/SDL3.dll" "$<TARGET_FILE_DIR:ke_oracle>")
+
+# ---- lockstep state-diff runner (docs/port/lockstep.md) --------------------------------
+# One executable runs either the port (--mode port) or the original KE.EXE machine code
+# (--mode orig) on the deterministic lockstep virtual PC and dumps state per frame;
+# port/tools/lockstep.py runs both and reports the first divergences.
+add_executable(ke_lockstep oracle/oracle.c oracle/lockstep.c host/replay.c
+  ${KE_HOST_LIB_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES} ${KE_ASM_TRANSLATIONS}
+  $<TARGET_OBJECTS:ke_game>)
+set_target_properties(ke_lockstep PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/oracle")
+target_include_directories(ke_lockstep PRIVATE include)
+target_compile_options(ke_lockstep PRIVATE
+  $<$<COMPILE_LANGUAGE:C>:-std=gnu11 -O1 -g -Wall -Wno-unused-function -fno-strict-aliasing -fno-omit-frame-pointer>)
+target_link_libraries(ke_lockstep PRIVATE SDL3::SDL3 winmm)
+target_link_options(ke_lockstep PRIVATE -mconsole -Wl,--stack,8388608 -Wl,--disable-dynamicbase
+  -Wl,--image-base,0x00400000 -Wl,--wrap=wait_for_tick -Wl,--wrap=malloc -Wl,--wrap=free)

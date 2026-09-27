@@ -15,7 +15,12 @@ build/port/oracle/ke_oracle.exe build/port/oracle          # all tests pass
 python port/tools/check_layouts.py --data                  # 0 mismatches
 python port/tools/gen_asm_stubs.py --check                 # stubs regenerated
 python port/tools/smoke.py                                 # SMOKE OK
+python port/tools/lockstep.py --frames 1100 --click-every 100:60:150:82:400   # NO DIVERGENCE
 ```
+
+`lockstep.py` (docs/port/lockstep.md) runs the port and the original KE.EXE machine code on the
+deterministic virtual PC and reports the first differing frame/state; packages that change
+translations or vhw devices keep it at NO DIVERGENCE.
 
 **Translating an assembly module** (packages A*): create `port/asm/<module>.c` defining every
 public code label *and* every public/internal data label of `asm/<module>.asm` (the generator

@@ -385,6 +385,77 @@ static DWORD WINAPI pit_thread_main(LPVOID unused)
     return 0;
 }
 
+/* ---- lockstep mode: channel 0 edges from the deterministic clock (no PIT thread) ------ */
+static uint32_t ls_generation = 0xffffffffu;
+static uint64_t ls_next;           /* next IRQ0 edge, 0 = none */
+
+static void ls_refresh_locked(uint64_t now)
+{
+    PitChannel *c = &ch[0];
+    if (ls_generation != c->generation) {
+        ls_generation = c->generation;
+        ls_next = irq_deadline(c, c->origin_ns);
+    }
+    if (!ls_next && !c->null_count && !c->irq_fired)
+        ls_next = irq_deadline(c, c->origin_ns);   /* count written after the mode word */
+    (void)now;
+}
+
+void vpit_lockstep_update(void)
+{
+    uint64_t now = vhw_lockstep_ns, edge = 0;
+    if (!pit_initialized)
+        return;
+    EnterCriticalSection(&pit_lock);
+    ls_refresh_locked(now);
+    if (ls_next && now >= ls_next && !ch[0].null_count) {
+        uint32_t mode = mode_number(&ch[0]);
+        edge = ls_next;
+        if (mode == 0 || mode == 1 || mode == 4 || mode == 5) {
+            ch[0].irq_fired = 1;
+            ls_next = 0;
+        } else {
+            ls_next = irq_deadline(&ch[0], now);  /* missed edges coalesce in the IRR */
+        }
+    }
+    LeaveCriticalSection(&pit_lock);
+    if (edge)
+        vpic_raise_irq_at(0, edge);
+}
+
+uint64_t vpit_lockstep_next_edge(void)
+{
+    uint64_t next;
+    if (!pit_initialized)
+        return UINT64_MAX;
+    EnterCriticalSection(&pit_lock);
+    ls_refresh_locked(vhw_lockstep_ns);
+    next = ls_next ? ls_next : UINT64_MAX;
+    LeaveCriticalSection(&pit_lock);
+    return next;
+}
+
+/* Side-effect-free state for lockstep dumps: per channel reload, mode, access, flags and the
+ * current count; then port 61h and the next lockstep edge relative to the clock. */
+void vpit_debug_state(uint32_t out[16])
+{
+    int i;
+    uint64_t now = vhw_clock_now_ns();
+    EnterCriticalSection(&pit_lock);
+    for (i = 0; i < 3; i++) {
+        out[i * 4 + 0] = ch[i].reload;
+        out[i * 4 + 1] = (uint32_t)ch[i].mode | ((uint32_t)ch[i].access << 8) |
+                         ((uint32_t)ch[i].null_count << 16) | ((uint32_t)ch[i].gate << 24);
+        out[i * 4 + 2] = counter_now(&ch[i], now);
+        out[i * 4 + 3] = (uint32_t)ch[i].count_latched | ((uint32_t)ch[i].read_hi_next << 8) |
+                         ((uint32_t)ch[i].write_hi_next << 16);
+    }
+    out[12] = port61;
+    out[13] = ls_next > now ? (uint32_t)(ls_next - now) : 0;
+    out[14] = out[15] = 0;
+    LeaveCriticalSection(&pit_lock);
+}
+
 void vpit_init(void)
 {
     int i;

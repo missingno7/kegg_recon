@@ -155,10 +155,37 @@ static uint8_t vga_status_poll(void)
             uint64_t wait_dots = (uint64_t)(distance - 48) * horizontal_total_dots();
             /* Avoid host sleep in IRQ0: the handler must poll closely enough not to miss the
              * retrace edge while servicing its scheduled PIT interrupt. */
-            ke_sleep_ns(wait_dots * 1000000000ull / dot_clock_hz() / 4);
+            if (vhw_lockstep)
+                vhw_lockstep_advance(wait_dots * 1000000000ull / dot_clock_hz() / 4);
+            else
+                ke_sleep_ns(wait_dots * 1000000000ull / dot_clock_hz() / 4);
         }
     }
     return v;
+}
+
+/* Side-effect-free copy of the adapter state for lockstep dumps (no port or memory cycle,
+ * latches and flip-flops untouched). Register layout: port/oracle/lockstep.c. */
+void vga_debug_state(uint8_t *planes_out, uint8_t *regs_out, uint8_t *dac_out)
+{
+    if (planes_out)
+        memcpy(planes_out, planes, sizeof planes);
+    if (regs_out) {
+        memcpy(regs_out, seq, 8);
+        memcpy(regs_out + 8, gc, 16);
+        memcpy(regs_out + 24, crtc, 32);
+        memcpy(regs_out + 56, attr, 32);
+        memcpy(regs_out + 88, latch, 4);
+        regs_out[92] = seq_index; regs_out[93] = gc_index; regs_out[94] = crtc_index;
+        regs_out[95] = attr_index; regs_out[96] = attr_flipflop; regs_out[97] = misc_output;
+        regs_out[98] = dac_write_index; regs_out[99] = dac_read_index;
+        regs_out[100] = dac_component; regs_out[101] = dac_read_component;
+        regs_out[102] = dac_pel_mask; regs_out[103] = (uint8_t)bios_mode;
+        memcpy(regs_out + 104, &display_start_latched, 2);
+        regs_out[106] = regs_out[107] = 0;
+    }
+    if (dac_out)
+        memcpy(dac_out, dac, sizeof dac);
 }
 
 /* ---- memory -------------------------------------------------------------------------- */
@@ -214,11 +241,18 @@ uint8_t vga_mem_read8(uint32_t linear)
     return latch[plane];
 }
 
+/* Diagnostics (lockstep --vga-trace): every CPU write into the window, with its caller. */
+void (*vga_write_trace_hook)(uint32_t linear, uint8_t value, void *caller);
+uint32_t vga_trace_caller;      /* set by the oracle VEH: EIP of the emulated instruction */
+
 void vga_mem_write8(uint32_t linear, uint8_t value)
 {
     uint32_t off, address = linear - 0xA0000u;
     uint8_t mask = seq[2] & 0x0f, bitmask = gc[8];
     int mode = gc[5] & 3, op = (gc[3] >> 3) & 3, p;
+    if (vga_write_trace_hook)
+        vga_write_trace_hook(linear, value, vga_trace_caller ? (void *)(uintptr_t)vga_trace_caller
+                                                             : __builtin_return_address(0));
     if (linear < 0xA0000u || linear > 0xBFFFFu)
         return;
     if (((gc[6] >> 2) & 3) == 1) {

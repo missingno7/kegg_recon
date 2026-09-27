@@ -8,7 +8,8 @@ void vpit_start(void);
 
 int vhw_init(void)
 {
-    timeBeginPeriod(1);        /* 1 ms scheduler granularity for device threads */
+    if (!vhw_lockstep)
+        timeBeginPeriod(1);        /* 1 ms scheduler granularity for device threads */
     vhw_fault_init();
     if (lowmem_init() != 0)
         return -1;
@@ -25,6 +26,8 @@ int vhw_init(void)
 
 void vhw_start_devices(void)
 {
+    if (vhw_lockstep)
+        return;                /* lockstep: PIT edges and IRQs are driven by the clock */
     virq_thread_start();
     vpit_start();
 }

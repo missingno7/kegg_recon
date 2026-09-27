@@ -38,6 +38,10 @@ static uint64_t irq_edge_ns[16];            /* original device edge for pending 
 static jmp_buf isr_abandon;                 /* IRQ thread: leave a handler that exited  */
 static volatile LONG isr_exit_code = -1;
 static long stats_async, stats_sync, stats_blocked;
+/* Lockstep oracle (port/oracle/lockstep.c): original KE.EXE handlers end in IRETD and were
+ * installed with the host's real code selector (FP_SEG of a near function = CS). */
+void (*vpic_isr_invoker)(uint32_t offset);
+uint16_t vpic_extra_code_selector;
 
 /* ---- priority resolution ----------------------------------------------------------- */
 static int pic_pick(Pic *p)
@@ -250,6 +254,7 @@ static int deliver_one(void)
     uint32_t off;
     uint64_t edge_ns;
     LONG saved_if;
+    uint32_t saved_inp = vhw_last_inp_value;   /* handler registers are restored by IRET */
     EnterCriticalSection(&pic_lock);
     irq = pick_locked();
     if (irq < 0) {
@@ -279,14 +284,20 @@ static int deliver_one(void)
     off = pm_vectors[vector].off;
     /* A vector counts as hooked only when it holds a flat-model code address; saved and
      * restored BIOS defaults (F000:xxxx, 0:0) run the built-in default handler. */
-    if (off && pm_vectors[vector].sel == KE_FLAT_SELECTOR)
-        ((void (*)(void))(uintptr_t)off)();
+    if (off && (pm_vectors[vector].sel == KE_FLAT_SELECTOR ||
+                (vpic_extra_code_selector && pm_vectors[vector].sel == vpic_extra_code_selector))) {
+        if (vpic_isr_invoker)
+            vpic_isr_invoker(off);
+        else
+            ((void (*)(void))(uintptr_t)off)();
+    }
     else
         default_handler(irq);
     if (clock_scoped)
         vhw_clock_irq0_leave();
     InterlockedExchange(&vcpu_if_flag, saved_if);
     InterlockedExchange(&vhw_in_isr, 0);
+    vhw_last_inp_value = saved_inp;
     return 1;
 }
 
@@ -423,6 +434,17 @@ void virq_thread_stop(void)
     }
     ke_log(KE_LOG_INFO, "pic", "interrupts delivered: async=%ld sync=%ld (blocked attempts %ld)",
            stats_async, stats_sync, stats_blocked);
+}
+
+/* Side-effect-free PIC state for lockstep dumps: IRR/ISR/IMR/base per controller + IF. */
+void vpic_debug_state(uint8_t out[10])
+{
+    EnterCriticalSection(&pic_lock);
+    out[0] = pics[0].irr; out[1] = pics[0].isr; out[2] = pics[0].imr; out[3] = pics[0].base;
+    out[4] = pics[1].irr; out[5] = pics[1].isr; out[6] = pics[1].imr; out[7] = pics[1].base;
+    LeaveCriticalSection(&pic_lock);
+    out[8] = (uint8_t)vcpu_if_flag;
+    out[9] = (uint8_t)vhw_in_isr;
 }
 
 void vpic_init(void)

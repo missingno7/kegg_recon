@@ -75,13 +75,14 @@ static void restore_if(int was_enabled)
     vhw_leave();
 }
 
-/* The Watcom C wait helper leaves its last IN result in AL. Re-read status immediately
- * after it returns so the literal C translation preserves that command byte (08h or 09h)
- * for the following PIT latch write. */
+/* The Watcom C wait helper leaves its last IN result in AL (the first 3DAh read with the
+ * retrace bit set, 08h or 09h); the original then writes that AL to the PIT command port.
+ * Take that value from the virtual CPU's record of the last inp() instead of reading the
+ * port again: an extra read shifts the latch by one I/O cycle (docs/port/lockstep.md, L1). */
 static uint8_t wait_for_vsync_al(void)
 {
     wait_for_vsync();
-    return (uint8_t)inp(0x3da);
+    return (uint8_t)vhw_last_inp_value;
 }
 
 int measure_pit_channel0(void)
@@ -123,8 +124,9 @@ int measure_pit_channel0(void)
     pit_out8(PIT_COMMAND_PORT, al);
     low = pit_in8(PIT_CHANNEL0_PORT);
     high = pit_in8(PIT_CHANNEL0_PORT);
-    pit_sample_auxiliary = ((uint32_t)high << 8) | low;
-    g_pit_elapsed_ticks = PIT_COUNTER_MODULUS - pit_sample_auxiliary;
+    /* EAX = count; EBX = 10000h - EAX; only g_pit_elapsed_ticks is stored (the
+     * original never writes pit_sample_auxiliary: docs/port/lockstep.md, L8). */
+    g_pit_elapsed_ticks = PIT_COUNTER_MODULUS - (((uint32_t)high << 8) | low);
 
     pit_out8(PIC_SLAVE_MASK_PORT, slave_mask);
     pit_out8(PIC_MASTER_MASK_PORT, master_mask);
