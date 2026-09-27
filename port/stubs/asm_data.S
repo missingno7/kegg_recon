@@ -63,17 +63,7 @@ _g_asset_encoding:
     .short 0
 /* m_0982c_0995c _DATA: 0x8 bytes */
 
-/* m_09f64_0a0d2.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_09f64_0a0d2_data:
-    .globl _pit_sample_auxiliary
-_pit_sample_auxiliary:
-    .long 0
-    .globl _g_pit_elapsed_ticks
-_g_pit_elapsed_ticks:
-    .long 0
-/* m_09f64_0a0d2 _DATA: 0x8 bytes */
+/* m_09f64_0a0d2: owned by port/asm/m_09f64_0a0d2.c */
 
 /* m_0a284_0a51f.asm _DATA */
     .data
