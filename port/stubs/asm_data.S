@@ -2,23 +2,6 @@
 /* Byte-exact _DATA of the historical TASM modules that no translation owns yet. */
 /* Symbols follow the i686-w64-mingw32 C convention (leading underscore). */
 
-    .set KE_LABEL_sprite_render_noop, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_restore_sprite_rectangle, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_restore_sprite_background_record, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_restore_sprite_background_from_record, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_transparent_sprite_record_entry, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_5_entry, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_5_draw, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_3_entry, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_render_sprite_record_kind_3_draw, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12972, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12971, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12970, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12682, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12681, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_noop_sprite_callback_12680, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_draw_transparent_sprite_rows, 0 /* m_12a9c_12f30: private label */
-    .set KE_LABEL_clip_sprite_record, 0 /* m_12a9c_12f30: private label */
     .set KE_LABEL_module_channel_7_state, _module_channel_7_state
     .set KE_LABEL_module_channel_6_state, _module_channel_6_state
     .set KE_LABEL_module_channel_5_state, _module_channel_5_state
@@ -207,99 +190,17 @@ _protracker_irq_handler:
 
 /* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
 
+/* m_12288_12680: owned by port/asm/m_12288_12680.c */
+
 /* m_12680_12683: owned by port/asm/m_12680_12683.c */
+
+/* m_12684_1296e: owned by port/asm/m_12684_1296e.c */
 
 /* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
-/* m_12a9c_12f30.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_12a9c_12f30_data:
-    .globl _sprite_record_cursor
-_sprite_record_cursor:
-    .fill 2, 4, 0
-    .globl _vga_draw_origin
-_vga_draw_origin:
-    .long 0
-    .globl _vga_row_advance
-_vga_row_advance:
-    .long 0
-    .globl _background_plane_delta
-_background_plane_delta:
-    .long 0
-    .globl _sprite_record_flags
-_sprite_record_flags:
-    .short 0
-    .globl _sprite_source_column
-_sprite_source_column:
-    .short 0
-    .globl _sprite_clip_top
-_sprite_clip_top:
-    .long 0
-    .globl _sprite_clip_bottom
-_sprite_clip_bottom:
-    .long 0
-    .globl _sprite_clip_left
-_sprite_clip_left:
-    .long 0
-    .globl _sprite_clip_right
-_sprite_clip_right:
-    .long 0
-    .globl _visible_sprite_width
-_visible_sprite_width:
-    .long 0
-    .globl _vga_plane_index
-_vga_plane_index:
-    .long 0
-    .globl _sprite_row_width_remaining
-_sprite_row_width_remaining:
-    .fill 18, 1, 0
-    .globl _sprite_operation_dispatch_table
-_sprite_operation_dispatch_table:
-    .byte 0
-    .byte 0
-    .globl _current_vga_plane_mask
-_current_vga_plane_mask:
-    .byte 0
-    .globl _first_vga_plane_mask
-_first_vga_plane_mask:
-    .byte 0
-    .long KE_LABEL_restore_sprite_rectangle
-    .globl _sprite_render_mode_table
-_sprite_render_mode_table:
-    .long KE_LABEL_noop_sprite_callback_12972
-    .long KE_LABEL_restore_sprite_background_from_record
-    .long KE_LABEL_noop_sprite_callback_12682
-    .long KE_LABEL_restore_sprite_background_record
-    .long KE_LABEL_clip_sprite_record
-    .long KE_LABEL_render_transparent_sprite_record_entry
-    .long KE_LABEL_draw_transparent_sprite_rows
-    .long 0
-    .long KE_LABEL_sprite_render_noop
-    .long KE_LABEL_noop_sprite_callback_12970
-    .long KE_LABEL_noop_sprite_callback_12971
-    .long 0
-    .long KE_LABEL_clip_sprite_record
-    .long KE_LABEL_render_sprite_record_kind_3_entry
-    .long KE_LABEL_render_sprite_record_kind_3_draw
-    .long 0
-    .long KE_LABEL_sprite_render_noop
-    .long KE_LABEL_noop_sprite_callback_12680
-    .long KE_LABEL_noop_sprite_callback_12681
-    .long 0
-    .long KE_LABEL_clip_sprite_record
-    .long KE_LABEL_render_sprite_record_kind_5_entry
-    .long KE_LABEL_render_sprite_record_kind_5_draw
-    .globl _sprite_origin_x
-_sprite_origin_x:
-    .long 0
-    .globl _sprite_origin_y
-_sprite_origin_y:
-    .long 0
-    .globl _sprite_command_cursor
-_sprite_command_cursor:
-    .fill 10, 1, 0
-/* m_12a9c_12f30 _DATA: 0xb8 bytes */
+/* m_12974_12a9c: owned by port/asm/m_12974_12a9c.c */
+
+/* m_12a9c_12f30: owned by port/asm/m_12a9c_12f30.c */
 
 /* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
 

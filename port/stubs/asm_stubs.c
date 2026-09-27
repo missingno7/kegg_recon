@@ -20,29 +20,17 @@ KE_ASM_STUB(stop_protracker_module, "m_11530_11df8")
 
 /* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
 
-KE_ASM_STUB(render_sprite_record_kind_5_entry, "m_12288_12680")
-KE_ASM_STUB(render_sprite_record_kind_5_draw, "m_12288_12680")
-KE_ASM_STUB(restore_sprite_background_record, "m_12288_12680")
+/* m_12288_12680: owned by port/asm/m_12288_12680.c */
 
 /* m_12680_12683: owned by port/asm/m_12680_12683.c */
 
-KE_ASM_STUB(render_sprite_record_kind_3_entry, "m_12684_1296e")
-KE_ASM_STUB(render_sprite_record_kind_3_draw, "m_12684_1296e")
-KE_ASM_STUB(restore_sprite_background_from_record, "m_12684_1296e")
+/* m_12684_1296e: owned by port/asm/m_12684_1296e.c */
 
 /* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
-KE_ASM_STUB(render_transparent_sprite_record_entry, "m_12974_12a9c")
-KE_ASM_STUB(draw_transparent_sprite_rows, "m_12974_12a9c")
-KE_ASM_STUB(restore_sprite_rectangle, "m_12974_12a9c")
+/* m_12974_12a9c: owned by port/asm/m_12974_12a9c.c */
 
-KE_ASM_STUB(process_sprite_update_list, "m_12a9c_12f30")
-KE_ASM_STUB(process_sprite_update_list_entry, "m_12a9c_12f30")
-KE_ASM_STUB(replay_sprite_update_list, "m_12a9c_12f30")
-KE_ASM_STUB(replay_sprite_update_list_entry, "m_12a9c_12f30")
-KE_ASM_STUB(draw_bob_sprite, "m_12a9c_12f30")
-KE_ASM_STUB(draw_bob_sprite_entry, "m_12a9c_12f30")
-KE_ASM_STUB(clip_and_dispatch_sprite_record, "m_12a9c_12f30")
+/* m_12a9c_12f30: owned by port/asm/m_12a9c_12f30.c */
 
 /* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
 
