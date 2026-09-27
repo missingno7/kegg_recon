@@ -12,8 +12,8 @@
  * Polling loops on 3DAh therefore see the historical cadence; a poll far from the next
  * retrace yields the CPU (see vga_status_poll).
  *
- * WORK PACKAGE "vga": verify against the historical renderers (port/oracle), latch start
- * address at retrace, panning/line compare, text mode (currently not rendered).
+ * The V1 virtual-VGA package covers register semantics, retrace-latched start addresses,
+ * panning/split scan-out and the game's packed/planar graphics modes. Text mode is not drawn.
  */
 #include <string.h>
 #include <windows.h>
@@ -32,6 +32,9 @@ static uint8_t dac_write_index, dac_read_index, dac_component, dac_read_componen
 static uint8_t dac_pel_mask = 0xff;
 static int bios_mode = 3;
 static uint64_t timing_origin;
+static uint64_t timing_frame_base;
+static uint64_t timing_last_retrace;
+static uint16_t display_start_latched;
 static CRITICAL_SECTION dac_lock;
 
 /* ---- register helpers ---------------------------------------------------------------- */
@@ -46,6 +49,11 @@ static int vretrace_start_line(void)
 {
     return crtc[0x10] | ((crtc[7] & 0x04) << 6) | ((crtc[7] & 0x80) << 2);
 }
+static int effective_vretrace_start_line(void)
+{
+    int line = vretrace_start_line();
+    return line ? line : 412;             /* BIOS timing fallback when start is unset */
+}
 static int vdisplay_end_line(void)
 {
     return crtc[0x12] | ((crtc[7] & 0x02) << 7) | ((crtc[7] & 0x40) << 3);
@@ -53,34 +61,69 @@ static int vdisplay_end_line(void)
 
 #define LINE_NS 31778ull   /* 1 / 31.469 kHz */
 
-/* Returns the current scan line within the frame and the frame number. */
-static int current_line(uint64_t *frame)
+/* Returns the current scan line and the number of vertical-retrace edges seen. */
+static int current_line(uint64_t *retrace)
 {
     uint64_t t = ke_now_ns() - timing_origin;
     uint64_t lines = t / LINE_NS;
     int total = vertical_total_lines();
-    if (frame)
-        *frame = lines / (uint64_t)total;
-    return (int)(lines % (uint64_t)total);
+    int line = (int)(lines % (uint64_t)total);
+    if (retrace) {
+        int vrs = effective_vretrace_start_line();
+        *retrace = lines / (uint64_t)total + (line >= vrs ? 1u : 0u);
+    }
+    return line;
+}
+
+static uint16_t programmed_display_start(void)
+{
+    return (uint16_t)(((uint16_t)crtc[0x0c] << 8) | crtc[0x0d]);
+}
+
+/* The CRTC start address is copied into its display latch at vertical retrace. */
+static void update_retrace_latch(void)
+{
+    uint64_t retrace;
+    current_line(&retrace);
+    if (retrace > timing_last_retrace) {
+        display_start_latched = programmed_display_start();
+        timing_last_retrace = retrace;
+    }
+}
+
+/* Preserve the public frame count when a mode/timing set restarts the scan clock. */
+static void restart_timing(void)
+{
+    update_retrace_latch();
+    timing_frame_base += timing_last_retrace;
+    timing_origin = ke_now_ns();
+    timing_last_retrace = 0;
 }
 
 uint32_t vga_frame_counter(void)
 {
-    uint64_t f;
-    current_line(&f);
-    return (uint32_t)f;
+    uint64_t retrace;
+    update_retrace_latch();
+    current_line(&retrace);
+    return (uint32_t)(timing_frame_base + retrace);
 }
 
 /* Input status 1 (3DAh): bit 3 vertical retrace, bit 0 display disabled (blanking). */
 static uint8_t vga_status_poll(void)
 {
     int line = current_line(NULL);
-    int vrs = vretrace_start_line(), vde = vdisplay_end_line();
-    int vre = vrs + 2;                     /* 2-line retrace pulse as programmed by BIOS */
+    int vrs = effective_vretrace_start_line(), vde = vdisplay_end_line();
+    int width = ((crtc[0x11] & 0x0f) - (crtc[0x10] & 0x0f)) & 0x0f;
+    int vre;
     uint8_t v = 0;
-    if (vrs == 0)
-        vrs = 412, vre = 414, vde = 399;
-    if (line >= vrs && line < vre)
+    update_retrace_latch();
+    if (!width)
+        width = 16;
+    vre = vrs + width;
+    if (vretrace_start_line() == 0)
+        vre = vrs + 2, vde = 399;
+    if ((vre <= vertical_total_lines() && line >= vrs && line < vre) ||
+        (vre > vertical_total_lines() && (line >= vrs || line < vre % vertical_total_lines())))
         v |= 0x08;
     if (line > vde)
         v |= 0x01;
@@ -99,13 +142,30 @@ static uint8_t rotate(uint8_t v, int n) { n &= 7; return (uint8_t)((v >> n) | (v
 
 uint8_t vga_mem_read8(uint32_t linear)
 {
-    uint32_t off = linear - 0xA0000u;
+    uint32_t off, address = linear - 0xA0000u;
+    int map = (gc[6] >> 2) & 3;
     int plane, p;
     if (linear < 0xA0000u || linear > 0xBFFFFu)
         return 0xff;
+    if (map == 1) {
+        if (address >= 0x10000u) return 0xff;
+    } else if (map == 2) {
+        if (address < 0x10000u || address >= 0x18000u) return 0xff;
+        address -= 0x10000u;
+    } else if (map == 3) {
+        if (address < 0x18000u) return 0xff;
+        address -= 0x18000u;
+    }
+    address &= 0xffffu;                    /* four 64 KiB planes back the VGA aperture */
+    off = address;
     if (chain4()) {
         plane = off & 3;
         off &= 0xfffc;
+        off &= 0xffff;
+    } else if (gc[5] & 0x10) {             /* host odd/even mode */
+        plane = (gc[4] & 2) | (off & 1);
+        if (gc[6] & 2)
+            off &= ~1u;
     } else {
         plane = gc[4] & 3;
         off &= 0xffff;
@@ -132,16 +192,38 @@ uint8_t vga_mem_read8(uint32_t linear)
 
 void vga_mem_write8(uint32_t linear, uint8_t value)
 {
-    uint32_t off = linear - 0xA0000u;
+    uint32_t off, address = linear - 0xA0000u;
     uint8_t mask = seq[2] & 0x0f, bitmask = gc[8];
     int mode = gc[5] & 3, op = (gc[3] >> 3) & 3, p;
     if (linear < 0xA0000u || linear > 0xBFFFFu)
         return;
+    if (((gc[6] >> 2) & 3) == 1) {
+        if (address >= 0x10000u) return;
+    } else if (((gc[6] >> 2) & 3) == 2) {
+        if (address < 0x10000u || address >= 0x18000u) return;
+        address -= 0x10000u;
+    } else if (((gc[6] >> 2) & 3) == 3) {
+        if (address < 0x18000u) return;
+        address -= 0x18000u;
+    }
+    address &= 0xffffu;
+    off = address;
     if (chain4()) {
         mask &= (uint8_t)(1u << (off & 3));
         off &= 0xfffc;
+        off &= 0xffff;
+    } else if (gc[5] & 0x10) {             /* host odd/even mode */
+        mask &= (uint8_t)(1u << ((off & 1) | (gc[4] & 2)));
+        if (gc[6] & 2)
+            off &= ~1u;
     } else {
         off &= 0xffff;
+    }
+    if (mode == 0 && !(gc[1] & 0x0f) && !(gc[3] & 0x1f) && bitmask == 0xff) {
+        for (p = 0; p < 4; p++)
+            if (mask & (1 << p))
+                planes[p][off] = value;
+        return;
     }
     for (p = 0; p < 4; p++) {
         uint8_t data;
@@ -161,7 +243,7 @@ void vga_mem_write8(uint32_t linear, uint8_t value)
             break;
         default: /* 3 */
             data = (gc[0] & (1 << p)) ? 0xff : 0x00;
-            bitmask &= rotate(value, gc[3] & 7);
+            bitmask = (uint8_t)(gc[8] & rotate(value, gc[3] & 7));
             break;
         }
         switch (op) {
@@ -214,7 +296,16 @@ static uint32_t vga_in(void *ctx, uint16_t port, int size)
 static void vga_out(void *ctx, uint16_t port, uint32_t value, int size)
 {
     uint8_t v = (uint8_t)value;
-    (void)ctx; (void)size;
+    (void)ctx;
+    if (size == 2) {
+        vga_out(ctx, port, value & 0xff, 1);
+        if (port == 0x3c4 || port == 0x3ce || port == 0x3d4 || port == 0x3b4)
+            vga_out(ctx, (uint16_t)(port + 1), (value >> 8) & 0xff, 1);
+        else
+            vga_out(ctx, port, (value >> 8) & 0xff, 1);
+        return;
+    }
+    update_retrace_latch();
     switch (port) {
     case 0x3c0:
         if (!attr_flipflop)
@@ -249,6 +340,8 @@ static void vga_out(void *ctx, uint16_t port, uint32_t value, int size)
             break;
         }
         crtc[crtc_index & 31] = v;
+        if (crtc_index == 6 || crtc_index == 7 || crtc_index == 0x10 || crtc_index == 0x11)
+            restart_timing();
         break;
     case 0x3da: case 0x3ba: break;                        /* feature control */
     default: break;
@@ -266,6 +359,7 @@ static const uint8_t crtc_mode03[25] = {0x5f, 0x4f, 0x50, 0x82, 0x55, 0x81, 0xbf
 void vga_bios_set_mode(int mode)
 {
     int i;
+    restart_timing();
     int clear = !(mode & 0x80);
     mode &= 0x7f;
     memset(gc, 0, sizeof gc);
@@ -292,7 +386,11 @@ void vga_bios_set_mode(int mode)
     }
     if (clear)
         memset(planes, 0, sizeof planes);
+    seq_index = gc_index = crtc_index = attr_index = attr_flipflop = 0;
     bios_mode = mode;
+    display_start_latched = programmed_display_start();
+    timing_origin = ke_now_ns();
+    timing_last_retrace = 0;
     ke_lowmem_shadow[0x449] = (uint8_t)mode;
     ke_log(KE_LOG_INFO, "vga", "BIOS mode set %02Xh", mode);
 }
@@ -316,37 +414,57 @@ int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, i
     int vde = vdisplay_end_line() + 1;
     int max_scan = (crtc[9] & 0x1f) + 1;
     int double_scan = (crtc[9] & 0x80) ? 2 : 1;
+    int row_repeat = max_scan * double_scan;
     int width, height, y, x;
-    uint32_t start = ((uint32_t)crtc[0x0c] << 8) | crtc[0x0d];
+    uint32_t start;
     uint32_t row_bytes;
+    uint32_t line_compare;
     int dword_mode = (crtc[0x14] & 0x40) != 0;
     int byte_mode = (crtc[0x17] & 0x40) != 0;
+    int address_shift = dword_mode ? 2 : (byte_mode ? 0 : 1);
+    int byte_pan = (crtc[8] >> 5) & 3;
+    int preset_row_scan = crtc[8] & 0x1f;
+    int panning_mode = (attr[0x10] & 0x20) != 0;
+    int fine_pan = (attr[0x13] & 0x0f) >> 1;
+    update_retrace_latch();
+    start = display_start_latched;
+    line_compare = crtc[0x18] | ((uint32_t)(crtc[7] & 0x10) << 4) |
+                   ((uint32_t)(crtc[9] & 0x40) << 3);
     if (!(gc[6] & 0x01))                           /* text mode: not rendered (yet) */
         return 0;
-    width = hde * 4;                               /* 256-color: 4 pixels per char clock */
-    height = vde / (max_scan * double_scan);
+    width = hde * 4;                               /* 256-color shift mode: 4 pixels per char */
+    height = (vde + row_repeat - 1) / row_repeat;
     if (width > max_w) width = max_w;
     if (height > max_h) height = max_h;
     if (width <= 0 || height <= 0)
         return 0;
-    if (dword_mode)
-        row_bytes = (uint32_t)crtc[0x13] << 3;
-    else if (byte_mode)
-        row_bytes = (uint32_t)crtc[0x13] << 1;
-    else
-        row_bytes = (uint32_t)crtc[0x13] << 2;
+    row_bytes = (uint32_t)crtc[0x13] << (address_shift + 1);
     for (y = 0; y < height; y++) {
         uint8_t *row = dst + (size_t)y * dst_pitch;
-        if (dword_mode) {
-            uint32_t base = (start << 2) + (uint32_t)y * row_bytes;
+        uint32_t physical_line = (uint32_t)y * (uint32_t)row_repeat;
+        int split = physical_line > line_compare;
+        uint32_t memory_line;
+        uint32_t base_start = split ? 0 : start;
+        int pan = (split && panning_mode) ? 0 : fine_pan;
+        int bp = (split && panning_mode) ? 0 : byte_pan;
+        if (split)
+            memory_line = (physical_line - (line_compare + 1)) / (uint32_t)row_repeat;
+        else
+            memory_line = (physical_line + (uint32_t)preset_row_scan) / (uint32_t)row_repeat;
+        if (chain4()) {
+            uint32_t base = (base_start << address_shift) + memory_line * row_bytes +
+                            ((uint32_t)bp << address_shift);
             for (x = 0; x < width; x++) {
-                uint32_t a = base + (uint32_t)x;
+                uint32_t a = base + (uint32_t)(x + pan);
                 row[x] = planes[a & 3][a & 0xfffc];
             }
         } else {
-            uint32_t base = start + (uint32_t)y * (row_bytes >> (byte_mode ? 0 : 1));
-            for (x = 0; x < width; x++)
-                row[x] = planes[x & 3][(base + (uint32_t)(x >> 2)) & 0xffff];
+            uint32_t base = (base_start << address_shift) / 4 +
+                            (memory_line * row_bytes) / 4 + bp;
+            for (x = 0; x < width; x++) {
+                uint32_t px = (uint32_t)(x + pan);
+                row[x] = planes[px & 3][(base + (px >> 2)) & 0xffff];
+            }
         }
         for (x = 0; x < width; x++)
             row[x] &= dac_pel_mask;
@@ -360,6 +478,9 @@ void vga_init(void)
 {
     InitializeCriticalSection(&dac_lock);
     timing_origin = ke_now_ns();
+    timing_frame_base = 0;
+    timing_last_retrace = 0;
+    display_start_latched = 0;
     vga_bios_set_mode(3);
     vhw_register_ports(0x3b4, 0x3b5, vga_in, vga_out, NULL, "vga-crtc-mono");
     vhw_register_ports(0x3ba, 0x3ba, vga_in, vga_out, NULL, "vga-status-mono");
