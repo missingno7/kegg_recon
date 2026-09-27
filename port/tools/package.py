@@ -56,6 +56,11 @@ Use --scale N (1..8), --fullscreen/--windowed, --integer-scaling/
 --volume N (0..100), and --asset-dir PATH. ke_sdl3.ini beside the executable
 accepts asset_dir, window_scale, fullscreen, integer_scaling, aspect, audio,
 joystick and volume. Command-line options override environment and INI settings.
+Sound Blaster audio is enabled by default; set audio=off, --audio off, KE_SB=0,
+or KE_AUDIO=off to disable it. Set KE_AUDIO_DUMP=path.wav to capture the samples
+submitted to SDL as unsigned 8-bit mono WAV; path.wav.dsp.log records DSP commands,
+effective rates, and DMA block offsets. Rate changes are listed because WAV has one
+header sample rate.
 
 The original game files are not included. SDL3 is distributed under its license
 in LICENSE-SDL3.txt.

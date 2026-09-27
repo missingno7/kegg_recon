@@ -133,6 +133,16 @@ int vdma_read(int channel, uint8_t *dst, int len, int *terminal)
     return n;
 }
 
+uint32_t vdma_current_linear(int channel)
+{
+    DmaChannel *c = &dch[channel & 3];
+    uint32_t linear;
+    EnterCriticalSection(&dma_lock);
+    linear = ((uint32_t)c->page << 16) | c->cur_addr;
+    LeaveCriticalSection(&dma_lock);
+    return linear;
+}
+
 /* Device-to-memory data path. The virtual card has no microphone input; unsigned midpoint
  * silence is supplied, which is enough for the original's DMA-channel probe and keeps the
  * guest buffer in the same state an idle ADC would produce. */

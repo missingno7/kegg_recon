@@ -132,6 +132,7 @@ void vdma_init(void);
 int vdma_read(int channel, uint8_t *dst, int len, int *terminal);
 /* Write `len` copies of a device sample to an 8-bit channel; returns bytes, *terminal at TC. */
 int vdma_write(int channel, uint8_t sample, int len, int *terminal);
+uint32_t vdma_current_linear(int channel);
 void vsb_init(void);
 void vsb_shutdown(void);
 

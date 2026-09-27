@@ -79,6 +79,13 @@ build/port/ke_sdl3.exe [DATA_DIR] [--scale 1..8] [--fullscreen|--windowed]
   [--audio on|off] [--joystick on|off] [--volume 0..100] [--asset-dir DIR]
 ```
 
+Sound Blaster audio is on by default at 220h/IRQ7/DMA1. Disable it with `audio=off`
+in `ke_sdl3.ini`, `--audio off`, `KE_SB=0`, or `KE_AUDIO=off`. To record the
+unsigned 8-bit mono samples submitted to SDL, set `KE_AUDIO_DUMP=path.wav`; the
+port writes DSP commands, effective sample rates, and DMA block offsets to
+`path.wav.dsp.log`. Since DSP time constants change the rate during play, the log
+records each rate alongside the WAV's single header rate.
+
 F11 and Alt+Enter toggle fullscreen. Click the window to capture the mouse; Escape or
 focus loss releases it. The original keyboard controls are sent to the game, and an SDL
 gamepad is exposed as a virtual gameport when joystick support is enabled.
