@@ -68,6 +68,64 @@ static void default_log_path(char *out, size_t n)
         snprintf(out, n, "ke_sdl3.log");
 }
 
+static void set_window_icon(SDL_Window *window)
+{
+    SDL_Surface *icon = SDL_CreateSurface(32, 32, SDL_PIXELFORMAT_ARGB8888);
+    uint32_t clear, edge, shell, yolk, highlight;
+    int x, y;
+    if (!icon)
+        return;
+    clear = SDL_MapSurfaceRGBA(icon, 0, 0, 0, 0);
+    edge = SDL_MapSurfaceRGBA(icon, 105, 62, 22, 255);
+    shell = SDL_MapSurfaceRGBA(icon, 250, 226, 169, 255);
+    yolk = SDL_MapSurfaceRGBA(icon, 235, 157, 42, 255);
+    highlight = SDL_MapSurfaceRGBA(icon, 255, 248, 218, 255);
+    if (!SDL_LockSurface(icon)) {
+        SDL_DestroySurface(icon);
+        return;
+    }
+    for (y = 0; y < 32; y++) {
+        int dy = y - 16;
+        int width = 11 - (dy * dy * 8) / 144 + dy / 6;
+        uint32_t *row = (uint32_t *)((uint8_t *)icon->pixels + y * icon->pitch);
+        for (x = 0; x < 32; x++)
+            row[x] = clear;
+        if (y < 3 || y > 29)
+            continue;
+        for (x = 16 - width; x <= 16 + width; x++) {
+            int dx = x - 16;
+            int yd = y - 18;
+            int border = x == 16 - width || x == 16 + width || y == 3 || y == 29;
+            row[x] = border ? edge : shell;
+            if (!border && dx * dx + yd * yd <= 16)
+                row[x] = yolk;
+            if (!border && y < 12 && x < 15 && (x - 13) * (x - 13) + (y - 9) * (y - 9) <= 3)
+                row[x] = highlight;
+        }
+    }
+    SDL_UnlockSurface(icon);
+    if (!SDL_SetWindowIcon(window, icon))
+        ke_log(KE_LOG_WARN, "main", "window icon: %s", SDL_GetError());
+    SDL_DestroySurface(icon);
+}
+
+static void request_game_quit(int *requested, uint64_t *requested_at, const char *why)
+{
+    if (*requested)
+        return;
+    *requested = 1;
+    *requested_at = ke_now_ns();
+    ke_request_quit();
+    ke_log_game_backtrace(why);
+}
+
+static int is_fullscreen_shortcut(const SDL_Event *e)
+{
+    return e->type == SDL_EVENT_KEY_DOWN && !e->key.repeat &&
+           (e->key.scancode == SDL_SCANCODE_F11 ||
+            (e->key.scancode == SDL_SCANCODE_RETURN && (e->key.mod & SDL_KMOD_ALT)));
+}
+
 /* The virtual PC needs linear LOWMEM_BASE..LOWMEM_END (DOS memory, BIOS page, HMA) identity
  * mapped. The Windows loader makes its own early allocations (NLS tables, heaps, TEBs) in
  * low memory, so the process relaunches itself suspended and reserves the range in the
@@ -110,14 +168,17 @@ static int relaunch_with_low_memory_reserved(int *exit_code)
 
 int main(int argc, char **argv)
 {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
     char log_path[MAX_PATH];
     const char *exit_after = getenv("KE_EXIT_AFTER_MS");
     uint64_t exit_deadline = 0, close_requested_at = 0;
-    int running = 1;
+    uint64_t start_ns = 0, shot_ns = 0;
+    uint32_t last_presented_frame = 0;
+    int running = 1, quit_requested = 0, have_presented_frame = 0;
+    int vhw_ready = 0, sdl_ready = 0, present_ready = 0, game_started = 0;
+    int game_terminated = 0, result = 2, fullscreen = 0;
     int child_exit;
-    uint64_t start_ns, shot_ns = 0;
     char shot_path[MAX_PATH] = "";
 
     if (relaunch_with_low_memory_reserved(&child_exit))
@@ -144,23 +205,34 @@ int main(int argc, char **argv)
     }
     /* Map low memory before SDL loads anything that could take the range. */
     if (vhw_init() != 0)
-        return 2;
+        goto cleanup;
+    vhw_ready = 1;
 
     SDL_SetMainReady();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
         ke_log(KE_LOG_ERROR, "main", "SDL_Init: %s", SDL_GetError());
-        return 2;
+        goto cleanup;
     }
-    if (!SDL_CreateWindowAndRenderer("Krypton Egg", 320 * ke_config.scale, 240 * ke_config.scale,
+    sdl_ready = 1;
+    if (ke_config.scale < 1 || ke_config.scale > 8) {
+        ke_log(KE_LOG_WARN, "main", "KE_SCALE must be 1..8; using 3");
+        ke_config.scale = 3;
+    }
+    ke_config.aspect = !!ke_config.aspect;
+    if (!SDL_CreateWindowAndRenderer("Krypton Egg (F11 fullscreen)", 320 * ke_config.scale,
+                                     (ke_config.aspect ? 240 : 200) * ke_config.scale,
                                      SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         ke_log(KE_LOG_ERROR, "main", "SDL window: %s", SDL_GetError());
-        return 2;
+        goto cleanup;
     }
-    SDL_SetRenderVSync(renderer, 1);
+    set_window_icon(window);
+    if (!SDL_SetRenderVSync(renderer, 0))
+        ke_log(KE_LOG_WARN, "main", "cannot disable renderer vsync: %s", SDL_GetError());
     if (ke_present_init(window, renderer) != 0) {
         ke_log(KE_LOG_ERROR, "main", "texture: %s", SDL_GetError());
-        return 2;
+        goto cleanup;
     }
+    present_ready = 1;
     vsb_init(); /* opens its SDL audio stream, so after SDL_Init */
     if (exit_after)
         exit_deadline = ke_now_ns() + (uint64_t)atoi(exit_after) * 1000000ull;
@@ -168,49 +240,87 @@ int main(int argc, char **argv)
     start_ns = ke_now_ns();
     if (ke_game_thread_start() != 0) {
         ke_log(KE_LOG_ERROR, "main", "cannot start the game thread");
-        return 2;
+        goto cleanup;
     }
+    game_started = 1;
     while (running) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_EVENT_QUIT) {
-                if (!close_requested_at)
-                    ke_log_game_backtrace("at quit request");
-                ke_request_quit();
-                if (!close_requested_at)
-                    close_requested_at = ke_now_ns();
+                request_game_quit(&quit_requested, &close_requested_at, "at quit request");
+            } else if (is_fullscreen_shortcut(&e)) {
+                fullscreen = !fullscreen;
+                if (!SDL_SetWindowFullscreen(window, fullscreen)) {
+                    fullscreen = !fullscreen;
+                    ke_log(KE_LOG_WARN, "main", "fullscreen toggle: %s", SDL_GetError());
+                }
             } else {
                 ke_input_event(&e);
             }
         }
-        if (exit_deadline && ke_now_ns() > exit_deadline && !close_requested_at) {
+        if (exit_deadline && ke_now_ns() > exit_deadline && !quit_requested) {
             ke_log(KE_LOG_INFO, "main", "KE_EXIT_AFTER_MS elapsed: requesting quit");
-            ke_log_game_backtrace("at quit request");
-            ke_request_quit();
-            close_requested_at = ke_now_ns();
+            request_game_quit(&quit_requested, &close_requested_at, "at quit request");
         }
         if (ke_game_thread_finished())
             running = 0;
-        else if (close_requested_at && ke_now_ns() - close_requested_at > 3000000000ull) {
-            ke_log(KE_LOG_WARN, "main", "game thread did not reach a service boundary within 3 s; "
-                   "terminating it");
+        else if (quit_requested && ke_now_ns() - close_requested_at >= 100000000ull) {
+            ke_log(KE_LOG_WARN, "main", "game thread did not reach a service boundary within 100 ms; "
+                   "terminating it without game atexit handlers");
             TerminateThread((HANDLE)ke_game_thread_handle(), 4);
+            WaitForSingleObject((HANDLE)ke_game_thread_handle(), INFINITE);
+            game_terminated = 1;
+            result = 4;
             running = 0;
         }
         run_auto_keys(ke_now_ns() - start_ns);
-        ke_present_frame();
-        if (shot_ns && ke_now_ns() - start_ns >= shot_ns) {
-            ke_log(KE_LOG_INFO, "main", "screenshot %s: %s", shot_path,
-                   ke_present_save_bmp(shot_path) == 0 ? "saved" : "no graphics frame");
-            shot_ns = 0;
+        {
+            uint32_t frame = vga_frame_counter();
+            if (!have_presented_frame || frame != last_presented_frame) {
+                ke_present_frame();
+                last_presented_frame = frame;
+                have_presented_frame = 1;
+                if (shot_ns && ke_now_ns() - start_ns >= shot_ns) {
+                    ke_log(KE_LOG_INFO, "main", "screenshot %s: %s", shot_path,
+                           ke_present_save_bmp(shot_path) == 0 ? "saved" : "no graphics frame");
+                    shot_ns = 0;
+                }
+            } else {
+                SDL_Delay(1);
+            }
         }
     }
     ke_stub_report();
-    vhw_shutdown();
-    ke_present_shutdown();
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    ke_log(KE_LOG_INFO, "main", "exit code %d", ke_game_exit_code());
-    return ke_game_exit_code();
+    if (!game_terminated)
+        result = ke_game_exit_code();
+    ke_log(KE_LOG_INFO, "main", "exit code %d", result);
+
+cleanup:
+    if (game_started) {
+        HANDLE thread = (HANDLE)ke_game_thread_handle();
+        if (thread) {
+            if (!game_terminated && !ke_game_thread_finished()) {
+                ke_request_quit();
+                if (WaitForSingleObject(thread, 100) == WAIT_TIMEOUT) {
+                    TerminateThread(thread, 4);
+                    WaitForSingleObject(thread, INFINITE);
+                    game_terminated = 1;
+                }
+            } else {
+                WaitForSingleObject(thread, INFINITE);
+            }
+            CloseHandle(thread);
+        }
+    }
+    if (vhw_ready)
+        vhw_shutdown();
+    if (present_ready)
+        ke_present_shutdown();
+    if (renderer)
+        SDL_DestroyRenderer(renderer);
+    if (window)
+        SDL_DestroyWindow(window);
+    if (sdl_ready)
+        SDL_Quit();
+    return result;
 }
