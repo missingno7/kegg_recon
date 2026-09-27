@@ -12,8 +12,7 @@ KE_ASM_STUB(pit_channel0_interrupt, "m_09f64_0a0d2")
 KE_ASM_STUB(decode_iff_ilbm_image, "m_0a284_0a51f")
 KE_ASM_STUB(find_iff_chunk, "m_0a284_0a51f")
 
-KE_ASM_STUB(noop_renderer_hook_one, "m_0a958_0a966")
-KE_ASM_STUB(noop_renderer_hook_two, "m_0a958_0a966")
+/* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
 
 KE_ASM_STUB(sound_blaster_irq_handler, "m_11258_11494")
 KE_ASM_STUB(sound_blaster_dma_start_entry, "m_11258_11494")
@@ -52,17 +51,13 @@ KE_ASM_STUB(render_sprite_record_kind_5_entry, "m_12288_12680")
 KE_ASM_STUB(render_sprite_record_kind_5_draw, "m_12288_12680")
 KE_ASM_STUB(restore_sprite_background_record, "m_12288_12680")
 
-KE_ASM_STUB(noop_sprite_callback_12680, "m_12680_12683")
-KE_ASM_STUB(noop_sprite_callback_12681, "m_12680_12683")
-KE_ASM_STUB(noop_sprite_callback_12682, "m_12680_12683")
+/* m_12680_12683: owned by port/asm/m_12680_12683.c */
 
 KE_ASM_STUB(render_sprite_record_kind_3_entry, "m_12684_1296e")
 KE_ASM_STUB(render_sprite_record_kind_3_draw, "m_12684_1296e")
 KE_ASM_STUB(restore_sprite_background_from_record, "m_12684_1296e")
 
-KE_ASM_STUB(noop_sprite_callback_12970, "m_12970_12973")
-KE_ASM_STUB(noop_sprite_callback_12971, "m_12970_12973")
-KE_ASM_STUB(noop_sprite_callback_12972, "m_12970_12973")
+/* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
 KE_ASM_STUB(render_transparent_sprite_record_entry, "m_12974_12a9c")
 KE_ASM_STUB(draw_transparent_sprite_rows, "m_12974_12a9c")

@@ -86,6 +86,8 @@ _g_iff_decoder_workspace:
     .fill 5, 4, 0
 /* m_0a284_0a51f _DATA: 0x28 bytes */
 
+/* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
+
 /* m_11258_11494.asm _DATA */
     .data
     .balign 4
@@ -369,6 +371,10 @@ _gif_global_color_table_source:
     .byte 0
     .byte 0
 /* m_11df8_12288 _DATA: 0x4c bytes */
+
+/* m_12680_12683: owned by port/asm/m_12680_12683.c */
+
+/* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
 /* m_12a9c_12f30.asm _DATA */
     .data
