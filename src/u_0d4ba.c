@@ -80,7 +80,7 @@ extern unsigned int allocate_dpmi_memory(int);
 extern void free_dpmi_memory(unsigned int);
 extern int dpmi_err;
 /* Assembly byte-copy helper, called with source, destination and byte count. */
-extern void f_13889(int, int, int);
+extern void mov_mem(int, int, int);
 
 /* Timer IRQ record and PIC/DPMI hook fields shared by the timer and audio setup. */
 /* _DATA [0x74b4,0x75b0): DPMI handles and four 57-byte interrupt records (split at the field names
@@ -88,11 +88,11 @@ extern void f_13889(int, int, int);
 short dpmi_host_available = 0;
 unsigned long dpmi_version_bcd = 0xffffffffUL;
 /* Unreferenced words in the recovered DPMI/EMS state block; their roles are unknown. */
-unsigned short u_74ba = 0;
+unsigned short dpmi_ems_unreferenced_word = 0;
 short ems_manager_available = 0;
 unsigned long ems_manager_handle = 0xffffffffUL;
 /* This unreferenced word separates the EMS state from the interrupt records. */
-unsigned short u_74c2 = 0;
+unsigned short ems_interrupt_gap_word = 0;
 unsigned char sndirq[22] = {0};
 unsigned char sndvec = 0;
 short sound_system_irq_line = 0;
@@ -289,7 +289,7 @@ int install(struct InterruptState *record) {
                 record->dpmi_memory_handle = dpmi_selector_or_failure_marker;
                 ((struct DpmiMapping *)record)->mapped_address =
                     ((struct DpmiMapping *)record)->allocation_base + DPMI_MAPPING_POINTER_BIAS;
-                f_13889(record->physical_start, record->allocated_base, record->mapping_length);
+                mov_mem(record->physical_start, record->allocated_base, record->mapping_length);
                 memory_word_address = record->allocated_base + DPMI_MAPPING_SELECTOR_WORD_OFFSET;
                 *(unsigned short *)memory_word_address = record->allocated_base >> 4;
                 memory_word_address = record->allocated_base + record->mapping_length - 5;

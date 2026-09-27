@@ -28,7 +28,7 @@ extern int initialize_mouse_driver(void);
 extern int detect_joystick(void);
 extern void poll_keyboard(void);
 extern int verify_timer(void);
-extern int f_9f64(void);
+extern int measure_pit_channel0(void);
 extern unsigned int allocate_dpmi_memory(int);
 extern unsigned int query_largest_dpmi_free_block(void);
 extern void free_dpmi_memory(unsigned int);
@@ -410,7 +410,7 @@ int sys_report(int conventional_memory_bytes,int extended_memory_bytes,unsigned 
             }
         }
     }
-    if(report_flags&REPORT_VBL) if(verify_timer()==-1) printf(MSG_VBL_COMPATIBILITY,f_9f64());
+    if(report_flags&REPORT_VBL) if(verify_timer()==-1) printf(MSG_VBL_COMPATIBILITY,measure_pit_channel0());
     return report_status;
 }
 

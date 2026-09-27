@@ -546,7 +546,7 @@ unsigned char high_score_checksums[88] = {
 };
 unsigned int minimum_high_score = 0x3e8;
 /* Address-owned 21-byte data; twelve leading zeros and the trailing text "Curious" are proven. */
-unsigned char g_3865[21] = {
+unsigned char high_score_name_data[21] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0x43, 0x75, 0x72, 0x69, 0x6f, 0x75, 0x73
 };

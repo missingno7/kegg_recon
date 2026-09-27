@@ -10,8 +10,8 @@
 
 int pcx_allocation_size;
 /* These two zero-filled words share this unit's data but their callers are outside the recovered use path. */
-int g_e1c8;
-int g_e1cc;
+int pcx_unresolved_state_word_a8;
+int pcx_unresolved_state_word_bi;
 int pcx_pixel_and_palette_payload_bytes;
 
 /* PCX's 128-byte header followed by RLE pixels and the 256-color palette. */

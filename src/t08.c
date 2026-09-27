@@ -6,8 +6,8 @@ extern unsigned char *file_buf_ptr;
 extern int read_file_with_decoder(void *, void *);
 extern int decode_picture(int, int, int, int);
 extern unsigned buf_lim;
-extern void f_13889(int, int, int);
-extern int a_a284(int, int, void *);
+extern void mov_mem(int, int, int);
+extern int decode_iff_ilbm_image(int, int, void *);
 extern int decode_pcx_image(int, int, void *);
 extern int decode_game_bitmap(int, void *, void *);
 extern int decode_gif_with_workspace(int, int, int);
@@ -35,7 +35,7 @@ int picture_y9n;
 int picture_bytes77;
 
 /* Picture decoder keeps decoded pixels in shared work memory. */                                                                      
-/*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            */
+/*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             */
  /*ллл     ллл     л
      ллл     ллл*/                                                                      
                                                                       
@@ -53,7 +53,7 @@ int load_picture_keep(int filename)
             if ((*(int *)((unsigned char *)&picture_pixels8) + picture_bytes77) > buf_lim) {
                 status = 0x302;
             } else {
-                f_13889(aligned_buffer_end, (int)file_buf_ptr, picture_bytes77);
+                mov_mem(aligned_buffer_end, (int)file_buf_ptr, picture_bytes77);
                 pic_of = (int)(file_buf_ptr + (pic_of - *(int *)((unsigned char *)&picture_pixels8)));
                 *(int *)((unsigned char *)&picture_pixels8) = (int)file_buf_ptr;
                 file_buf_ptr += picture_bytes77;
@@ -79,7 +79,7 @@ int decode_picture(int filename, int source_buffer, int destination, int source_
     unsigned char base_name[132];
     _splitpath((char *)filename, (char *)&drive, (char *)base_name, (char *)directory, (char *)extension);
     if (!_stricmp((char *)extension, (char *)".VGA")) {
-        f_13889(source_buffer, destination, source_size);
+        mov_mem(source_buffer, destination, source_size);
         status = 0;
         *(int *)((unsigned char *)&picture_pixels8) = destination;
         picture_width8 = 0x140;
@@ -88,7 +88,7 @@ int decode_picture(int filename, int source_buffer, int destination, int source_
         picture_x5 = 0;
         pic_of = (int)(*(unsigned char * *)((unsigned char *)&picture_pixels8) + (picture_width8 * picture_height0));
     } else if (!_stricmp((char *)extension, (char *)".IFF") || !_stricmp((char *)extension, (char *)".LBM")) {
-        status = a_a284(source_buffer, destination, ((unsigned char *)&picture_pixels8));
+        status = decode_iff_ilbm_image(source_buffer, destination, ((unsigned char *)&picture_pixels8));
     } else if (!_stricmp((char *)extension, (char *)".GIF")) {
         status = decode_gif_with_workspace(source_buffer, destination, (int)((unsigned char *)&picture_pixels8));
     } else if (!_stricmp((char *)extension, (char *)".PCX")) {

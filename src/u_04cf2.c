@@ -138,7 +138,6 @@ extern unsigned char *player_key_flags;
 extern struct Racket *racket_object;
 extern char life_lost_flag;
 extern unsigned char arcade;
-extern unsigned char g_e46b;
 extern short mouse_y_mean_recent;
 extern short mouse_x_average_recent;
 extern void move_mouse_to(int, int);

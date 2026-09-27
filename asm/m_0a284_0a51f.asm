@@ -38,10 +38,8 @@ EXTRN iff_decoded_pixel_count:DWORD
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_a284
         PUBLIC decode_iff_ilbm_image
-; Legacy entry name retained for byte-sensitive T08 caller.
-a_a284 LABEL NEAR
+; Picture loader calls the descriptive IFF/ILBM entry.
 ; Read FORM/BODY/BMHD/CMAP chunks, expand ByteRun1, then convert ILBM planes to indexed pixels.
 decode_iff_ilbm_image PROC NEAR
         pushad

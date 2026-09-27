@@ -6008,7 +6008,7 @@
     "1:0x0a284": {
       "start": "0x0a284",
       "object": 1,
-      "name": "a_a284",
+      "name": "decode_iff_ilbm_image",
       "unit": "M_0a284",
       "src": "asm/m_0a284_0a51f.asm",
       "subsystem": "assets and decoders",
@@ -6063,7 +6063,7 @@
         "32-bit x86 assembly with flat input/output addresses and shared decoder globals."
       ],
       "callers": [
-        "a_a284"
+        "decode_iff_ilbm_image"
       ],
       "callees": [],
       "state_consumed": [
@@ -6164,7 +6164,7 @@
       ],
       "callees": [
         "move_memory_bytes",
-        "a_a284",
+        "decode_iff_ilbm_image",
         "decode_gif_with_workspace",
         "decode_pcx_image",
         "decode_game_bitmap",
@@ -12234,7 +12234,7 @@
     "2:0x00110": {
       "start": "0x00110",
       "object": 2,
-      "name": "a_110",
+      "name": "keyboard_irq_entry",
       "unit": "",
       "src": "asm/irq.asm",
       "subsystem": "input: keyboard",

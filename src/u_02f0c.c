@@ -210,7 +210,7 @@ extern unsigned char spell_slots[];
 extern unsigned char brick_code_mapping[];
 extern struct SpriteFrame brick_sprite_offsets_first[];
 /* Asset reader: these calls pass source offset, destination address and byte count. */
-void f_13889(int, int, int);
+void mov_mem(int, int, int);
 void draw_bob_sprite(int, int, int);
 extern int tick;
 void init_stage_palette(void);
@@ -299,9 +299,9 @@ void load_and_draw_level(void)
         remaining_brick_count = bonus_stage_brick_counts[bonus_index];
     } else {
         level_data_cursor += level_number * LEVEL_RECORD_BYTES;
-        f_13889(level_data_cursor, (int)&enemy_spawn_wait_time, 2);
-        f_13889(level_data_cursor + 2, (int)spell_slots, 8);
-        f_13889(level_data_cursor + 10, (int)&brick_code_map, 0x240);
+        mov_mem(level_data_cursor, (int)&enemy_spawn_wait_time, 2);
+        mov_mem(level_data_cursor + 2, (int)spell_slots, 8);
+        mov_mem(level_data_cursor + 10, (int)&brick_code_map, 0x240);
         for (row = 0; row < LEVEL_ROW_COUNT; row++) {
             for (column = 0; column < LEVEL_COLUMN_COUNT; column++) {
                 current_brick_code = cell_cursor->tile_code;

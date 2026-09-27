@@ -33,7 +33,7 @@ struct DecodedImage {
 
 extern void copy_chunky_scanline_to_vga(int, int, int);
 /* Assembly pixel-render entry used when the transform mode is not chunky. */
-extern void f_13889(int, int, int);
+extern void mov_mem(int, int, int);
 extern short page_idx;
 extern short drawpage;
 extern void write_vga_pixel_entry(int, int, int);
@@ -48,7 +48,7 @@ void plot_transformed_pixel(int pixel_value, int transform_index)
                  vga_state.transform_term_c[transform_index]) >> 2,
                 vga_state.draw_parameter);
     } else {
-        f_13889(pixel_value,
+        mov_mem(pixel_value,
                 vga_state.transform_term_a[transform_index] +
                 vga_state.transform_term_b[(unsigned)transform_index] +
                 vga_state.transform_term_c[transform_index],

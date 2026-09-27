@@ -408,7 +408,7 @@ extern unsigned char brick_code_map;
 extern unsigned char spell_slots[];
 extern unsigned char brick_code_mapping[];
 extern unsigned char brick_sprite_offsets_first[];
-void f_13889(int, int, int);
+void mov_mem(int, int, int);
 void draw_bob_sprite(int, int, int);
 extern int tick;
 void init_stage_palette(void);
@@ -443,7 +443,6 @@ extern int timed_change_records;
 extern int timed_event_cursor;
 void apply_timed_level_change(void);
 extern int work_value;
-extern int g_68b7[];
 extern int spell_count;
 extern PlayerInputFlags *player_key_flags;
 void update_racket_movement_bounds(void);
@@ -1631,7 +1630,7 @@ char **restart_code_prompt_messages[11] = {
 };
 char *level_table_filename = "ke_ldcwc.tab";
 /* Only the zero-initialized state word at 0x5c7c is known; no C access was found. */
-int g_5c7c = 0;
+int unreferenced_game_state_word = 0;
 
 extern unsigned char keyboard_cheat_flags;
 extern int (*key_repeat)();
@@ -1660,7 +1659,6 @@ extern unsigned char score_storage[];
 extern void set_game_progress(int, int, int);
 extern int random_in_range(int, int);
 extern int run_level(void);
-extern int g_6230;
 extern int sprite_instance_count;
 extern unsigned char player_key_flag_storage[];
 extern int enemy_cursor;

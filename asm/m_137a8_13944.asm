@@ -152,12 +152,12 @@ clear_memory_range:
 clear_video_bytes_entry ENDP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
+        PUBLIC mov_mem
         PUBLIC move_memory_bytes
-; f_13889 remains the linker name used by frozen T08 and callers across other units.
-        PUBLIC f_13889
+; C callers use the layout-fitted mov_mem entry.
 ; Parameters: source at [ebp+8], destination at [ebp+0Ch], byte count at [ebp+10h].
 ; Move overlapping ranges safely; use VGA latch-copy mode for eligible video-to-video copies.
-f_13889 LABEL NEAR
+mov_mem LABEL NEAR
 move_memory_bytes PROC NEAR
         push ebp
         lea ebp, [esp]

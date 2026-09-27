@@ -152,9 +152,6 @@ extern int attack_frame_count;
 extern int enemy_fire_acceleration;
 extern struct EnemyStageTuning gameplay_tuning_by_stage[];
 /* Retained cross-TU table imports are not directly read by this unit. */
-extern int g_6888[];
-extern int g_688c[];
-extern int g_6890[];
 extern short src_page;
 extern short dst_page;
 extern short stored_page_2_index;

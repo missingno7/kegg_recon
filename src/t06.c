@@ -8,7 +8,7 @@
 #define VGA_INPUT_STATUS_1_PORT 0x3da
 #define VGA_VERTICAL_RETRACE_BIT 8
 extern short windows_environment_detected;
-extern int f_9f64(void);
+extern int measure_pit_channel0(void);
 extern unsigned char tmr_rec[];
 extern unsigned char timer_num;
 extern unsigned char pic_mask;
@@ -101,7 +101,7 @@ int verify_timer(void)
         return timer_ok;
     }
     for (sample_index = 0; sample_index < 4; sample_index++) {
-        timer_sample = f_9f64();
+        timer_sample = measure_pit_channel0();
         total_samples += timer_sample;
         if (timer_sample > 0x61a8 || timer_sample < 0x2710) {
             timer_ok = 0;
@@ -119,7 +119,7 @@ int verify_timer(void)
         }
         previous_sample = timer_sample;
     }
-    total_samples = (total_samples / 4) - f_9f64();
+    total_samples = (total_samples / 4) - measure_pit_channel0();
     if (total_samples < 0) {
         total_samples = -total_samples;
     }
@@ -164,7 +164,7 @@ int start_timer(int timer_options)
         }
     }
     if (timer_ok == -1 && *(short *)tmr_rec != -1) {
-        timer_delta = f_9f64();
+        timer_delta = measure_pit_channel0();
         if (timer_delta > 0x61a8 || timer_delta < 0x2710) {
             timer_ok = 0;
             return 0;
@@ -309,4 +309,4 @@ void clear_timer_events(void)
 {
     timer_event_count = 0;
 }
-/* Watcom -ot source-offset anchor (file[10336] = CP437 block):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  Û*/
+/* Watcom -ot source-offset anchor (file[10336] = CP437 block):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          Û*/

@@ -147,7 +147,7 @@ extern void update_mouse(void);
 void *memmove(void *, const void *, size_t);
 void sprclr(void);
 /* External 0x7112 entry point; the current sources do not establish its role. */
-void f_7112(void);
+void initialize_level_hud(void);
 void update_auxiliary_projectiles(void);
 void remove_auxiliary_projectile(void);
 void animate(void);

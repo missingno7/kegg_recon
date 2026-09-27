@@ -108,8 +108,8 @@ void apply_saved_palette_once(void *palette_bytes);
 void show_page(void);
 void display_next_video_page(void);
 void draw_page(int page_index);
-extern short g_7afe;
-extern short g_7b12;
+extern short video_state_word_a;
+extern short video_state_word_b;
 
 /* _DATA [0x7b14,0x7b28) */
 short page_idx = 0;
@@ -117,8 +117,8 @@ short drawpage = 1;
 short page2 = 2;
 short page3 = 3;
 /* These adjacent initialized words are not used by the recovered C call paths. */
-short g_7b1c = 0;
-short g_7b1e = 1;
+short video_page_state_a = 0;
+short video_page_state_b = 1;
 short src_page = 0;
 short dst_page = 1;
 short stored_page_2_index = 2;

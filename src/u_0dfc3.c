@@ -181,11 +181,11 @@ void apply_saved_palette_once(void *palette_bytes);
 void show_page(void);
 void display_next_video_page(void);
 void draw_page(int page_index);
-extern short g_7b12;
+extern short video_state_word_b;
 extern short page2;
 extern short page3;
-extern short g_7b1c;
-extern short g_7b1e;
+extern short video_page_state_a;
+extern short video_page_state_b;
 extern short stored_page_2_index;
 extern short page_3;
 
@@ -230,7 +230,7 @@ struct VgaRegisterPreset vga_register_presets[VGA_REGISTER_PRESET_COUNT] = {
     {0, {0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0xaa, 0xbb, 0xcc, 0xdd}, -1},
 };
 /* Initialized video-side word with no current C use; its original purpose is unknown. */
-short g_7afe = 0;
+short video_state_word_a = 0;
 
 void save_bios(void) {
     union REGS regs;

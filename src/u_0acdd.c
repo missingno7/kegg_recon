@@ -1,5 +1,5 @@
 /* Unreferenced eight-byte object adjacent to the heightfield state; its original role is unknown. */
-unsigned char g_e1f0[8];
+unsigned char heightfield_unreferenced_bytes[8];
 int height_midpoint_value;
 float height_noise_scale;
 
@@ -10,16 +10,10 @@ extern int random_in_range(int, int);
 extern void fill_clipped_vga_rectangle();
 extern void write_vga_pixel_entry();
 extern unsigned char read_vga_pixel_entry(short, short);
-/* Address-named context imports retained from the original unit; these are unused here. */
+/* Unused neighboring renderer-state imports retained from the original unit. */
 extern int font_glyph_metric_table;
 extern int font_bitmap_data;
 extern unsigned char text_render_state;
-extern int g_e209;
-extern int g_e20d;
-extern int g_e219;
-extern int g_e21d;
-extern int g_e221;
-extern int g_e225;
 extern void subdivide_heightfield();
 void perturb_height_midpoint(short, short, short, short, short, short);
 

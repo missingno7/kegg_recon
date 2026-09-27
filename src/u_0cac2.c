@@ -1,7 +1,7 @@
 int sound_irq_test_flag;
 int saved_sound_mixer_value;
 /* Unreferenced word retained from the original sound setup data; meaning unknown. */
-short g_e2fe;
+short sound_setup_reserved_word;
 /* TU [0xcac2, 0xd2f0): _TEXT tables, detect_sound_blaster..read_dos_version (sound-card detection); from worker u12 T12.c */
 #include <conio.h>
 int sound_dma_test_result;
@@ -114,11 +114,11 @@ unsigned int sound_blaster_dsp_version = SOUND_TEST_NOT_RUN;
 unsigned char sound_blaster_irq = SOUND_CANDIDATE_END;
 unsigned char sound_blaster_dma_channel = SOUND_CANDIDATE_END;
 /* Unused configuration words in the recovered data block; their roles are unknown. */
-unsigned int u_7488 = 0;
+unsigned int sound_config_unused_word_a = 0;
 char *sound_blaster_env_name = "BLASTER";
 short dos_version_query_succeeded = 0;
 unsigned long dos_version_packed = DOS_VERSION_UNKNOWN;
-unsigned short u_7496 = 0;
+unsigned short sound_config_unused_word_b = 0;
 
 /* Probe BLASTER settings, then verify the DSP and mixer registers. */
 int detect_sound_blaster(void) {

@@ -113,11 +113,11 @@ void apply_saved_palette_once(void *palette_bytes);
 void show_page(void);
 void display_next_video_page(void);
 void draw_page(int page_index);
-extern short g_7afe;
+extern short video_state_word_a;
 extern short page2;
 extern short page3;
-extern short g_7b1c;
-extern short g_7b1e;
+extern short video_page_state_a;
+extern short video_page_state_b;
 extern short stored_page_2_index;
 extern short page_3;
 
@@ -127,7 +127,7 @@ int palette_fade_end_index = VGA_DAC_COLOR_COUNT;
 int palette_fade_delay_ticks = 1;
 short vga_palette_saved = 0;
 /* Adjacent initialized video word; its original purpose is unknown. */
-short g_7b12 = 0;
+short video_state_word_b = 0;
 
 void write_vga_mode_register(unsigned char mode_register_value) {
     update_crtc_register(VGA_CRTC_MODE_CONTROL, 0, mode_register_value);

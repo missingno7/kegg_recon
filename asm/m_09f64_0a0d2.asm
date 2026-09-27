@@ -19,21 +19,19 @@ EXTRN process_timer_events:NEAR ; T06 helper that advances the timer-event callb
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
 EXTRN pit_rollover_value:DWORD ; Current PIT reload value supplied by T06.
 EXTRN timer_enabled09:DWORD ; T06 global incremented once per PIT IRQ; higher-level meaning is unclear.
-        PUBLIC g_73d4
+        PUBLIC pit_sample_auxiliary
         PUBLIC g_pit_elapsed_ticks
 ; This separate initialized dword precedes the named sample result in the original data block.
-g_73d4  DD 0
+pit_sample_auxiliary  DD 0
 g_pit_elapsed_ticks DD 0
 _DATA ENDS
 DGROUP GROUP _DATA
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
         ASSUME CS:_TEXT, DS:DGROUP
-; Legacy entry name is called by the frozen T06 timing code; the descriptive alias is used here.
-        PUBLIC f_9f64
+; Timer callers use the descriptive sampling entry.
         PUBLIC measure_pit_channel0
 ; Mask both PICs while sampling channel 0, then restore the RTC/NMI index and PIC masks.
-f_9f64 LABEL NEAR
 measure_pit_channel0 PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
