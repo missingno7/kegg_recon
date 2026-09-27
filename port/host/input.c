@@ -3,6 +3,14 @@
 #include "ke_port.h"
 #include "../vhw/vhw.h"
 
+static SDL_Window *input_window;
+static SDL_Gamepad *active_gamepad;
+static SDL_JoystickID active_gamepad_id;
+static float gamepad_axes[4];
+static int gamepad_button_bits;
+static int mouse_button_bits;
+static int mouse_captured;
+
 #define XT_EXTENDED 0x100
 #define XT_PAUSE 0x200
 #define XT_PRINT_SCREEN 0x201
@@ -164,6 +172,119 @@ static void release_held_keys(void)
     }
 }
 
+static void update_gameport(void)
+{
+    int i;
+    for (i = 0; i < 4; ++i)
+        vjoy_set(i, gamepad_axes[i], gamepad_button_bits);
+}
+
+static float normalize_gamepad_axis(Sint16 value)
+{
+    const int dead_zone = 8000;
+    if (value > dead_zone)
+        return (float)(value - dead_zone) / (32767 - dead_zone);
+    if (value < -dead_zone)
+        return (float)(value + dead_zone) / (32768 - dead_zone);
+    return 0.0f;
+}
+
+static int gamepad_axis_slot(Uint8 axis)
+{
+    switch ((SDL_GamepadAxis)axis) {
+    case SDL_GAMEPAD_AXIS_LEFTX: return 0;
+    case SDL_GAMEPAD_AXIS_LEFTY: return 1;
+    case SDL_GAMEPAD_AXIS_RIGHTX: return 2;
+    case SDL_GAMEPAD_AXIS_RIGHTY: return 3;
+    default: return -1;
+    }
+}
+
+static int gamepad_button_mask(Uint8 button)
+{
+    switch ((SDL_GamepadButton)button) {
+    case SDL_GAMEPAD_BUTTON_SOUTH: return 0x01;
+    case SDL_GAMEPAD_BUTTON_EAST: return 0x02;
+    case SDL_GAMEPAD_BUTTON_WEST: return 0x04;
+    case SDL_GAMEPAD_BUTTON_NORTH: return 0x08;
+    default: return 0;
+    }
+}
+
+static void sample_gamepad(void)
+{
+    static const SDL_GamepadAxis axes[4] = {
+        SDL_GAMEPAD_AXIS_LEFTX, SDL_GAMEPAD_AXIS_LEFTY,
+        SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY
+    };
+    static const SDL_GamepadButton buttons[4] = {
+        SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_EAST,
+        SDL_GAMEPAD_BUTTON_WEST, SDL_GAMEPAD_BUTTON_NORTH
+    };
+    int i;
+
+    if (!active_gamepad)
+        return;
+    for (i = 0; i < 4; ++i) {
+        gamepad_axes[i] = normalize_gamepad_axis(SDL_GetGamepadAxis(active_gamepad, axes[i]));
+        if (SDL_GetGamepadButton(active_gamepad, buttons[i]))
+            gamepad_button_bits |= 1 << i;
+        else
+            gamepad_button_bits &= ~(1 << i);
+    }
+    update_gameport();
+}
+
+static void open_gamepad(SDL_JoystickID id)
+{
+    const char *name;
+    if (!ke_config.joystick || active_gamepad)
+        return;
+    active_gamepad = SDL_OpenGamepad(id);
+    if (!active_gamepad) {
+        ke_log(KE_LOG_WARN, "input", "could not open SDL gamepad %d: %s", (int)id, SDL_GetError());
+        return;
+    }
+    active_gamepad_id = id;
+    name = SDL_GetGamepadName(active_gamepad);
+    ke_log(KE_LOG_INFO, "input", "gamepad attached to gameport: %s", name ? name : "(unnamed)");
+    sample_gamepad();
+}
+
+static void open_next_gamepad(void)
+{
+    SDL_JoystickID *ids;
+    int count = 0, i;
+    ids = SDL_GetGamepads(&count);
+    for (i = 0; ids && i < count && !active_gamepad; ++i)
+        open_gamepad(ids[i]);
+    SDL_free(ids);
+}
+
+static void set_mouse_capture(int capture)
+{
+    if (!input_window || mouse_captured == capture)
+        return;
+    if (SDL_SetWindowRelativeMouseMode(input_window, capture)) {
+        mouse_captured = capture;
+        SDL_SetWindowTitle(input_window, capture ?
+            "Krypton Egg - mouse captured (Esc releases)" :
+            "Krypton Egg - click to capture mouse");
+    } else {
+        if (!capture)
+            mouse_captured = 0;
+        ke_log(KE_LOG_WARN, "input", "mouse %s failed: %s",
+               capture ? "capture" : "release", SDL_GetError());
+    }
+}
+
+static void set_window_from_id(SDL_WindowID id)
+{
+    SDL_Window *window = SDL_GetWindowFromID(id);
+    if (window)
+        input_window = window;
+}
+
 void ke_input_event(const SDL_Event *e)
 {
     switch (e->type) {
@@ -172,6 +293,10 @@ void ke_input_event(const SDL_Event *e)
         SDL_Scancode sc = e->key.scancode;
         uint16_t code;
         int down = e->type == SDL_EVENT_KEY_DOWN;
+        if (down && sc == SDL_SCANCODE_ESCAPE) {
+            set_window_from_id(e->key.windowID);
+            set_mouse_capture(0);
+        }
         if (sc <= SDL_SCANCODE_UNKNOWN || sc >= SDL_SCANCODE_COUNT)
             break;
         code = xt_code(sc);
@@ -191,19 +316,74 @@ void ke_input_event(const SDL_Event *e)
         }
         break;
     }
+    case SDL_EVENT_WINDOW_FOCUS_GAINED:
+        set_window_from_id(e->window.windowID);
+        if (!mouse_captured && input_window)
+            SDL_SetWindowTitle(input_window, "Krypton Egg - click to capture mouse");
+        break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         release_held_keys();
+        set_window_from_id(e->window.windowID);
+        set_mouse_capture(0);
+        mouse_button_bits = 0;
+        vmouse_buttons(0);
         break;
     case SDL_EVENT_MOUSE_MOTION:
-        vmouse_motion(e->motion.xrel, e->motion.yrel);
+        vmouse_motion_at(e->motion.xrel, e->motion.yrel, e->motion.timestamp);
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP: {
-        SDL_MouseButtonFlags b = SDL_GetMouseState(NULL, NULL);
-        vmouse_buttons(((b & SDL_BUTTON_LMASK) ? 1 : 0) | ((b & SDL_BUTTON_RMASK) ? 2 : 0) |
-                       ((b & SDL_BUTTON_MMASK) ? 4 : 0));
+        int button_bit = e->button.button == SDL_BUTTON_LEFT ? 1 :
+                         e->button.button == SDL_BUTTON_RIGHT ? 2 :
+                         e->button.button == SDL_BUTTON_MIDDLE ? 4 : 0;
+        set_window_from_id(e->button.windowID);
+        if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT)
+            set_mouse_capture(1);
+        if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+            mouse_button_bits |= button_bit;
+        else
+            mouse_button_bits &= ~button_bit;
+        vmouse_buttons(mouse_button_bits);
         break;
     }
+    case SDL_EVENT_GAMEPAD_ADDED:
+        open_gamepad(e->gdevice.which);
+        break;
+    case SDL_EVENT_GAMEPAD_REMOVED:
+        if (active_gamepad && e->gdevice.which == active_gamepad_id) {
+            SDL_CloseGamepad(active_gamepad);
+            active_gamepad = NULL;
+            active_gamepad_id = 0;
+            gamepad_axes[0] = gamepad_axes[1] = gamepad_axes[2] = gamepad_axes[3] = 0.0f;
+            gamepad_button_bits = 0;
+            update_gameport();
+            open_next_gamepad();
+        }
+        break;
+    case SDL_EVENT_GAMEPAD_REMAPPED:
+        if (active_gamepad && e->gdevice.which == active_gamepad_id)
+            sample_gamepad();
+        break;
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        if (active_gamepad && e->gaxis.which == active_gamepad_id) {
+            int axis = gamepad_axis_slot(e->gaxis.axis);
+            if (axis >= 0) {
+                gamepad_axes[axis] = normalize_gamepad_axis(e->gaxis.value);
+                vjoy_set(axis, gamepad_axes[axis], gamepad_button_bits);
+            }
+        }
+        break;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+        if (active_gamepad && e->gbutton.which == active_gamepad_id) {
+            int bit = gamepad_button_mask(e->gbutton.button);
+            if (e->gbutton.down)
+                gamepad_button_bits |= bit;
+            else
+                gamepad_button_bits &= ~bit;
+            update_gameport();
+        }
+        break;
     default:
         break;
     }

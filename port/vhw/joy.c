@@ -7,7 +7,8 @@
  * Buttons are bits 4-7, active low. Without KE_JOY the port is unclaimed (reads FFh: no
  * gameport, every axis times out), which is what the game sees on a PC without a joystick.
  *
- * WORK PACKAGE "mouse-joystick": SDL gamepad mapping, dead zone, calibration flow.
+ * SDL gamepad axes/buttons are published through vjoy_set() by host/input.c. Centered axes
+ * use a finite timing count so the real game detects the port and can calibrate it.
  */
 #include <windows.h>
 #include "vhw.h"
@@ -34,7 +35,8 @@ void vjoy_set(int axis, float value, int buttons)
 
 static uint32_t joy_in(void *ctx, uint16_t port, int size)
 {
-    uint8_t v = (uint8_t)(0xf0 & ~(button_bits << 4));
+    LONG pressed = InterlockedCompareExchange(&button_bits, 0, 0);
+    uint8_t v = (uint8_t)(0xf0 & ~((uint32_t)pressed << 4));
     int i;
     (void)ctx; (void)port; (void)size;
     for (i = 0; i < 4; i++)
@@ -50,7 +52,7 @@ static void joy_out(void *ctx, uint16_t port, uint32_t value, int size)
     int i;
     (void)ctx; (void)port; (void)value; (void)size;
     for (i = 0; i < 4; i++)
-        remaining[i] = (int)axis_reads[i];
+        remaining[i] = (int)InterlockedCompareExchange(&axis_reads[i], 0, 0);
 }
 
 void vjoy_init(void)
