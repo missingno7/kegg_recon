@@ -3,7 +3,7 @@
  * translation (port/asm/<module>.c) owns yet. Each logs once and returns 0. */
 #include "ke_stub.h"
 
-KE_ASM_STUB(decode_and_verify_asset, "m_0982c_0995c")
+/* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
 KE_ASM_STUB(measure_pit_channel0, "m_09f64_0a0d2")
 KE_ASM_STUB(set_pit_channel0_reload, "m_09f64_0a0d2")

@@ -48,20 +48,7 @@ _ke_asm_irq_object2:
     .set _irq_110, _ke_asm_irq_object2 + 0x110
     .fill 0x149, 1, 0
 
-/* m_0982c_0995c.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_0982c_0995c_data:
-    .globl _g_asset_checksum
-_g_asset_checksum:
-    .short 0
-    .globl _g_asset_trailer_size
-_g_asset_trailer_size:
-    .long 0
-    .globl _g_asset_encoding
-_g_asset_encoding:
-    .short 0
-/* m_0982c_0995c _DATA: 0x8 bytes */
+/* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
 /* m_09f64_0a0d2.asm _DATA */
     .data
