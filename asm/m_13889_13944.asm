@@ -2,10 +2,13 @@
 EXTRN g_e324:WORD
 EXTRN g_e384:BYTE
 EXTRN g_e385:BYTE
-ASM_TEXT SEGMENT PARA PUBLIC USE32 'CODE'
-        ASSUME CS:ASM_TEXT
+_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT
         PUBLIC a_13889
-a_13889:
+        PUBLIC f_13889
+f_13889 LABEL NEAR
+a_13889 PROC NEAR
         push ebp
 L_1388A:
         lea ebp, [esp]
@@ -128,5 +131,6 @@ L_13941:
 L_13942:
         ret
         ORG $+1 ; original zero fill to the next even code address
-ASM_TEXT ENDS
+a_13889 ENDP
+_TEXT ENDS
         END

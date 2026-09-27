@@ -1,18 +1,21 @@
 .386
+EXTRN g_73dc:DWORD
 EXTRN g_73e0:DWORD
 EXTRN g_73e4:DWORD
-EXTRN g_73dc:DWORD
 EXTRN g_73e8:DWORD
-EXTRN g_73f0:DWORD
 EXTRN g_73ec:DWORD
+EXTRN g_73f0:DWORD
 EXTRN g_e2c4:DWORD
 EXTRN g_e2c8:DWORD
 EXTRN g_e2cc:DWORD
 EXTRN g_e2d0:DWORD
-ASM_TEXT SEGMENT PARA PUBLIC USE32 'CODE'
-        ASSUME CS:ASM_TEXT
+_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT
         PUBLIC a_a284
-a_a284:
+        PUBLIC f_a284
+f_a284 LABEL NEAR
+a_a284 PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         mov     ebx,[ebp+0Ch]
@@ -222,8 +225,11 @@ L_A47E:
         popad
         mov     eax,dword ptr g_73dc
         ret
+a_a284 ENDP
         PUBLIC a_a4e1
-a_a4e1:
+        PUBLIC f_a4e1
+f_a4e1 LABEL NEAR
+a_a4e1 PROC NEAR
         push    esi
         push    edi
         xchg    dl,dh
@@ -258,5 +264,6 @@ L_A51C:
         pop     edi
         pop     esi
         ret
-ASM_TEXT ENDS
+a_a4e1 ENDP
+_TEXT ENDS
         END

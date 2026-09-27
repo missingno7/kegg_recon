@@ -1,5 +1,8 @@
 .386P
-REFDATA SEGMENT PARA PUBLIC USE32 'DATA'
+_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+EXTRN f_11b04:DWORD
+EXTRN f_11b6e:DWORD
+EXTRN f_11b74:DWORD
 EXTRN g_7db4:DWORD
 EXTRN g_7db8:WORD
 EXTRN g_7dba:BYTE
@@ -38,16 +41,16 @@ EXTRN g_826c:DWORD
 EXTRN g_82ec:BYTE
 EXTRN g_830c:DWORD
 EXTRN g_8310:BYTE
-EXTRN f_11b04:DWORD
-EXTRN f_11b6e:DWORD
-EXTRN f_11b74:DWORD
-EXTRN f_11d7e:DWORD
-REFDATA ENDS
-DGROUP GROUP REFDATA
-ASM_TEXT SEGMENT PARA PUBLIC USE32 'CODE'
-        ASSUME CS:ASM_TEXT, DS:DGROUP
+_DATA ENDS
+DGROUP GROUP _DATA
+_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME CS:_TEXT
+        ASSUME DS:DGROUP
+        ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC a_11494
-a_11494:
+        PUBLIC f_11494
+f_11494 LABEL NEAR
+a_11494 PROC NEAR
         push eax
 L_11495:
         mov al, byte ptr [g_7dbb]
@@ -59,6 +62,8 @@ L_1149E:
         pop eax
 L_1149F:
         ret
+        PUBLIC f_114a0
+f_114a0 LABEL NEAR
 L_114A0:
         push eax
 L_114A1:
@@ -181,6 +186,8 @@ L_1152E:
         pop ecx
 L_1152F:
         ret
+        PUBLIC f_11530
+f_11530 LABEL NEAR
 L_11530:
         enter 0, 0
 L_11534:
@@ -255,6 +262,8 @@ L_115D8:
         leave
 L_115D9:
         ret
+        PUBLIC f_115da
+f_115da LABEL NEAR
 L_115DA:
         pushad
 L_115DB:
@@ -1571,6 +1580,8 @@ L_11D7C:
         popad
 L_11D7D:
         ret
+        PUBLIC f_11d7e
+f_11d7e LABEL DWORD
 L_11D7E:
         push eax
 L_11D7F:
@@ -1675,5 +1686,6 @@ L_11DF6:
         pop eax
 L_11DF7:
         iretd
-ASM_TEXT ENDS
+a_11494 ENDP
+_TEXT ENDS
         END

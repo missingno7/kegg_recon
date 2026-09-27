@@ -10,10 +10,13 @@ EXTRN g_e376:DWORD
 EXTRN g_e37a:DWORD
 EXTRN g_e384:BYTE
 EXTRN g_e385:BYTE
-ASM_TEXT SEGMENT PARA PUBLIC USE32 'CODE'
-        ASSUME CS:ASM_TEXT
+_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME CS:_TEXT
+        ASSUME CS:_TEXT
         PUBLIC a_12f9c
-a_12f9c:
+        PUBLIC f_12f9c
+f_12f9c LABEL NEAR
+a_12f9c PROC NEAR
         pushad
 L_12F9D:
         lea ebp, [esp + 1Ch]
@@ -159,6 +162,8 @@ L_130B5:
         popad
 L_130B6:
         ret
+        PUBLIC f_130b7
+f_130b7 LABEL NEAR
 L_130B7:
         push ebp
 L_130B8:
@@ -535,5 +540,6 @@ L_13321:
         ret
 L_13322:
         add byte ptr [eax], al
-ASM_TEXT ENDS
+a_12f9c ENDP
+_TEXT ENDS
         END
