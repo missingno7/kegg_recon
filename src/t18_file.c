@@ -27,7 +27,7 @@ enum FileOperationError {
 int ignore_file_data(void);
 unsigned int file_error_state = 0;
 unsigned int file_buffer_limit = 1000000000;
-unsigned int decode_hook = (unsigned int)ignore_file_data;
+int (*decode_hook)() = ignore_file_data;
 unsigned int file_load_nesting_state = 0xffffffff;
 int ignore_file_data(void) {
     return 0;
@@ -74,7 +74,7 @@ int read_file_with_decoder(char * file_path,void * destination_buffer) {
                         file_bytes_read=(unsigned int)fread(destination_buffer,1,file_length,file);
                         if(file_bytes_read!=file_length) error_code=FILE_ERROR_READ;
                         else {
-                            decode_status=((int (*)(void *,unsigned int))decode_hook)(destination_buffer,file_bytes_read);
+                            decode_status=decode_hook(destination_buffer,file_bytes_read);
                             if(decode_status<0) {
                                  file_error_state=0;
                                 file_buffer_cursor=file_error_state;

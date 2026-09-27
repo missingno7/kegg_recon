@@ -3,11 +3,30 @@
 #define secondary_joystick secondary_stick_state
 #define secondary_joystick_three_frames_ago secondary_stick_three_frames_prior
 #define primary_joystick_three_frames_ago player_one_joystick_three_frames_back
-#define keyboard_scan_byte keyboard_scan_byte
 #define scan_code current_scan_code
 #define JOYSTICK_GAMEPORT 0x201
 #define JOYSTICK_PROBE_POLL_LIMIT 1000
 #define JOYSTICK_MIN_AXIS_TICKS 0x20
+#define GAMEPORT_START_AXIS_TIMERS 0xff
+#define GAMEPORT_IDLE_SAMPLE 0xff
+#define GAMEPORT_AXIS_STATUS_MASK 0x0f
+#define GAMEPORT_BUTTON_STATUS_MASK 0xf0
+
+enum GameportAxisStatus {
+    GAMEPORT_PRIMARY_X = 0x01,
+    GAMEPORT_PRIMARY_Y = 0x02,
+    GAMEPORT_SECONDARY_X = 0x04,
+    GAMEPORT_SECONDARY_Y = 0x08
+};
+
+enum JoystickInputFlag {
+    JOYSTICK_LEFT = 0x01,
+    JOYSTICK_RIGHT = 0x02,
+    JOYSTICK_UP = 0x04,
+    JOYSTICK_DOWN = 0x08,
+    JOYSTICK_BUTTON_1 = 0x10,
+    JOYSTICK_BUTTON_2 = 0x20
+};
 
 enum JoystickTimingSlot {
     JOY_X_CURRENT,
@@ -58,16 +77,16 @@ int detect_joystick(void) {
     unsigned char first_port_sample;
     unsigned char second_port_sample;
     int poll_attempt;
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
     for (poll_attempt = 0; poll_attempt < JOYSTICK_PROBE_POLL_LIMIT; poll_attempt++) {
         first_port_sample = (unsigned char)inp(JOYSTICK_GAMEPORT);
-        if (first_port_sample == 0xff) break;
+        if (first_port_sample == GAMEPORT_IDLE_SAMPLE) break;
     }
     for (poll_attempt = 0; poll_attempt < JOYSTICK_PROBE_POLL_LIMIT; poll_attempt++) {
         second_port_sample = (unsigned char)inp(JOYSTICK_GAMEPORT);
         if (second_port_sample != first_port_sample) break;
     }
-    if (first_port_sample != second_port_sample || first_port_sample != 0xff || second_port_sample != 0xff) {
+    if (first_port_sample != second_port_sample || first_port_sample != GAMEPORT_IDLE_SAMPLE || second_port_sample != GAMEPORT_IDLE_SAMPLE) {
         initialize_joystick_calibration();
         if (primary_joystick.axis_timing[JOY_X_CURRENT] < JOYSTICK_MIN_AXIS_TICKS || primary_joystick.axis_timing[JOY_Y_CURRENT] < JOYSTICK_MIN_AXIS_TICKS) {
             joystick_available = 0;
@@ -81,48 +100,48 @@ int detect_joystick(void) {
 }
 
 void poll_joystick_ports(void) {
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
     measure_joystick_axes();
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
     update_joystick_directions();
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
 }
 
 void measure_joystick_axes(void) {
     unsigned char axis_status;
     unsigned char pending_axis_mask;
     int elapsed_ticks;
-    pending_axis_mask = 0x0f;
+    pending_axis_mask = GAMEPORT_AXIS_STATUS_MASK;
     elapsed_ticks = 0;
     _disable();
     do {
-        axis_status = (unsigned char)(inp(JOYSTICK_GAMEPORT) & 0x0f);
+        axis_status = (unsigned char)(inp(JOYSTICK_GAMEPORT) & GAMEPORT_AXIS_STATUS_MASK);
         if (axis_status != pending_axis_mask) {
             axis_status ^= pending_axis_mask;
-            if ((axis_status & 1) == 1) {
-                pending_axis_mask ^= 1;
+            if ((axis_status & GAMEPORT_PRIMARY_X) == GAMEPORT_PRIMARY_X) {
+                pending_axis_mask ^= GAMEPORT_PRIMARY_X;
                 primary_joystick.axis_timing[JOY_X_CURRENT] = elapsed_ticks;
             }
-            else if (axis_status & 2) {
-                pending_axis_mask ^= 2;
+            else if (axis_status & GAMEPORT_PRIMARY_Y) {
+                pending_axis_mask ^= GAMEPORT_PRIMARY_Y;
                 primary_joystick.axis_timing[JOY_Y_CURRENT] = elapsed_ticks;
             }
-            else if (axis_status & 4) {
-                pending_axis_mask ^= 4;
+            else if (axis_status & GAMEPORT_SECONDARY_X) {
+                pending_axis_mask ^= GAMEPORT_SECONDARY_X;
                 secondary_joystick.axis_timing[JOY_X_CURRENT] = elapsed_ticks;
             }
-            else if (axis_status & 8) {
-                pending_axis_mask ^= 8;
+            else if (axis_status & GAMEPORT_SECONDARY_Y) {
+                pending_axis_mask ^= GAMEPORT_SECONDARY_Y;
                 secondary_joystick.axis_timing[JOY_Y_CURRENT] = elapsed_ticks;
             }
         }
         ++elapsed_ticks;
         if (elapsed_ticks > joystick_max_axis_time) {
             if (joystick_calibration_active != 0) break;
-            if ((axis_status & 1) == 1) primary_joystick.axis_timing[JOY_X_CURRENT] = elapsed_ticks;
-            else if (axis_status & 2) primary_joystick.axis_timing[JOY_Y_CURRENT] = elapsed_ticks;
-            else if (axis_status & 4) secondary_joystick.axis_timing[JOY_X_CURRENT] = elapsed_ticks;
-            else if (axis_status & 8) secondary_joystick.axis_timing[JOY_Y_CURRENT] = elapsed_ticks;
+            if ((axis_status & GAMEPORT_PRIMARY_X) == GAMEPORT_PRIMARY_X) primary_joystick.axis_timing[JOY_X_CURRENT] = elapsed_ticks;
+            else if (axis_status & GAMEPORT_PRIMARY_Y) primary_joystick.axis_timing[JOY_Y_CURRENT] = elapsed_ticks;
+            else if (axis_status & GAMEPORT_SECONDARY_X) secondary_joystick.axis_timing[JOY_X_CURRENT] = elapsed_ticks;
+            else if (axis_status & GAMEPORT_SECONDARY_Y) secondary_joystick.axis_timing[JOY_Y_CURRENT] = elapsed_ticks;
             pending_axis_mask = 0;
         }
     }
@@ -131,7 +150,7 @@ void measure_joystick_axes(void) {
     _enable();
 }
 
-/* Shift input history, then combine axis thresholds and active-axis_timing_too_short buttons. */
+/* Shift input history, then combine calibrated axis thresholds with active-low buttons. */
 void update_joystick_directions(void) {
     unsigned char gameport_button_bits;
     gameport_button_bits = (unsigned char)inp(JOYSTICK_GAMEPORT);
@@ -143,72 +162,72 @@ void update_joystick_directions(void) {
     secondary_joystick_one_frame_ago.button_bits = secondary_joystick.button_bits;
     secondary_joystick.button_bits = 0;
     primary_joystick.button_bits = secondary_joystick.button_bits;
-    if (primary_joystick.axis_timing[JOY_X_CURRENT] < primary_joystick.axis_timing[JOY_X_LEFT_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= 1;
-    else if (primary_joystick.axis_timing[JOY_X_CURRENT] > primary_joystick.axis_timing[JOY_X_RIGHT_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= 2;
-    if (primary_joystick.axis_timing[JOY_Y_CURRENT] < primary_joystick.axis_timing[JOY_Y_TOP_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= 4;
-    else if (primary_joystick.axis_timing[JOY_Y_CURRENT] > primary_joystick.axis_timing[JOY_Y_BOTTOM_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= 8;
-    if (secondary_joystick.axis_timing[JOY_X_CURRENT] < secondary_joystick.axis_timing[JOY_X_LEFT_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= 1;
-    else if (secondary_joystick.axis_timing[JOY_X_CURRENT] > secondary_joystick.axis_timing[JOY_X_RIGHT_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= 2;
-    if (secondary_joystick.axis_timing[JOY_Y_CURRENT] < secondary_joystick.axis_timing[JOY_Y_TOP_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= 4;
-    else if (secondary_joystick.axis_timing[JOY_Y_CURRENT] > secondary_joystick.axis_timing[JOY_Y_BOTTOM_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= 8;
-    if (!(gameport_button_bits & 0x10)) *(unsigned char *)&primary_joystick.button_bits |= 0x10;
-    if (!(gameport_button_bits & 0x20)) *(unsigned char *)&primary_joystick.button_bits |= 0x20;
-    if (!(gameport_button_bits & 0x40)) *(unsigned char *)&secondary_joystick.button_bits |= 0x10;
-    if (!(gameport_button_bits & 0x80)) *(unsigned char *)&secondary_joystick.button_bits |= 0x20;
+    if (primary_joystick.axis_timing[JOY_X_CURRENT] < primary_joystick.axis_timing[JOY_X_LEFT_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= JOYSTICK_LEFT;
+    else if (primary_joystick.axis_timing[JOY_X_CURRENT] > primary_joystick.axis_timing[JOY_X_RIGHT_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= JOYSTICK_RIGHT;
+    if (primary_joystick.axis_timing[JOY_Y_CURRENT] < primary_joystick.axis_timing[JOY_Y_TOP_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= JOYSTICK_UP;
+    else if (primary_joystick.axis_timing[JOY_Y_CURRENT] > primary_joystick.axis_timing[JOY_Y_BOTTOM_THRESHOLD]) *(unsigned char *)&primary_joystick.button_bits |= JOYSTICK_DOWN;
+    if (secondary_joystick.axis_timing[JOY_X_CURRENT] < secondary_joystick.axis_timing[JOY_X_LEFT_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= JOYSTICK_LEFT;
+    else if (secondary_joystick.axis_timing[JOY_X_CURRENT] > secondary_joystick.axis_timing[JOY_X_RIGHT_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= JOYSTICK_RIGHT;
+    if (secondary_joystick.axis_timing[JOY_Y_CURRENT] < secondary_joystick.axis_timing[JOY_Y_TOP_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= JOYSTICK_UP;
+    else if (secondary_joystick.axis_timing[JOY_Y_CURRENT] > secondary_joystick.axis_timing[JOY_Y_BOTTOM_THRESHOLD]) *(unsigned char *)&secondary_joystick.button_bits |= JOYSTICK_DOWN;
+    if (!(gameport_button_bits & JOYSTICK_BUTTON_1)) *(unsigned char *)&primary_joystick.button_bits |= JOYSTICK_BUTTON_1;
+    if (!(gameport_button_bits & JOYSTICK_BUTTON_2)) *(unsigned char *)&primary_joystick.button_bits |= JOYSTICK_BUTTON_2;
+    if (!(gameport_button_bits & (JOYSTICK_BUTTON_1 << 2))) *(unsigned char *)&secondary_joystick.button_bits |= JOYSTICK_BUTTON_1;
+    if (!(gameport_button_bits & (JOYSTICK_BUTTON_2 << 2))) *(unsigned char *)&secondary_joystick.button_bits |= JOYSTICK_BUTTON_2;
 }
 
 void capture_joystick_center(void) {
     do {
-        outp(JOYSTICK_GAMEPORT, 0xff);
+        outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
     }
-    while ((inp(JOYSTICK_GAMEPORT) & 0xf0) != 0xf0);
+    while ((inp(JOYSTICK_GAMEPORT) & GAMEPORT_BUTTON_STATUS_MASK) != 0xf0);
     do {
         poll_joystick_ports();
         poll_keyboard();
     }
-    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
+    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & GAMEPORT_BUTTON_STATUS_MASK) == 0xf0);
     primary_joystick.axis_timing[JOY_X_CENTER] = primary_joystick.axis_timing[JOY_X_CURRENT];
     primary_joystick.axis_timing[JOY_Y_CENTER] = primary_joystick.axis_timing[JOY_Y_CURRENT];
     secondary_joystick.axis_timing[JOY_X_CENTER] = secondary_joystick.axis_timing[JOY_X_CURRENT];
     secondary_joystick.axis_timing[JOY_Y_CENTER] = secondary_joystick.axis_timing[JOY_Y_CURRENT];
     recalculate_joystick_thresholds();
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
 }
 
 void capture_joystick_minimums(void) {
     do {
-        outp(JOYSTICK_GAMEPORT, 0xff);
+        outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
     }
-    while ((inp(JOYSTICK_GAMEPORT) & 0xf0) != 0xf0);
+    while ((inp(JOYSTICK_GAMEPORT) & GAMEPORT_BUTTON_STATUS_MASK) != 0xf0);
     do {
         poll_joystick_ports();
         poll_keyboard();
     }
-    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
+    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & GAMEPORT_BUTTON_STATUS_MASK) == 0xf0);
     primary_joystick.axis_timing[JOY_X_MINIMUM] = primary_joystick.axis_timing[JOY_X_CURRENT];
     primary_joystick.axis_timing[JOY_Y_MINIMUM] = primary_joystick.axis_timing[JOY_Y_CURRENT];
     secondary_joystick.axis_timing[JOY_X_MINIMUM] = secondary_joystick.axis_timing[JOY_X_CURRENT];
     secondary_joystick.axis_timing[JOY_Y_MINIMUM] = secondary_joystick.axis_timing[JOY_Y_CURRENT];
     recalculate_joystick_thresholds();
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
 }
 
 void capture_joystick_maximums(void) {
     do {
-        outp(JOYSTICK_GAMEPORT, 0xff);
+        outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
     }
-    while ((inp(JOYSTICK_GAMEPORT) & 0xf0) != 0xf0);
+    while ((inp(JOYSTICK_GAMEPORT) & GAMEPORT_BUTTON_STATUS_MASK) != 0xf0);
     do {
         poll_joystick_ports();
         poll_keyboard();
     }
-    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & 0xf0) == 0xf0);
+    while (scan_code == keyboard_scan_byte && (inp(JOYSTICK_GAMEPORT) & GAMEPORT_BUTTON_STATUS_MASK) == 0xf0);
     primary_joystick.axis_timing[JOY_X_MAXIMUM] = primary_joystick.axis_timing[JOY_X_CURRENT];
     primary_joystick.axis_timing[JOY_Y_MAXIMUM] = primary_joystick.axis_timing[JOY_Y_CURRENT];
     secondary_joystick.axis_timing[JOY_X_MAXIMUM] = secondary_joystick.axis_timing[JOY_X_CURRENT];
     secondary_joystick.axis_timing[JOY_Y_MAXIMUM] = secondary_joystick.axis_timing[JOY_Y_CURRENT];
     recalculate_joystick_thresholds();
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
 }
 
 void recalculate_joystick_thresholds(void) {
@@ -249,5 +268,5 @@ void initialize_joystick_calibration(void) {
     secondary_joystick.axis_timing[JOY_X_MAXIMUM] = secondary_joystick.axis_timing[JOY_X_CURRENT] * 2;
     secondary_joystick.axis_timing[JOY_Y_MAXIMUM] = secondary_joystick.axis_timing[JOY_Y_CURRENT] * 2;
     recalculate_joystick_thresholds();
-    outp(JOYSTICK_GAMEPORT, 0xff);
+    outp(JOYSTICK_GAMEPORT, GAMEPORT_START_AXIS_TIMERS);
 }

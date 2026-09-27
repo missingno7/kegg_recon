@@ -2,7 +2,6 @@
 #define previous_scan_code previous_key_scan_code
 #define bios_keyboard_lock_flags keyboard_bios_status_flags
 #define prior_key_ascii prior_key_ascii
-#define keyboard_scan_byte keyboard_scan_byte
 #define KEY_HOOK_REPEAT_CHORD 0x01
 #define KEY_HOOK_PAUSE 0x02
 #define KEY_HOOK_SPACE_PRESS 0x04
@@ -12,12 +11,80 @@
 #define KEY_HOOK_CHORD_STATE 0x40
 #define KEY_HOOK_CHEAT_CODE 0x80
 
+#define PIC_MASTER_COMMAND_PORT 0x20
+#define PIC_END_OF_INTERRUPT 0x20
+#define KEYBOARD_DATA_PORT 0x60
+#define KEYBOARD_STATUS_PORT 0x64
+#define KEYBOARD_LED_COMMAND 0xed
+#define KEYBOARD_INPUT_BUFFER_FULL 0x02
+#define BIOS_KEYBOARD_FLAGS_ADDRESS 0x417
+#define BIOS_KEYBOARD_BUFFER_HEAD_ADDRESS 0x41a
+#define BIOS_KEYBOARD_BUFFER_TAIL_ADDRESS 0x41c
+#define BIOS_KEYBOARD_SHIFT_FLAGS_MASK 0x70
+#define BIOS_KEYBOARD_PRESERVED_FLAGS_MASK 0x8f
+#define BIOS_KEYBOARD_LOCK_MASK 0x07
+#define KEYBOARD_VALID_SCAN_MAX 0x7f
+#define KEYBOARD_SCAN_RELEASE_MASK 0x80
+#define KEYBOARD_INTERRUPT_REMAP_BASE 1
+#define KEYBOARD_IRQ_LINE 9
+#define KEYBOARD_EXIT_ACTION 0x101
+#define KEYBOARD_CHEAT_TOGGLE_MASK 0xff
+#define KEYBOARD_CONTROLLER_POLL_LIMIT 0x1388
+
 /* TU T16: ignore_keyboard_action..request_keyboard_exit [0xf690, 0xffbe), code and owned data. */
 #include <stdlib.h>
 #include <i86.h>
 #include <conio.h>
 /* Keep raw scan-code and translated-key state in parallel bitmaps. */
-enum KeyboardScanCode { SCAN_PAUSE = 25, SCAN_ENTER = 0x1c, SCAN_SCROLL_LOCK = 0x46, SCAN_NUM_LOCK = 0x45, SCAN_CAPS_LOCK = 0x3a };
+enum KeyboardScanCode {
+    SCAN_ESCAPE = 0x01,
+    SCAN_BACKSPACE = 0x0e,
+    SCAN_TAB = 0x0f,
+    SCAN_GAME_PAUSE_KEY = 0x19,
+    SCAN_ENTER = 0x1c,
+    SCAN_LEFT_CONTROL = 0x1d,
+    SCAN_GRAVE_ACCENT = 0x29,
+    SCAN_LEFT_SHIFT = 0x2a,
+    SCAN_RIGHT_SHIFT = 0x36,
+    SCAN_LEFT_ALT = 0x38,
+    SCAN_SPACE = 0x39,
+    SCAN_CAPS_LOCK = 0x3a,
+    SCAN_NUM_LOCK = 0x45,
+    SCAN_SCROLL_LOCK = 0x46,
+    SCAN_KEYPAD_DELETE = 0x53
+};
+
+enum KeyboardBitmapGroup {
+    SCAN_BITMAP_GROUP_0,
+    SCAN_BITMAP_GROUP_1,
+    SCAN_BITMAP_GROUP_2,
+    SCAN_BITMAP_GROUP_3,
+    SCAN_BITMAP_GROUP_4,
+    SCAN_BITMAP_GROUP_5
+};
+
+enum KeyboardBitmapMask {
+    KEY_BITMAP_ESCAPE_LOW = 1 << (SCAN_ESCAPE & 7),
+    KEY_BITMAP_TAB_WORD = 1 << (SCAN_TAB & 0x0f),
+    KEY_BITMAP_CONTROL_HIGH = 1 << ((SCAN_LEFT_CONTROL & 0x0f) - 8),
+    KEY_BITMAP_ALT_HIGH = 1 << ((SCAN_LEFT_ALT & 0x0f) - 8),
+    KEY_BITMAP_KEYPAD_DELETE_LOW = 1 << (SCAN_KEYPAD_DELETE & 7),
+    KEY_BITMAP_LEFT_SHIFT_HIGH = 1 << ((SCAN_LEFT_SHIFT & 0x0f) - 8),
+    KEY_BITMAP_GRAVE_ACCENT_HIGH = 1 << ((SCAN_GRAVE_ACCENT & 0x0f) - 8),
+    KEY_BITMAP_RIGHT_SHIFT_LOW = 1 << (SCAN_RIGHT_SHIFT & 7),
+    KEY_BITMAP_BACKSPACE_HIGH = 1 << ((SCAN_BACKSPACE & 0x0f) - 8)
+};
+
+enum KeyboardLockFlag {
+    KEYBOARD_SCROLL_LOCK_FLAG = 0x01,
+    KEYBOARD_NUM_LOCK_FLAG = 0x02,
+    KEYBOARD_CAPS_LOCK_FLAG = 0x04
+};
+
+enum KeyboardCheatSignatureIndex {
+    CHEAT_TOGGLE_ALL_SIGNATURE_INDEX = 8,
+    KEYBOARD_CHEAT_SIGNATURE_COUNT = 9
+};
 
 union KeyboardKeyBitmap {
     unsigned short word;
@@ -39,6 +106,12 @@ extern unsigned char g_75a8;
 struct KeyboardInterruptRecord {
     short installation_status;
     unsigned char reserved[0x33];
+};
+/* The private BIOS keyboard buffer stores its head and tail words at +4 and +6. */
+struct KeyboardBufferState {
+    unsigned char reserved[4];
+    unsigned short head_index;
+    unsigned short tail_index;
 };
 extern struct KeyboardInterruptRecord key_irq;
 extern void remove_keyboard_input_handler(void);
@@ -75,7 +148,7 @@ extern void (*key_action_hook)(int, int);
 int wait_for_keyboard_controller(void);
 extern void ignore_keyboard_action(void);
 union KeyboardHookFlags hook_flags_word = {
-    0x003c
+    KEY_HOOK_SPACE_PRESS | KEY_HOOK_EXIT_CHORD | KEY_HOOK_ABORT_CHORD | KEY_HOOK_LOCK_LEDS
 };
 unsigned char keyboard_cheat_flags = 0;
 unsigned char keyboard_reserved_bytes[2] = {
@@ -111,8 +184,8 @@ void ignore_keyboard_action(void) {
 }
 
 void install_keyboard_input_handler(void) {
-    keyboard_irq_line = 9;
-    keyboard_interrupt_number = g_75a8 + 1;
+    keyboard_irq_line = KEYBOARD_IRQ_LINE;
+    keyboard_interrupt_number = g_75a8 + KEYBOARD_INTERRUPT_REMAP_BASE;
     f_d656((unsigned char *)&key_irq, (int)remove_keyboard_input_handler);
 }
 
@@ -139,10 +212,10 @@ int initialize_keyboard_manager(int manager_flags) {
             int bios_buffer_head_address;
             int bios_buffer_tail_address;
             bios_buffer_address = keyboard_mapped_address;
-            bios_buffer_head_address = 0x41a;
-            *(unsigned short *)(bios_buffer_address + 4) = *(unsigned short *)bios_buffer_head_address;
-            bios_buffer_tail_address = 0x41c;
-            *(unsigned short *)(bios_buffer_address + 6) = *(unsigned short *)bios_buffer_tail_address;
+            bios_buffer_head_address = BIOS_KEYBOARD_BUFFER_HEAD_ADDRESS;
+            ((struct KeyboardBufferState *)bios_buffer_address)->head_index = *(unsigned short *)bios_buffer_head_address;
+            bios_buffer_tail_address = BIOS_KEYBOARD_BUFFER_TAIL_ADDRESS;
+            ((struct KeyboardBufferState *)bios_buffer_address)->tail_index = *(unsigned short *)bios_buffer_tail_address;
             bios_keyboard_buffer = (char *)bios_buffer_address;
         }
         if (g_75c4) return 0x501;
@@ -152,7 +225,7 @@ int initialize_keyboard_manager(int manager_flags) {
 
 void save_bios_keyboard_flags(void) {
     int bios_keyboard_flags_address;
-    bios_keyboard_flags_address = 0x417;
+    bios_keyboard_flags_address = BIOS_KEYBOARD_FLAGS_ADDRESS;
     if (bios_keyboard_flags_saved != -1) {
         bios_keyboard_lock_flags = *(unsigned char *)bios_keyboard_flags_address >> 4;
         atexit(restore_bios_keyboard_flags);
@@ -162,9 +235,9 @@ void save_bios_keyboard_flags(void) {
 
 void restore_bios_keyboard_flags(void) {
     unsigned char *bios_keyboard_flags_address;
-    bios_keyboard_flags_address = (unsigned char *)0x417;
+    bios_keyboard_flags_address = (unsigned char *)BIOS_KEYBOARD_FLAGS_ADDRESS;
     if (bios_keyboard_flags_saved == -1) {
-        *bios_keyboard_flags_address = (*bios_keyboard_flags_address & 0x8f) | ((bios_keyboard_lock_flags << 4) & 0x70);
+        *bios_keyboard_flags_address = (*bios_keyboard_flags_address & BIOS_KEYBOARD_PRESERVED_FLAGS_MASK) | ((bios_keyboard_lock_flags << 4) & BIOS_KEYBOARD_SHIFT_FLAGS_MASK);
         bios_keyboard_flags_saved = 1;
     }
 }
@@ -178,7 +251,7 @@ void clear_keyboard_state(void) {
 }
 
 void read_keyboard_scan_code(void) {
-    update_key_state_from_scan_code((unsigned char)inp(0x60));
+    update_key_state_from_scan_code((unsigned char)inp(KEYBOARD_DATA_PORT));
     if (*(unsigned char *)bios_keyboard_buffer) {
         update_key_state_from_scan_code(*(unsigned char *)bios_keyboard_buffer);
         *(unsigned char *)bios_keyboard_buffer = 0;
@@ -188,14 +261,14 @@ void read_keyboard_scan_code(void) {
 void update_key_state_from_scan_code(unsigned char current_scan_code) {
     if ((current_scan_code & 0x6f) > 0x60) return;
     latest_scan_byte = current_scan_code;
-    current_scan_code &= 0x7f;
+    current_scan_code &= KEYBOARD_VALID_SCAN_MAX;
     pending_ascii_key = scan_code_to_ascii[current_scan_code];
     current_scan_code = (unsigned char)((int)current_scan_code >> 4);
-    if (latest_scan_byte & 0x80) {
+    if (latest_scan_byte & KEYBOARD_SCAN_RELEASE_MASK) {
         scan_code_bitmap[current_scan_code].word = scan_code_bitmap[current_scan_code].word & (unsigned short)~(1 << (latest_scan_byte & 0x0f));
         current_scan_code = (unsigned char)((int)pending_ascii_key >> 4);
         translated_key_bitmap[current_scan_code].word = translated_key_bitmap[current_scan_code].word & (unsigned short)~(1 << (pending_ascii_key & 0x0f));
-        pending_ascii_key |= latest_scan_byte & 0x80;
+        pending_ascii_key |= latest_scan_byte & KEYBOARD_SCAN_RELEASE_MASK;
     }
     else {
         scan_code_bitmap[current_scan_code].word = scan_code_bitmap[current_scan_code].word | (unsigned short)(1 << (latest_scan_byte & 0x0f));
@@ -209,7 +282,7 @@ void poll_keyboard(void) {
         read_keyboard_scan_code();
         if (kbhit()) {
             pending_ascii_key = (unsigned char)getch();
-            for (latest_scan_byte = 0; latest_scan_byte < 0x7f; ++latest_scan_byte) {
+            for (latest_scan_byte = 0; latest_scan_byte < KEYBOARD_VALID_SCAN_MAX; ++latest_scan_byte) {
                 if (pending_ascii_key == scan_code_to_ascii[latest_scan_byte]) break;
             }
         }
@@ -240,9 +313,9 @@ void record_space_key_press(void) {
     if (prior_key_ascii != 0x20 && current_ascii == 0x20) space_pressed = -1;
 }
 
-/* Hold the repeat callback while the configured key chord remains down. */
+/* Keep the repeat callback active while Right Shift and Backspace remain down. */
 void handle_keyboard_repeat_chord(void) {
-    while ((scan_code_bitmap[3].bytes.low & 0x40) && (scan_code_bitmap[0].bytes.high & 0x40)) {
+    while ((scan_code_bitmap[SCAN_BITMAP_GROUP_3].bytes.low & KEY_BITMAP_RIGHT_SHIFT_LOW) && (scan_code_bitmap[SCAN_BITMAP_GROUP_0].bytes.high & KEY_BITMAP_BACKSPACE_HIGH)) {
         poll_keyboard();
         if (keyboard_state == 0) {
             key_repeat();
@@ -256,12 +329,12 @@ void handle_keyboard_repeat_chord(void) {
 }
 
 void handle_pause_key(void) {
-    if (keyboard_scan_byte != SCAN_PAUSE) return;
+    if (keyboard_scan_byte != SCAN_GAME_PAUSE_KEY) return;
     key_repeat();
     keyboard_state = -1;
-    while (keyboard_scan_byte == SCAN_PAUSE) poll_keyboard();
-    while (keyboard_scan_byte != SCAN_PAUSE) poll_keyboard();
-    while (keyboard_scan_byte == SCAN_PAUSE) poll_keyboard();
+    while (keyboard_scan_byte == SCAN_GAME_PAUSE_KEY) poll_keyboard();
+    while (keyboard_scan_byte != SCAN_GAME_PAUSE_KEY) poll_keyboard();
+    while (keyboard_scan_byte == SCAN_GAME_PAUSE_KEY) poll_keyboard();
     keyboard_release_handler();
     keyboard_state = 0;
 }
@@ -272,19 +345,20 @@ void reset_keyboard_action_handlers(void) {
 }
 
 void update_keyboard_chord_state(void) {
-    if ((scan_code_bitmap[2].bytes.high & 4) && (scan_code_bitmap[2].bytes.high & 2)) keyboard_chord_state = 1;
+    if ((scan_code_bitmap[SCAN_BITMAP_GROUP_2].bytes.high & KEY_BITMAP_LEFT_SHIFT_HIGH) && (scan_code_bitmap[SCAN_BITMAP_GROUP_2].bytes.high & KEY_BITMAP_GRAVE_ACCENT_HIGH)) keyboard_chord_state = 1;
     else keyboard_chord_state = 0;
 }
 
-/* Require the modifier bitmap and a fresh Enter make-code before requesting exit. */
+/* Escape, Tab, and Left Control arm the exit request; Enter must be a fresh make-code. */
 void handle_keyboard_exit_chord(void) {
-    if (scan_code_bitmap[0].bytes.low&2 && (int)(short)scan_code_bitmap[0].word&0x8000 && scan_code_bitmap[1].bytes.high&0x20 && (current_scan_code!=SCAN_ENTER && keyboard_scan_byte==SCAN_ENTER)) {
-        key_action_hook(0x101,0);
+    if (scan_code_bitmap[SCAN_BITMAP_GROUP_0].bytes.low & KEY_BITMAP_ESCAPE_LOW && (int)(short)scan_code_bitmap[SCAN_BITMAP_GROUP_0].word & KEY_BITMAP_TAB_WORD && scan_code_bitmap[SCAN_BITMAP_GROUP_1].bytes.high & KEY_BITMAP_CONTROL_HIGH && (current_scan_code != SCAN_ENTER && keyboard_scan_byte == SCAN_ENTER)) {
+        key_action_hook(KEYBOARD_EXIT_ACTION,0);
     }
 }
 
 void handle_keyboard_abort_chord(void) {
-    if ((scan_code_bitmap[1].bytes.high & 0x20) && (scan_code_bitmap[3].bytes.high & 1) && (scan_code_bitmap[5].bytes.low & 8)) key_action_hook(0x101, 0);
+    /* Ctrl+Alt+keypad Delete invokes the same exit action as the interrupt chord. */
+    if ((scan_code_bitmap[SCAN_BITMAP_GROUP_1].bytes.high & KEY_BITMAP_CONTROL_HIGH) && (scan_code_bitmap[SCAN_BITMAP_GROUP_3].bytes.high & KEY_BITMAP_ALT_HIGH) && (scan_code_bitmap[SCAN_BITMAP_GROUP_5].bytes.low & KEY_BITMAP_KEYPAD_DELETE_LOW)) key_action_hook(KEYBOARD_EXIT_ACTION, 0);
 }
 
 void toggle_keyboard_lock_leds(void) {
@@ -292,19 +366,19 @@ void toggle_keyboard_lock_leds(void) {
     int scroll_lock_pressed,num_lock_pressed,caps_lock_pressed;
     if (current_scan_code!=SCAN_SCROLL_LOCK && keyboard_scan_byte==SCAN_SCROLL_LOCK) scroll_lock_pressed=1;
     else scroll_lock_pressed=0;
-    if(scroll_lock_pressed) bios_keyboard_lock_flags^=1;
+    if(scroll_lock_pressed) bios_keyboard_lock_flags^=KEYBOARD_SCROLL_LOCK_FLAG;
     if (current_scan_code!=SCAN_NUM_LOCK && keyboard_scan_byte==SCAN_NUM_LOCK) num_lock_pressed=1;
     else num_lock_pressed=0;
-    if(num_lock_pressed) bios_keyboard_lock_flags^=2;
+    if(num_lock_pressed) bios_keyboard_lock_flags^=KEYBOARD_NUM_LOCK_FLAG;
     if (current_scan_code!=SCAN_CAPS_LOCK && keyboard_scan_byte==SCAN_CAPS_LOCK) caps_lock_pressed=1;
     else caps_lock_pressed=0;
-    if(caps_lock_pressed) bios_keyboard_lock_flags^=4;
+    if(caps_lock_pressed) bios_keyboard_lock_flags^=KEYBOARD_CAPS_LOCK_FLAG;
     if(previous_lock_flags!=bios_keyboard_lock_flags) {
         _disable();
         wait_for_keyboard_controller();
-        outp(0x60,0xed);
+        outp(KEYBOARD_DATA_PORT,KEYBOARD_LED_COMMAND);
         wait_for_keyboard_controller();
-        outp(0x60,bios_keyboard_lock_flags&7);
+        outp(KEYBOARD_DATA_PORT,bios_keyboard_lock_flags&BIOS_KEYBOARD_LOCK_MASK);
         _enable();
     }
 }
@@ -314,9 +388,9 @@ void check_keyboard_cheat_code(void) {
     int signature_index;
     if (keyboard_scan_byte != current_scan_code && keyboard_scan_byte < 0x7f) {
         if (keyboard_scan_byte == SCAN_ENTER) {
-            for (signature_index=0;(short)signature_index<9;signature_index++) {
+            for (signature_index=0;(short)signature_index<KEYBOARD_CHEAT_SIGNATURE_COUNT;signature_index++) {
                 if (keyboard_cheat_signatures[(short)signature_index] == keyboard_cheat_code_accumulator) {
-                    if ((short)signature_index==8) keyboard_cheat_flags ^= 0xff;
+                    if ((short)signature_index==CHEAT_TOGGLE_ALL_SIGNATURE_INDEX) keyboard_cheat_flags ^= KEYBOARD_CHEAT_TOGGLE_MASK;
                     else keyboard_cheat_flags ^= 1<<(short)signature_index;
                 }
             }
@@ -328,8 +402,8 @@ void check_keyboard_cheat_code(void) {
 
 /* Poll the 8042 input-buffer-full bit with the original bounded retry count. */
 int wait_for_keyboard_controller(void) {
-    int poll_countdown=0x1388;
-    while (inp(0x64)&2 && poll_countdown>0) {
+    int poll_countdown=KEYBOARD_CONTROLLER_POLL_LIMIT;
+    while (inp(KEYBOARD_STATUS_PORT)&KEYBOARD_INPUT_BUFFER_FULL && poll_countdown>0) {
         poll_countdown--;
     }
     if (poll_countdown>0) {
@@ -341,7 +415,7 @@ int wait_for_keyboard_controller(void) {
 void __interrupt keyboard_interrupt_handler(void) {
     copy_ds_to_es();
     read_keyboard_scan_code();
-    outp(0x20, 0x20);
+    outp(PIC_MASTER_COMMAND_PORT, PIC_END_OF_INTERRUPT);
     if (hook_flags_word.bytes[0] & KEY_HOOK_EXIT_CHORD)
     handle_keyboard_exit_chord();
 }

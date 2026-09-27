@@ -53,6 +53,11 @@ enum MouseDriverFunction {
     MOUSE_SET_SENSITIVITY = 0x1a,
     MOUSE_GET_VERSION = 0x24
 };
+enum MouseDriverInterface {
+    MOUSE_INTERRUPT_VECTOR = 0x33,
+    MOUSE_INTERRUPT_VECTOR_TABLE_OFFSET = 0xcc,
+    MOUSE_COORDINATE_SCALE = 2
+};
 
 short mouse_available = 0;
 unsigned short mouse_btn = 0;
@@ -77,16 +82,16 @@ short mouse_x_sample_2;
 short mouse_y_sample_2;
 short mouse_settings_saved = 0;
 int initialize_mouse_driver(void) {
-    unsigned int *mouse_vector_entry = (unsigned int *)0xcc;
+    unsigned int *mouse_vector_entry = (unsigned int *)MOUSE_INTERRUPT_VECTOR_TABLE_OFFSET;
     union REGS regs;
 
     if (*mouse_vector_entry != 0) {
-        regs.w.ax = 0;
-        int386(0x33, &regs, &regs);
+        regs.w.ax = MOUSE_RESET;
+        int386(MOUSE_INTERRUPT_VECTOR, &regs, &regs);
         if (regs.w.ax == -1) {
             mouse_available = -1;
-            regs.w.ax = 0x24;
-            int386(0x33, &regs, &regs);
+            regs.w.ax = MOUSE_GET_VERSION;
+            int386(MOUSE_INTERRUPT_VECTOR, &regs, &regs);
             mouse_driver_version = regs.w.bx;
             save_mouse_sensitivity();
             return mouse_available;
@@ -143,8 +148,8 @@ void update_mouse(void) {
         mouse_y_sample_3=mouse_y_sample_2;
         mouse_y_sample_2=mouse_y_sample_1;
         mouse_y_sample_1=mouse_y_sample_0;
-        regs.w.ax=3;
-        int386(0x33,&regs,&regs);
+        regs.w.ax=MOUSE_GET_POSITION_AND_BUTTONS;
+        int386(MOUSE_INTERRUPT_VECTOR,&regs,&regs);
         mouse_btn=regs.x.ebx;
         mouse_x_sample_0=regs.w.cx>>1;
         mouse_y_sample_0=regs.w.dx>>1;
@@ -162,8 +167,8 @@ void update_mouse(void) {
 void query_mouse_sensitivity(void) {
     if (mouse_available == -1) {
         union REGS regs;
-        regs.w.ax=0x1b;
-        int386(0x33,&regs,&regs);
+        regs.w.ax=MOUSE_GET_SENSITIVITY;
+        int386(MOUSE_INTERRUPT_VECTOR,&regs,&regs);
         mouse_sensitivity_x=regs.x.ebx;
         mouse_sensitivity_y=regs.x.ecx;
         mouse_sensitivity_threshold=regs.x.edx;
@@ -176,8 +181,8 @@ void restore_mouse_driver_sensitivity(void) {
         regs.w.bx=mouse_sensitivity_x;
         regs.w.cx=mouse_sensitivity_y;
         regs.w.dx=mouse_sensitivity_threshold;
-        regs.w.ax=0x1a;
-        int386(0x33,&regs,&regs);
+        regs.w.ax=MOUSE_SET_SENSITIVITY;
+        int386(MOUSE_INTERRUPT_VECTOR,&regs,&regs);
     }
 }
 
@@ -192,10 +197,10 @@ void set_mouse_horizontal_bounds(int minimum_x,int maximum_x) {
         }
         if (minimum_x<0) minimum_x=0;
         if (maximum_x<0) maximum_x=0;
-        regs.w.ax=7;
-        regs.w.cx=minimum_x*2;
-        regs.w.dx=maximum_x*2;
-        int386(0x33,&regs,&regs);
+        regs.w.ax=MOUSE_SET_HORIZONTAL_RANGE;
+        regs.w.cx=minimum_x*MOUSE_COORDINATE_SCALE;
+        regs.w.dx=maximum_x*MOUSE_COORDINATE_SCALE;
+        int386(MOUSE_INTERRUPT_VECTOR,&regs,&regs);
     }
 }
 
@@ -210,20 +215,20 @@ void set_mouse_vertical_bounds(int minimum_y,int maximum_y) {
         }
         if (minimum_y<0) minimum_y=0;
         if (maximum_y<0) maximum_y=0;
-        regs.w.ax=8;
-        regs.w.cx=minimum_y*2;
-        regs.w.dx=maximum_y*2;
-        int386(0x33,&regs,&regs);
+        regs.w.ax=MOUSE_SET_VERTICAL_RANGE;
+        regs.w.cx=minimum_y*MOUSE_COORDINATE_SCALE;
+        regs.w.dx=maximum_y*MOUSE_COORDINATE_SCALE;
+        int386(MOUSE_INTERRUPT_VECTOR,&regs,&regs);
     }
 }
 
 void move_mouse_to(int x,int y) {
     if (mouse_available == -1) {
         union REGS regs;
-        regs.w.ax=4;
-        regs.w.cx=x*2;
-        regs.w.dx=y*2;
-        int386(0x33,&regs,&regs);
+        regs.w.ax=MOUSE_SET_POSITION;
+        regs.w.cx=x*MOUSE_COORDINATE_SCALE;
+        regs.w.dx=y*MOUSE_COORDINATE_SCALE;
+        int386(MOUSE_INTERRUPT_VECTOR,&regs,&regs);
         mouse_x_sample_2=x;
         mouse_x_sample_1=mouse_x_sample_2;
         mouse_x_sample_0=mouse_x_sample_1;
