@@ -35,7 +35,7 @@ void vhw_leave(void)
     if (vhw_game_depth == 1 && !vhw_in_isr) {
         if (vcpu_if_flag && vpic_has_deliverable())
             vpic_deliver_pending();
-        if (ke_quit_requested())
+        if (ke_quit_requested() && !vhw_cpu_polling)
             ke_check_quit();
     }
     InterlockedDecrement(&vhw_game_depth);
@@ -56,6 +56,9 @@ void vcpu_sti(void) { InterlockedExchange(&vcpu_if_flag, 1); }
 void vhw_cpu_poll_yield(void)
 {
     if (GetCurrentThreadId() == game_tid) {
+        /* Honor quit before spending time delivering more pending virtual IRQs. */
+        if (ke_quit_requested())
+            ke_check_quit();
         /* Give pending IRQs the same instruction-boundary opportunity as a vhw access. */
         vhw_enter();
         vhw_leave();
