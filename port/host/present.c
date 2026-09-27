@@ -36,7 +36,8 @@ int ke_present_init(SDL_Window *window, SDL_Renderer *r)
 
 void ke_present_frame(void)
 {
-    int w = 0, h = 0, out_w, out_h, x, y, scale;
+    int w = 0, h = 0, out_w, out_h, x, y;
+    float scale, scale_x, scale_y;
     uint8_t pal[256][3];
     uint32_t lut[256];
     SDL_FRect src, dst;
@@ -59,20 +60,20 @@ void ke_present_frame(void)
         SDL_GetCurrentRenderOutputSize(renderer, &out_w, &out_h);
         src.x = 0; src.y = 0; src.w = (float)w; src.h = (float)h;
         if (ke_config.aspect) {
-            /* display aspect 4:3; integer scale on the horizontal axis */
-            float disp_h_per_w = 3.0f / 4.0f;
-            scale = out_w / w;
-            while (scale > 1 && (int)(w * scale * disp_h_per_w) > out_h)
-                scale--;
-            if (scale < 1) scale = 1;
-            dst.w = (float)(w * scale);
-            dst.h = dst.w * disp_h_per_w;
+            /* Display at 4:3; optional whole-number scale preserves source pixels. */
+            scale_x = (float)out_w / (float)w;
+            scale_y = (float)out_h / ((float)w * 3.0f / 4.0f);
         } else {
-            scale = out_w / w < out_h / h ? out_w / w : out_h / h;
-            if (scale < 1) scale = 1;
-            dst.w = (float)(w * scale);
-            dst.h = (float)(h * scale);
+            scale_x = (float)out_w / (float)w;
+            scale_y = (float)out_h / (float)h;
         }
+        scale = scale_x < scale_y ? scale_x : scale_y;
+        if (ke_config_integer_scale())
+            scale = (float)(int)scale;
+        if (scale < 1.0f)
+            scale = 1.0f;
+        dst.w = (float)w * scale;
+        dst.h = ke_config.aspect ? dst.w * 3.0f / 4.0f : (float)h * scale;
         dst.x = ((float)out_w - dst.w) / 2;
         dst.y = ((float)out_h - dst.h) / 2;
         SDL_RenderTexture(renderer, texture, &src, &dst);

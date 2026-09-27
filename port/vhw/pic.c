@@ -3,9 +3,9 @@
  * Delivery model (docs/port/architecture.md, "Interrupts"):
  *   - devices call vpic_raise_irq() from any thread (timer thread, audio thread, SDL main);
  *   - the IRQ thread (KE_IRQ=async, default) suspends the game thread; if the game thread is
- *     executing game code (inside the exe's .text, not in a DLL), has IF=1, is not inside a
- *     vhw service and no handler is running, the handler is called on the IRQ thread while
- *     the game thread stays frozen at that instruction boundary, then the game resumes;
+ *     executing game code (inside the exe's .text, not in a DLL) or is at the explicit
+ *     scheduler wait point, has IF=1, is not inside a vhw service and no handler is running,
+ *     the handler is called on the IRQ thread while the game thread stays frozen, then resumes;
  *   - otherwise the interrupt stays pending and is delivered synchronously on the game thread
  *     at the end of the next vhw service (vhw_leave) or on STI (_enable).
  * Handlers are plain cdecl functions (Watcom __interrupt dropped): the PM vector offset is
@@ -365,7 +365,7 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
             ctx.ContextFlags = CONTEXT_CONTROL;
             if (GetThreadContext(game, &ctx) && vcpu_if_flag && !vhw_game_depth &&
                 !vhw_in_isr &&
-                ctx.Eip >= text_lo && ctx.Eip < text_hi) {
+                ((ctx.Eip >= text_lo && ctx.Eip < text_hi) || vhw_cpu_poll_waiting)) {
                 if (setjmp(isr_abandon) == 0) {
                     delivered = deliver_one();
                 } else {

@@ -753,12 +753,12 @@ int oracle_load(const char *image_path, const char *symbols_path)
     uint16_t ds_selector;
     FILE *sf;
     char line[256];
+    /* Reserve the relocated VGA alias before allocating the image buffer; early heap
+     * allocations can otherwise change which low address is available for the alias. */
+    if (reserve_vga_window() != 0)
+        return -1;
     if (read_file(image_path, &img, &size) != 0 || memcmp(img, "KEIM", 4) != 0) {
         fprintf(stderr, "oracle: cannot read %s (run python port/tools/le_export.py)\n", image_path);
-        return -1;
-    }
-    if (reserve_vga_window() != 0) {
-        free(img);
         return -1;
     }
     nobj = rd32(img + 8);

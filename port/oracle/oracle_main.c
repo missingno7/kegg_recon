@@ -5,6 +5,7 @@
  * Exit code 0 when every test passes.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 #include <timeapi.h>
@@ -107,13 +108,15 @@ int main(int argc, char **argv)
     if (relaunch != 0)
         return relaunch > 0 ? child_exit : 2;
     setvbuf(stdout, NULL, _IONBF, 0);
-    ke_config_load(1, argv);
-    ke_config.log_level = KE_LOG_WARN;
-    ke_log_init(NULL);
     snprintf(image, sizeof image, "%s/ke_image.bin", dir);
     snprintf(symbols, sizeof symbols, "%s/ke_symbols.txt", dir);
     if (oracle_load(image, symbols) != 0)
         return 2;
+    /* oracle_load reserves its relocated VGA alias before image/config allocations; keep
+     * config and logging startup after it so they cannot claim the alias. */
+    ke_config_load(1, argv);
+    ke_config.log_level = KE_LOG_WARN;
+    ke_log_init(NULL);
     timeBeginPeriod(1);
     vpic_init();
     vga_init();

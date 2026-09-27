@@ -88,7 +88,8 @@ changed. Handlers also run at arbitrary points of the historical frame loop. The
 - The IRQ thread suspends the game thread (`SuspendThread` + `GetThreadContext`) and calls the
   handler while the game is frozen at an instruction boundary, only if IF=1, no handler is
   running, the game thread is not inside a vhw service (`vhw_game_depth`) and its EIP is in
-  the exe's `.text` (not inside a CRT/SDL/Windows DLL that may hold locks). Otherwise the IRQ
+  the exe's `.text` (not inside a CRT/SDL/Windows DLL that may hold locks) or it is at the
+  explicit scheduler safe wait in `vhw_cpu_poll_yield`. Otherwise the IRQ
   stays pending; the IRQ thread retries in 20 us steps for 2 ms.
 - Every vhw entry (IN/OUT, INT, CLI/STI, BIOS console) is bracketed by `vhw_enter/leave`;
   `vhw_leave` and STI deliver pending interrupts synchronously on the game thread, exactly
@@ -103,8 +104,13 @@ changed. Handlers also run at arbitrary points of the historical frame loop. The
 PROVEN by `ke_oracle` test "vhw async IRQ0 into a busy-wait, CLI/STI": a handler installed
 via DPMI 0205h interrupts a pure-memory spin at the programmed 1000 Hz (200 IRQs in 200 ms),
 nothing is delivered during a 50 ms CLI, the pending IRQ is taken at STI. Handlers run on
-another thread, so they get their own x87/TLS state (more robust than DOS). CPU cost: the
-historical busy waits spin as they did; `inp(3DAh)` far from the retrace sleeps instead.
+another thread, so they get their own x87/TLS state (more robust than DOS). The unchanged
+`wait_for_tick` loop calls one host scheduler hook; it waits 100 us once per 4096 polls.
+At that explicit host wait, the PIC may deliver an interrupt at the loop boundary. PIT edges
+carry their scheduled times through the PIC, and IRQ0 uses
+one VHW clock for PIT and VGA while its handler runs. VGA status polls far from retrace wait
+on elapsed time outside the IRQ thread; IRQ0 keeps polling tightly so a host sleep cannot
+skip a retrace edge while the handler is running.
 
 ### Memory
 

@@ -15,6 +15,8 @@ volatile LONG vhw_game_depth;        /* nesting of vhw services on the game thre
 volatile LONG vhw_in_isr;            /* an interrupt handler is running (either thread)       */
 static DWORD game_tid;
 static DWORD irq_tid;
+static __thread HANDLE poll_timer;
+volatile LONG vhw_cpu_poll_waiting;
 static __thread uint64_t irq_clock_ns;
 static __thread uint64_t irq_wall_ns;
 static __thread int irq_clock_active;
@@ -78,10 +80,21 @@ void vcpu_sti(void) { InterlockedExchange(&vcpu_if_flag, 1); }
 void vhw_cpu_poll_yield(void)
 {
     if (GetCurrentThreadId() == game_tid && !(++poll_yield_count & 0x0fffu)) {
+        LARGE_INTEGER due;
         if (ke_quit_requested())
             ke_check_quit();
-        /* Scheduling only: pending IRQs are delivered asynchronously by the PIC thread. */
-        SwitchToThread();
+        /* This is a safe game-code boundary: the PIC may run an IRQ handler while this
+         * host wait is in progress. Device edges keep their original scheduled timestamps. */
+        if (!poll_timer)
+            poll_timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                                                TIMER_ALL_ACCESS);
+        InterlockedExchange(&vhw_cpu_poll_waiting, 1);
+        due.QuadPart = -1000;           /* wait 100 us once per 4096 polls */
+        if (poll_timer && SetWaitableTimer(poll_timer, &due, 0, NULL, NULL, FALSE))
+            WaitForSingleObject(poll_timer, INFINITE);
+        else
+            Sleep(1);                   /* bounded safe-point wait if high-res timers fail */
+        InterlockedExchange(&vhw_cpu_poll_waiting, 0);
     }
 }
 
