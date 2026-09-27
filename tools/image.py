@@ -285,6 +285,40 @@ def cache_compile(ctx, src: Path, profile: str, cache: Path):
     return out
 
 
+def apply_plan(ctx, plan_path):
+    """TESTING ONLY: candidate units from a plan file (list of {id, file, range: [start, end], profile?}, or
+    {"units": [...]}) replace, in memory, every manifest unit and function source they overlap, so a TU can be
+    tried in the one-link image before promotion.  Members of a replaced manifest unit that lie outside every
+    candidate lose their source (raw debt) for this run."""
+    plan = json.loads(Path(plan_path).read_text())
+    plan = plan.get("units", plan) if isinstance(plan, dict) else plan
+    man = dict(ctx.man)
+    cands = []
+    for p in plan:
+        a, b = p["range"]
+        cands.append({"id": p["id"], "src": Path(p["file"]).resolve().relative_to(ROOT).as_posix(),
+                      "start": a, "end": b, "profile": p.get("profile", "game-c"), "data": p.get("data", []),
+                      "note": "plan candidate"})
+    ov = lambda u, c: int(u["start"], 16) < int(c["end"], 16) and int(c["start"], 16) < int(u["end"], 16)
+    kept = [u for u in man.get("units", []) if not any(ov(u, c) for c in cands)]
+    kept_src = {u["src"] for u in kept}
+    fns = []
+    for f in man["functions"]:
+        a = int(f["start"], 16)
+        c = next((c for c in cands if f.get("object", 1) == 1 and int(c["start"], 16) <= a < int(c["end"], 16)), None)
+        if c:
+            f = dict(f, src=c["src"], status="matching", profile=c["profile"])
+        elif f.get("unit") and f.get("src") not in kept_src:
+            f = dict(f, src=None, status="identified")
+        fns.append(f)
+    man["units"] = sorted(kept + cands, key=lambda u: int(u["start"], 16))
+    man["functions"] = fns
+    ctx.man = man
+    ctx.funcs = sorted(fns, key=lambda f: (f.get("object", 1), int(f["start"], 16)))
+    ctx.fn_by_name = {f["name"]: f for f in ctx.funcs}
+    ctx.fn_start = {(f.get("object", 1), int(f["start"], 16)): f["name"] for f in ctx.funcs}
+
+
 def canonical_items(ctx, cache, whatif=None, asm_modules=None):
     man = ctx.man
     items = []
@@ -1192,6 +1226,9 @@ def culprit_of(ctx, ev):
 def run(args):
     ctx = Ctx()
     suffix = "-asmwhatif" if args.asm_whatif else "-asmmodules" if args.asm_modules else ""
+    if getattr(args, "plan", None):
+        apply_plan(ctx, args.plan)
+        suffix += "-plan"
     out = ROOT / "build" / "image" / (args.mode + suffix)
     objdir = out / "objs"
     shutil.rmtree(objdir, ignore_errors=True)
@@ -1454,6 +1491,9 @@ def main(argv):
     ap.add_argument("--asm-whatif", action="store_true",
                     help="DIAGNOSTIC: link scratch copies of asm/*.asm with ASM_TEXT PARA -> _TEXT BYTE and "
                          "PUBLIC aliases for imported entry names (build/image/canonical-asmwhatif; not canonical)")
+    ap.add_argument("--plan", metavar="JSON",
+                    help="TESTING: candidate units [{id, file, range, profile?}] replace the manifest items they "
+                         "overlap (writes build/image/<mode>-plan; not canonical)")
     ap.add_argument("--asm-modules", type=Path, metavar="DIR",
                     help="DIAGNOSTIC: replace per-routine obj1 asm items with modules.json candidates from DIR "
                          "(writes a separate *-asmmodules image report)")
