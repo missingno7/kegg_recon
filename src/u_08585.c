@@ -235,7 +235,7 @@ void update_game_balls(void)
                     mouse_btn_old = mouse_btn;
                 }
             }
-            goto L_8f05;
+            goto queue_current_ball_draw; /* Attached balls and portal hits skip collision passes but still queue this ball. */
         }
         if (current_ball_pointer->x > BALL_WORLD_RIGHT_LIMIT || current_ball_pointer->x < 0 || current_ball_pointer->y > BALL_WORLD_BOTTOM_LIMIT || current_ball_pointer->y < 0) {
             remove_game_ball();
@@ -245,43 +245,43 @@ void update_game_balls(void)
         b_box_top = current_ball_pointer->y >> 4;
         get_sprite_bounds((struct IntRect *)collision_box_b_left, (struct BobFrameMetrics *)sprite_offset);
         if (((struct IntRect *)collision_box_b_left)->left <= BALL_FIELD_LEFT_EDGE) {
-            if (current_ball_pointer->velocity_x >= 0) goto L_880f;
+            if (current_ball_pointer->velocity_x >= 0) goto check_right_wall_edge; /* An inward left-wall pass joins the right-wall test. */
             temp = BALL_FIELD_LEFT_EDGE;
         } else {
-L_880f:;
+check_right_wall_edge:;
             /* The left-wall branch falls into the right-wall check when moving inward. */
             if (collision_box_b_right >= BALL_FIELD_RIGHT_EDGE) {
-                if (current_ball_pointer->velocity_x <= 0) goto L_8832;
+                if (current_ball_pointer->velocity_x <= 0) goto check_top_wall_edge; /* An inward right-wall pass joins the ceiling test. */
                 temp = 0x130;
             } else {
-L_8832:;
+check_top_wall_edge:;
                 /* A ball moving inward from the right rejoins before the top-wall check. */
                 if (b_box_top <= BALL_FIELD_TOP_EDGE) {
                     if (current_ball_pointer->velocity_y < 0) {
                         work_value = 0x18;
-                        goto L_8878;
+                        goto reflect_ceiling_contact; /* The ceiling response shares the wall-impact effect tail. */
                     }
                 }
-                goto L_88c9;
+                goto check_racket_collision; /* Wall handling rejoins the racket collision pass here. */
             }
         }
         current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
         work_value = current_ball_pointer->y >> 4;
-        goto L_8899;
-L_8878:;
+        goto play_wall_impact_effect; /* Side and ceiling contacts share this impact effect. */
+reflect_ceiling_contact:;
         /* Ceiling contacts flip vertical speed and share the wall impact effect. */
         current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
         temp = current_ball_pointer->x >> 4;
-L_8899:;
+play_wall_impact_effect:;
         /* Side and ceiling contacts share the same impact sound and sprite. */
         submit_audio_request(0x24);
         spawn_animated_sprite(temp, work_value, 0, 0, spell_art_base, (int)spell_impact_animation_frames, 1);
-L_88c9:;
+check_racket_collision:;
         /* This label is the no-wall-bounce join for the racket collision checks. */
         if (b_box_top <= 0xbe) {
             if (current_ball_pointer->velocity_y >= 0) {
                 if (collision_box_a_top <= collision_rect_b_bottom) {
-                    if (sprite_bounds_a_bottom < b_box_top) goto L_8a69;
+                    if (sprite_bounds_a_bottom < b_box_top) goto skip_racket_contact_resolution; /* A missed racket edge skips direction handling and rejoins target tests. */
                     if (((struct IntRect *)collision_box_a_left)->left <= collision_box_b_right) {
                         if (sprite_rect_a_right >= ((struct IntRect *)collision_box_b_left)->left) {
                             if (!(player_key_flags->control_flags & PLAYER_FLAG_CATCH_BALL)) {
@@ -305,39 +305,39 @@ L_88c9:;
                             } else {
                                 submit_audio_request(0x65);
                             }
-                            if ((((struct IntRect *)collision_box_a_left)->left + 3) >= collision_box_b_right) goto L_8a8d;
-                            if ((sprite_rect_a_right - 3) <= ((struct IntRect *)collision_box_b_left)->left) goto L_8a6e;
-                            goto L_8ad2;
+                            if ((((struct IntRect *)collision_box_a_left)->left + 3) >= collision_box_b_right) goto reflect_right_racket_edge; /* The right edge uses the shared side-contact bounce. */
+                            if ((sprite_rect_a_right - 3) <= ((struct IntRect *)collision_box_b_left)->left) goto reflect_left_racket_edge; /* The left edge uses the shared side-contact bounce. */
+                            goto reflect_racket_center_contact; /* A center hit uses the separate spin-adjusted bounce path. */
                         }
                     }
-                    if (!(player_key_flags->spell_flags & PLAYER_SPELL_COLLISION_FIELD) || ((struct IntRect *)sprite_rect_c_left)->left > collision_box_b_right) goto L_8a69;
-                    if (collision_box_c_right < ((struct IntRect *)collision_box_b_left)->left) goto L_8a69;
+                    if (!(player_key_flags->spell_flags & PLAYER_SPELL_COLLISION_FIELD) || ((struct IntRect *)sprite_rect_c_left)->left > collision_box_b_right) goto skip_racket_contact_resolution; /* A missed racket edge skips direction handling and rejoins target tests. */
+                    if (collision_box_c_right < ((struct IntRect *)collision_box_b_left)->left) goto skip_racket_contact_resolution; /* A missed racket edge skips direction handling and rejoins target tests. */
                     submit_audio_request(0x21);
-                    if ((((struct IntRect *)sprite_rect_c_left)->left + 3) >= collision_box_b_right) goto L_8a8d;
-                    if ((collision_box_c_right - 3) <= ((struct IntRect *)collision_box_b_left)->left) goto L_8a6e;
+                    if ((((struct IntRect *)sprite_rect_c_left)->left + 3) >= collision_box_b_right) goto reflect_right_racket_edge; /* The right edge uses the shared side-contact bounce. */
+                    if ((collision_box_c_right - 3) <= ((struct IntRect *)collision_box_b_left)->left) goto reflect_left_racket_edge; /* The left edge uses the shared side-contact bounce. */
                 } else {
                     /* These shared labels resolve the three racket contact directions. */
-L_8a69:;
+skip_racket_contact_resolution:;
                     /* A missed racket edge rejoins projectile and brick collision checks. */
-                    goto L_8b85;
-L_8a6e:;
+                    goto process_ball_target_collisions; /* Racket outcomes converge before moving-target and brick checks. */
+reflect_left_racket_edge:;
                     /* Left-edge overlap reverses only a ball moving into that racket edge. */
                     if (current_ball_pointer->velocity_x < 0) {
                         current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
                     }
-                    goto L_8aaa;
-L_8a8d:;
+                    goto reflect_racket_side_contact; /* Both side edges share the vertical bounce. */
+reflect_right_racket_edge:;
                     /* Right-edge overlap reverses only a ball moving into that racket edge. */
                     if (current_ball_pointer->velocity_x > 0) {
                         current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
                     }
-L_8aaa:;
+reflect_racket_side_contact:;
                     /* Both racket side contacts then use the common vertical bounce. */
                     current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
                     current_ball_pointer->y += current_ball_pointer->velocity_y;
-                    goto L_8b85;
+                    goto process_ball_target_collisions; /* Racket outcomes converge before moving-target and brick checks. */
                 }
-L_8ad2:;
+reflect_racket_center_contact:;
                 /* The central racket hit reflects vertically and adds racket-motion spin. */
                 current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
                 current_ball_pointer->y += current_ball_pointer->velocity_y;
@@ -357,7 +357,7 @@ L_8ad2:;
                 }
                 current_ball_pointer->velocity_x = temp;
             }
-L_8b85:;
+process_ball_target_collisions:;
             /* Every racket branch rejoins here before moving-target and brick checks. */
             if (!(current_ball_pointer->flags & BALL_FLAG_AREA_SPELL)) {
                 moving_target_cursor = moving_target_records;
@@ -435,7 +435,7 @@ L_8b85:;
                         if (collision_edges.edges[edge_index].collision_result) {
                             collision_count++;
                         }
-                        if (collision_edges.edges[edge_index].collision_result == BALL_COLLISION_PORTAL) goto L_8f05;
+                        if (collision_edges.edges[edge_index].collision_result == BALL_COLLISION_PORTAL) goto queue_current_ball_draw; /* Attached balls and portal hits skip collision passes but still queue this ball. */
                     } else {
                         collision_edges.edges[edge_index].collision_result = BALL_COLLISION_NONE;
                     }
@@ -473,7 +473,7 @@ L_8b85:;
             }
         }
         /* Attached balls and portal contacts skip the remaining collision passes. */
-L_8f05:;
+queue_current_ball_draw:;
         temp = current_ball_pointer->x >> 4;
         if (current_ball_pointer->flags & BALL_FLAG_ATTACHED) {
             temp += racket_object->x;
@@ -546,23 +546,23 @@ int resolve_ball_brick_collision(int ball_x, int ball_y)
     int brick_column;
     int brick_row;
     if (ball_y >= BALL_FIELD_TOP_EDGE && ball_y < BRICK_FIELD_BOTTOM) {
-        if (ball_x < BALL_FIELD_LEFT_EDGE || ball_x >= BALL_FIELD_RIGHT_EDGE) goto L_9513;
+        if (ball_x < BALL_FIELD_LEFT_EDGE || ball_x >= BALL_FIELD_RIGHT_EDGE) goto return_no_brick_contact; /* Out-of-field, empty, and unsupported cells share the no-contact result. */
         brick_column = (ball_x - BALL_FIELD_LEFT_EDGE) >> 4;
         brick_row = ((ball_y - BALL_FIELD_TOP_EDGE) >> 3) * BRICK_COLUMN_COUNT;
-        if (brick_column == brick_x_index && brick_row == brick_y_index) goto L_9581;
+        if (brick_column == brick_x_index && brick_row == brick_y_index) goto classify_repeated_brick_contact; /* A repeated edge cell skips duplicate effects but still classifies bounce direction. */
         cell_cursor = brick_code_map;
         cell_cursor += brick_row;
         current_brick_code = cell_cursor[brick_column].tile_code;
-        if (!current_brick_code) goto L_9513;
+        if (!current_brick_code) goto return_no_brick_contact; /* Out-of-field, empty, and unsupported cells share the no-contact result. */
         if (current_brick_code == 0xf8) {
             current_ball_pointer->x += (portal_exit_xpos - portal_start_x) << 4;
             current_ball_pointer->y += (portal_destination_y - portal_y_source) << 4;
-            goto L_9522;
+            goto process_portal_contact; /* Both portal codes share the offset and portal-result path. */
         }
         if (current_brick_code == 0xf9) {
             current_ball_pointer->x += (portal_start_x - portal_exit_xpos) << 4;
             current_ball_pointer->y += (portal_y_source - portal_destination_y) << 4;
-            goto L_9522;
+            goto process_portal_contact; /* Both portal codes share the offset and portal-result path. */
         }
         if (current_brick_code >= 1 && current_brick_code <= 0x90) {
             if ((current_brick_code >= 1 && current_brick_code <= 0x10) || (current_brick_code >= 0x31 && current_brick_code <= 0x40) || (current_brick_code >= 0x61 && current_brick_code <= 0x70)) {
@@ -575,7 +575,7 @@ int resolve_ball_brick_collision(int ball_x, int ball_y)
             play_audio_request_at(0xc, 0x19);
             *(int *)ptrbuf = (int)racket_spell_animation_frames;
         } else {
-            if (current_brick_code < 0x91 || current_brick_code > 0x100) goto L_9513;
+            if (current_brick_code < 0x91 || current_brick_code > 0x100) goto return_no_brick_contact; /* Out-of-field, empty, and unsupported cells share the no-contact result. */
             *(int *)ptrbuf = (int)spell_impact_animation_frames;
             if (player_key_flags->spell_flags & PLAYER_SPELL_ALTERNATE_BALL) {
                 process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
@@ -597,11 +597,11 @@ int resolve_ball_brick_collision(int ball_x, int ball_y)
         }
         spawn_animated_sprite(ball_x, ball_y, 0, 0, (int)spell_art_base, *(int *)ptrbuf, 1);
     } else {
-    L_9513:;
+    return_no_brick_contact:;
         /* Out-of-field, empty, and non-colliding cells converge on the no-contact result. */
         temp = BALL_COLLISION_NONE;
-        goto L_95de;
-L_9522:;
+        goto return_collision_result; /* Every brick-contact path returns through this shared result tail. */
+process_portal_contact:;
         /* Both portal entries offset the ball and return the shared portal code here. */
         if (current_ball_pointer->velocity_y > 0) {
             current_ball_pointer->y += 0x80;
@@ -614,9 +614,9 @@ L_9522:;
             current_ball_pointer->x -= 0x100;
         }
         temp = BALL_COLLISION_PORTAL;
-        goto L_95de;
+        goto return_collision_result; /* Every brick-contact path returns through this shared result tail. */
     }
-L_9581:;
+classify_repeated_brick_contact:;
     /* A repeated cell reuses this edge-direction classifier and the shared return below. */
     temp = BALL_COLLISION_VERTICAL;
     ball_x &= 0xf;
@@ -632,7 +632,7 @@ L_9581:;
     }
     brick_x_index = brick_column;
     brick_y_index = brick_row;
-L_95de:;
+return_collision_result:;
     /* All brick-contact paths return their classification through this join. */
     return temp;
 }

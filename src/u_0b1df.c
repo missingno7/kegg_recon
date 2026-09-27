@@ -90,7 +90,7 @@ int draw_text(int x, int y, int text_address)
         text_render_state.cursor_y -= default_metrics->edge_y;
     }
     do {
-        character = *(unsigned char *)(unsigned char *)(text_address++);
+        character = *(unsigned char *)(text_address++);
         switch (character) {
         case TEXT_TAB:
             if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
@@ -132,7 +132,7 @@ newline_control:;
                 /* Reuse the line-feed case's shared cursor update. */
                 goto newline_control;
             }
-            scan_character = *(unsigned char *)(unsigned char *)(lookahead_address++);
+            scan_character = *(unsigned char *)(lookahead_address++);
         }
         glyph = (GlyphMetrics *)(font_bitmap_data + font_glyph_metric_table[character].bitmap_offset);
         if (((glyph->edge_x + (text_render_state.cursor_x + glyph->advance)) - 1) <= text_render_state.clip_right) {

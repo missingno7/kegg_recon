@@ -1255,7 +1255,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_05966.c",
-   "src_sha256": "41274ff5b6093add991a68a4e4c90336bb1fe08baa9ee8b6de478dba72be8b3d",
+   "src_sha256": "86f94667699eb817400dfcd267bbce50168a147157e6b19286b5983cfe5166e6",
    "unit": "U05966"
   },
   {
@@ -1266,7 +1266,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_05966.c",
-   "src_sha256": "41274ff5b6093add991a68a4e4c90336bb1fe08baa9ee8b6de478dba72be8b3d",
+   "src_sha256": "86f94667699eb817400dfcd267bbce50168a147157e6b19286b5983cfe5166e6",
    "unit": "U05966"
   },
   {
@@ -1278,7 +1278,7 @@
    "profile": "game-c",
    "src": "src/u_05966.c",
    "unit": "U05966",
-   "src_sha256": "41274ff5b6093add991a68a4e4c90336bb1fe08baa9ee8b6de478dba72be8b3d"
+   "src_sha256": "86f94667699eb817400dfcd267bbce50168a147157e6b19286b5983cfe5166e6"
   },
   {
    "name": "spawn_enemy_projectile",
@@ -1288,7 +1288,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_05966.c",
-   "src_sha256": "41274ff5b6093add991a68a4e4c90336bb1fe08baa9ee8b6de478dba72be8b3d",
+   "src_sha256": "86f94667699eb817400dfcd267bbce50168a147157e6b19286b5983cfe5166e6",
    "unit": "U05966"
   },
   {
@@ -1717,7 +1717,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "unit": "U08585"
   },
   {
@@ -1728,7 +1728,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "unit": "U08585"
   },
   {
@@ -1739,7 +1739,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "unit": "U08585"
   },
   {
@@ -1750,7 +1750,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "unit": "U08585"
   },
   {
@@ -1761,7 +1761,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "unit": "U08585"
   },
   {
@@ -1772,7 +1772,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "unit": "U08585"
   },
   {
@@ -2157,7 +2157,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2168,7 +2168,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2179,7 +2179,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2190,7 +2190,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2201,7 +2201,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2212,7 +2212,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2223,7 +2223,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2234,7 +2234,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -2245,7 +2245,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_0b1df.c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "unit": "U0b1df"
   },
   {
@@ -6229,7 +6229,7 @@
    "start": "0x5966",
    "end": "0x608a",
    "profile": "game-c",
-   "src_sha256": "41274ff5b6093add991a68a4e4c90336bb1fe08baa9ee8b6de478dba72be8b3d",
+   "src_sha256": "86f94667699eb817400dfcd267bbce50168a147157e6b19286b5983cfe5166e6",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6300,7 +6300,7 @@
    "start": "0x8585",
    "end": "0x95ee",
    "profile": "game-c",
-   "src_sha256": "7ca07ef86c27101e6167abac59318f23ba139e11c0e75b9c6610f55794933aac",
+   "src_sha256": "c95707e6587c5de873b30e9dfa40a11e288f62239cfaaa06583b380367806494",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6420,7 +6420,7 @@
    "start": "0xb1df",
    "end": "0xb804",
    "profile": "game-c",
-   "src_sha256": "60d0770a300ec1d25c516226af1af21d712e4e440839910fbcb2486a84c025b4",
+   "src_sha256": "64b03ab1cdcf7a3c00b3c7c7db5296757aaad2d82504a0bc42a17d31f6c75873",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -8066,6 +8066,22 @@
   "rkt_mv": "adjust",
   "racket_state": "score_state",
   "frnt_pg_upd_buf": "front_page_bufs",
-  "back_pg_upd_buf": "back_page_queue"
+  "back_pg_upd_buf": "back_page_queue",
+  "L_880f": "check_right_wall_edge",
+  "L_8832": "check_top_wall_edge",
+  "L_8878": "reflect_ceiling_contact",
+  "L_8899": "play_wall_impact_effect",
+  "L_88c9": "check_racket_collision",
+  "L_8a69": "skip_racket_contact_resolution",
+  "L_8a6e": "reflect_left_racket_edge",
+  "L_8a8d": "reflect_right_racket_edge",
+  "L_8aaa": "reflect_racket_side_contact",
+  "L_8ad2": "reflect_racket_center_contact",
+  "L_8b85": "process_ball_target_collisions",
+  "L_8f05": "queue_current_ball_draw",
+  "L_9513": "return_no_brick_contact",
+  "L_9522": "process_portal_contact",
+  "L_9581": "classify_repeated_brick_contact",
+  "L_95de": "return_collision_result"
  }
 }
