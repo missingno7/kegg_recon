@@ -132,7 +132,8 @@ def main(argv):
             dest.parent.mkdir(exist_ok=True)
             data = (ROOT / u["file"]).read_bytes()
             prior = {k: v for k, v in man.get("renamed", {}).items() if k not in renames}
-            if prior and not P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {}).get("host"):
+            pf = P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {})
+            if prior and not (pf.get("host") and pf.get("tool", "wcc386") == "wcc386"):  # byte-sensitive C only
                 prx = re.compile(r"\b(" + "|".join(map(re.escape, sorted(prior, key=len, reverse=True))) + r")\b")
                 data = prx.sub(lambda m: prior[m.group(1)], data.decode("latin-1")).encode("latin-1")
             prof_ = P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {})
@@ -184,6 +185,9 @@ def main(argv):
         print(im.stdout.strip()[:2000])
         if im.returncode != 0:
             return restore("whole image not identical")
+        acc = json.loads((ROOT / "build" / "image" / "canonical" / "report.json").read_text()).get("accounting", {})
+        if acc.get("total", {}).get("raw", 0):
+            return restore(f"whole image needs {acc['total']['raw']} bytes of raw debt (must stay 0)")
     print("PLAN APPLIED")
     return 0
 
