@@ -16,6 +16,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "ke_port.h"
+#include "replay.h"
 #include "../vhw/vhw.h"
 
 void ke_input_event(const SDL_Event *e);
@@ -24,8 +25,20 @@ int ke_present_save_bmp(const char *path);
 /* Smoke-test automation: KE_AUTOKEYS="ms:scan,ms:scan" injects an XT make+break code
  * (hex) at a time after start; KE_SCREENSHOT="ms:file.bmp" saves the presented frame. */
 typedef struct AutoKey { uint64_t at_ns; unsigned code; } AutoKey;
+typedef struct AutoMouse { uint64_t at_ns; int x, y; } AutoMouse;
+typedef struct AutoClick {
+    uint64_t at_ns, release_ns;
+    int x, y, pressed, done;
+} AutoClick;
+typedef struct AutoShot { uint64_t at_ns; char path[MAX_PATH]; } AutoShot;
 static AutoKey auto_keys[64];
+static AutoMouse auto_mouse[64];
+static AutoClick auto_clicks[64];
+static AutoShot auto_shots[16];
 static int auto_key_count, auto_key_next;
+static int auto_mouse_count, auto_mouse_next;
+static int auto_click_count, auto_click_next;
+static int auto_shot_count, auto_shot_next;
 
 static void parse_auto_keys(void)
 {
@@ -43,6 +56,78 @@ static void parse_auto_keys(void)
     }
 }
 
+static void parse_timed_mouse(const char *env_name, AutoMouse *items, int *count)
+{
+    const char *s = getenv(env_name);
+    while (s && *s && *count < 64) {
+        unsigned ms;
+        int x, y;
+        if (sscanf(s, "%u:%d:%d", &ms, &x, &y) != 3)
+            break;
+        items[*count].at_ns = (uint64_t)ms * 1000000ull;
+        items[*count].x = x;
+        items[*count].y = y;
+        ++*count;
+        s = strchr(s, ',');
+        if (s)
+            ++s;
+    }
+}
+
+static void parse_auto_clicks(void)
+{
+    AutoMouse parsed[64];
+    int i;
+    parse_timed_mouse("KE_AUTOCLICKS", parsed, &auto_click_count);
+    for (i = 0; i < auto_click_count; ++i) {
+        auto_clicks[i].at_ns = parsed[i].at_ns;
+        auto_clicks[i].x = parsed[i].x;
+        auto_clicks[i].y = parsed[i].y;
+        auto_clicks[i].release_ns = 0;
+        auto_clicks[i].pressed = auto_clicks[i].done = 0;
+    }
+}
+
+static void parse_auto_shots(void)
+{
+    const char *s = getenv("KE_SCREENSHOTS");
+    if (s && *s) {
+        while (s && *s && auto_shot_count < 16) {
+            char *end;
+            const char *colon = strchr(s, ':');
+            const char *comma;
+            unsigned long ms;
+            size_t path_len;
+            char path[MAX_PATH];
+            if (!colon)
+                break;
+            ms = strtoul(s, &end, 10);
+            if (end != colon || !colon[1])
+                break;
+            comma = strchr(colon + 1, ',');
+            path_len = comma ? (size_t)(comma - (colon + 1)) : strlen(colon + 1);
+            if (!path_len || path_len >= sizeof path)
+                break;
+            memcpy(path, colon + 1, path_len);
+            path[path_len] = '\0';
+            auto_shots[auto_shot_count].at_ns = (uint64_t)ms * 1000000ull;
+            snprintf(auto_shots[auto_shot_count].path, MAX_PATH, "%s", path);
+            ++auto_shot_count;
+            s = comma;
+            if (s)
+                ++s;
+        }
+    } else if (getenv("KE_SCREENSHOT")) {
+        unsigned ms = 0;
+        char path[MAX_PATH];
+        if (sscanf(getenv("KE_SCREENSHOT"), "%u:%259s", &ms, path) == 2) {
+            auto_shots[0].at_ns = (uint64_t)ms * 1000000ull;
+            snprintf(auto_shots[0].path, MAX_PATH, "%s", path);
+            auto_shot_count = 1;
+        }
+    }
+}
+
 static void run_auto_keys(uint64_t since_start)
 {
     while (auto_key_next < auto_key_count && since_start >= auto_keys[auto_key_next].at_ns) {
@@ -54,6 +139,51 @@ static void run_auto_keys(uint64_t since_start)
         if (code & 0x100)
             vkbd_push_scancode(0xe0);
         vkbd_push_scancode((uint8_t)((code & 0x7f) | 0x80));
+    }
+}
+
+static void run_auto_mouse(uint64_t since_start)
+{
+    while (auto_mouse_next < auto_mouse_count &&
+           since_start >= auto_mouse[auto_mouse_next].at_ns) {
+        AutoMouse *m = &auto_mouse[auto_mouse_next++];
+        /* SDL automation uses the same half-resolution game raster as refshot.py. */
+        ke_input_set_mouse_position(m->x * 2, m->y * 2);
+        ke_log(KE_LOG_INFO, "main", "KE_AUTOMOUSE: move to %d,%d", m->x, m->y);
+    }
+}
+
+static void run_auto_clicks(uint64_t since_start)
+{
+    while (auto_click_next < auto_click_count) {
+        AutoClick *c = &auto_clicks[auto_click_next];
+        if (!c->pressed) {
+            if (since_start < c->at_ns)
+                break;
+            ke_input_set_mouse_position(c->x * 2, c->y * 2);
+            ke_input_set_mouse_buttons(1);
+            c->pressed = 1;
+            c->release_ns = c->at_ns + 80000000ull;
+            ke_log(KE_LOG_INFO, "main", "KE_AUTOCLICKS: left down at %d,%d", c->x, c->y);
+        }
+        if (since_start < c->release_ns)
+            break;
+        ke_input_set_mouse_buttons(0);
+        c->done = 1;
+        ke_log(KE_LOG_INFO, "main", "KE_AUTOCLICKS: left up at %d,%d", c->x, c->y);
+        ++auto_click_next;
+    }
+}
+
+static void run_auto_shots(uint64_t since_start)
+{
+    while (auto_shot_next < auto_shot_count &&
+           since_start >= auto_shots[auto_shot_next].at_ns) {
+        AutoShot *shot = &auto_shots[auto_shot_next++];
+        ke_log(KE_LOG_INFO, "main", "capturing scheduled frame %s", shot->path);
+        int result = ke_present_save_bmp(shot->path);
+        ke_log(KE_LOG_INFO, "main", "screenshot %s (target %u ms): %s", shot->path,
+               (unsigned)(shot->at_ns / 1000000ull), result == 0 ? "saved" : "no graphics frame");
     }
 }
 
@@ -173,13 +303,15 @@ int main(int argc, char **argv)
     char log_path[MAX_PATH];
     const char *exit_after = getenv("KE_EXIT_AFTER_MS");
     uint64_t exit_deadline = 0, close_requested_at = 0;
-    uint64_t start_ns = 0, shot_ns = 0;
+    uint64_t start_ns = 0, replay_start_ns = 0;
     uint32_t last_presented_frame = 0;
     int running = 1, quit_requested = 0, have_presented_frame = 0;
     int vhw_ready = 0, sdl_ready = 0, present_ready = 0, game_started = 0;
     int game_terminated = 0, result = 2, fullscreen = 0;
     int child_exit;
-    char shot_path[MAX_PATH] = "";
+    int replay_start_pending = 0;
+    const char *replay_path;
+    const char *replay_start_ms;
 
     if (relaunch_with_low_memory_reserved(&child_exit))
         return child_exit;
@@ -188,17 +320,24 @@ int main(int argc, char **argv)
     setvbuf(stdout, NULL, _IONBF, 0);   /* DOS console output is unbuffered */
     SetConsoleOutputCP(437);            /* the game's text uses CP437 box characters */
     parse_auto_keys();
-    if (getenv("KE_SCREENSHOT")) {
-        unsigned ms = 0;
-        if (sscanf(getenv("KE_SCREENSHOT"), "%u:%259s", &ms, shot_path) == 2)
-            shot_ns = (uint64_t)ms * 1000000ull;
-    }
+    parse_timed_mouse("KE_AUTOMOUSE", auto_mouse, &auto_mouse_count);
+    parse_auto_clicks();
+    parse_auto_shots();
     if (getenv("KE_LOG"))
         snprintf(log_path, sizeof log_path, "%s", getenv("KE_LOG"));
     else
         default_log_path(log_path, sizeof log_path);
     ke_log_init(log_path);
     ke_log(KE_LOG_INFO, "main", "Krypton Egg SDL3 port (historical source + virtual PC)");
+    ke_log(KE_LOG_INFO, "main", "loaded %d screenshot schedule entries", auto_shot_count);
+    replay_path = getenv("KE_REPLAY");
+    if (replay_path && *replay_path) {
+        if (ke_replay_load(replay_path) != 0)
+            goto cleanup;
+        replay_start_ms = getenv("KE_REPLAY_START_MS");
+        replay_start_ns = replay_start_ms ? (uint64_t)strtoul(replay_start_ms, NULL, 10) * 1000000ull : 0;
+        replay_start_pending = 1;
+    }
     if (ke_config.data_dir && _chdir(ke_config.data_dir) != 0) {
         ke_log(KE_LOG_ERROR, "main", "cannot enter data directory %s", ke_config.data_dir);
         return 2;
@@ -238,6 +377,10 @@ int main(int argc, char **argv)
         exit_deadline = ke_now_ns() + (uint64_t)atoi(exit_after) * 1000000ull;
 
     start_ns = ke_now_ns();
+    if (replay_start_pending && replay_start_ns == 0) {
+        ke_replay_start();
+        replay_start_pending = 0;
+    }
     if (ke_game_thread_start() != 0) {
         ke_log(KE_LOG_ERROR, "main", "cannot start the game thread");
         goto cleanup;
@@ -273,23 +416,29 @@ int main(int argc, char **argv)
             result = 4;
             running = 0;
         }
-        run_auto_keys(ke_now_ns() - start_ns);
+        {
+            uint64_t since_start = ke_now_ns() - start_ns;
+            if (replay_start_pending && since_start >= replay_start_ns) {
+                ke_replay_start();
+                replay_start_pending = 0;
+            }
+            run_auto_keys(since_start);
+            run_auto_mouse(since_start);
+            run_auto_clicks(since_start);
+        }
         {
             uint32_t frame = vga_frame_counter();
             if (!have_presented_frame || frame != last_presented_frame) {
                 ke_present_frame();
                 last_presented_frame = frame;
                 have_presented_frame = 1;
-                if (shot_ns && ke_now_ns() - start_ns >= shot_ns) {
-                    ke_log(KE_LOG_INFO, "main", "screenshot %s: %s", shot_path,
-                           ke_present_save_bmp(shot_path) == 0 ? "saved" : "no graphics frame");
-                    shot_ns = 0;
-                }
+                run_auto_shots(ke_now_ns() - start_ns);
             } else {
                 SDL_Delay(1);
             }
         }
     }
+    ke_replay_report();
     ke_stub_report();
     if (!game_terminated)
         result = ke_game_exit_code();
