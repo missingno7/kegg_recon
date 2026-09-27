@@ -10,10 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ENV = dict(os.environ, PATH="C:/msys64/mingw32/bin;" + os.environ["PATH"])
 GATES = [
-    ["cmake", "-S", "port", "-B", "build/port", "-G", "Ninja"],
-    ["cmake", "--build", "build/port"],
+    ["C:/msys64/mingw32/bin/cmake.exe", "-S", "port", "-B", "build/port", "-G", "Ninja"],
+    ["C:/msys64/mingw32/bin/cmake.exe", "--build", "build/port"],
     [sys.executable, "port/tools/le_export.py"],
-    ["build/port/oracle/ke_oracle.exe", "build/port/oracle"],
+    [str(ROOT / "build/port/oracle/ke_oracle.exe"), "build/port/oracle"],
     [sys.executable, "port/tools/check_layouts.py", "--data"],
     [sys.executable, "port/tools/gen_asm_stubs.py", "--check"],
     [sys.executable, "port/tools/smoke.py"],
