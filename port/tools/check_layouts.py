@@ -6,9 +6,9 @@ Reads DWARF of every compiled historical unit (objdump --dwarf=info) and compare
 struct catalogued in docs/types.md, the byte size and every listed member offset. The
 catalogue layouts are PROVEN by the byte-exact rebuild, so any difference is a port bug in
 the compile flags (packing, bit-field allocation, enum size). --data also compares, per
-unit, the spacing of consecutive initialized globals with the original object 3 addresses
-(manifest.json symbols): record overlays need Watcom's packed _DATA order. Exit 1 on a
-mismatch.
+unit, the spacing of consecutive initialized globals and BSS globals with the original
+object 3 addresses (manifest.json symbols): overlays need Watcom's packed _DATA/_BSS
+orders. Exit 1 on a mismatch.
 """
 from __future__ import annotations
 
@@ -113,6 +113,41 @@ def check_data(objs, nm="nm"):
     return bad
 
 
+def check_bss(objs, nm="nm"):
+    """Compare each unit's public BSS order and spacing with the original LE object 3."""
+    import json
+    manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
+    bss_start = int(manifest["le"]["objects"][2]["init"])
+    symbols = manifest["symbols"]
+    original = {
+        name: int(value.split(":", 1)[1], 16)
+        for name, value in symbols.items()
+        if value.startswith("3:") and int(value.split(":", 1)[1], 16) >= bss_start
+    }
+    pairs = bad = 0
+    for obj in objs:
+        text = subprocess.run([nm, "-n", str(obj)], capture_output=True, text=True).stdout
+        current = {}
+        for line in text.splitlines():
+            parts = line.split()
+            if len(parts) == 3 and parts[1] in "Bb" and parts[2].startswith("_"):
+                name = parts[2][1:]
+                if name in original:
+                    current[name] = int(parts[0], 16)
+        expected = sorted(current, key=lambda name: original[name])
+        for a, b in zip(expected, expected[1:]):
+            pairs += 1
+            got = current[b] - current[a]
+            want = original[b] - original[a]
+            if got != want:
+                bad += 1
+                if bad <= 20:
+                    print(f"BSS {obj.name.replace('.c.obj', '')}: {a} -> {b}: "
+                          f"gcc {got:+#x}, original {want:+#x}")
+    print(f"{pairs} adjacent BSS pairs compared with the original, {bad} differ")
+    return bad
+
+
 def main(argv):
     data_mode = "--data" in argv
     argv = [a for a in argv if a != "--data"]
@@ -154,6 +189,7 @@ def main(argv):
         print("not found in DWARF (unused or renamed): " + ", ".join(missing))
     if data_mode:
         mismatches += check_data(objs)
+        mismatches += check_bss(objs)
     return 1 if mismatches else 0
 
 
