@@ -82,13 +82,13 @@ short mouse_x_sample_2;
 short mouse_y_sample_2;
 short mouse_settings_saved = 0;
 int initialize_mouse_driver(void) {
-    unsigned int *mouse_vector_entry = (unsigned int *)MOUSE_INTERRUPT_VECTOR_TABLE_OFFSET;
+    unsigned int *mouse_vector_entry = (unsigned int *)KE_LOWMEM(MOUSE_INTERRUPT_VECTOR_TABLE_OFFSET); /* PORT: KE_LOWMEM */
     union REGS regs;
 
     if (*mouse_vector_entry != 0) {
         regs.w.ax = MOUSE_RESET;
         int386(MOUSE_INTERRUPT_VECTOR, &regs, &regs);
-        if (regs.w.ax == -1) {
+        if (regs.w.ax == (unsigned short)-1) { /* PORT: Watcom compares 16-bit (cmp word,-1); gcc promotes */
             mouse_available = -1;
             regs.w.ax = MOUSE_GET_VERSION;
             int386(MOUSE_INTERRUPT_VECTOR, &regs, &regs);

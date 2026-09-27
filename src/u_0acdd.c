@@ -14,7 +14,7 @@ extern unsigned char read_vga_pixel_entry(short, short);
 extern int font_glyph_metric_table;
 extern int font_bitmap_data;
 extern unsigned char text_render_state;
-extern void subdivide_heightfield();
+extern void subdivide_heightfield(short, short, short, short); /* PORT: prototype (gcc rejects old-style decl vs promoted definition) */
 void perturb_height_midpoint(short, short, short, short, short, short);
 
 /* The generated surface stores byte-height samples; the noise range is signed. */

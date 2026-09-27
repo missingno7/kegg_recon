@@ -380,9 +380,9 @@ void restore_vga_register_state(void) {
 
 void set_vga_memory_layout(int chain4_enabled)
 {
-    extern void set_gc_read_map(short);
-    extern void set_seq_plane_mask(short);
-    extern void set_gc_mode(short);
+    extern void set_gc_read_map(unsigned int); /* PORT: was (short); one type per TU for gcc */
+    extern void set_seq_plane_mask(unsigned int); /* PORT: was (short); one type per TU for gcc */
+    extern void set_gc_mode(unsigned int); /* PORT: was (short); one type per TU for gcc */
     if (chain4_enabled == 1) {
         _disable();
         outp(VGA_GRAPHICS_INDEX_PORT, VGA_GRAPHICS_MODE);

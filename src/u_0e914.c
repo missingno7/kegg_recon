@@ -165,7 +165,7 @@ void set_video_display_address(int screen_x, int screen_y) {
 
 void set_vga_horizontal_panning(int new_panning)
 {
-    extern void set_vga_horizontal_pan_register();
+    extern void set_vga_horizontal_pan_register(unsigned char); /* PORT: prototype (gcc rejects old-style decl vs promoted definition) */
     set_vga_horizontal_pan_register(pending_horizontal_pan);
     pending_horizontal_pan = new_panning;
 }
