@@ -9,8 +9,7 @@ KE_ASM_STUB(measure_pit_channel0, "m_09f64_0a0d2")
 KE_ASM_STUB(set_pit_channel0_reload, "m_09f64_0a0d2")
 KE_ASM_STUB(pit_channel0_interrupt, "m_09f64_0a0d2")
 
-KE_ASM_STUB(decode_iff_ilbm_image, "m_0a284_0a51f")
-KE_ASM_STUB(find_iff_chunk, "m_0a284_0a51f")
+/* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
 
 /* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
 
