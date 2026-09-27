@@ -556,145 +556,108 @@ extern short space_pressed;
 void run_gameplay_session(void)
 {
     init_game();
-L_21:;
-    stop_audio_stream();
-    set_display_mode(1);
-    next_lvl();
-    if (*(int *)(racket_state + 4) < 0) goto L_374;
-    if (g_e143_eayxx >= 0x3c) goto L_385;
-    g_e4d0_wfmxdlyju = file_error_state;
-    load_palette();
-    load_assets();
-    reset_lvl();
-    load_and_draw_level();
-    queue_audio(g_dd44, g_e4c8, 0x157c, 0);
-    if (wait_level() == 0) goto L_a1;
-    if (g_e142_baun != 0) goto L_a1;
-    entry_prompt();
-L_a1:;
-    stop_audio_stream();
-    load_enemy();
-    prep_brick();
-    g_dd74_ntd = 0;
-    if (image_buffer_error_code == 0) goto L_d6;
-    fatal_exit(image_buffer_error_code, 0);
+    while (1) {
+        stop_audio_stream();
+        set_display_mode(1);
+        next_lvl();
+        if (*(int *)(racket_state + 4) < 0) goto L_374;
+        if (g_e143_eayxx >= 0x3c) goto L_385;
+        g_e4d0_wfmxdlyju = file_error_state;
+        load_palette();
+        load_assets();
+        reset_lvl();
+        load_and_draw_level();
+        queue_audio(g_dd44, g_e4c8, 0x157c, 0);
+        if (wait_level()) {
+            if (!g_e142_baun) {
+                entry_prompt();
+            }
+        }
+        stop_audio_stream();
+        load_enemy();
+        prep_brick();
+        g_dd74_ntd = 0;
+        if (image_buffer_error_code) {
+            fatal_exit(image_buffer_error_code, 0);
+        }
 L_d6:;
-    stop_audio_stream();
-    init_round();
-    draw_status();
-    key_repeat = show_order_info;
-    keyboard_release_handler = redraw_level_state;
-    *(unsigned char *)&hook_flags_word |= 0x80;
-    *(unsigned char *)&hook_flags_word &= 0xfb;
-    *(unsigned char *)&hook_flags_word |= 3;
-    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
-    f_9d40(0);
-    f_9d40(0);
-    g_8e20 = 0;
-L_153:;
-    if (g_8e20 < 4) goto L_166;
-    goto L_16d;
-L_15e:;
-    ++g_8e20;
-    goto L_153;
-L_166:;
-    update_mouse();
-    goto L_15e;
+        stop_audio_stream();
+        init_round();
+        draw_status();
+        key_repeat = show_order_info;
+        keyboard_release_handler = redraw_level_state;
+        *(unsigned char *)&hook_flags_word |= 0x80;
+        *(unsigned char *)&hook_flags_word &= 0xfb;
+        *(unsigned char *)&hook_flags_word |= 3;
+        set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+        f_9d40(0);
+        f_9d40(0);
+        for (g_8e20 = 0; g_8e20 < 4; ++g_8e20) {
+            update_mouse();
+        }
 L_16d:;
-    f_9d40(3);
-    if ((keyboard_cheat_flags & 0x80) == 0) goto L_19b;
-    set_pal_rgb(0, 0, 0x3f, 0);
-L_19b:;
-    g_e1bc = 0;
-    g_e1b8 = (int)image_buffer_cursor;
-L_1ae:;
-    image_buffer_cursor = (unsigned char *)g_e1b8;
-    handle_s_key();
-    ++g_8e24;
-    rkt_mv();
-    update_racket_state();
-    if ((keyboard_cheat_flags & 0x80) == 0) goto L_1ed;
-    set_pal_rgb(0, 0, 0x2a, 0);
-L_1ed:;
-    if (g_e13b == 0) goto L_1fe;
-    *(unsigned char *)player_key_flags |= 8;
-L_1fe:;
-    upd_bl();
-    if ((keyboard_cheat_flags & 0x80) == 0) goto L_223;
-    set_pal_rgb(0, 0, 0x15, 0);
-L_223:;
-    shot_cd();
-    if (g_e13b == 0) goto L_239;
-    *(unsigned char *)player_key_flags &= 0xf7;
-L_239:;
-    update_falling_spells();
-    upd_ani();
-    update_enemy_projectiles();
-    process_timed_level_changes();
-    ++g_e1bc;
-    if (g_e1bc < g_e1c0) goto L_1ae;
-    redraw_image_region(0, 0);
-    if (image_buffer_error_code == 0) goto L_28f;
-    fatal_exit(image_buffer_error_code, 0);
-L_28f:;
-    update_game_status_panel();
-    if (current_scan_code == 1) goto L_2a6;
-    if (current_key_code_01 == 1) goto L_2c5;
-L_2a6:;
-    if (current_ball_count > 0) goto L_2b8;
-    if (g_ddc0 <= 0) goto L_2ba;
-L_2b8:;
-    goto L_2c3;
-L_2ba:;
-    if (g_e142_baun == 0) goto L_2c5;
-L_2c3:;
-    goto L_2ca;
-L_2c5:;
-    start_racket_release_animation();
-L_2ca:;
-    if (g_dd78 > 0) goto L_2dc;
-    if (g_ddc0 <= 0) goto L_2de;
-L_2dc:;
-    goto L_31a;
-L_2de:;
-    if (g_e13b != 0) goto L_385;
-    g_8e20 = 0;
-L_2f5:;
-    if (g_8e20 < 5) goto L_308;
-    goto L_315;
-L_300:;
-    ++g_8e20;
-    goto L_2f5;
-L_308:;
-    f_9d40(0);
-    goto L_300;
-L_315:;
-    goto L_21;
-L_31a:;
+        f_9d40(3);
+        if (keyboard_cheat_flags & 0x80) {
+            set_pal_rgb(0, 0, 0x3f, 0);
+        }
+        g_e1bc = 0;
+        g_e1b8 = (int)image_buffer_cursor;
+        do {
+            image_buffer_cursor = (unsigned char *)g_e1b8;
+            handle_s_key();
+            ++g_8e24;
+            rkt_mv();
+            update_racket_state();
+            if (keyboard_cheat_flags & 0x80) {
+                set_pal_rgb(0, 0, 0x2a, 0);
+            }
+            if (g_e13b) {
+                *(unsigned char *)player_key_flags |= 8;
+            }
+            upd_bl();
+            if (keyboard_cheat_flags & 0x80) {
+                set_pal_rgb(0, 0, 0x15, 0);
+            }
+            shot_cd();
+            if (g_e13b) {
+                *(unsigned char *)player_key_flags &= 0xf7;
+            }
+            update_falling_spells();
+            upd_ani();
+            update_enemy_projectiles();
+            process_timed_level_changes();
+            ++g_e1bc;
+        } while (g_e1bc < g_e1c0);
+        redraw_image_region(0, 0);
+        if (image_buffer_error_code) {
+            fatal_exit(image_buffer_error_code, 0);
+        }
+        update_game_status_panel();
+        if ((current_scan_code != 1 && current_key_code_01 == 1) || (current_ball_count <= 0 && g_ddc0 <= 0 && !g_e142_baun)) {
+            start_racket_release_animation();
+        }
+        if (g_dd78 > 0 || g_ddc0 > 0) break;
+        if (g_e13b) goto L_385;
+        for (g_8e20 = 0; g_8e20 < 5; ++g_8e20) {
+            f_9d40(0);
+        }
+    }
     handle_keyboard_controls();
     show_page();
-    if (g_e13b == 0) goto L_347;
-    if (mouse_btn_old != mouse_btn) goto L_345;
-    if (current_key_code_01 != 0x39) goto L_347;
-L_345:;
-    goto L_349;
-L_347:;
-    goto L_34b;
-L_349:;
-    goto L_385;
-L_34b:;
-    if (g_e13a == 0) goto L_16d;
-    if (g_e13b != 0) goto L_385;
-    if ((*(int *)(racket_state + 4) -= 0x71) >= 0) goto L_d6;
+    if (g_e13b && (mouse_btn_old != mouse_btn || current_key_code_01 == 0x39)) goto L_385;
+    if (!g_e13a) goto L_16d;
+    if (!g_e13b) {
+        if ((*(int *)(racket_state + 4) -= 0x71) >= 0) goto L_d6;
 L_374:;
-    *(unsigned char *)&hook_flags_word &= 0xfc;
-    reset_keyboard_action_handlers();
-    return_to_main_menu();
+        *(unsigned char *)&hook_flags_word &= 0xfc;
+        reset_keyboard_action_handlers();
+        return_to_main_menu();
+    }
 L_385:;
-    if (g_e13b == 0) goto L_3a1;
-    g_e13b = 0;
-    *(int *)(racket_state + 0x14) = 0;
-L_3a1:;
+    if (g_e13b) {
+        g_e13b = 0;
+        *(int *)(racket_state + 0x14) = 0;
+    }
     *(unsigned char *)&hook_flags_word &= 0xfc;
     reset_keyboard_action_handlers();
 }
@@ -718,36 +681,33 @@ void init_game(void) {
 
 void next_lvl(void)
 {
-    if (g_e142_baun == 0) goto L_462;
-    g_e142_baun = 0;
-    return;
-L_462:;
-    if (g_e13e == 0) goto L_486;
-    if (g_e140 == 6) goto L_4bb;
+    if (g_e142_baun) {
+        g_e142_baun = 0;
+        return;
+    }
+    if (g_e13e) {
+        if (g_e140 == 6) goto L_4bb;
+        ++g_e143_eayxx;
+        g_e13e = 0;
+        return;
+    }
     ++g_e143_eayxx;
-    g_e13e = 0;
-    return;
-L_486:;
-    ++g_e143_eayxx;
-    if (g_e13b != 0) goto L_52a;
-    if (g_e143_eayxx < 0xa) goto L_4b9;
-    if ((g_e143_eayxx % 0xa) == 0) goto L_4bb;
-L_4b9:;
-    goto L_4f8;
+    if (!g_e13b) {
+        if (g_e143_eayxx >= 0xa && !(g_e143_eayxx % 0xa)) {
 L_4bb:;
-    g_e13e = (unsigned char)(g_e143_eayxx / 0xa);
-    if (run_level() == 0) goto L_4ea;
-    encode_restart_code();
-    g_e144 = 0xff;
-    goto L_4f6;
-L_4ea:;
-    *(int *)(racket_state + 4) = -1;
-L_4f6:;
-    return;
-L_4f8:;
-    if ((g_e143_eayxx % 5) != 0) goto L_52a;
-    g_e142_baun = (unsigned char)(((g_e143_eayxx / 5) + 1) >> 1);
-L_52a:;
+            g_e13e = (unsigned char)(g_e143_eayxx / 0xa);
+            if (run_level()) {
+                encode_restart_code();
+                g_e144 = 0xff;
+            } else {
+                *(int *)(racket_state + 4) = -1;
+            }
+            return;
+        }
+        if (!(g_e143_eayxx % 5)) {
+            g_e142_baun = (unsigned char)(((g_e143_eayxx / 5) + 1) >> 1);
+        }
+    }
 }
 
 void init_round(void)
@@ -772,25 +732,25 @@ void init_round(void)
     update_racket_movement_bounds();
     start_racket_movement_animation();
     current_ball_count = 0;
-    if (g_e142_baun != 0) goto L_64b;
-    spawn_game_ball(0x90, 0xbc);
-    *(unsigned char *)(current_ball_pointer + 0x11) |= 1;
-    *(int *)current_ball_pointer -= 0x900;
-L_64b:;
+    if (!g_e142_baun) {
+        spawn_game_ball(0x90, 0xbc);
+        *(unsigned char *)(current_ball_pointer + 0x11) |= 1;
+        *(int *)current_ball_pointer -= 0x900;
+    }
     g_ddc0 = 0;
     sprite_instance_count = 0;
     player_shot_total = 0;
     moving_target_count = 0;
     g_dd9c = 0;
     g_ddd0 = *(int *)g_ddb0;
-    if (g_e142_baun == 0) goto L_6c5;
-    start_spell_animation_e();
-    *(int *)(racket_object + 0x64) = 2;
-    *(int *)(racket_object + 0x68) = 0xa;
-    g_dDb8 = 1;
-    advance_racket_anim();
-    *(unsigned char *)(player_key_flags + 1) |= 4;
-L_6c5:;
+    if (g_e142_baun) {
+        start_spell_animation_e();
+        *(int *)(racket_object + 0x64) = 2;
+        *(int *)(racket_object + 0x68) = 0xa;
+        g_dDb8 = 1;
+        advance_racket_anim();
+        *(unsigned char *)(player_key_flags + 1) |= 4;
+    }
 }
 
 void set_game_progress(int a0, int a1, int a2) {

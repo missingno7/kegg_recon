@@ -42,51 +42,27 @@ int decode_pcx_image(int source_address, int pixel_buffer_address, unsigned char
         result = 0xa01;
         return result;
     }
-
     width = header->width;
     height = header->height;
     pixel_count = width * height;
-
     /* PCX uses 0xC0|count,value runs and literal bytes below 0xC0. */
     while ((unsigned)(pixel_buffer_address + pixel_count) > output_address_cursor) {
         encoded_byte = *(unsigned char *)(source_address_cursor++);
         if ((encoded_byte & 0xc0) == 0xc0) {
             run_value = *(unsigned char *)(source_address_cursor++);
-            encoded_byte &= 0x3f;
-        run_length_check:
-            if (encoded_byte > 0)
-                goto write_run_byte;
-            goto run_length_done;
-        run_length_decrement:
-            encoded_byte--;
-            goto run_length_check;
-        write_run_byte:
-            *(unsigned char *)(output_address_cursor++) = run_value;
-            goto run_length_decrement;
-        run_length_done:
-            ;
+            for (encoded_byte &= 0x3f; encoded_byte > 0; encoded_byte--) {
+                *(unsigned char *)(output_address_cursor++) = run_value;
+            }
         } else {
             *(unsigned char *)(output_address_cursor++) = (signed char)encoded_byte;
         }
     }
-
     source_address_cursor++;
     output_address_cursor = pixel_buffer_address + pixel_count;
-    encoded_byte = 0;
-palette_entry_check:
-    if (encoded_byte < 0x300)
-        goto write_palette_entry;
-    goto palette_entries_done;
-palette_entry_increment:
-    encoded_byte++;
-    goto palette_entry_check;
-write_palette_entry:
-    *(unsigned char *)(output_address_cursor++) =
+    for (encoded_byte = 0; encoded_byte < 0x300; encoded_byte++) {
+        *(unsigned char *)(output_address_cursor++) =
         (unsigned char)(*(unsigned char *)(source_address_cursor++) >> 2);
-    goto palette_entry_increment;
-palette_entries_done:
-    ;
-
+    }
     g_pcx_allocation_size = pixel_count + 0x380;
     g_pcx_pixels_d = pixel_count + 0x300;
     ((DecodedImage *)image_address)->pixels = (unsigned char *)pixel_buffer_address;

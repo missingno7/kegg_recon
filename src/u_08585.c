@@ -155,323 +155,266 @@ void update_game_balls(void)
     *(int *)g_e23c = *(int *)(racket_object + 0x74);
     get_sprite_bounds(g_e23c, game_art_base + 0x7536);
     current_ball_pointer = game_balls;
-    game_ball_slot = 0;
-L_863b:;
-    if (game_ball_slot < current_ball_count) goto L_8655;
-    return;
-L_864d:;
-    ++game_ball_slot;
-    goto L_863b;
-L_8655:;
-    g_8e20 = current_ball_pointer->behavior;
-    if ((current_ball_pointer->flags & 2) == 0) goto L_86a7;
-    g_8ddc = *(int *)(g_5e30 + (g_8e20 << 3));
-    if ((*(unsigned char *)(player_key_flags + 1) & 0x20) != 0) goto L_869a;
-    if (current_ball_pointer->y > 0x980) goto L_869c;
-L_869a:;
-    goto L_86a5;
-L_869c:;
-    current_ball_pointer->flags &= 0xfd;
-L_86a5:;
-    goto L_86da;
-L_86a7:;
-    if ((*(unsigned char *)(player_key_flags + 1) & 0x10) == 0) goto L_86c7;
-    g_8ddc = *(int *)(g_5df8 + (g_8e20 << 3));
-    goto L_86da;
-L_86c7:;
-    g_8ddc = *(int *)(g_5dc0 + (g_8e20 << 3));
-L_86da:;
-    sprite_offset = spell_art_base + g_8ddc;
-    if ((current_ball_pointer->flags & 1) != 0) goto L_8716;
-    current_ball_pointer->x += current_ball_pointer->velocity_x;
-    current_ball_pointer->y += current_ball_pointer->velocity_y;
-    goto L_8780;
-L_8716:;
-    current_ball_pointer->y = *(int *)(racket_object + 4) << 4;
-    if ((*(unsigned char *)player_key_flags & 2) != 0) goto L_877b;
-    if (mouse_btn_old == mouse_btn) goto L_874b;
-    if ((*(unsigned char *)&mouse_btn & 1) != 0) goto L_8755;
-L_874b:;
-    if ((*(unsigned char *)player_key_flags & 8) == 0) goto L_877b;
-L_8755:;
-    current_ball_pointer->x += *(int *)racket_object << 4;
-    current_ball_pointer->flags &= 0xfe;
-    mouse_btn_old = mouse_btn;
-L_877b:;
-    goto L_8f05;
-L_8780:;
-    if (current_ball_pointer->x > 0x1400) goto L_8797;
-    if (current_ball_pointer->x >= 0) goto L_8799;
-L_8797:;
-    goto L_87a7;
-L_8799:;
-    if (current_ball_pointer->y <= 0xdc0) goto L_87a9;
-L_87a7:;
-    goto L_87b4;
-L_87a9:;
-    if (current_ball_pointer->y >= 0) goto L_87be;
-L_87b4:;
-    remove_game_ball();
-    goto L_864d;
-L_87be:;
-    *(int *)g_e22c = current_ball_pointer->x >> 4;
-    g_e230 = current_ball_pointer->y >> 4;
-    get_sprite_bounds(g_e22c, (void *)sprite_offset);
-    if (*(int *)g_e22c > 0x10) goto L_880f;
-    if (current_ball_pointer->velocity_x >= 0) goto L_880f;
-    g_8e20 = 0x10;
-    goto L_8854;
+    for (game_ball_slot = 0; game_ball_slot < current_ball_count; ++game_ball_slot) {
+        g_8e20 = current_ball_pointer->behavior;
+        if (current_ball_pointer->flags & 2) {
+            g_8ddc = *(int *)(g_5e30 + (g_8e20 << 3));
+            if (!(*(unsigned char *)(player_key_flags + 1) & 0x20) && current_ball_pointer->y > 0x980) {
+                current_ball_pointer->flags &= 0xfd;
+            }
+        } else if (*(unsigned char *)(player_key_flags + 1) & 0x10) {
+            g_8ddc = *(int *)(g_5df8 + (g_8e20 << 3));
+        } else {
+            g_8ddc = *(int *)(g_5dc0 + (g_8e20 << 3));
+        }
+        sprite_offset = spell_art_base + g_8ddc;
+        if (!(current_ball_pointer->flags & 1)) {
+            current_ball_pointer->x += current_ball_pointer->velocity_x;
+            current_ball_pointer->y += current_ball_pointer->velocity_y;
+        } else {
+            current_ball_pointer->y = *(int *)(racket_object + 4) << 4;
+            if (!(*(unsigned char *)player_key_flags & 2)) {
+                if ((mouse_btn_old != mouse_btn && *(unsigned char *)&mouse_btn & 1) || *(unsigned char *)player_key_flags & 8) {
+                    current_ball_pointer->x += *(int *)racket_object << 4;
+                    current_ball_pointer->flags &= 0xfe;
+                    mouse_btn_old = mouse_btn;
+                }
+            }
+            goto L_8f05;
+        }
+        if (current_ball_pointer->x > 0x1400 || current_ball_pointer->x < 0 || current_ball_pointer->y > 0xdc0 || current_ball_pointer->y < 0) {
+            remove_game_ball();
+            continue;
+        }
+        *(int *)g_e22c = current_ball_pointer->x >> 4;
+        g_e230 = current_ball_pointer->y >> 4;
+        get_sprite_bounds(g_e22c, (void *)sprite_offset);
+        if (*(int *)g_e22c <= 0x10) {
+            if (current_ball_pointer->velocity_x >= 0) goto L_880f;
+            g_8e20 = 0x10;
+        } else {
 L_880f:;
-    if (g_e234 < 0x130) goto L_8832;
-    if (current_ball_pointer->velocity_x <= 0) goto L_8832;
-    g_8e20 = 0x130;
-    goto L_8854;
+            if (g_e234 >= 0x130) {
+                if (current_ball_pointer->velocity_x <= 0) goto L_8832;
+                g_8e20 = 0x130;
+            } else {
 L_8832:;
-    if (g_e230 > 0x18) goto L_8852;
-    if (current_ball_pointer->velocity_y >= 0) goto L_8852;
-    g_8e1c = 0x18;
-    goto L_8878;
-L_8852:;
-    goto L_88c9;
-L_8854:;
-    current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
-    g_8e1c = current_ball_pointer->y >> 4;
-    goto L_8899;
+                if (g_e230 <= 0x18) {
+                    if (current_ball_pointer->velocity_y < 0) {
+                        g_8e1c = 0x18;
+                        goto L_8878;
+                    }
+                }
+                goto L_88c9;
+            }
+        }
+        current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
+        g_8e1c = current_ball_pointer->y >> 4;
+        goto L_8899;
 L_8878:;
-    current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
-    g_8e20 = current_ball_pointer->x >> 4;
+        current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
+        g_8e20 = current_ball_pointer->x >> 4;
 L_8899:;
-    submit_audio_request(0x24);
-    spawn_animated_sprite(g_8e20, g_8e1c, 0, 0, spell_art_base, (int)g_6098, 1);
+        submit_audio_request(0x24);
+        spawn_animated_sprite(g_8e20, g_8e1c, 0, 0, spell_art_base, (int)g_6098, 1);
 L_88c9:;
-    if (g_e230 > 0xbe) goto L_8f05;
-    if (current_ball_pointer->velocity_y < 0) goto L_8b85;
-    if (r_e250 > g_e238) goto L_8a69;
-    if (g_e258 < g_e230) goto L_8a69;
-    if (*(int *)g_e24c > g_e234) goto L_8a16;
-    if (g_e254 < *(int *)g_e22c) goto L_8a16;
-    if ((*(unsigned char *)player_key_flags & 8) != 0) goto L_895c;
-    if ((*(unsigned char *)player_key_flags & 0x40) == 0) goto L_895a;
-    current_ball_pointer->x -= *(int *)racket_object << 4;
-    current_ball_pointer->flags |= 1;
-L_895a:;
-    goto L_8970;
-L_895c:;
-    if (current_ball_pointer->velocity_x != 0) goto L_8970;
-    current_ball_pointer->velocity_x -= 4;
-L_8970:;
-    g_8e20 = ((current_ball_pointer->behavior >> 1) & -2) + 3;
-    if ((current_ball_pointer->flags & 2) != 0) goto L_89b9;
-    mouse_y_sample_0 += *(short *)&g_8e20;
-    mouse_y_sample_1 += *(short *)&g_8e20;
-    mouse_y_sample_2_1a += *(short *)&g_8e20;
-    goto L_89cd;
-L_89b9:;
-    if ((*(unsigned char *)(player_key_flags + 1) & 0x20) != 0) goto L_89cd;
-    current_ball_pointer->flags &= 0xfd;
-L_89cd:;
-    if ((*(unsigned char *)player_key_flags & 0x80) == 0) goto L_89e3;
-    submit_audio_request(0x20);
-    goto L_89ed;
-L_89e3:;
-    submit_audio_request(0x65);
-L_89ed:;
-    if ((*(int *)g_e24c + 3) >= g_e234) goto L_8a8d;
-    if ((g_e254 - 3) <= *(int *)g_e22c) goto L_8a6e;
-    goto L_8ad2;
-L_8a16:;
-    if ((*(unsigned char *)(player_key_flags + 1) & 2) == 0) goto L_8a2e;
-    if (*(int *)g_e23c <= g_e234) goto L_8a30;
-L_8a2e:;
-    goto L_8a69;
-L_8a30:;
-    if (g_e244 < *(int *)g_e22c) goto L_8a69;
-    submit_audio_request(0x21);
-    if ((*(int *)g_e23c + 3) >= g_e234) goto L_8a8d;
-    if ((g_e244 - 3) <= *(int *)g_e22c) goto L_8a6e;
-    goto L_8ad2;
+        if (g_e230 <= 0xbe) {
+            if (current_ball_pointer->velocity_y >= 0) {
+                if (r_e250 <= g_e238) {
+                    if (g_e258 < g_e230) goto L_8a69;
+                    if (*(int *)g_e24c <= g_e234) {
+                        if (g_e254 >= *(int *)g_e22c) {
+                            if (!(*(unsigned char *)player_key_flags & 8)) {
+                                if (*(unsigned char *)player_key_flags & 0x40) {
+                                    current_ball_pointer->x -= *(int *)racket_object << 4;
+                                    current_ball_pointer->flags |= 1;
+                                }
+                            } else if (!current_ball_pointer->velocity_x) {
+                                current_ball_pointer->velocity_x -= 4;
+                            }
+                            g_8e20 = ((current_ball_pointer->behavior >> 1) & -2) + 3;
+                            if (!(current_ball_pointer->flags & 2)) {
+                                mouse_y_sample_0 += *(short *)&g_8e20;
+                                mouse_y_sample_1 += *(short *)&g_8e20;
+                                mouse_y_sample_2_1a += *(short *)&g_8e20;
+                            } else if (!(*(unsigned char *)(player_key_flags + 1) & 0x20)) {
+                                current_ball_pointer->flags &= 0xfd;
+                            }
+                            if (*(unsigned char *)player_key_flags & 0x80) {
+                                submit_audio_request(0x20);
+                            } else {
+                                submit_audio_request(0x65);
+                            }
+                            if ((*(int *)g_e24c + 3) >= g_e234) goto L_8a8d;
+                            if ((g_e254 - 3) <= *(int *)g_e22c) goto L_8a6e;
+                            goto L_8ad2;
+                        }
+                    }
+                    if (!(*(unsigned char *)(player_key_flags + 1) & 2) || *(int *)g_e23c > g_e234) goto L_8a69;
+                    if (g_e244 < *(int *)g_e22c) goto L_8a69;
+                    submit_audio_request(0x21);
+                    if ((*(int *)g_e23c + 3) >= g_e234) goto L_8a8d;
+                    if ((g_e244 - 3) <= *(int *)g_e22c) goto L_8a6e;
+                } else {
 L_8a69:;
-    goto L_8b85;
+                    goto L_8b85;
 L_8a6e:;
-    if (current_ball_pointer->velocity_x >= 0) goto L_8a8b;
-    current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
-L_8a8b:;
-    goto L_8aaa;
+                    if (current_ball_pointer->velocity_x < 0) {
+                        current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
+                    }
+                    goto L_8aaa;
 L_8a8d:;
-    if (current_ball_pointer->velocity_x <= 0) goto L_8aaa;
-    current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
+                    if (current_ball_pointer->velocity_x > 0) {
+                        current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
+                    }
 L_8aaa:;
-    current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
-    current_ball_pointer->y += current_ball_pointer->velocity_y;
-    goto L_8b85;
+                    current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
+                    current_ball_pointer->y += current_ball_pointer->velocity_y;
+                    goto L_8b85;
+                }
 L_8ad2:;
-    current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
-    current_ball_pointer->y += current_ball_pointer->velocity_y;
-    g_8e20 = *(int *)racket_object - *(int *)(racket_object + 8);
-    if (g_8e20 <= 0x18) goto L_8b1d;
-    g_8e20 = 0x18;
-L_8b1d:;
-    if (g_8e20 >= -0x18) goto L_8b30;
-    g_8e20 = -0x18;
-L_8b30:;
-    g_8e20 = ((g_8e20 * 2) + (g_8e20 >> 1)) + current_ball_pointer->velocity_x;
-    if (g_8e20 <= 0x20) goto L_8b64;
-    g_8e20 = 0x20;
-L_8b64:;
-    if (g_8e20 >= -0x20) goto L_8b77;
-    g_8e20 = -0x20;
-L_8b77:;
-    current_ball_pointer->velocity_x = g_8e20;
+                current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
+                current_ball_pointer->y += current_ball_pointer->velocity_y;
+                g_8e20 = *(int *)racket_object - *(int *)(racket_object + 8);
+                if (g_8e20 > 0x18) {
+                    g_8e20 = 0x18;
+                }
+                if (g_8e20 < -0x18) {
+                    g_8e20 = -0x18;
+                }
+                g_8e20 = ((g_8e20 * 2) + (g_8e20 >> 1)) + current_ball_pointer->velocity_x;
+                if (g_8e20 > 0x20) {
+                    g_8e20 = 0x20;
+                }
+                if (g_8e20 < -0x20) {
+                    g_8e20 = -0x20;
+                }
+                current_ball_pointer->velocity_x = g_8e20;
+            }
 L_8b85:;
-    if ((current_ball_pointer->flags & 2) != 0) goto L_8f05;
-    moving_target_cursor = moving_target_records;
-    moving_target_number = 0;
-L_8ba8:;
-    if (moving_target_number < moving_target_count) goto L_8bc2;
-    goto L_8cd2;
-L_8bba:;
-    ++moving_target_number;
-    goto L_8ba8;
-L_8bc2:;
-    *(int *)g_e25c = moving_target_cursor->x;
-    g_e260 = moving_target_cursor->y;
-    get_sprite_collision_bounds(g_e25c, (void *)moving_target_cursor->sprite_info);
-    if (rectangles_intersect(g_e22c, g_e25c) == 0) goto L_8cc6;
-    moving_target_cursor->flags |= 2;
-    moving_target_cursor->hit_points = 0;
-    moving_target_cursor->velocity_x += current_ball_pointer->velocity_x >> 4;
-    moving_target_cursor->velocity_y += current_ball_pointer->velocity_y >> 4;
-    if ((*(unsigned char *)(player_key_flags + 1) & 0x10) != 0) goto L_8cc6;
-    if ((*(signed char *)&g_8e24 & 0x10) == 0) goto L_8c76;
-    current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
-    goto L_8c88;
-L_8c76:;
-    current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
-L_8c88:;
-    if (current_ball_pointer->velocity_x != 0) goto L_8c9e;
-    current_ball_pointer->velocity_x -= 4;
-    goto L_8cc6;
-L_8c9e:;
-    g_dDb8 = 2;
-    if ((*(signed char *)&g_8e24 & 1) == 0) goto L_8cb7;
-    g_dDb8 = -g_dDb8;
-L_8cb7:;
-    g_8e1c = 1;
-    adjust_game_ball_velocity();
-L_8cc6:;
-    ++moving_target_cursor;
-    goto L_8bba;
-L_8cd2:;
-    if (current_ball_pointer->velocity_y >= 0) goto L_8d0f;
-    collision_edges.edges[0].edge_mask = 1;
-    collision_edges.edges[1].edge_mask = 1;
-    collision_edges.edges[2].edge_mask = 0;
-    collision_edges.edges[3].edge_mask = 0;
-    collision_edges.edges[0].x = *(int *)g_e22c;
-    collision_edges.edges[0].y = g_e230;
-    collision_edges.edges[1].x = g_e234;
-    collision_edges.edges[1].y = g_e230;
-    goto L_8d3f;
-L_8d0f:;
-    collision_edges.edges[0].edge_mask = 0;
-    collision_edges.edges[1].edge_mask = 0;
-    collision_edges.edges[2].edge_mask = 1;
-    collision_edges.edges[3].edge_mask = 1;
-    collision_edges.edges[2].x = g_e234;
-    collision_edges.edges[2].y = g_e238;
-    collision_edges.edges[3].x = *(int *)g_e22c;
-    collision_edges.edges[3].y = g_e238;
-L_8d3f:;
-    if (current_ball_pointer->velocity_x >= 0) goto L_8d74;
-    collision_edges.edges[0].edge_mask += 2;
-    collision_edges.edges[3].edge_mask += 2;
-    collision_edges.edges[0].x = *(int *)g_e22c;
-    collision_edges.edges[0].y = g_e230;
-    collision_edges.edges[3].x = *(int *)g_e22c;
-    collision_edges.edges[3].y = g_e238;
-    goto L_8da7;
-L_8d74:;
-    if (current_ball_pointer->velocity_x <= 0) goto L_8da7;
-    collision_edges.edges[1].edge_mask += 2;
-    collision_edges.edges[2].edge_mask += 2;
-    collision_edges.edges[1].x = g_e234;
-    collision_edges.edges[1].y = g_e230;
-    collision_edges.edges[2].x = g_e234;
-    collision_edges.edges[2].y = g_e238;
-L_8da7:;
-    collision_count = 0;
-    brick_x_index = -1;
-    brick_y_index = -1;
-    edge_index = 0;
-L_8dc3:;
-    if (edge_index < 4) goto L_8dd6;
-    goto L_8e45;
-L_8dce:;
-    edge_index++;
-    goto L_8dc3;
-L_8dd6:;
-    if (collision_edges.edges[edge_index].edge_mask == 0) goto L_8e37;
-    collision_edges.edges[edge_index].collision_result = (unsigned char)resolve_ball_brick_collision(collision_edges.edges[edge_index].x, collision_edges.edges[edge_index].y);
-    if (collision_edges.edges[edge_index].collision_result == 0) goto L_8e23;
-    collision_count++;
-L_8e23:;
-    if (collision_edges.edges[edge_index].collision_result == 3) goto L_8f05;
-    goto L_8e43;
-L_8e37:;
-    collision_edges.edges[edge_index].collision_result = 0;
-L_8e43:;
-    goto L_8dce;
-L_8e45:;
-    bounce_horizontal = 0;
-    bounce_vertical = 0;
-    if ((*(unsigned char *)(player_key_flags + 1) & 0x10) != 0) goto L_8f05;
-    edge_index = 0;
-L_8e60:;
-    if (edge_index < 4) goto L_8e73;
-    goto L_8ed5;
-L_8e6b:;
-    edge_index++;
-    goto L_8e60;
-L_8e73:;
-    if (collision_edges.edges[edge_index].collision_result == 0) goto L_8ed3;
-    switch (collision_edges.edges[edge_index].edge_mask) {
-        case 1:
-L_8ea9:;
-        bounce_vertical = 1;
-        goto L_8ed3;
-        case 2:
-L_8eaf:;
-        bounce_horizontal = 1;
-        goto L_8ed3;
-        case 3:
-L_8eb5:;
-        if (collision_count != 1) goto L_8ed3;
-        if (collision_edges.edges[edge_index].collision_result != 1) goto L_8ecf;
-        bounce_vertical = 1;
-        goto L_8ed3;
-L_8ecf:;
-        bounce_horizontal = 1;
-    }
-L_8ed3:;
-    goto L_8e6b;
-L_8ed5:;
-    if (bounce_horizontal == 0) goto L_8eed;
-    current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
-L_8eed:;
-    if (bounce_vertical == 0) goto L_8f05;
-    current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
+            if (!(current_ball_pointer->flags & 2)) {
+                moving_target_cursor = moving_target_records;
+                for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
+                    *(int *)g_e25c = moving_target_cursor->x;
+                    g_e260 = moving_target_cursor->y;
+                    get_sprite_collision_bounds(g_e25c, (void *)moving_target_cursor->sprite_info);
+                    if (rectangles_intersect(g_e22c, g_e25c)) {
+                        moving_target_cursor->flags |= 2;
+                        moving_target_cursor->hit_points = 0;
+                        moving_target_cursor->velocity_x += current_ball_pointer->velocity_x >> 4;
+                        moving_target_cursor->velocity_y += current_ball_pointer->velocity_y >> 4;
+                        if (!(*(unsigned char *)(player_key_flags + 1) & 0x10)) {
+                            if (*(signed char *)&g_8e24 & 0x10) {
+                                current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
+                            } else {
+                                current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
+                            }
+                            if (!current_ball_pointer->velocity_x) {
+                                current_ball_pointer->velocity_x -= 4;
+                            } else {
+                                g_dDb8 = 2;
+                                if (*(signed char *)&g_8e24 & 1) {
+                                    g_dDb8 = -g_dDb8;
+                                }
+                                g_8e1c = 1;
+                                adjust_game_ball_velocity();
+                            }
+                        }
+                    }
+                    ++moving_target_cursor;
+                }
+                if (current_ball_pointer->velocity_y < 0) {
+                    collision_edges.edges[0].edge_mask = 1;
+                    collision_edges.edges[1].edge_mask = 1;
+                    collision_edges.edges[2].edge_mask = 0;
+                    collision_edges.edges[3].edge_mask = 0;
+                    collision_edges.edges[0].x = *(int *)g_e22c;
+                    collision_edges.edges[0].y = g_e230;
+                    collision_edges.edges[1].x = g_e234;
+                    collision_edges.edges[1].y = g_e230;
+                } else {
+                    collision_edges.edges[0].edge_mask = 0;
+                    collision_edges.edges[1].edge_mask = 0;
+                    collision_edges.edges[2].edge_mask = 1;
+                    collision_edges.edges[3].edge_mask = 1;
+                    collision_edges.edges[2].x = g_e234;
+                    collision_edges.edges[2].y = g_e238;
+                    collision_edges.edges[3].x = *(int *)g_e22c;
+                    collision_edges.edges[3].y = g_e238;
+                }
+                if (current_ball_pointer->velocity_x < 0) {
+                    collision_edges.edges[0].edge_mask += 2;
+                    collision_edges.edges[3].edge_mask += 2;
+                    collision_edges.edges[0].x = *(int *)g_e22c;
+                    collision_edges.edges[0].y = g_e230;
+                    collision_edges.edges[3].x = *(int *)g_e22c;
+                    collision_edges.edges[3].y = g_e238;
+                } else if (current_ball_pointer->velocity_x > 0) {
+                    collision_edges.edges[1].edge_mask += 2;
+                    collision_edges.edges[2].edge_mask += 2;
+                    collision_edges.edges[1].x = g_e234;
+                    collision_edges.edges[1].y = g_e230;
+                    collision_edges.edges[2].x = g_e234;
+                    collision_edges.edges[2].y = g_e238;
+                }
+                collision_count = 0;
+                brick_x_index = -1;
+                brick_y_index = -1;
+                for (edge_index = 0; edge_index < 4; edge_index++) {
+                    if (collision_edges.edges[edge_index].edge_mask) {
+                        collision_edges.edges[edge_index].collision_result = (unsigned char)resolve_ball_brick_collision(collision_edges.edges[edge_index].x, collision_edges.edges[edge_index].y);
+                        if (collision_edges.edges[edge_index].collision_result) {
+                            collision_count++;
+                        }
+                        if (collision_edges.edges[edge_index].collision_result == 3) goto L_8f05;
+                    } else {
+                        collision_edges.edges[edge_index].collision_result = 0;
+                    }
+                }
+                bounce_horizontal = 0;
+                bounce_vertical = 0;
+                if (!(*(unsigned char *)(player_key_flags + 1) & 0x10)) {
+                    for (edge_index = 0; edge_index < 4; edge_index++) {
+                        if (collision_edges.edges[edge_index].collision_result) {
+                            switch (collision_edges.edges[edge_index].edge_mask) {
+                            case 1:
+                                bounce_vertical = 1;
+                                break;
+                            case 2:
+                                bounce_horizontal = 1;
+                                break;
+                            case 3:
+                                if (collision_count == 1) {
+                                    if (collision_edges.edges[edge_index].collision_result == 1) {
+                                        bounce_vertical = 1;
+                                    } else {
+                                        bounce_horizontal = 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (bounce_horizontal) {
+                        current_ball_pointer->velocity_x = -current_ball_pointer->velocity_x;
+                    }
+                    if (bounce_vertical) {
+                        current_ball_pointer->velocity_y = -current_ball_pointer->velocity_y;
+                    }
+                }
+            }
+        }
 L_8f05:;
-    g_8e20 = current_ball_pointer->x >> 4;
-    if ((current_ball_pointer->flags & 1) == 0) goto L_8f2c;
-    g_8e20 += *(int *)racket_object;
-L_8f2c:;
-    *(int *)image_buffer_cursor = sprite_offset;
-    *(short *)(image_buffer_cursor + 4) = *(short *)&g_8e20;
-    *(short *)(image_buffer_cursor + 6) = (unsigned short)(current_ball_pointer->y >> 4);
-    *(short *)(image_buffer_cursor + 8) = 0;
-    image_buffer_cursor += 0xa;
-    ++current_ball_pointer;
-    goto L_864d;
+        g_8e20 = current_ball_pointer->x >> 4;
+        if (current_ball_pointer->flags & 1) {
+            g_8e20 += *(int *)racket_object;
+        }
+        *(int *)image_buffer_cursor = sprite_offset;
+        *(short *)(image_buffer_cursor + 4) = *(short *)&g_8e20;
+        *(short *)(image_buffer_cursor + 6) = (unsigned short)(current_ball_pointer->y >> 4);
+        *(short *)(image_buffer_cursor + 8) = 0;
+        image_buffer_cursor += 0xa;
+        ++current_ball_pointer;
+    }
 }
 
 void remove_game_ball(void)
@@ -532,126 +475,75 @@ int resolve_ball_brick_collision(int ball_x, int ball_y)
 {
     int brick_column;
     int brick_row;
-    if (ball_y >= 0x18) {
-        if (ball_y < 0x98) goto L_91c3;
-    }
-    goto L_9513;
-L_91c3:;
-    if (ball_x >= 0x10) {
-        if (ball_x < 0x130) goto L_91d7;
-    }
-    goto L_9513;
-L_91d7:;
-    brick_column = (ball_x - 0x10) >> 4;
-    brick_row = ((ball_y - 0x18) >> 3) * 0x12;
-    if (brick_column == brick_x_index) {
-        if (brick_row == brick_y_index) goto L_920a;
-    }
-    goto L_920f;
-L_920a:;
-    goto L_9581;
-L_920f:;
-    g_dd80 = (S2 *)brick_code_map;
-    g_dd80 += brick_row;
-    g_dd50 = *(unsigned char *)(((unsigned char *)g_dd80) + ((brick_column * 2) + 1));
-    if (g_dd50 == 0) goto L_9513;
-    if (g_dd50 == 0xf8) {
-        current_ball_pointer->x += (g_dD68 - g_dd60) << 4;
-        current_ball_pointer->y += (b_DD70 - g_dd64) << 4;
-        goto L_9522;
-    }
-    if (g_dd50 == 0xf9) {
-        current_ball_pointer->x += (g_dd60 - g_dD68) << 4;
-        current_ball_pointer->y += (g_dd64 - b_DD70) << 4;
-        goto L_9522;
-    }
-    if (g_dd50 >= 1) {
-        if (g_dd50 <= 0x90) goto L_92de;
-    }
-    goto L_9392;
-L_92de:;
-    if (g_dd50 >= 1) {
-        if (g_dd50 <= 0x10) goto L_9304;
-    }
-    if (g_dd50 >= 0x31) {
-        if (g_dd50 <= 0x40) goto L_9304;
-    }
-    goto L_9306;
-L_9304:;
-    goto L_931a;
-L_9306:;
-    if (g_dd50 >= 0x61) {
-        if (g_dd50 <= 0x70) goto L_931a;
-    }
-    goto L_9344;
-L_931a:;
-    process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
-    goto L_9377;
-L_9344:;
-    g_dd50 -= 0x10;
-    *(unsigned char *)(((unsigned char *)g_dd80) + ((brick_column * 2) + 1)) = *(unsigned char *)&g_dd50;
-    draw_level_tile_on_pages(brick_column, brick_row, g_dd50);
-L_9377:;
-    play_audio_request_at(0xc, 0x19);
-    *(int *)g_8e10 = (int)g_5e68;
-    goto L_94ec;
-L_9392:;
-    if (g_dd50 >= 0x91) {
-        if (g_dd50 <= 0x100) goto L_93af;
-    }
-    goto L_9513;
-L_93af:;
-    *(int *)g_8e10 = (int)g_6098;
-    if ((*(unsigned char *)(player_key_flags + 1) & 0x10) != 0) {
-        process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
-        goto L_94ec;
-    }
-    if (g_dd50 >= 0xf5) {
-        if (g_dd50 <= 0xf7) goto L_940b;
-    }
-    goto L_942b;
-L_940b:;
-    play_audio_request_at(0x2e, 0x32);
-    g_dDb8 = -1;
-    resize_racket();
-    goto L_94ec;
-L_942b:;
-    if (g_dd50 >= 0xfa) {
-        if (g_dd50 <= 0x100) goto L_9448;
-    }
-    goto L_94e0;
-L_9448:;
-    play_audio_request_at(1, 9);
-    if (--((BF1_2_6 *)(((unsigned char *)g_dd80) + (brick_column * 2)))->f != 0) goto L_94d4;
-        *(int *)(racket_state + 0x14) += 2 << *(int *)(racket_object + 0x24);
-        queue_timed_level_change(g_dd50, brick_column + brick_row);
-        process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
-L_94d4:;
-    *(int *)g_8e10 = (int)g_5e68;
-    goto L_94ec;
-L_94e0:;
-    play_audio_request_at(0x2a, 0x2d);
-L_94ec:;
-    spawn_animated_sprite(ball_x, ball_y, 0, 0, (int)spell_art_base, *(int *)g_8e10, 1);
-    goto L_9581;
-L_9513:;
-    g_8e20 = 0;
-    goto L_95de;
-L_9522:;
-    if (current_ball_pointer->velocity_y > 0) {
-        current_ball_pointer->y += 0x80;
+    if (ball_y >= 0x18 && ball_y < 0x98) {
+        if (ball_x < 0x10 || ball_x >= 0x130) goto L_9513;
+        brick_column = (ball_x - 0x10) >> 4;
+        brick_row = ((ball_y - 0x18) >> 3) * 0x12;
+        if (brick_column == brick_x_index && brick_row == brick_y_index) goto L_9581;
+        g_dd80 = (S2 *)brick_code_map;
+        g_dd80 += brick_row;
+        g_dd50 = *(unsigned char *)(((unsigned char *)g_dd80) + ((brick_column * 2) + 1));
+        if (!g_dd50) goto L_9513;
+        if (g_dd50 == 0xf8) {
+            current_ball_pointer->x += (g_dD68 - g_dd60) << 4;
+            current_ball_pointer->y += (b_DD70 - g_dd64) << 4;
+            goto L_9522;
+        }
+        if (g_dd50 == 0xf9) {
+            current_ball_pointer->x += (g_dd60 - g_dD68) << 4;
+            current_ball_pointer->y += (g_dd64 - b_DD70) << 4;
+            goto L_9522;
+        }
+        if (g_dd50 >= 1 && g_dd50 <= 0x90) {
+            if ((g_dd50 >= 1 && g_dd50 <= 0x10) || (g_dd50 >= 0x31 && g_dd50 <= 0x40) || (g_dd50 >= 0x61 && g_dd50 <= 0x70)) {
+                process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
+            } else {
+                g_dd50 -= 0x10;
+                *(unsigned char *)(((unsigned char *)g_dd80) + ((brick_column * 2) + 1)) = *(unsigned char *)&g_dd50;
+                draw_level_tile_on_pages(brick_column, brick_row, g_dd50);
+            }
+            play_audio_request_at(0xc, 0x19);
+            *(int *)g_8e10 = (int)g_5e68;
+        } else {
+            if (g_dd50 < 0x91 || g_dd50 > 0x100) goto L_9513;
+            *(int *)g_8e10 = (int)g_6098;
+            if (*(unsigned char *)(player_key_flags + 1) & 0x10) {
+                process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
+            } else if (g_dd50 >= 0xf5 && g_dd50 <= 0xf7) {
+                play_audio_request_at(0x2e, 0x32);
+                g_dDb8 = -1;
+                resize_racket();
+            } else if (g_dd50 >= 0xfa && g_dd50 <= 0x100) {
+                play_audio_request_at(1, 9);
+                if (!--((BF1_2_6 *)(((unsigned char *)g_dd80) + (brick_column * 2)))->f) {
+                    *(int *)(racket_state + 0x14) += 2 << *(int *)(racket_object + 0x24);
+                    queue_timed_level_change(g_dd50, brick_column + brick_row);
+                    process_brick_hit(brick_column, brick_row, current_ball_pointer->velocity_x >> 3, current_ball_pointer->velocity_y >> 3);
+                }
+                *(int *)g_8e10 = (int)g_5e68;
+            } else {
+                play_audio_request_at(0x2a, 0x2d);
+            }
+        }
+        spawn_animated_sprite(ball_x, ball_y, 0, 0, (int)spell_art_base, *(int *)g_8e10, 1);
     } else {
-        current_ball_pointer->y -= 0x80;
+L_9513:;
+        g_8e20 = 0;
+        goto L_95de;
+L_9522:;
+        if (current_ball_pointer->velocity_y > 0) {
+            current_ball_pointer->y += 0x80;
+        } else {
+            current_ball_pointer->y -= 0x80;
+        }
+        if (current_ball_pointer->velocity_x > 0) {
+            current_ball_pointer->x += 0x100;
+        } else if (current_ball_pointer->velocity_x < 0) {
+            current_ball_pointer->x -= 0x100;
+        }
+        g_8e20 = 3;
+        goto L_95de;
     }
-    if (current_ball_pointer->velocity_x > 0) {
-        current_ball_pointer->x += 0x100;
-        goto L_9575;
-    }
-    if (current_ball_pointer->velocity_x >= 0) goto L_9575;
-    current_ball_pointer->x -= 0x100;
-L_9575:;
-    g_8e20 = 3;
-    goto L_95de;
 L_9581:;
     g_8e20 = 1;
     ball_x &= 0xf;

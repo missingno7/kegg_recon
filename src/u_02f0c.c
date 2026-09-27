@@ -420,40 +420,24 @@ int wait_level(void)
     hook_flags_word = ((*(short *)&hook_flags_word) & 0xfffe) & 0xfffd;
     space_pressed = 0;
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
-
-retry:
+    while (1) {
         update_mouse();
         f_8345_wsdytbf();
         f_83b1();
         redraw_image_region(0, 0);
-        if (image_buffer_error_code != 0)
+        if (image_buffer_error_code) {
             fatal_exit(image_buffer_error_code, 0);
+        }
         show_page();
         f_9d40(1);
         handle_s_key();
-        if (space_pressed != 0) goto path_c6;
-        if (mouse_btn == mouse_btn_old) goto path_c4;
-        if (mouse_btn != 0) goto path_c6;
-path_c4:
-        goto path_c8;
-path_c6:
-        goto path_d1;
-path_c8:
-        if (current_key_code_01 != 1) goto path_d3;
-path_d1:
-        goto path_dc;
-path_d3:
-        if (g_e14c < 0x2e) goto path_de;
-path_dc:
-        goto loop_done;
-path_de:
-        goto retry;
-loop_done:
-
-    if (g_e14c == 0x2e)
+        if (space_pressed || (mouse_btn != mouse_btn_old && mouse_btn) || current_key_code_01 == 1 || g_e14c >= 0x2e) break;
+    }
+    if (g_e14c == 0x2e) {
         start_result = -1;
-    else
+    } else {
         start_result = 0;
+    }
     draw_idx = page2;
     g_e14c = 0x2e;
     f_8345_wsdytbf();

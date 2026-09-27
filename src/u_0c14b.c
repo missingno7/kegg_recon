@@ -134,10 +134,9 @@ void initialize_audio_stream(void)
     audio_dma_gap_bytes = 0;
     audio_dma_state = active_audio_mode;
     if (last_audio_sample_rate != active_audio_rate) {
-    last_audio_sample_rate = active_audio_rate;
-    set_sound_blaster_sample_rate(last_audio_sample_rate);
+        last_audio_sample_rate = active_audio_rate;
+        set_sound_blaster_sample_rate(last_audio_sample_rate);
     }
-L_c397:;
     /* Alternate DMA halves while feeding queued music or effects. */
     transfer_audio_stream_block();
     start_audio_stream_dma();
@@ -149,13 +148,11 @@ void stop_audio_stream(void)
     active_audio_bytes_remaining = 0;
     audio_dma_half_bytes = 0;
     if ((short)sound_blaster_detected == -1) {
-    if ((short)audio_stream_flag == -1) {
-    stop_sound_blaster_dma();
+        if ((short)audio_stream_flag == -1) {
+            stop_sound_blaster_dma();
+        }
+        mask_active_sound_dma_channel();
     }
-L_c3e8:;
-    mask_active_sound_dma_channel();
-    }
-L_c3ed:;
     audio_stream_flag = 0;
 }
 
@@ -163,63 +160,54 @@ void transfer_audio_stream_block(void)
 {
     int unused_4;
     int unused_8;
-    if (sound_blaster_detected != -1) goto L_c61c;
-    if (active_audio_bytes_remaining <= 0) goto L_c5b9;
-    audio_dma_buffer = (int)(audio_dma_memory + audio_buffer_offset);
-    audio_buffer_offset ^= audio_dma_half_bytes;
-    audio_dma_state = active_audio_mode;
-    if (audio_dma_half_bytes > active_audio_bytes_remaining) goto L_c4e4;
-    if (audio_transfer_mode != -1) goto L_c482;
-    f_13889(active_audio_source, audio_dma_buffer, audio_dma_half_bytes);
-    goto L_c496;
-L_c482:;
-    clear_video_bytes_entry(audio_dma_buffer, audio_dma_half_bytes);
-L_c496:;
-    if (audio_dma_buffer == (int)audio_dma_memory) goto L_c4c9;
-    memset((void *)(audio_dma_buffer + audio_dma_half_bytes), *(unsigned char *)(unsigned char *)((audio_dma_buffer + audio_dma_half_bytes) + -1), 0x10);
-L_c4c9:;
-    active_audio_source += audio_dma_half_bytes;
-    active_audio_bytes_remaining -= audio_dma_half_bytes;
-    goto L_c5b7;
-L_c4e4:;
-    if (audio_transfer_mode != -1) goto L_c509;
-    f_13889(active_audio_source, audio_dma_buffer, active_audio_bytes_remaining);
-    goto L_c51d;
-L_c509:;
-    clear_video_bytes_entry(audio_dma_buffer, active_audio_bytes_remaining);
-L_c51d:;
-    if (audio_dma_state != -1) goto L_c57d;
-    audio_dma_gap_bytes = audio_dma_half_bytes - active_audio_bytes_remaining;
-    if (audio_transfer_mode != -1) goto L_c561;
-    f_13889(queued_audio_source, audio_dma_buffer + active_audio_bytes_remaining, audio_dma_gap_bytes);
-    goto L_c57b;
-L_c561:;
-    clear_video_bytes_entry(audio_dma_buffer + active_audio_bytes_remaining, audio_dma_gap_bytes);
-L_c57b:;
-    goto L_c5ad;
-L_c57d:;
-    memset((void *)(audio_dma_buffer + active_audio_bytes_remaining), *(unsigned char *)(unsigned char *)((audio_dma_buffer + active_audio_bytes_remaining) + -1), audio_dma_half_bytes - active_audio_bytes_remaining);
-L_c5ad:;
-    active_audio_bytes_remaining = 0;
-L_c5b7:;
-    return;
-L_c5b9:;
-    if (audio_dma_state != -1) goto L_c5cb;
-    if (queued_audio_bytes > 0) goto L_c5cd;
-L_c5cb:;
-    goto L_c612;
-L_c5cd:;
-    active_audio_source = queued_audio_source;
-    active_audio_bytes_remaining = queued_audio_bytes;
-    active_audio_source += audio_dma_gap_bytes;
-    active_audio_bytes_remaining -= audio_dma_gap_bytes;
-    active_audio_rate = queued_audio_rate;
-    active_audio_mode = queued_audio_mode;
-    transfer_audio_stream_block();
-    return;
-L_c612:;
-    audio_dma_half_bytes = 0;
-L_c61c:;
+    if (sound_blaster_detected == -1) {
+        if (active_audio_bytes_remaining > 0) {
+            audio_dma_buffer = (int)(audio_dma_memory + audio_buffer_offset);
+            audio_buffer_offset ^= audio_dma_half_bytes;
+            audio_dma_state = active_audio_mode;
+            if (audio_dma_half_bytes <= active_audio_bytes_remaining) {
+                if (audio_transfer_mode == -1) {
+                    f_13889(active_audio_source, audio_dma_buffer, audio_dma_half_bytes);
+                } else {
+                    clear_video_bytes_entry(audio_dma_buffer, audio_dma_half_bytes);
+                }
+                if (audio_dma_buffer != (int)audio_dma_memory) {
+                    memset((void *)(audio_dma_buffer + audio_dma_half_bytes), *(unsigned char *)(unsigned char *)((audio_dma_buffer + audio_dma_half_bytes) + -1), 0x10);
+                }
+                active_audio_source += audio_dma_half_bytes;
+                active_audio_bytes_remaining -= audio_dma_half_bytes;
+            } else {
+                if (audio_transfer_mode == -1) {
+                    f_13889(active_audio_source, audio_dma_buffer, active_audio_bytes_remaining);
+                } else {
+                    clear_video_bytes_entry(audio_dma_buffer, active_audio_bytes_remaining);
+                }
+                if (audio_dma_state == -1) {
+                    audio_dma_gap_bytes = audio_dma_half_bytes - active_audio_bytes_remaining;
+                    if (audio_transfer_mode == -1) {
+                        f_13889(queued_audio_source, audio_dma_buffer + active_audio_bytes_remaining, audio_dma_gap_bytes);
+                    } else {
+                        clear_video_bytes_entry(audio_dma_buffer + active_audio_bytes_remaining, audio_dma_gap_bytes);
+                    }
+                } else {
+                    memset((void *)(audio_dma_buffer + active_audio_bytes_remaining), *(unsigned char *)(unsigned char *)((audio_dma_buffer + active_audio_bytes_remaining) + -1), audio_dma_half_bytes - active_audio_bytes_remaining);
+                }
+                active_audio_bytes_remaining = 0;
+            }
+            return;
+        }
+        if (audio_dma_state == -1 && queued_audio_bytes > 0) {
+            active_audio_source = queued_audio_source;
+            active_audio_bytes_remaining = queued_audio_bytes;
+            active_audio_source += audio_dma_gap_bytes;
+            active_audio_bytes_remaining -= audio_dma_gap_bytes;
+            active_audio_rate = queued_audio_rate;
+            active_audio_mode = queued_audio_mode;
+            transfer_audio_stream_block();
+            return;
+        }
+        audio_dma_half_bytes = 0;
+    }
 }
 
 void start_audio_stream_dma(void)

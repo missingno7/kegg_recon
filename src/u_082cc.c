@@ -100,35 +100,18 @@ void f_84a0(int a0)
 {
     space_pressed = 0;
     hook_flags_word = (hook_flags_word & 0xfffe) & 0xfffd;
-L_84c5:;
-    f_9d40(3);
-    g_e1bc = 0;
-    g_e1b8 = (int)image_buffer_cursor;
-L_84e6:;
-    image_buffer_cursor = (unsigned char *)g_e1b8;
-    handle_s_key();
-    f_8345_wsdytbf();
-    f_83b1();
-    ++g_e1bc;
-    if (g_e1bc < g_e1c0) goto L_84e6;
-    redraw_image_region(0, 0);
-    show_page();
-    if (previous_ascii_key_2f == current_ascii) goto L_853c;
-    if (current_ascii == 0x20) goto L_8556;
-L_853c:;
-    if (mouse_btn == mouse_btn_old) goto L_8554;
-    if ((*(unsigned char *)&mouse_btn & 7) != 0) goto L_8556;
-L_8554:;
-    goto L_8558;
-L_8556:;
-    goto L_8570;
-L_8558:;
-    if (current_scan_code == current_key_code_01) goto L_856e;
-    if (current_key_code_01 == 1) goto L_8570;
-L_856e:;
-    goto L_8572;
-L_8570:;
-    return;
-L_8572:;
-    if (g_e14c < a0) goto L_84c5;
+    do {
+        f_9d40(3);
+        g_e1bc = 0;
+        g_e1b8 = (int)image_buffer_cursor;
+        do {
+            image_buffer_cursor = (unsigned char *)g_e1b8;
+            handle_s_key();
+            f_8345_wsdytbf();
+            f_83b1();
+            ++g_e1bc;
+        } while (g_e1bc < g_e1c0);
+        redraw_image_region(0, 0);
+        show_page();
+    } while ((previous_ascii_key_2f == current_ascii || current_ascii != 0x20) && (mouse_btn == mouse_btn_old || !(*(unsigned char *)&mouse_btn & 7)) && (current_scan_code == current_key_code_01 || current_key_code_01 != 1) && g_e14c < a0);
 }

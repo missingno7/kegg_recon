@@ -197,42 +197,30 @@ void update_player_shots(void)
         *(int *)g_e24c = player_shot_cursor->x;
         r_e250 = player_shot_cursor->y;
         get_sprite_bounds(g_e24c, (void *)g_8db4);
-        if (g_e254 <= 0x140) {
-            if (*(int *)g_e24c >= 0) goto L_63c3;
+        if (g_e254 > 0x140 || *(int *)g_e24c < 0 || g_e258 > 0xdc || r_e250 < 0x14) {
+            if ((player_shot_cursor->flags & 3) == 2) {
+                spawn_animated_sprite((*(int *)g_e24c + g_e254) >> 1, (r_e250 + g_e258) >> 1, 0, 0, (int)enemy_picture, (int)collision_animation_frames, 1);
+                submit_audio_request(0x57);
+            } else {
+                spawn_animated_sprite((*(int *)g_e24c + g_e254) >> 1, 0x18, 0, 0, (int)spell_art_base, (int)g_6098, 1);
+            }
+            remove_player_shot();
+            continue;
         }
-        goto L_63cf;
-L_63c3:;
-        if (g_e258 > 0xdc) {
-L_63cf:;
-        } else {
-            if (r_e250 >= 0x14) goto L_6464;
-        }
-        if ((player_shot_cursor->flags & 3) == 2) {
-            spawn_animated_sprite((*(int *)g_e24c + g_e254) >> 1, (r_e250 + g_e258) >> 1, 0, 0, (int)enemy_picture, (int)collision_animation_frames, 1);
-            submit_audio_request(0x57);
-        } else {
-            spawn_animated_sprite((*(int *)g_e24c + g_e254) >> 1, 0x18, 0, 0, (int)spell_art_base, (int)g_6098, 1);
-        }
-        remove_player_shot();
-        continue;
-L_6464:;
         moving_target_cursor = moving_target_records;
         for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
             *(int *)g_e22c = moving_target_cursor->x;
             g_e230 = moving_target_cursor->y;
             get_sprite_collision_bounds(g_e22c, (void *)moving_target_cursor->sprite_info);
-            if (rectangles_intersect(g_e24c, g_e22c) != 0) {
+            if (rectangles_intersect(g_e24c, g_e22c)) {
                 moving_target_cursor->flags |= 2;
                 if ((player_shot_cursor->flags & 3) == 2) {
                     moving_target_cursor->hit_points = 0;
-                    goto L_6527;
-                }
-                if ((player_shot_cursor->flags & 3) == 1) {
+                } else if ((player_shot_cursor->flags & 3) == 1) {
                     moving_target_cursor->hit_points -= 4;
-                    goto L_6527;
+                } else {
+                    --moving_target_cursor->hit_points;
                 }
-                --moving_target_cursor->hit_points;
-L_6527:;
                 if (moving_target_cursor->hit_points <= 0) {
                     moving_target_cursor->velocity_y += player_shot_cursor->vertical_speed >> 1;
                 }
@@ -246,131 +234,82 @@ L_6527:;
         }
         tile_hit = 0;
         row_y = (r_e250 + g_e258) >> 1;
-        if (row_y >= 0x18) {
-            if (row_y <= 0x98) goto L_65cc;
-        }
-        goto L_6975;
-L_65cc:;
-        if (g_e254 >= 0x10) {
-            if (*(int *)g_e24c <= 0x130) goto L_65e6;
-        }
-        goto L_6975;
-L_65e6:;
-        g_dd80 = (S2 *)brick_code_map;
-        first_column = (*(int *)g_e24c - 0x10) >> 4;
-        last_column = (g_e254 - 0x10) >> 4;
-        row_offset = ((row_y - 0x18) >> 3) * 0x12;
-        if (first_column < 0) {
-            first_column = 0;
-        }
-        if (last_column > 0x11) {
-            last_column = 0x11;
-        }
-        if (row_offset > 0x10e) {
-            row_offset = 0x10e;
-        }
-        g_dd80 += row_offset;
-        for (row_y = first_column; row_y <= last_column; row_y++) {
-            g_dd50 = *(unsigned char *)(((unsigned char *)g_dd80) + ((row_y * 2) + 1));
-            if (g_dd50 == 0xf8) {
-                player_shot_cursor->x += g_dD68 - g_dd60;
-                player_shot_cursor->y += (b_DD70 - g_dd64) - 8;
-                row_y = last_column;
-                goto L_6963;
+        if (row_y >= 0x18 && row_y <= 0x98) {
+            if (g_e254 < 0x10 || *(int *)g_e24c > 0x130) goto L_6975;
+            g_dd80 = (S2 *)brick_code_map;
+            first_column = (*(int *)g_e24c - 0x10) >> 4;
+            last_column = (g_e254 - 0x10) >> 4;
+            row_offset = ((row_y - 0x18) >> 3) * 0x12;
+            if (first_column < 0) {
+                first_column = 0;
             }
-            if (g_dd50 == 0xf9) {
-                player_shot_cursor->x += g_dd60 - g_dD68;
-                player_shot_cursor->y += (g_dd64 - b_DD70) - 8;
-                row_y = last_column;
-                goto L_6963;
+            if (last_column > 0x11) {
+                last_column = 0x11;
             }
-            if (g_dd50 != 0) {
-                if ((player_shot_cursor->flags & 3) == 2) goto L_671f;
+            if (row_offset > 0x10e) {
+                row_offset = 0x10e;
             }
-            goto L_673e;
-L_671f:;
-            process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
-            goto L_6963;
-L_673e:;
-            if (g_dd50 >= 1) {
-                if (g_dd50 <= 0x90) goto L_6758;
-            }
-            goto L_67fe;
-L_6758:;
-            if (g_dd50 >= 1) {
-                if (g_dd50 <= 0x10) goto L_677e;
-            }
-            if (g_dd50 >= 0x31) {
-                if (g_dd50 <= 0x40) goto L_677e;
-            }
-            goto L_6780;
-L_677e:;
-            goto L_6794;
-L_6780:;
-            if (g_dd50 >= 0x61) {
-                if (g_dd50 <= 0x70) goto L_6794;
-            }
-            goto L_67b0;
-L_6794:;
-            process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
-            goto L_67e3;
-L_67b0:;
-            g_dd50 -= 0x10;
-            *(unsigned char *)(((unsigned char *)g_dd80) + ((row_y * 2) + 1)) = *(unsigned char *)&g_dd50;
-            draw_level_tile_on_pages(row_y, row_offset, g_dd50);
-L_67e3:;
-            play_audio_request_at(0xc, 0x19);
-            g_8e10 = (int)g_5e68;
-            goto L_691c;
-L_67fe:;
-            if (g_dd50 >= 0x91) {
-                if (g_dd50 <= 0x100) goto L_681b;
-            }
-            goto L_6963;
-L_681b:;
-            if (g_dd50 >= 0xf5) {
-                if (g_dd50 <= 0xf7) goto L_6835;
-            }
-            goto L_685f;
-L_6835:;
-            play_audio_request_at(0x2e, 0x32);
-            g_dDb8 = -1;
-            resize_racket();
-            g_8e10 = (int)g_6098;
-            goto L_691c;
-L_685f:;
-            if (g_dd50 >= 0xfa) {
-                if (g_dd50 <= 0x100) goto L_687c;
-            }
-            goto L_6906;
-L_687c:;
-            play_audio_request_at(1, 9);
-            if (--((BF1_2_6 *)(((unsigned char *)g_dd80) + (row_y * 2)))->f == 0) {
-                racket_state->score += 2 << racket_object->reward_level;
-                queue_timed_level_change(g_dd50, row_y + row_offset);
-                process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
-            }
-            g_8e10 = (int)g_5e68;
-            goto L_691c;
-L_6906:;
-            play_audio_request_at(0x2a, 0x2d);
-            g_8e10 = (int)g_6098;
-L_691c:;
-            spawn_animated_sprite((row_y << 4) + 0x18, ((row_offset / 0x12) << 3) + 0x1c, 0, 0, (int)spell_art_base, g_8e10, 1);
-            tile_hit = -1;
-            continue;
+            g_dd80 += row_offset;
+            for (row_y = first_column; row_y <= last_column; row_y++) {
+                g_dd50 = *(unsigned char *)(((unsigned char *)g_dd80) + ((row_y * 2) + 1));
+                if (g_dd50 == 0xf8) {
+                    player_shot_cursor->x += g_dD68 - g_dd60;
+                    player_shot_cursor->y += (b_DD70 - g_dd64) - 8;
+                    row_y = last_column;
+                } else if (g_dd50 == 0xf9) {
+                    player_shot_cursor->x += g_dd60 - g_dD68;
+                    player_shot_cursor->y += (g_dd64 - b_DD70) - 8;
+                    row_y = last_column;
+                } else if (g_dd50 && (player_shot_cursor->flags & 3) == 2) {
+                    process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
+                } else {
+                    if (g_dd50 >= 1 && g_dd50 <= 0x90) {
+                        if ((g_dd50 >= 1 && g_dd50 <= 0x10) || (g_dd50 >= 0x31 && g_dd50 <= 0x40) || (g_dd50 >= 0x61 && g_dd50 <= 0x70)) {
+                            process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
+                        } else {
+                            g_dd50 -= 0x10;
+                            *(unsigned char *)(((unsigned char *)g_dd80) + ((row_y * 2) + 1)) = *(unsigned char *)&g_dd50;
+                            draw_level_tile_on_pages(row_y, row_offset, g_dd50);
+                        }
+                        play_audio_request_at(0xc, 0x19);
+                        g_8e10 = (int)g_5e68;
+                    } else {
+                        if (g_dd50 < 0x91 || g_dd50 > 0x100) goto L_6963;
+                        if (g_dd50 >= 0xf5 && g_dd50 <= 0xf7) {
+                            play_audio_request_at(0x2e, 0x32);
+                            g_dDb8 = -1;
+                            resize_racket();
+                            g_8e10 = (int)g_6098;
+                        } else if (g_dd50 >= 0xfa && g_dd50 <= 0x100) {
+                            play_audio_request_at(1, 9);
+                            if (!--((BF1_2_6 *)(((unsigned char *)g_dd80) + (row_y * 2)))->f) {
+                                racket_state->score += 2 << racket_object->reward_level;
+                                queue_timed_level_change(g_dd50, row_y + row_offset);
+                                process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
+                            }
+                            g_8e10 = (int)g_5e68;
+                        } else {
+                            play_audio_request_at(0x2a, 0x2d);
+                            g_8e10 = (int)g_6098;
+                        }
+                    }
+                    spawn_animated_sprite((row_y << 4) + 0x18, ((row_offset / 0x12) << 3) + 0x1c, 0, 0, (int)spell_art_base, g_8e10, 1);
+                    tile_hit = -1;
+                    continue;
+                }
 L_6963:;
-        }
-        if (tile_hit == 0) goto L_6975;
-        remove_player_shot();
-        goto L_69c3;
+            }
+            if (!tile_hit) goto L_6975;
+            remove_player_shot();
+        } else {
 L_6975:;
-        *(int *)image_buffer_cursor = player_shot_cursor->sprite_offset;
-        *(short *)(image_buffer_cursor + 4) = *(short *)&player_shot_cursor->x;
-        *(short *)(image_buffer_cursor + 6) = *(short *)&player_shot_cursor->y;
-        *(short *)(image_buffer_cursor + 8) = 0;
-        image_buffer_cursor += 0xa;
-        ++player_shot_cursor;
+            *(int *)image_buffer_cursor = player_shot_cursor->sprite_offset;
+            *(short *)(image_buffer_cursor + 4) = *(short *)&player_shot_cursor->x;
+            *(short *)(image_buffer_cursor + 6) = *(short *)&player_shot_cursor->y;
+            *(short *)(image_buffer_cursor + 8) = 0;
+            image_buffer_cursor += 0xa;
+            ++player_shot_cursor;
+        }
 L_69c3:;
     }
 }
@@ -385,33 +324,27 @@ void remove_player_shot(void)
 
 void spawn_player_shot(unsigned char shot_kind, int vertical_speed, int start_x, int start_y)
 {
-    unsigned char shot_kind_byte;
-    if (player_shot_total >= 0xc) goto L_6afd;
-    player_shot_cursor = player_shot_records;
-    player_shot_cursor += player_shot_total;
-    player_shot_cursor->x = start_x;
-    player_shot_cursor->y = start_y;
-    player_shot_cursor->vertical_speed = vertical_speed;
-    shot_kind_byte = shot_kind;
-    if (shot_kind_byte < 1) goto L_6a8a;
-    if (shot_kind_byte <= 1) goto L_6aa6;
-    if (shot_kind_byte == 2) goto L_6abc;
-    goto L_6ad0;
-L_6a8a:;
-    if (shot_kind_byte != 0) goto L_6ad0;
-    g_8e20 = 0x21e6;
-    submit_audio_request(0x5a);
-    goto L_6ad0;
-L_6aa6:;
-    g_8e20 = 0x2280;
-    submit_audio_request(0x58);
-    goto L_6ad0;
-L_6abc:;
-    g_8e20 = 0x2342;
-    submit_audio_request(0x66);
-L_6ad0:;
-    player_shot_cursor->sprite_offset = (int)(spell_art_base + g_8e20);
-    ((BF4_0_2 *)&player_shot_cursor->flags)->f = shot_kind;
-    ++player_shot_total;
-L_6afd:;
+    if (player_shot_total < 0xc) {
+        player_shot_cursor = player_shot_records;
+        player_shot_cursor += player_shot_total;
+        player_shot_cursor->x = start_x;
+        player_shot_cursor->y = start_y;
+        player_shot_cursor->vertical_speed = vertical_speed;
+        switch (shot_kind) {
+        case 0:
+            g_8e20 = 0x21e6;
+            submit_audio_request(0x5a);
+            break;
+        case 1:
+            g_8e20 = 0x2280;
+            submit_audio_request(0x58);
+            break;
+        case 2:
+            g_8e20 = 0x2342;
+            submit_audio_request(0x66);
+        }
+        player_shot_cursor->sprite_offset = (int)(spell_art_base + g_8e20);
+        ((BF4_0_2 *)&player_shot_cursor->flags)->f = shot_kind;
+        ++player_shot_total;
+    }
 }

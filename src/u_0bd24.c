@@ -63,44 +63,44 @@ void release_sound_system(void)
 int configure_sound_dma(int bytes_requested)
 {
     unsigned char * interrupt_record;
-    if (bytes_requested != 0) goto L_bdff;
-    bytes_requested = g_74dd;
-    if (bytes_requested != 0) goto L_bdff;
-    return 0;
-L_bdff:;
-    if (sound_blaster_detected != -1) goto L_be17;
-    if (*(short *)g_74fd != -1) goto L_be23;
-L_be17:;
-    return 0x606;
-L_be23:;
+    if (!bytes_requested) {
+        bytes_requested = g_74dd;
+        if (!bytes_requested) {
+            return 0;
+        }
+    }
+    if (sound_blaster_detected != -1 || *(short *)g_74fd == -1) {
+        return 0x606;
+    }
     g_74dd = bytes_requested;
     prepare_sound_system();
     g_74e1 = (int)sound_blaster_irq_handler;
     g_74e5 = (int)a_0;
     g_74e9 = (int)((unsigned char __far *)a_0 + 0x69);
     /* Install the Sound Blaster transfer hook and reserve its DMA buffer. */
-    if (f_da01(g_74c4) == -1) goto L_bf15;
-    if ((bytes_requested & 1) != 1) goto L_beb5;
-    interrupt_record = (unsigned char *)g_74f9;
-    *(short *)(interrupt_record + 2) = sound_blaster_base_port;
-    *(short *)(interrupt_record + 4) = 0x280;
-    if (sound_blaster_irq >= 8) goto L_beac;
-    *(short *)(interrupt_record + 6) = 0x20;
-    goto L_beb5;
-L_beac:;
-    *(short *)(interrupt_record + 6) = 0xa0;
-L_beb5:;
-    if (g_75c4 == 0) goto L_bec7;
-    return 0x607;
-L_bec7:;
-    if (bytes_requested == 0) goto L_bf15;
-    audio_dma_memory = allocate_dpmi_memory(audio_dma_buffer_bytes + 0x1010);
-    if (audio_dma_memory == 0) goto L_bf0c;
-    audio_dma_memory = (audio_dma_memory + 0xfff) & 0xffffefff;
-    audio_dma_allocation_bytes = dpmi_linear_address_value;
-    goto L_bf15;
-L_bf0c:;
-    return 0x607;
-L_bf15:;
+    if (f_da01(g_74c4) != -1) {
+        if ((bytes_requested & 1) == 1) {
+            interrupt_record = (unsigned char *)g_74f9;
+            *(short *)(interrupt_record + 2) = sound_blaster_base_port;
+            *(short *)(interrupt_record + 4) = 0x280;
+            if (sound_blaster_irq < 8) {
+                *(short *)(interrupt_record + 6) = 0x20;
+            } else {
+                *(short *)(interrupt_record + 6) = 0xa0;
+            }
+        }
+        if (g_75c4) {
+            return 0x607;
+        }
+        if (bytes_requested) {
+            audio_dma_memory = allocate_dpmi_memory(audio_dma_buffer_bytes + 0x1010);
+            if (audio_dma_memory) {
+                audio_dma_memory = (audio_dma_memory + 0xfff) & 0xffffefff;
+                audio_dma_allocation_bytes = dpmi_linear_address_value;
+            } else {
+                return 0x607;
+            }
+        }
+    }
     return 0;
 }

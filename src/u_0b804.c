@@ -80,89 +80,77 @@ int save_screen_image(char *filename)
     pixel_bytes = vga_state.height * ((vga_state.width + 1) & -2);
     file_bytes = ((((((pixel_bytes + 8) + palette_bytes) + 8) + bitmap_header_bytes) + 8) + chunk_header_bytes) + 8;
     raw_bytes = vga_state.width * vga_state.height + 0x320;
-    {
-    unsigned int format;
-    format = screenshot_format;
-
     /* Format 1 writes an IFF PBM; format 5 writes the game's compact bitmap form. */
-    if (format < 1)
-        goto L_b895;
-    if (format <= 1)
-        goto L_b9f9;
-    if (format == 5)
-        goto L_b89a;
-    goto L_bc34;
-
-L_b895:
-    goto L_bc34;
-
-L_b89a:
-    raw_image = (unsigned char *)alloc_heap_block(raw_bytes);
-    if (raw_image == 0)
-        return dos_memory_error;
-    keyboard_state = -1;
-    *(struct ScreenshotSignature *)raw_image = *(struct ScreenshotSignature *)"mhwanh\0\4";
-    raw_image[6] = 0;
-    raw_image[7] = 4;
-    write_be32((int)(raw_image + 8), (vga_state.width << 0x10) | vga_state.height);
-    write_be32((int)(raw_image + 0xc), 0x1000000);
-    memset(raw_image + 0xe, 0, 0x12);
-    pixel = raw_image + 0x20;
-    read_vga_palette(pixel);
-    for (x = 0; x < 0x300; x++)
-        pixel[x] = pixel[x] << 2;
-
-    pixel = raw_image + 0x320;
-    for (y = 0; y < vga_state.height; y++)
-        for (x = 0; x < vga_state.width; x++)
-            *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
-
-    result = write_file_buffer(filename, raw_image, raw_bytes);
-    keyboard_state = (short)saved_video_mode;
-    free_heap_block(raw_image);
-    goto L_bc34;
-
-L_b9f9:
-    file_data = (unsigned char *)alloc_heap_block(file_bytes);
-    if (file_data == 0)
-        return dos_memory_error;
-    keyboard_state = -1;
-    bitmap_header = file_data + chunk_header_bytes + 8;
-    palette_chunk = bitmap_header + bitmap_header_bytes + 8;
-    pixel_chunk = palette_chunk + palette_bytes + 8;
-    write_be32((int)file_data, 0x464f524d);
-    write_be32((int)(file_data + 4), file_bytes - 8);
-    write_be32((int)(file_data + 8), 0x50424d20);
-    write_be32((int)bitmap_header, 0x424d4844);
-    write_be32((int)(bitmap_header + 4), bitmap_header_bytes);
-    write_be32((int)(bitmap_header + 8), (vga_state.width << 0x10) | vga_state.height);
-    *(int *)(bitmap_header + 0xc) = 0;
-    bitmap_header[0x11] = 0;
-    bitmap_header[0x13] = 0;
-    bitmap_header[0x13] = 0;
-    bitmap_header[0x10] = 8;
-    bitmap_header[0x12] = 0;
-    *(int *)(bitmap_header + 0x14) = 0x605ff00;
-    write_be32((int)(bitmap_header + 0x18), (vga_state.row_stride_bytes << 0x10) | vga_state.resolution_height);
-    write_be32((int)palette_chunk, 0x434d4150);
-    write_be32((int)(palette_chunk + 4), palette_bytes);
-    read_vga_palette(palette_chunk + 8);
-    for (x = 8; x < palette_bytes + 8; x++)
-        palette_chunk[x] = palette_chunk[x] << 2;
-    write_be32((int)pixel_chunk, 0x424f4459);
-    write_be32((int)(pixel_chunk + 4), pixel_bytes);
-    pixel = pixel_chunk + 8;
-    for (y = 0; y < vga_state.height; y++)
-        for (x = 0; x < ((vga_state.width + 1) & -2); x++)
-            *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
-
-    result = write_file_buffer(filename, file_data, (file_bytes + 3) & -4);
-    keyboard_state = (short)saved_video_mode;
-    free_heap_block(file_data);
-
-L_bc34:
-    return result;
+    switch (screenshot_format) {
+    case 5:
+        raw_image = (unsigned char *)alloc_heap_block(raw_bytes);
+        if (!raw_image) {
+            return dos_memory_error;
+        }
+        keyboard_state = -1;
+        *(struct ScreenshotSignature *)raw_image = *(struct ScreenshotSignature *)"mhwanh\0\4";
+        raw_image[6] = 0;
+        raw_image[7] = 4;
+        write_be32((int)(raw_image + 8), (vga_state.width << 0x10) | vga_state.height);
+        write_be32((int)(raw_image + 0xc), 0x1000000);
+        memset(raw_image + 0xe, 0, 0x12);
+        pixel = raw_image + 0x20;
+        read_vga_palette(pixel);
+        for (x = 0; x < 0x300; x++) {
+            pixel[x] = pixel[x] << 2;
+        }
+        pixel = raw_image + 0x320;
+        for (y = 0; y < vga_state.height; y++) {
+            for (x = 0; x < vga_state.width; x++) {
+                *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
+            }
+        }
+        result = write_file_buffer(filename, raw_image, raw_bytes);
+        keyboard_state = (short)saved_video_mode;
+        free_heap_block(raw_image);
+        break;
+    case 1:
+        file_data = (unsigned char *)alloc_heap_block(file_bytes);
+        if (!file_data) {
+            return dos_memory_error;
+        }
+        keyboard_state = -1;
+        bitmap_header = file_data + chunk_header_bytes + 8;
+        palette_chunk = bitmap_header + bitmap_header_bytes + 8;
+        pixel_chunk = palette_chunk + palette_bytes + 8;
+        write_be32((int)file_data, 0x464f524d);
+        write_be32((int)(file_data + 4), file_bytes - 8);
+        write_be32((int)(file_data + 8), 0x50424d20);
+        write_be32((int)bitmap_header, 0x424d4844);
+        write_be32((int)(bitmap_header + 4), bitmap_header_bytes);
+        write_be32((int)(bitmap_header + 8), (vga_state.width << 0x10) | vga_state.height);
+        *(int *)(bitmap_header + 0xc) = 0;
+        bitmap_header[0x11] = 0;
+        bitmap_header[0x13] = 0;
+        bitmap_header[0x13] = 0;
+        bitmap_header[0x10] = 8;
+        bitmap_header[0x12] = 0;
+        *(int *)(bitmap_header + 0x14) = 0x605ff00;
+        write_be32((int)(bitmap_header + 0x18), (vga_state.row_stride_bytes << 0x10) | vga_state.resolution_height);
+        write_be32((int)palette_chunk, 0x434d4150);
+        write_be32((int)(palette_chunk + 4), palette_bytes);
+        read_vga_palette(palette_chunk + 8);
+        for (x = 8; x < palette_bytes + 8; x++) {
+            palette_chunk[x] = palette_chunk[x] << 2;
+        }
+        write_be32((int)pixel_chunk, 0x424f4459);
+        write_be32((int)(pixel_chunk + 4), pixel_bytes);
+        pixel = pixel_chunk + 8;
+        for (y = 0; y < vga_state.height; y++) {
+            for (x = 0; x < ((vga_state.width + 1) & -2); x++) {
+                *pixel++ = (unsigned char)read_vga_pixel_entry(x, y);
+            }
+        }
+        result = write_file_buffer(filename, file_data, (file_bytes + 3) & -4);
+        keyboard_state = (short)saved_video_mode;
+        free_heap_block(file_data);
     }
+    return result;
 }
 
 void write_be32(int destination, int value)

@@ -50,6 +50,9 @@ Setup: `python -m pip install --no-user --target build/pylib capstone==5.0.7` (t
 | `python tools/image.py --mode canonical` | one WLINK run: canonical sources + explicit raw debt + GA libs -> must equal KE.EXE |
 | `python tools/lift.py NAME --refine` | automatic `-d2` decompiler (first drafts; many EXACT) |
 | `python tools/tu.py build --range A B` | synthesise a whole translation unit from matched members |
+| `python tools/replan.py PLAN.json [--sandbox]` | apply a unit/rename plan atomically (sandbox: full gate in a throwaway copy) |
+| `python tools/namefit.py PLAN.json --compile` | rename pre-check: which renames change an importer's object layout |
+| `python tools/structure.py src/X.c --out DIR` | verified goto -> structured C rewriting (docs/compiler-notes.md control-flow rules) |
 | `python tools/status.py` | progress from manifest.json |
 | `tools/le.py`, `omf.py`, `omfwrite.py`, `libscan.py`, `inventory.py`, `tumap.py`, `show.py`, `dosrun.py`, `dosbox.py` | readers/writers and runners |
 

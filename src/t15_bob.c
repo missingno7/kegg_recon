@@ -67,23 +67,15 @@ int detect_joystick(void) {
         second_port_sample = (unsigned char)inp(JOYSTICK_GAMEPORT);
         if (second_port_sample != first_port_sample) break;
     }
-    if (first_port_sample == second_port_sample) {
-        if (first_port_sample == 0xff) goto confirm_unchanged_port;
+    if (first_port_sample != second_port_sample || first_port_sample != 0xff || second_port_sample != 0xff) {
+        initialize_joystick_calibration();
+        if (primary_joystick.axis_timing[JOY_X_CURRENT] < JOYSTICK_MIN_AXIS_TICKS || primary_joystick.axis_timing[JOY_Y_CURRENT] < JOYSTICK_MIN_AXIS_TICKS) {
+            joystick_available = 0;
+            return joystick_available;
+        }
+        joystick_available = -1;
+        return joystick_available;
     }
-    goto calibrate_joystick;
-    confirm_unchanged_port:
-    if (second_port_sample == 0xff) goto joystick_not_present;
-    calibrate_joystick:
-    initialize_joystick_calibration();
-    if (primary_joystick.axis_timing[JOY_X_CURRENT] < JOYSTICK_MIN_AXIS_TICKS) goto axis_timing_too_short;
-    if (primary_joystick.axis_timing[JOY_Y_CURRENT] >= JOYSTICK_MIN_AXIS_TICKS) goto joystick_detected;
-    axis_timing_too_short:
-    joystick_available = 0;
-    return joystick_available;
-    joystick_detected:
-    joystick_available = -1;
-    return joystick_available;
-    joystick_not_present:
     joystick_available = 0;
     return joystick_available;
 }

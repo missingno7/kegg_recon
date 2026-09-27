@@ -310,39 +310,40 @@ void f_84a0(int a0);
 
 void update_enemy_projectiles(void)
 {
-    if (g_e142_baun == 0) goto L_59a4;
-    if ((g_dd78 - moving_target_count) <= 0) goto L_5a9c;
-    g_8e20 = 0x16;
-    *(int *)g_8e10 = (int)&bonus_sprite_animations[38];
-    goto L_59b8;
-L_59a4:;
-    g_8e20 = 0x37;
-    *(int *)g_8e10 = (int)&bonus_sprite_animations[7];
-L_59b8:;
-    if (g_ddd0 != g_8e20) goto L_59e6;
-    spawn_animated_sprite(0x90, 0x10, 0, 0, (int)enemy_picture, *(int *)g_8e10, 1);
-L_59e6:;
+    if (g_e142_baun) {
+        if ((g_dd78 - moving_target_count) <= 0) goto L_5a9c;
+        g_8e20 = 0x16;
+        *(int *)g_8e10 = (int)&bonus_sprite_animations[38];
+    } else {
+        g_8e20 = 0x37;
+        *(int *)g_8e10 = (int)&bonus_sprite_animations[7];
+    }
+    if (g_ddd0 == g_8e20) {
+        spawn_animated_sprite(0x90, 0x10, 0, 0, (int)enemy_picture, *(int *)g_8e10, 1);
+    }
     --g_ddd0;
-    if (g_ddd0 > 0) goto L_5a9c;
-    g_ddd0 = *(int *)g_ddb0;
-    if (g_dd9c < 8) goto L_5a13;
-    g_dd9c -= 8;
-L_5a13:;
-    g_8e04 = *(unsigned char *)(q_A988 + g_dd9c++);
-    if (g_e142_baun == 0) goto L_5a6b;
-    g_8e04 = next_random_value() & 7;
-    spawn_falling_spell(1, 0, 0xa0, 0x20);
-    if (g_8e04 != 5) goto L_5a6b;
-    g_8e04 = 0;
-L_5a6b:;
-    if ((unsigned)g_8e04 <= 7) goto L_5a7e;
-    g_8e04 = 7;
-L_5a7e:;
-    spawn_enemy_projectile(0xa0, 0x10, (unsigned)next_random_value() >> 7, g_8e04);
+    if (g_ddd0 <= 0) {
+        g_ddd0 = *(int *)g_ddb0;
+        if (g_dd9c >= 8) {
+            g_dd9c -= 8;
+        }
+        g_8e04 = *(unsigned char *)(q_A988 + g_dd9c++);
+        if (g_e142_baun) {
+            g_8e04 = next_random_value() & 7;
+            spawn_falling_spell(1, 0, 0xa0, 0x20);
+            if (g_8e04 == 5) {
+                g_8e04 = 0;
+            }
+        }
+        if ((unsigned)g_8e04 > 7) {
+            g_8e04 = 7;
+        }
+        spawn_enemy_projectile(0xa0, 0x10, (unsigned)next_random_value() >> 7, g_8e04);
+    }
 L_5a9c:;
-    if (moving_target_count == 0) goto L_5aaa;
-    move_enemy_projectiles();
-L_5aaa:;
+    if (moving_target_count) {
+        move_enemy_projectiles();
+    }
 }
 
 void move_enemy_projectiles(void)
@@ -354,81 +355,76 @@ void move_enemy_projectiles(void)
     g_e230 = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
     get_sprite_collision_bounds(g_e22c, (unsigned char *)(game_art_base + 0x7536));
     moving_target_cursor = moving_target_records;
-    moving_target_number = 0;
-L_5b31:;
-    if (moving_target_number < moving_target_count) goto L_5b4b;
-    return;
-L_5b43:;
-    ++moving_target_number;
-    goto L_5b31;
-L_5b4b:;
-    *(int *)moving_target_cursor += *(int *)(((unsigned char *)moving_target_cursor + 8));
-    *(int *)(((unsigned char *)moving_target_cursor + 4)) += *(int *)(((unsigned char *)moving_target_cursor + 0xc));
-    if (--*(int *)(((unsigned char *)moving_target_cursor + 0x14)) > 0) goto L_5bf1;
-    *(int *)(((unsigned char *)moving_target_cursor + 0x14)) = (unsigned)next_random_value() >> 7;
-    if ((*(signed char *)&g_8e24 & 0x20) == 0) goto L_5bad;
-    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
-    goto L_5bc8;
-L_5bad:;
-    if ((*(signed char *)&g_8e24 & 8) == 0) goto L_5bc8;
-    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
-L_5bc8:;
-    if (g_e142_baun == 0) goto L_5bf1;
-    spawn_falling_spell(1, 0, *(int *)moving_target_cursor, *(int *)(((unsigned char *)moving_target_cursor + 4)));
-L_5bf1:;
-    *(int *)(((unsigned char *)moving_target_cursor + 0x10)) = (int)(enemy_picture + next_packed_table_value(((unsigned char *)moving_target_cursor + 0x18), ((unsigned char *)moving_target_cursor + 0x1c)));
-    *(int *)g_e23c = *(int *)moving_target_cursor;
-    u_e240 = *(int *)(((unsigned char *)moving_target_cursor + 4));
-    get_sprite_bounds(g_e23c, (void *)*(int *)(((unsigned char *)moving_target_cursor + 0x10)));
-    if ((*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 2) == 0) goto L_5c64;
-    if (*(int *)(((unsigned char *)moving_target_cursor + 0x20)) <= 0) goto L_5d86;
-L_5c64:;
-    if (*(int *)g_e23c > 0x10) goto L_5c8a;
-    if (*(int *)(((unsigned char *)moving_target_cursor + 8)) >= 0) goto L_5c8a;
-    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
-L_5c8a:;
-    if (g_e244 < 0x130) goto L_5cb3;
-    if (*(int *)(((unsigned char *)moving_target_cursor + 8)) <= 0) goto L_5cb3;
-    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
-L_5cb3:;
-    if (u_e240 > 0x18) goto L_5cd9;
-    if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) >= 0) goto L_5cd9;
-    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
-L_5cd9:;
-    if (g_e142_baun == 0) goto L_5cee;
-    g_8e04 = 0x98;
-    goto L_5cf8;
-L_5cee:;
-    g_8e04 = 0xc8;
-L_5cf8:;
-    if ((unsigned)g_e248 < g_8e04) goto L_5d22;
-    if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) <= 0) goto L_5d22;
-    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
-L_5d22:;
-    if (rectangles_intersect(g_e24c, g_e23c) == 0) goto L_5d63;
-    if ((*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 1) == 0) goto L_5d61;
-    if ((*(unsigned char *)player_key_flags & 8) != 0) goto L_5d54;
-    tick_racket_capture();
-L_5d54:;
-    if (*(int *)((unsigned char *)(unsigned char *)racket_object + 0x28) >= 0) goto L_5d86;
-    goto L_5d63;
-L_5d61:;
-    goto L_5d86;
+    for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
+        *(int *)moving_target_cursor += *(int *)(((unsigned char *)moving_target_cursor + 8));
+        *(int *)(((unsigned char *)moving_target_cursor + 4)) += *(int *)(((unsigned char *)moving_target_cursor + 0xc));
+        if (--*(int *)(((unsigned char *)moving_target_cursor + 0x14)) <= 0) {
+            *(int *)(((unsigned char *)moving_target_cursor + 0x14)) = (unsigned)next_random_value() >> 7;
+            if (*(signed char *)&g_8e24 & 0x20) {
+                *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
+            } else if (*(signed char *)&g_8e24 & 8) {
+                *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
+            }
+            if (g_e142_baun) {
+                spawn_falling_spell(1, 0, *(int *)moving_target_cursor, *(int *)(((unsigned char *)moving_target_cursor + 4)));
+            }
+        }
+        *(int *)(((unsigned char *)moving_target_cursor + 0x10)) = (int)(enemy_picture + next_packed_table_value(((unsigned char *)moving_target_cursor + 0x18), ((unsigned char *)moving_target_cursor + 0x1c)));
+        *(int *)g_e23c = *(int *)moving_target_cursor;
+        u_e240 = *(int *)(((unsigned char *)moving_target_cursor + 4));
+        get_sprite_bounds(g_e23c, (void *)*(int *)(((unsigned char *)moving_target_cursor + 0x10)));
+        if (!(*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 2) || *(int *)(((unsigned char *)moving_target_cursor + 0x20)) > 0) {
+            if (*(int *)g_e23c <= 0x10) {
+                if (*(int *)(((unsigned char *)moving_target_cursor + 8)) < 0) {
+                    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
+                }
+            }
+            if (g_e244 >= 0x130) {
+                if (*(int *)(((unsigned char *)moving_target_cursor + 8)) > 0) {
+                    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
+                }
+            }
+            if (u_e240 <= 0x18) {
+                if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) < 0) {
+                    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
+                }
+            }
+            if (g_e142_baun) {
+                g_8e04 = 0x98;
+            } else {
+                g_8e04 = 0xc8;
+            }
+            if ((unsigned)g_e248 >= g_8e04) {
+                if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) > 0) {
+                    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
+                }
+            }
+            if (rectangles_intersect(g_e24c, g_e23c)) {
+                if (*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 1) {
+                    if (!(*(unsigned char *)player_key_flags & 8)) {
+                        tick_racket_capture();
+                    }
+                    if (*(int *)((unsigned char *)(unsigned char *)racket_object + 0x28) >= 0) goto L_5d86;
+                    goto L_5d63;
+                }
+            } else {
 L_5d63:;
-    if ((*(unsigned char *)(player_key_flags + 1) & 2) == 0) goto L_5dd5;
-    if (rectangles_intersect(g_e22c, g_e23c) == 0) goto L_5dd5;
+                if (!(*(unsigned char *)(player_key_flags + 1) & 2)) goto L_5dd5;
+                if (!rectangles_intersect(g_e22c, g_e23c)) goto L_5dd5;
+            }
+        }
 L_5d86:;
-    spawn_animated_sprite((*(int *)g_e23c + g_e244) >> 1, ((u_e240 + g_e248) + 0xa) >> 1, *(int *)(((unsigned char *)moving_target_cursor + 8)), *(int *)(((unsigned char *)moving_target_cursor + 0xc)), (int)enemy_picture, (int)collision_animation_frames, 1);
-    remove_enemy_projectile();
-    goto L_5b43;
+        spawn_animated_sprite((*(int *)g_e23c + g_e244) >> 1, ((u_e240 + g_e248) + 0xa) >> 1, *(int *)(((unsigned char *)moving_target_cursor + 8)), *(int *)(((unsigned char *)moving_target_cursor + 0xc)), (int)enemy_picture, (int)collision_animation_frames, 1);
+        remove_enemy_projectile();
+        continue;
 L_5dd5:;
-    *(int *)image_buffer_cursor = *(int *)(((unsigned char *)moving_target_cursor + 0x10));
-    *(short *)(image_buffer_cursor + 4) = *(short *)moving_target_cursor;
-    *(short *)(image_buffer_cursor + 6) = *(short *)(((unsigned char *)moving_target_cursor + 4));
-    *(short *)(image_buffer_cursor + 8) = 0;
-    image_buffer_cursor += 0xa;
-    (*(unsigned char **)&moving_target_cursor) += 0x28;
-    goto L_5b43;
+        *(int *)image_buffer_cursor = *(int *)(((unsigned char *)moving_target_cursor + 0x10));
+        *(short *)(image_buffer_cursor + 4) = *(short *)moving_target_cursor;
+        *(short *)(image_buffer_cursor + 6) = *(short *)(((unsigned char *)moving_target_cursor + 4));
+        *(short *)(image_buffer_cursor + 8) = 0;
+        image_buffer_cursor += 0xa;
+        (*(unsigned char **)&moving_target_cursor) += 0x28;
+    }
 }
 
 void remove_enemy_projectile(void) {

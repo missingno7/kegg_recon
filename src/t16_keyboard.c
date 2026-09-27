@@ -278,18 +278,9 @@ void update_keyboard_chord_state(void) {
 
 /* Require the modifier bitmap and a fresh Enter make-code before requesting exit. */
 void handle_keyboard_exit_chord(void) {
-    if (scan_code_bitmap[0].bytes.low&2) goto check_second_modifier;
-    goto skip_second_modifier;
-    check_second_modifier: if (((int)(short)scan_code_bitmap[0].word&0x8000) != 0) goto check_third_modifier;
-    skip_second_modifier: goto skip_enter_check;
-    check_third_modifier: if (scan_code_bitmap[1].bytes.high&0x20) goto check_previous_enter;
-    skip_enter_check: goto skip_exit_callback;
-    check_previous_enter: if (current_scan_code==SCAN_ENTER) goto skip_exit_callback;
-    check_current_enter: if (current_key_code_01==SCAN_ENTER) goto request_exit;
-    goto skip_exit_callback;
-    skip_exit_callback: goto exit_chord_done;
-    request_exit: key_action_hook(0x101,0);
-    exit_chord_done: ;
+    if (scan_code_bitmap[0].bytes.low&2 && (int)(short)scan_code_bitmap[0].word&0x8000 && scan_code_bitmap[1].bytes.high&0x20 && (current_scan_code!=SCAN_ENTER && current_key_code_01==SCAN_ENTER)) {
+        key_action_hook(0x101,0);
+    }
 }
 
 void handle_keyboard_abort_chord(void) {
@@ -338,12 +329,12 @@ void check_keyboard_cheat_code(void) {
 /* Poll the 8042 input-buffer-full bit with the original bounded retry count. */
 int wait_for_keyboard_controller(void) {
     int poll_countdown=0x1388;
-    wait_for_input_buffer_clear: if ((inp(0x64)&2)==0) goto controller_wait_finished;
-    if (poll_countdown>0) goto decrement_wait_count;
-    controller_wait_finished: goto return_wait_status;
-    decrement_wait_count: poll_countdown--;
-    goto wait_for_input_buffer_clear;
-    return_wait_status: if(poll_countdown>0) return 0;
+    while (inp(0x64)&2 && poll_countdown>0) {
+        poll_countdown--;
+    }
+    if (poll_countdown>0) {
+        return 0;
+    }
     return -1;
 }
 

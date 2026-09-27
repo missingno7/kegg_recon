@@ -150,109 +150,89 @@ int set_display_mode(int requested_mode_id)
     unsigned char bios_register_block[28];
     previous_timer_state = timer_interrupt_record;
     mode_index = 0;
-    if (bios_video_mode_saved == -1) goto L_e0c3;
-    save_bios();
-L_e0c3:;
-    if (video_mode_table[mode_index].mode_id == requested_mode_id) goto L_e0df;
-    if (video_mode_table[mode_index].mode_id != -1) goto L_e0e1;
-L_e0df:;
-    goto L_e0e9;
-L_e0e1:;
-    mode_index++;
-    goto L_e0c3;
-L_e0e9:;
-    if (video_mode_table[mode_index].mode_id == -1) goto L_e3c7;
-    f_9afc();
-    clear_pal();
-    clear_video_bytes_entry(0xa0000, 0x10000);
-    if (vga_state.bios_mode == video_mode_table[mode_index].video_mode.dword) goto L_e168;
-    vga_state.bios_mode = video_mode_table[mode_index].video_mode.bytes[0];
-    *(short *)bios_register_block = video_mode_table[mode_index].video_mode.word;
-    *(short *)(bios_register_block + 4) = video_mode_table[mode_index].bios_mode;
-    int386(0x10, (void *)bios_register_block, (void *)bios_register_block);
-L_e168:;
-    clear_video_bytes_entry(0xa0000, 0x10000);
-    vga_state.screen_width = video_mode_table[mode_index].width;
-    vga_state.screen_height = video_mode_table[mode_index].height;
-    vga_state.scanline_bytes = video_mode_table[mode_index].row_bytes;
-    vga_state.page_height = vga_state.screen_height;
-    vga_state.view_left = 0;
-    vga_state.view_top = 0;
-    vga_state.view_right = vga_state.screen_width - 1;
-    vga_state.view_bottom = vga_state.screen_height - 1;
-    vga_state.buffer_size = video_mode_table[mode_index].buffer_size;
-    switch (video_mode_table[mode_index].mode_class) {
-        case 0:
-L_e211:;
-        video_memory_limit = 0xffff;
-        frame_buffer_base = 0xa0000;
-        set_vga_memory_layout(0);
-        goto L_e266;
-        case 1:
-L_e22b:;
-        video_memory_limit = 0x3ffff;
-        frame_buffer_base = 0x280000;
-        set_vga_memory_layout(1);
-        goto L_e266;
-        case 8:
-L_e245:;
-        video_memory_limit = 0xffff;
-        frame_buffer_base = 0xa0000;
-        set_vga_memory_layout(1);
-        vga_state.state = 0;
+    if (bios_video_mode_saved != -1) {
+        save_bios();
     }
-L_e266:;
-    vga_state.mode_flags = video_mode_table[mode_index].mode_flags;
-    page_offset = 0;
-    page_index = 0;
-L_e283:;
-    if (page_index < 4) goto L_e296;
-    goto L_e30e;
-L_e28e:;
-    page_index++;
-    goto L_e283;
-L_e296:;
-    *(int *)(vga_state.page_base + (page_index << 2)) = frame_buffer_base;
-    vga_state.page_start[page_index] = page_offset;
-    vga_state.page_display[page_index] = 0;
-    *(unsigned char *)(vga_state.page_class + page_index) = video_mode_table[mode_index].mode_class;
-    page_offset += video_mode_table[mode_index].image_size;
-    if ((page_offset + vga_state.buffer_size) <= video_memory_limit) goto L_e2ff;
-    page_offset -= video_mode_table[mode_index].image_size;
-L_e2ff:;
-    set_draw_page((short)page_index);
-    goto L_e28e;
-L_e30e:;
-    initialize_vga_map_mask();
-    preset_index = 0;
-L_e31a:;
-    if (vga_register_presets[preset_index].mode_id != video_mode_table[mode_index].mode_id) goto L_e39a;
-    restore_vga_register_preset((unsigned char *)&vga_register_presets[preset_index]);
-    switch (video_mode_table[mode_index].mode_class) {
-        case 0:
-L_e36f:;
-        set_vga_memory_layout(0);
-        goto L_e39a;
-        case 1:
-L_e37b:;
-        set_vga_memory_layout(1);
-        goto L_e39a;
-        case 8:
-L_e387:;
-        set_vga_memory_layout(1);
-        vga_state.state = 0;
+    while (video_mode_table[mode_index].mode_id != requested_mode_id && video_mode_table[mode_index].mode_id != -1) {
+        mode_index++;
     }
-L_e39a:;
-    ++preset_index;
-    if (vga_register_presets[preset_index].mode_id != -1) goto L_e31a;
-    if (previous_timer_state != -1) goto L_e3be;
-    f_9b44(0);
-L_e3be:;
-    return 0;
-L_e3c7:;
-    if (requested_mode_id == 0) goto L_e3d6;
-    return 0x503;
-L_e3d6:;
+    if (video_mode_table[mode_index].mode_id != -1) {
+        f_9afc();
+        clear_pal();
+        clear_video_bytes_entry(0xa0000, 0x10000);
+        if (vga_state.bios_mode != video_mode_table[mode_index].video_mode.dword) {
+            vga_state.bios_mode = video_mode_table[mode_index].video_mode.bytes[0];
+            *(short *)bios_register_block = video_mode_table[mode_index].video_mode.word;
+            *(short *)(bios_register_block + 4) = video_mode_table[mode_index].bios_mode;
+            int386(0x10, (void *)bios_register_block, (void *)bios_register_block);
+        }
+        clear_video_bytes_entry(0xa0000, 0x10000);
+        vga_state.screen_width = video_mode_table[mode_index].width;
+        vga_state.screen_height = video_mode_table[mode_index].height;
+        vga_state.scanline_bytes = video_mode_table[mode_index].row_bytes;
+        vga_state.page_height = vga_state.screen_height;
+        vga_state.view_left = 0;
+        vga_state.view_top = 0;
+        vga_state.view_right = vga_state.screen_width - 1;
+        vga_state.view_bottom = vga_state.screen_height - 1;
+        vga_state.buffer_size = video_mode_table[mode_index].buffer_size;
+        switch (video_mode_table[mode_index].mode_class) {
+        case 0:
+            video_memory_limit = 0xffff;
+            frame_buffer_base = 0xa0000;
+            set_vga_memory_layout(0);
+            break;
+        case 1:
+            video_memory_limit = 0x3ffff;
+            frame_buffer_base = 0x280000;
+            set_vga_memory_layout(1);
+            break;
+        case 8:
+            video_memory_limit = 0xffff;
+            frame_buffer_base = 0xa0000;
+            set_vga_memory_layout(1);
+            vga_state.state = 0;
+        }
+        vga_state.mode_flags = video_mode_table[mode_index].mode_flags;
+        page_offset = 0;
+        for (page_index = 0; page_index < 4; page_index++) {
+            *(int *)(vga_state.page_base + (page_index << 2)) = frame_buffer_base;
+            vga_state.page_start[page_index] = page_offset;
+            vga_state.page_display[page_index] = 0;
+            *(unsigned char *)(vga_state.page_class + page_index) = video_mode_table[mode_index].mode_class;
+            page_offset += video_mode_table[mode_index].image_size;
+            if ((page_offset + vga_state.buffer_size) > video_memory_limit) {
+                page_offset -= video_mode_table[mode_index].image_size;
+            }
+            set_draw_page((short)page_index);
+        }
+        initialize_vga_map_mask();
+        preset_index = 0;
+        do {
+            if (vga_register_presets[preset_index].mode_id == video_mode_table[mode_index].mode_id) {
+                restore_vga_register_preset((unsigned char *)&vga_register_presets[preset_index]);
+                switch (video_mode_table[mode_index].mode_class) {
+                case 0:
+                    set_vga_memory_layout(0);
+                    break;
+                case 1:
+                    set_vga_memory_layout(1);
+                    break;
+                case 8:
+                    set_vga_memory_layout(1);
+                    vga_state.state = 0;
+                }
+            }
+            ++preset_index;
+        } while (vga_register_presets[preset_index].mode_id != -1);
+        if (previous_timer_state == -1) {
+            f_9b44(0);
+        }
+        return 0;
+    }
+    if (requested_mode_id) {
+        return 0x503;
+    }
     return 0;
 }
 
@@ -280,35 +260,33 @@ void set_vga_memory_layout(int chain4_enabled)
     extern void set_gc_read_map(short);
     extern void set_seq_plane_mask(short);
     extern void set_gc_mode(short);
-    if (chain4_enabled != 1) goto L_e582;
-    _disable();
-    outp(0x3ce, 5);
-    outp(0x3cf, inp(0x3cf) & 0xef);
-    outp(0x3ce, 6);
-    outp(0x3cf, inp(0x3cf) & 0xfd);
-    outp(0x3c4, 4);
-    outp(0x3c5, (inp(0x3c5) & 0xf7) | 4);
-    outp(0x3d4, 0x14);
-    outp(0x3d5, inp(0x3d5) & 0xbf);
-    outp(0x3d4, 0x17);
-    outp(0x3d5, inp(0x3d5) | 0x40);
-    _enable();
-    goto L_e67e;
-L_e582:;
-    if (chain4_enabled != 0) goto L_e67e;
-    _disable();
-    outp(0x3ce, 5);
-    outp(0x3cf, inp(0x3cf) | -0xf0);
-    outp(0x3ce, 6);
-    outp(0x3cf, inp(0x3cf) | -0xfe);
-    outp(0x3c4, 4);
-    outp(0x3c5, inp(0x3c5) | -0xf8);
-    outp(0x3d4, 0x14);
-    outp(0x3d5, inp(0x3d5) | -0xc0);
-    outp(0x3d4, 0x17);
-    outp(0x3d5, inp(0x3d5) & -0x41);
-    _enable();
-L_e67e:;
+    if (chain4_enabled == 1) {
+        _disable();
+        outp(0x3ce, 5);
+        outp(0x3cf, inp(0x3cf) & 0xef);
+        outp(0x3ce, 6);
+        outp(0x3cf, inp(0x3cf) & 0xfd);
+        outp(0x3c4, 4);
+        outp(0x3c5, (inp(0x3c5) & 0xf7) | 4);
+        outp(0x3d4, 0x14);
+        outp(0x3d5, inp(0x3d5) & 0xbf);
+        outp(0x3d4, 0x17);
+        outp(0x3d5, inp(0x3d5) | 0x40);
+        _enable();
+    } else if (!chain4_enabled) {
+        _disable();
+        outp(0x3ce, 5);
+        outp(0x3cf, inp(0x3cf) | -0xf0);
+        outp(0x3ce, 6);
+        outp(0x3cf, inp(0x3cf) | -0xfe);
+        outp(0x3c4, 4);
+        outp(0x3c5, inp(0x3c5) | -0xf8);
+        outp(0x3d4, 0x14);
+        outp(0x3d5, inp(0x3d5) | -0xc0);
+        outp(0x3d4, 0x17);
+        outp(0x3d5, inp(0x3d5) & -0x41);
+        _enable();
+    }
     set_gc_read_map(0);
     set_seq_plane_mask(0xf);
     set_gc_mode(0x40);

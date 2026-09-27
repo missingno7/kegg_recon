@@ -77,33 +77,33 @@ void release_sound_callback(void)
 int configure_sound_callback(int allocation_bytes)
 {
     unsigned char * interrupt_record;
-    if (allocation_bytes != 0) goto L_c085;
-    allocation_bytes = g_7516;
-    if (allocation_bytes != 0) goto L_c085;
-    return 0;
-L_c085:;
-    if (sound_blaster_detected != -1) goto L_c09d;
-    if (g_74c4 != -1) goto L_c0a9;
-L_c09d:;
-    return 0x606;
-L_c0a9:;
+    if (!allocation_bytes) {
+        allocation_bytes = g_7516;
+        if (!allocation_bytes) {
+            return 0;
+        }
+    }
+    if (sound_blaster_detected != -1 || g_74c4 == -1) {
+        return 0x606;
+    }
     g_7516 = allocation_bytes;
     prepare_sound_callback();
     g_751e = (int)a_70;
     g_7522 = (int)((unsigned char __far *)a_70 + 0x69);
-    if (f_da01(&g_74fd) == -1) goto L_c13c;
-    if ((allocation_bytes & 1) != 1) goto L_c12a;
-    interrupt_record = (unsigned char *)g_7532;
-    *(short *)(interrupt_record + 2) = sound_blaster_base_port;
-    *(short *)(interrupt_record + 4) = 0x90;
-    if (sound_blaster_irq >= 8) goto L_c121;
-    *(short *)(interrupt_record + 6) = 0x20;
-    goto L_c12a;
-L_c121:;
-    *(short *)(interrupt_record + 6) = 0xa0;
-L_c12a:;
-    if (g_75c4 == 0) goto L_c13c;
-    return 0x607;
-L_c13c:;
+    if (f_da01(&g_74fd) != -1) {
+        if ((allocation_bytes & 1) == 1) {
+            interrupt_record = (unsigned char *)g_7532;
+            *(short *)(interrupt_record + 2) = sound_blaster_base_port;
+            *(short *)(interrupt_record + 4) = 0x90;
+            if (sound_blaster_irq < 8) {
+                *(short *)(interrupt_record + 6) = 0x20;
+            } else {
+                *(short *)(interrupt_record + 6) = 0xa0;
+            }
+        }
+        if (g_75c4) {
+            return 0x607;
+        }
+    }
     return 0;
 }
