@@ -15,6 +15,7 @@
 
 /* every test module adds its register function here */
 void register_m_137a8_tests(void);
+void register_m_09f64_tests(void);
 void register_m_0982c_tests(void);
 void register_m_0a284_tests(void);
 void register_m_13944_tests(void);
@@ -59,6 +60,7 @@ int main(int argc, char **argv)
     vga_init();
     register_m_0982c_tests();
     register_m_137a8_tests();
+    register_m_09f64_tests();
     register_m_0a284_tests();
     register_m_13944_tests();
     register_m_13a48_tests();

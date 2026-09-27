@@ -5,9 +5,7 @@
 
 /* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
-KE_ASM_STUB(measure_pit_channel0, "m_09f64_0a0d2")
-KE_ASM_STUB(set_pit_channel0_reload, "m_09f64_0a0d2")
-KE_ASM_STUB(pit_channel0_interrupt, "m_09f64_0a0d2")
+/* m_09f64_0a0d2: owned by port/asm/m_09f64_0a0d2.c */
 
 /* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
 
