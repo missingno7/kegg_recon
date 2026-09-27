@@ -1178,7 +1178,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1189,7 +1189,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1200,7 +1200,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1211,7 +1211,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1222,7 +1222,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1233,7 +1233,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1244,7 +1244,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_04cf2.c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
    "unit": "U04cf2"
   },
   {
@@ -1255,7 +1255,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_05966.c",
-   "src_sha256": "5f09b4cb86e13c615f2dc0e5aad864d21345ad3b74b4bd2cb5ffdd03b8238181",
+   "src_sha256": "8a87743bed20b0669049a08c28e6875d039ad89f9037c329e9310b2f4544bfcc",
    "unit": "U05966"
   },
   {
@@ -1266,7 +1266,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_05966.c",
-   "src_sha256": "5f09b4cb86e13c615f2dc0e5aad864d21345ad3b74b4bd2cb5ffdd03b8238181",
+   "src_sha256": "8a87743bed20b0669049a08c28e6875d039ad89f9037c329e9310b2f4544bfcc",
    "unit": "U05966"
   },
   {
@@ -1278,7 +1278,7 @@
    "profile": "game-c",
    "src": "src/u_05966.c",
    "unit": "U05966",
-   "src_sha256": "5f09b4cb86e13c615f2dc0e5aad864d21345ad3b74b4bd2cb5ffdd03b8238181"
+   "src_sha256": "8a87743bed20b0669049a08c28e6875d039ad89f9037c329e9310b2f4544bfcc"
   },
   {
    "name": "spawn_enemy_projectile",
@@ -1288,7 +1288,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_05966.c",
-   "src_sha256": "5f09b4cb86e13c615f2dc0e5aad864d21345ad3b74b4bd2cb5ffdd03b8238181",
+   "src_sha256": "8a87743bed20b0669049a08c28e6875d039ad89f9037c329e9310b2f4544bfcc",
    "unit": "U05966"
   },
   {
@@ -1387,7 +1387,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1398,7 +1398,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1409,7 +1409,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1420,7 +1420,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1431,40 +1431,40 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
-   "name": "clr_bc",
+   "name": "zapbol",
    "start": "0x7032",
    "end": "0x704d",
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
-   "name": "clr_sp",
+   "name": "sprclr",
    "start": "0x704d",
    "end": "0x7068",
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
-   "name": "set_lc",
+   "name": "aitune",
    "start": "0x7068",
    "end": "0x7112",
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1475,7 +1475,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1486,18 +1486,18 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
-   "name": "upd_sh",
+   "name": "firein",
    "start": "0x73c0",
    "end": "0x7532",
    "kind": "c",
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1508,7 +1508,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1519,7 +1519,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1530,7 +1530,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1541,7 +1541,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1552,7 +1552,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_06b02.c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "unit": "U06b02"
   },
   {
@@ -1563,7 +1563,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07bd5.c",
-   "src_sha256": "38d91988eebc26e57f419762c754a9adeebcd3463714ad055e84e9af3cb2390e",
+   "src_sha256": "0d8646116682a85e5e1d9fb590106b7f9a67367ca2cf3668399e11290a539386",
    "unit": "U07bd5"
   },
   {
@@ -1574,7 +1574,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07bd5.c",
-   "src_sha256": "38d91988eebc26e57f419762c754a9adeebcd3463714ad055e84e9af3cb2390e",
+   "src_sha256": "0d8646116682a85e5e1d9fb590106b7f9a67367ca2cf3668399e11290a539386",
    "unit": "U07bd5"
   },
   {
@@ -1585,7 +1585,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07bd5.c",
-   "src_sha256": "38d91988eebc26e57f419762c754a9adeebcd3463714ad055e84e9af3cb2390e",
+   "src_sha256": "0d8646116682a85e5e1d9fb590106b7f9a67367ca2cf3668399e11290a539386",
    "unit": "U07bd5"
   },
   {
@@ -1596,7 +1596,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07bd5.c",
-   "src_sha256": "38d91988eebc26e57f419762c754a9adeebcd3463714ad055e84e9af3cb2390e",
+   "src_sha256": "0d8646116682a85e5e1d9fb590106b7f9a67367ca2cf3668399e11290a539386",
    "unit": "U07bd5"
   },
   {
@@ -1607,7 +1607,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07f8a.c",
-   "src_sha256": "3692241509f56486f8e53d90cc4e863258a535af29fa358ca65e229295d63452",
+   "src_sha256": "e81d03e048d591f4e09f5e5e043511a34ab9e4f065236bc390db85ccc3851610",
    "unit": "U07f8a"
   },
   {
@@ -1618,7 +1618,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07f8a.c",
-   "src_sha256": "3692241509f56486f8e53d90cc4e863258a535af29fa358ca65e229295d63452",
+   "src_sha256": "e81d03e048d591f4e09f5e5e043511a34ab9e4f065236bc390db85ccc3851610",
    "unit": "U07f8a"
   },
   {
@@ -1629,7 +1629,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07f8a.c",
-   "src_sha256": "3692241509f56486f8e53d90cc4e863258a535af29fa358ca65e229295d63452",
+   "src_sha256": "e81d03e048d591f4e09f5e5e043511a34ab9e4f065236bc390db85ccc3851610",
    "unit": "U07f8a"
   },
   {
@@ -1640,7 +1640,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_07f8a.c",
-   "src_sha256": "3692241509f56486f8e53d90cc4e863258a535af29fa358ca65e229295d63452",
+   "src_sha256": "e81d03e048d591f4e09f5e5e043511a34ab9e4f065236bc390db85ccc3851610",
    "unit": "U07f8a"
   },
   {
@@ -1717,7 +1717,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "unit": "U08585"
   },
   {
@@ -1728,7 +1728,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "unit": "U08585"
   },
   {
@@ -1739,7 +1739,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "unit": "U08585"
   },
   {
@@ -1750,7 +1750,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "unit": "U08585"
   },
   {
@@ -1761,7 +1761,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "unit": "U08585"
   },
   {
@@ -1772,7 +1772,7 @@
    "status": "matching",
    "profile": "game-c",
    "src": "src/u_08585.c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "unit": "U08585"
   },
   {
@@ -4911,12 +4911,8 @@
   "restore_gameplay_display_mode": "1:6e13",
   "fade_level_to_white": "1:6e2e",
   "award_level_completion_bonus": "1:6ee8",
-  "clr_bc": "1:7032",
-  "clr_sp": "1:704d",
-  "set_lc": "1:7068",
   "initialize_level_hud": "1:7112",
   "update_level_hud": "1:7184",
-  "upd_sh": "1:73c0",
   "update_auxiliary_projectiles": "1:7532",
   "move_auxiliary_projectiles": "1:7551",
   "remove_auxiliary_projectile": "1:788d",
@@ -5317,7 +5313,11 @@
   "picture_x5": "3:e1e4",
   "picture_y9n": "3:e1e8",
   "picture_bytes77": "3:e1ec",
-  "glyph_metrics_198": "3:55cc"
+  "glyph_metrics_198": "3:55cc",
+  "zapbol": "1:7032",
+  "sprclr": "1:704d",
+  "aitune": "1:7068",
+  "firein": "1:73c0"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -6220,8 +6220,8 @@
    "start": "0x4cf2",
    "end": "0x5966",
    "profile": "game-c",
-   "src_sha256": "485174ddd00af87e52da68ff49aeb79510dd3caccf6f3005125e90f6efd4d0af",
-   "note": "restructured (tools/structure.py)"
+   "src_sha256": "8169a54d95c1dfce2c756e55ea2bb25cf15e2f953dbc109a3eca96474bb3c545",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "U05966",
@@ -6229,8 +6229,8 @@
    "start": "0x5966",
    "end": "0x608a",
    "profile": "game-c",
-   "src_sha256": "5f09b4cb86e13c615f2dc0e5aad864d21345ad3b74b4bd2cb5ffdd03b8238181",
-   "note": "restructured (tools/structure.py)"
+   "src_sha256": "8a87743bed20b0669049a08c28e6875d039ad89f9037c329e9310b2f4544bfcc",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "U0608a",
@@ -6247,12 +6247,12 @@
    "start": "0x6b02",
    "end": "0x7bd5",
    "profile": "game-c",
-   "src_sha256": "07409c7e7c18a83da497b1f9e8ba03e48033bcac66e254d59894a3d3bd24f062",
+   "src_sha256": "88c607d792f58c9b82acde7da50160cb4be5d6421a0d2dbdda9040aebfd3d198",
    "place": [
     "CONST=0x103c",
     "_DATA=0x68f8"
    ],
-   "note": "restructured (tools/structure.py)"
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "U07bd5",
@@ -6260,7 +6260,7 @@
    "start": "0x7bd5",
    "end": "0x7f8a",
    "profile": "game-c",
-   "src_sha256": "38d91988eebc26e57f419762c754a9adeebcd3463714ad055e84e9af3cb2390e",
+   "src_sha256": "0d8646116682a85e5e1d9fb590106b7f9a67367ca2cf3668399e11290a539386",
    "place": [
     "CONST=0x119c",
     "_DATA=0x6984"
@@ -6273,7 +6273,7 @@
    "start": "0x7f8a",
    "end": "0x814b",
    "profile": "game-c",
-   "src_sha256": "3692241509f56486f8e53d90cc4e863258a535af29fa358ca65e229295d63452",
+   "src_sha256": "e81d03e048d591f4e09f5e5e043511a34ab9e4f065236bc390db85ccc3851610",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6300,7 +6300,7 @@
    "start": "0x8585",
    "end": "0x95ee",
    "profile": "game-c",
-   "src_sha256": "909518d98788c27e5fd4e7f3da4ca24e0e4e87de6f8263ad26cb7c2815d42a78",
+   "src_sha256": "64ed9a017f3ddc466a4b2ffe7475daf70c4b323e28eed19883a488a6d61eb9d2",
    "note": "restructured (tools/structure.py)"
   },
   {
@@ -7545,12 +7545,12 @@
   "f_6e2e": "fade_level_to_white",
   "f_6ee8": "award_level_completion_bonus",
   "f_6f66": "scan",
-  "f_7032": "clr_bc",
-  "f_704d": "clr_sp",
-  "f_7068": "set_lc",
+  "f_7032": "zapbol",
+  "f_704d": "sprclr",
+  "f_7068": "aitune",
   "f_7112_ngllzczwwhoqgnyg": "initialize_level_hud",
   "f_7184": "update_level_hud",
-  "f_73c0": "upd_sh",
+  "f_73c0": "firein",
   "f_7532": "update_auxiliary_projectiles",
   "f_7551": "move_auxiliary_projectiles",
   "f_788d": "remove_auxiliary_projectile",
@@ -8049,6 +8049,10 @@
   "g_e1e4_n": "picture_x5",
   "g_e1e8_1p": "picture_y9n",
   "g_e1ec_f": "picture_bytes77",
-  "g_55cc_unbqifhkaac": "glyph_metrics_198"
+  "g_55cc_unbqifhkaac": "glyph_metrics_198",
+  "clr_bc": "zapbol",
+  "clr_sp": "sprclr",
+  "set_lc": "aitune",
+  "upd_sh": "firein"
  }
 }

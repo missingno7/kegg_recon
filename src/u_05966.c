@@ -2,19 +2,48 @@
 #include <string.h>
 #define DDA4 ((unsigned char *)falling_spell_cursor)
 #define DDB4 ((unsigned char *)current_ball_pointer)
-typedef struct { int at_00, at_04, at_08, at_0c, at_10, at_14, at_18, at_1c; int at_20, at_24, at_28, at_2c, at_30, at_34, at_38, at_3c; int at_40, at_44, at_48, at_4c, at_50, at_54, at_58, at_5c; int at_60, at_64, at_68, at_6c, at_70, at_74, at_78; } State;
-typedef struct { unsigned char b[18]; } Rec12;
-typedef struct { int at_00, at_04, at_08, at_0c, at_10, at_14, at_18, at_1c, at_20; unsigned char flags, tail[3]; } Rec28;
-typedef struct { int value, pad; } Pair8;
-typedef struct { int v[4]; } Row16;
-typedef struct { int pad[5]; int at_14; } Rec20;
+struct Racket { int x, y, previous_x, min_x, max_x, min_y, max_y, sprite_frame_index, sprite_height, reward_level, capture_timer, state_2c, state_30, effect_state, horizontal_recenter_timer, vertical_recenter_timer, effect_timer_40, effect_frame_44, animation_timer_48, animation_step_4c, animation_timer_50, animation_step_54, shield_frame_timer, shield_frame_index, spell_anim_timer, spell_anim_index, spell_parameter_68, spell_parameter_6c, spell_parameter_70, previous_x_snapshot, sprite_pointer; };
+struct GameBall { int x, y, velocity_x, velocity_y; unsigned char behavior, flags; };
+struct EnemyProjectile { int x, y, velocity_x, velocity_y, sprite_info, flight_phase, state_18, animation_sequence, hit_points; unsigned char flags, tail[3]; };
+struct SpriteFrame { int image_offset, duration_or_delta; };
+struct AudioRequestEntry { int source, byte_count, sample_rate, playback_mode; };
+struct GameProgressState { int progress_marker, life_balance, opaque_08, opaque_0c, opaque_10, score, tail; };
 typedef struct { unsigned char : 2; unsigned char f : 6; } BF1_2_6;
 typedef struct { unsigned char b[2]; } S2;
 typedef unsigned int size_t;
 typedef struct { unsigned f : 2; } BF4_0_2;
-typedef struct { int a, b, c; short d; int e; } S18;
+struct BobFrameMetrics { short prefix, width, height; unsigned char opaque_06[4]; short x_offset, y_offset; unsigned char opaque_0e[4]; };
 struct Frame { unsigned img; int time; };
 struct Spr { int a, b, c, d; int e; int speed; struct Frame *f; unsigned b0 : 1, anim : 4, f5 : 1, f6 : 1, f7 : 1, f8 : 1; };
+struct SpriteDrawCommand { int sprite_or_frame; short x, y, flags; };
+struct AuxiliaryProjectile { int target_type, x, y, velocity_x, velocity_y; unsigned char *sprite_data; void *frame_info; unsigned char *frame_offset; int damage; };
+struct PlayerShot { int x, y, vertical_speed, sprite_offset, flags; };
+struct FallingSpell { int x, y, frame_countdown, frame_sequence; unsigned char variant, spell_id; };
+struct PlayerInputFlags { unsigned char control_flags, spell_flags, reserved_2, reserved_3; };
+struct EnemyStageTuning { int enemy_health_max, enemy_pattern, enemy_attack_interval, attack_delay; };
+#define INPUT_FLAGS ((struct PlayerInputFlags *)player_key_flags)
+#define CONTROL_TIMED_EFFECT 0x08
+#define SPELL_OVERLAY_ACTIVE 0x02
+#define ENEMY_PROJECTILE_CAPTURE_FLAG 0x01
+#define ENEMY_PROJECTILE_FLAG_02 0x02
+#define ENEMY_PROJECTILE_CLEAR_CAPTURE 0xfe
+#define ENEMY_PROJECTILE_CLEAR_FLAG_02 0xfd
+#define ENEMY_PROJECTILE_CAPACITY 8
+#define SPELL_SLOT_COUNT 8
+#define SPELL_SLOT_MAX 7
+#define SPELL_SLOT_MASK 0x07
+#define BONUS_SPELL_REMAPPED_SLOT 5
+#define BONUS_ENEMY_TELEGRAPH_TICKS 0x16
+#define STANDARD_ENEMY_SPAWN_TICKS 0x37
+#define ENEMY_WARNING_X 0x90
+#define ENEMY_WARNING_Y 0x10
+#define SPELL_ID_CAPTURE_BALL 1
+#define SPELL_ID_ADVANCE_RACKET 0x0f
+#define SPELL_ID_CLEAR_PROJECTILE_FLAGS 0x1b
+#define PROJECTILE_ANIMATION_WITH_CAPTURE 2
+#define AUDIO_CUE_ENEMY_PROJECTILE_LAUNCH 0x22
+#define AUDIO_CUE_ENEMY_PROJECTILE_HIT 0x25
+struct DisplayModeInfo { short render_state; unsigned char plane_addresses_or_transform_a[16]; int page_offsets_or_transform_b[4]; int page_adjustments_or_transform_c[4]; unsigned char page_mode_classes[4]; int buffer_size_or_draw_parameter; int row_stride; int resolution_height; int screen_width; int screen_height; int viewport_left; int viewport_top; int viewport_right_or_width; int viewport_bottom_or_height; unsigned char mode_flags; unsigned char sequencer_plane_mask; unsigned char graphics_read_map; unsigned char reserved_vga_byte; unsigned char saved_video_mode; unsigned char graphics_controller_mode; unsigned char render_cache_60; unsigned char render_cache_61; unsigned char render_cache_62; unsigned char tail; };
 struct Iter24 { int first, second, start, count, step, unused; };
 struct Iter48 { int pad0, pad4, box, pad12, pad16; char *at20; int pad24, pad28, pad32, pad36, pad40, pad44; };
 struct f85a4_edge { unsigned char active; unsigned char result; int x; int y; };
@@ -53,29 +82,30 @@ extern char falling_spells[];
 extern char life_lost_flag;
 extern unsigned char arcade;
 extern unsigned char g_e46b;
-Pair8 racket_movement_animation_frames[9] = { { 2, 4 }, { 172, 4 }, { 378, 4 }, { 638, 4 }, { 964, 4 }, { 1356, 4 }, { 2018, 4 }, { 2316, 4 }, { 0, - 8 }, };
-Pair8 racket_sprite_frames[14] = { { 2662, 0 }, { 3046, 0 }, { 3482, 0 }, { 3972, 0 }, { 4512, 0 }, { 5102, 0 }, { 5754, 0 }, { 6466, 0 }, { 7238, 0 }, { 8082, 0 }, { 8974, 0 }, { 9926, 0 }, { 10964, 0 }, { 0, - 13 }, };
-Pair8 racket_effect_frames_a[14] = { { 12036, 0 }, { 12036, 0 }, { 12530, 0 }, { 12530, 0 }, { 13202, 0 }, { 13202, 0 }, { 13976, 0 }, { 13976, 0 }, { 15072, 0 }, { 15072, 0 }, { 16254, 0 }, { 16254, 0 }, { 17558, 0 }, { 0, - 13 }, };
-Pair8 racket_effect_frames_b[14] = { { 18958, 0 }, { 18958, 0 }, { 19470, 0 }, { 19470, 0 }, { 20118, 0 }, { 20118, 0 }, { 20894, 0 }, { 20894, 0 }, { 21782, 0 }, { 21782, 0 }, { 22870, 0 }, { 22870, 0 }, { 24086, 0 }, { 0, - 13 }, };
-Pair8 racket_guard_animation_frames[2] = { { 25398, 0 }, { 25516, 0 }, };
-Pair8 racket_effect_frames_c[12] = { { 25660, 0 }, { 25832, 0 }, { 26038, 0 }, { 26286, 0 }, { 26604, 0 }, { 26966, 0 }, { 27368, 0 }, { 27818, 0 }, { 28310, 0 }, { 28830, 0 }, { 29388, 0 }, { 0, - 13 }, };
-Pair8 bonus_sprite_animations[119] = { { 1356, 4 }, { 964, 4 }, { 638, 4 }, { 378, 4 }, { 172, 4 }, { 2, 4 }, { 0, - 6 }, { 31592, 5 }, { 31956, 5 }, { 32320, 5 }, { 32684, 5 }, { 33048, 5 }, { 33412, 5 }, { 33776, 5 }, { 34140, 5 }, { 34504, 5 }, { 34868, 5 }, { 35232, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35232, 5 }, { 34868, 5 }, { 34504, 5 }, { 34140, 5 }, { 33776, 5 }, { 33412, 5 }, { 33048, 5 }, { 32684, 5 }, { 32320, 5 }, { 31956, 5 }, { 31592, 5 }, { 0, - 30 }, { 31592, 2 }, { 31956, 2 }, { 32320, 2 }, { 32684, 2 }, { 33048, 2 }, { 33412, 2 }, { 33776, 2 }, { 34140, 2 }, { 34504, 2 }, { 34868, 2 }, { 35232, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35232, 2 }, { 34868, 2 }, { 34504, 2 }, { 34140, 2 }, { 33776, 2 }, { 33412, 2 }, { 33048, 2 }, { 32684, 2 }, { 32320, 2 }, { 31956, 2 }, { 31592, 2 }, { 0, - 30 }, { 2, 6 }, { 1240, 6 }, { 0, - 2 }, { 2664, 15 }, { 3316, 15 }, { 4102, 15 }, { 3316, 15 }, { 0, - 4 }, { 4758, 3 }, { 4758, 3 }, { 4758, 3 }, { 4758, 3 }, { 5404, 3 }, { 6192, 3 }, { 35960, 3 }, { 37020, 3 }, { 35960, 3 }, { 6192, 3 }, { 5404, 3 }, { 0, - 11 }, { 7124, 8 }, { 7636, 8 }, { 8152, 8 }, { 0, - 3 }, { 8698, 15 }, { 9498, 15 }, { 10262, 15 }, { 9498, 15 }, { 0, - 4 }, { 11070, 10 }, { 11548, 10 }, { 11990, 10 }, { 11548, 10 }, { 0, - 4 }, { 12468, 10 }, { 12958, 10 }, { 13460, 10 }, { 13940, 10 }, { 14374, 10 }, { 14842, 10 }, { 0, - 6 }, { 15318, 10 }, { 15848, 10 }, { 16262, 10 }, { 16792, 10 }, { 17206, 10 }, { 17736, 10 }, { 18150, 10 }, { 18680, 10 }, { 0, - 8 }, };
-Pair8 *bonus_animations_by_type[8] = { & bonus_sprite_animations[69], & bonus_sprite_animations[72], & bonus_sprite_animations[77], & bonus_sprite_animations[89], & bonus_sprite_animations[93], & bonus_sprite_animations[98], & bonus_sprite_animations[103], & bonus_sprite_animations[110] };
+struct SpriteFrame racket_movement_animation_frames[9] = { { 2, 4 }, { 172, 4 }, { 378, 4 }, { 638, 4 }, { 964, 4 }, { 1356, 4 }, { 2018, 4 }, { 2316, 4 }, { 0, - 8 }, };
+struct SpriteFrame racket_sprite_frames[14] = { { 2662, 0 }, { 3046, 0 }, { 3482, 0 }, { 3972, 0 }, { 4512, 0 }, { 5102, 0 }, { 5754, 0 }, { 6466, 0 }, { 7238, 0 }, { 8082, 0 }, { 8974, 0 }, { 9926, 0 }, { 10964, 0 }, { 0, - 13 }, };
+struct SpriteFrame racket_effect_frames_a[14] = { { 12036, 0 }, { 12036, 0 }, { 12530, 0 }, { 12530, 0 }, { 13202, 0 }, { 13202, 0 }, { 13976, 0 }, { 13976, 0 }, { 15072, 0 }, { 15072, 0 }, { 16254, 0 }, { 16254, 0 }, { 17558, 0 }, { 0, - 13 }, };
+struct SpriteFrame racket_effect_frames_b[14] = { { 18958, 0 }, { 18958, 0 }, { 19470, 0 }, { 19470, 0 }, { 20118, 0 }, { 20118, 0 }, { 20894, 0 }, { 20894, 0 }, { 21782, 0 }, { 21782, 0 }, { 22870, 0 }, { 22870, 0 }, { 24086, 0 }, { 0, - 13 }, };
+struct SpriteFrame racket_guard_animation_frames[2] = { { 25398, 0 }, { 25516, 0 }, };
+struct SpriteFrame racket_effect_frames_c[12] = { { 25660, 0 }, { 25832, 0 }, { 26038, 0 }, { 26286, 0 }, { 26604, 0 }, { 26966, 0 }, { 27368, 0 }, { 27818, 0 }, { 28310, 0 }, { 28830, 0 }, { 29388, 0 }, { 0, - 13 }, };
+struct SpriteFrame bonus_sprite_animations[119] = { { 1356, 4 }, { 964, 4 }, { 638, 4 }, { 378, 4 }, { 172, 4 }, { 2, 4 }, { 0, - 6 }, { 31592, 5 }, { 31956, 5 }, { 32320, 5 }, { 32684, 5 }, { 33048, 5 }, { 33412, 5 }, { 33776, 5 }, { 34140, 5 }, { 34504, 5 }, { 34868, 5 }, { 35232, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35596, 5 }, { 35232, 5 }, { 34868, 5 }, { 34504, 5 }, { 34140, 5 }, { 33776, 5 }, { 33412, 5 }, { 33048, 5 }, { 32684, 5 }, { 32320, 5 }, { 31956, 5 }, { 31592, 5 }, { 0, - 30 }, { 31592, 2 }, { 31956, 2 }, { 32320, 2 }, { 32684, 2 }, { 33048, 2 }, { 33412, 2 }, { 33776, 2 }, { 34140, 2 }, { 34504, 2 }, { 34868, 2 }, { 35232, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35596, 2 }, { 35232, 2 }, { 34868, 2 }, { 34504, 2 }, { 34140, 2 }, { 33776, 2 }, { 33412, 2 }, { 33048, 2 }, { 32684, 2 }, { 32320, 2 }, { 31956, 2 }, { 31592, 2 }, { 0, - 30 }, { 2, 6 }, { 1240, 6 }, { 0, - 2 }, { 2664, 15 }, { 3316, 15 }, { 4102, 15 }, { 3316, 15 }, { 0, - 4 }, { 4758, 3 }, { 4758, 3 }, { 4758, 3 }, { 4758, 3 }, { 5404, 3 }, { 6192, 3 }, { 35960, 3 }, { 37020, 3 }, { 35960, 3 }, { 6192, 3 }, { 5404, 3 }, { 0, - 11 }, { 7124, 8 }, { 7636, 8 }, { 8152, 8 }, { 0, - 3 }, { 8698, 15 }, { 9498, 15 }, { 10262, 15 }, { 9498, 15 }, { 0, - 4 }, { 11070, 10 }, { 11548, 10 }, { 11990, 10 }, { 11548, 10 }, { 0, - 4 }, { 12468, 10 }, { 12958, 10 }, { 13460, 10 }, { 13940, 10 }, { 14374, 10 }, { 14842, 10 }, { 0, - 6 }, { 15318, 10 }, { 15848, 10 }, { 16262, 10 }, { 16792, 10 }, { 17206, 10 }, { 17736, 10 }, { 18150, 10 }, { 18680, 10 }, { 0, - 8 }, };
+struct SpriteFrame *bonus_animations_by_type[8] = { & bonus_sprite_animations[69], & bonus_sprite_animations[72], & bonus_sprite_animations[77], & bonus_sprite_animations[89], & bonus_sprite_animations[93], & bonus_sprite_animations[98], & bonus_sprite_animations[103], & bonus_sprite_animations[110] };
 int previous_level_art_base = 0;
-Pair8 bolt_impact_animation_frames[21] = { { 2, 3 }, { 96, 3 }, { 276, 3 }, { 478, 3 }, { 774, 3 }, { 1094, 3 }, { 1486, 3 }, { 1956, 3 }, { 2518, 3 }, { 3206, 3 }, { 3934, 3 }, { 4702, 3 }, { 5470, 3 }, { 6238, 3 }, { 7054, 3 }, { 7874, 3 }, { 8700, 3 }, { 9502, 3 }, { 10296, 3 }, { 11056, 3 }, { 11806, 3 }, };
+struct SpriteFrame bolt_impact_animation_frames[21] = { { 2, 3 }, { 96, 3 }, { 276, 3 }, { 478, 3 }, { 774, 3 }, { 1094, 3 }, { 1486, 3 }, { 1956, 3 }, { 2518, 3 }, { 3206, 3 }, { 3934, 3 }, { 4702, 3 }, { 5470, 3 }, { 6238, 3 }, { 7054, 3 }, { 7874, 3 }, { 8700, 3 }, { 9502, 3 }, { 10296, 3 }, { 11056, 3 }, { 11806, 3 }, };
+/* These words at 0x685c/0x6860 hold 0 and -21; no use has been identified. */
 int g_685c = 0;
 int g_6860 = - 21;
-Pair8 player_projectile_animation_frames[3] = { { 13112, 4 }, { 13480, 4 }, { 0, - 2 }, };
-Pair8 enemy_projectile_animation_frames[1] = { { 12500, 4 }, };
-Row16 gameplay_tuning_by_stage[7] = { { 12500, 4, 0, - 2 }, { 200, 8, 3, 100 }, { 250, 10, 4, 100 }, { 275, 12, 4, 95 }, { 300, 13, 5, 90 }, { 325, 14, 5, 85 }, { 350, 16, 5, 75 }, };
+struct SpriteFrame player_projectile_animation_frames[3] = { { 13112, 4 }, { 13480, 4 }, { 0, - 2 }, };
+struct SpriteFrame enemy_projectile_animation_frames[1] = { { 12500, 4 }, };
+struct EnemyStageTuning gameplay_tuning_by_stage[7] = { { 12500, 4, 0, - 2 }, { 200, 8, 3, 100 }, { 250, 10, 4, 100 }, { 275, 12, 4, 95 }, { 300, 13, 5, 90 }, { 325, 14, 5, 85 }, { 350, 16, 5, 75 }, };
 int player_shot_button_latch = 0;
 void spawn_enemy_projectile(int, int, int, int);
 extern void move_enemy_projectiles(void);
 extern void set_mouse_horizontal_bounds(int, int);
 extern void set_mouse_vertical_bounds(int, int);
-extern State *racket_object;
-extern char *game_art_base;
-extern unsigned char *image_buffer_cursor;
+extern struct Racket *racket_object;
+extern unsigned char *game_art_base;
+extern struct SpriteDrawCommand *image_buffer_cursor;
 extern unsigned char *player_key_flags;
 extern int game_ball_slot;
 extern int current_ball_count;
@@ -111,11 +141,11 @@ extern int enemy_cursor;
 extern int scratch;
 extern unsigned char ptrbuf[];
 extern unsigned char spell_slots[];
-extern unsigned char *racket_state;
+extern struct GameProgressState *racket_state;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
-extern Row16 level_layout_records[];
+extern struct AudioRequestEntry level_layout_records[];
 extern int g_68f8;
 extern int g_6940;
 extern int g_6944;
@@ -125,8 +155,8 @@ extern int g_6958;
 extern int g_695c;
 extern int g_6960;
 extern int main_screen_data_filename;
-extern char *current_ball_pointer;
-extern char game_balls[];
+extern struct GameBall *current_ball_pointer;
+extern struct GameBall game_balls[];
 extern int work_value;
 extern int temp;
 extern int frames;
@@ -137,8 +167,8 @@ extern int (*spell_effect_handlers[])(void);
 extern void *g_ddd4;
 extern int moving_target_number;
 extern int moving_target_count;
-extern Rec28 *moving_target_cursor;
-extern Rec28 moving_target_records[];
+extern struct EnemyProjectile *moving_target_cursor;
+extern struct EnemyProjectile moving_target_records[];
 extern short mouse_x_average_recent;
 extern short mouse_y_mean_recent;
 void load_monster_art(void);
@@ -147,7 +177,7 @@ extern unsigned char collision_animation_frames[];
 extern unsigned char racket_spell_animation_frames[];
 extern unsigned char spell_impact_animation_frames[];
 extern int sprite_frame_pointer;
-extern unsigned char player_shot_records[];
+extern struct PlayerShot player_shot_records[];
 extern unsigned char brick_code_map[];
 extern unsigned current_brick_code;
 extern int portal_start_x;
@@ -155,7 +185,7 @@ extern int portal_y_source;
 extern int portal_exit_xpos;
 extern int portal_destination_y;
 extern S2 *cell_cursor;
-extern unsigned char *player_shot_cursor;
+extern struct PlayerShot *player_shot_cursor;
 extern int player_shot_index;
 extern int sprite_rect_a_right;
 extern int sprite_bounds_a_bottom;
@@ -181,7 +211,6 @@ extern int enemy_health_current;
 extern unsigned char g_ab40[];
 extern unsigned char g_bf40[];
 extern unsigned char g_d340[];
-struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
 extern unsigned char g_e48b;
 extern unsigned char g_e48e;
@@ -238,7 +267,7 @@ extern int projectile_index;
 extern int last_displayed_time;
 extern int sprite_instance_count;
 extern int sprite_removal_index;
-extern char *bolt_cursor;
+extern struct AuxiliaryProjectile *bolt_cursor;
 extern struct Spr *sprite_current;
 extern void move_auxiliary_projectiles(void);
 extern void draw_animated_sprites(void);
@@ -254,8 +283,8 @@ extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
 extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void spawn_auxiliary_projectile(int, int, int, int, int, int, int);
-extern unsigned char auxiliary_projectiles[];
-extern int frames_intersect_inset(S18, int, int, S18, int, int, int, int, int, int);
+extern struct AuxiliaryProjectile auxiliary_projectiles[];
+extern int frames_intersect_inset(struct BobFrameMetrics, int, int, struct BobFrameMetrics, int, int, int, int, int, int);
 extern struct Spr sprite_animations[];
 extern int tileid;
 extern unsigned char *tile_art_base;
@@ -306,41 +335,41 @@ void shot_cd(void);
 int run_level(void);
 void draw_background_tiles(void);
 void handle_keyboard_controls(void);
-void wait_input(int a0);
+void wait_input(int input_mode);
 
 void update_enemy_projectiles(void)
 {
     if (bonus_index) {
-        if ((remaining_brick_count - moving_target_count) <= 0) goto L_5a9c;
-        temp = 0x16;
+        if ((remaining_brick_count - moving_target_count) <= 0) goto process_existing_projectiles; /* Keep active projectiles moving after bonus spawns stop. */
+        temp = BONUS_ENEMY_TELEGRAPH_TICKS;
         *(int *)ptrbuf = (int)&bonus_sprite_animations[38];
     } else {
-        temp = 0x37;
+        temp = STANDARD_ENEMY_SPAWN_TICKS;
         *(int *)ptrbuf = (int)&bonus_sprite_animations[7];
     }
     if (enemy_timer == temp) {
-        spawn_animated_sprite(0x90, 0x10, 0, 0, (int)enemy_picture, *(int *)ptrbuf, 1);
+        spawn_animated_sprite(ENEMY_WARNING_X, ENEMY_WARNING_Y, 0, 0, (int)enemy_picture, *(int *)ptrbuf, 1);
     }
     --enemy_timer;
     if (enemy_timer <= 0) {
         enemy_timer = *(int *)enemy_spawn_wait_time;
-        if (enemy_cursor >= 8) {
-            enemy_cursor -= 8;
+        if (enemy_cursor >= SPELL_SLOT_COUNT) {
+            enemy_cursor -= SPELL_SLOT_COUNT;
         }
         scratch = *(unsigned char *)(spell_slots + enemy_cursor++);
         if (bonus_index) {
-            scratch = next_random_value() & 7;
-            spawn_falling_spell(1, 0, 0xa0, 0x20);
-            if (scratch == 5) {
+            scratch = next_random_value() & SPELL_SLOT_MASK;
+            spawn_falling_spell(SPELL_ID_CAPTURE_BALL, 0, 0xa0, 0x20);
+            if (scratch == BONUS_SPELL_REMAPPED_SLOT) {
                 scratch = 0;
             }
         }
-        if ((unsigned)scratch > 7) {
-            scratch = 7;
+        if ((unsigned)scratch > SPELL_SLOT_MAX) {
+            scratch = SPELL_SLOT_MAX;
         }
         spawn_enemy_projectile(0xa0, 0x10, (unsigned)next_random_value() >> 7, scratch);
     }
-L_5a9c:;
+process_existing_projectiles:;
     if (moving_target_count) {
         move_enemy_projectiles();
     }
@@ -348,45 +377,45 @@ L_5a9c:;
 
 void move_enemy_projectiles(void)
 {
-    *(int *)collision_box_a_left = *(int *)racket_object;
-    collision_box_a_top = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
-    get_sprite_collision_bounds(collision_box_a_left, (unsigned char *)*(int *)((unsigned char *)(unsigned char *)racket_object + 0x78));
-    *(int *)collision_box_b_left = *(int *)((unsigned char *)(unsigned char *)racket_object + 0x74);
-    b_box_top = *(int *)((unsigned char *)(unsigned char *)racket_object + 4);
+    *(int *)collision_box_a_left = racket_object->x;
+    collision_box_a_top = racket_object->y;
+    get_sprite_collision_bounds(collision_box_a_left, (unsigned char *)racket_object->sprite_pointer);
+    *(int *)collision_box_b_left = racket_object->previous_x_snapshot;
+    b_box_top = racket_object->y;
     get_sprite_collision_bounds(collision_box_b_left, (unsigned char *)(game_art_base + 0x7536));
     moving_target_cursor = moving_target_records;
     for (moving_target_number = 0; moving_target_number < moving_target_count; ++moving_target_number) {
-        *(int *)moving_target_cursor += *(int *)(((unsigned char *)moving_target_cursor + 8));
-        *(int *)(((unsigned char *)moving_target_cursor + 4)) += *(int *)(((unsigned char *)moving_target_cursor + 0xc));
-        if (--*(int *)(((unsigned char *)moving_target_cursor + 0x14)) <= 0) {
-            *(int *)(((unsigned char *)moving_target_cursor + 0x14)) = (unsigned)next_random_value() >> 7;
+        moving_target_cursor->x += moving_target_cursor->velocity_x;
+        moving_target_cursor->y += moving_target_cursor->velocity_y;
+        if (--moving_target_cursor->flight_phase <= 0) {
+            moving_target_cursor->flight_phase = (unsigned)next_random_value() >> 7;
             if (*(signed char *)&frames & 0x20) {
-                *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
+                moving_target_cursor->velocity_x = -moving_target_cursor->velocity_x;
             } else if (*(signed char *)&frames & 8) {
-                *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
+                moving_target_cursor->velocity_y = -moving_target_cursor->velocity_y;
             }
             if (bonus_index) {
-                spawn_falling_spell(1, 0, *(int *)moving_target_cursor, *(int *)(((unsigned char *)moving_target_cursor + 4)));
+                spawn_falling_spell(SPELL_ID_CAPTURE_BALL, 0, moving_target_cursor->x, moving_target_cursor->y);
             }
         }
-        *(int *)(((unsigned char *)moving_target_cursor + 0x10)) = (int)(enemy_picture + next_packed_table_value(((unsigned char *)moving_target_cursor + 0x18), ((unsigned char *)moving_target_cursor + 0x1c)));
-        *(int *)sprite_rect_c_left = *(int *)moving_target_cursor;
-        collision_box_c_top = *(int *)(((unsigned char *)moving_target_cursor + 4));
-        get_sprite_bounds(sprite_rect_c_left, (void *)*(int *)(((unsigned char *)moving_target_cursor + 0x10)));
-        if (!(*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 2) || *(int *)(((unsigned char *)moving_target_cursor + 0x20)) > 0) {
+        moving_target_cursor->sprite_info = (int)(enemy_picture + next_packed_table_value(&moving_target_cursor->state_18, &moving_target_cursor->animation_sequence));
+        *(int *)sprite_rect_c_left = moving_target_cursor->x;
+        collision_box_c_top = moving_target_cursor->y;
+        get_sprite_bounds(sprite_rect_c_left, (void *)moving_target_cursor->sprite_info);
+        if (!(moving_target_cursor->flags & ENEMY_PROJECTILE_FLAG_02) || moving_target_cursor->hit_points > 0) {
             if (*(int *)sprite_rect_c_left <= 0x10) {
-                if (*(int *)(((unsigned char *)moving_target_cursor + 8)) < 0) {
-                    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
+                if (moving_target_cursor->velocity_x < 0) {
+                    moving_target_cursor->velocity_x = -moving_target_cursor->velocity_x;
                 }
             }
             if (collision_box_c_right >= 0x130) {
-                if (*(int *)(((unsigned char *)moving_target_cursor + 8)) > 0) {
-                    *(int *)(((unsigned char *)moving_target_cursor + 8)) = -*(int *)(((unsigned char *)moving_target_cursor + 8));
+                if (moving_target_cursor->velocity_x > 0) {
+                    moving_target_cursor->velocity_x = -moving_target_cursor->velocity_x;
                 }
             }
             if (collision_box_c_top <= 0x18) {
-                if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) < 0) {
-                    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
+                if (moving_target_cursor->velocity_y < 0) {
+                    moving_target_cursor->velocity_y = -moving_target_cursor->velocity_y;
                 }
             }
             if (bonus_index) {
@@ -395,85 +424,85 @@ void move_enemy_projectiles(void)
                 scratch = 0xc8;
             }
             if ((unsigned)collision_rect_c_bottom >= scratch) {
-                if (*(int *)(((unsigned char *)moving_target_cursor + 0xc)) > 0) {
-                    *(int *)(((unsigned char *)moving_target_cursor + 0xc)) = -*(int *)(((unsigned char *)moving_target_cursor + 0xc));
+                if (moving_target_cursor->velocity_y > 0) {
+                    moving_target_cursor->velocity_y = -moving_target_cursor->velocity_y;
                 }
             }
             if (rectangles_intersect(collision_box_a_left, sprite_rect_c_left)) {
-                if (*(unsigned char *)(((unsigned char *)moving_target_cursor + 0x24)) & 1) {
-                    if (!(*(unsigned char *)player_key_flags & 8)) {
+                if (moving_target_cursor->flags & ENEMY_PROJECTILE_CAPTURE_FLAG) {
+                    if (!(INPUT_FLAGS->control_flags & CONTROL_TIMED_EFFECT)) {
                         tick_racket_capture();
                     }
-                    if (*(int *)((unsigned char *)(unsigned char *)racket_object + 0x28) >= 0) goto L_5d86;
-                    goto L_5d63;
+                    if (racket_object->capture_timer >= 0) goto remove_hit_projectile; /* Both successful collision paths share the impact tail. */
+                    goto check_racket_shield_collision; /* A captured bolt falls through to the shield test. */
                 }
             } else {
-L_5d63:;
-                if (!(*(unsigned char *)(player_key_flags + 1) & 2)) goto L_5dd5;
-                if (!rectangles_intersect(collision_box_b_left, sprite_rect_c_left)) goto L_5dd5;
+check_racket_shield_collision:;
+                if (!(INPUT_FLAGS->spell_flags & SPELL_OVERLAY_ACTIVE)) goto draw_surviving_projectile; /* Skip the hit path and draw the surviving bolt. */
+                if (!rectangles_intersect(collision_box_b_left, sprite_rect_c_left)) goto draw_surviving_projectile; /* Skip the hit path and draw the surviving bolt. */
             }
         }
-L_5d86:;
-        spawn_animated_sprite((*(int *)sprite_rect_c_left + collision_box_c_right) >> 1, ((collision_box_c_top + collision_rect_c_bottom) + 0xa) >> 1, *(int *)(((unsigned char *)moving_target_cursor + 8)), *(int *)(((unsigned char *)moving_target_cursor + 0xc)), (int)enemy_picture, (int)collision_animation_frames, 1);
+remove_hit_projectile:;
+        spawn_animated_sprite((*(int *)sprite_rect_c_left + collision_box_c_right) >> 1, ((collision_box_c_top + collision_rect_c_bottom) + 0xa) >> 1, moving_target_cursor->velocity_x, moving_target_cursor->velocity_y, (int)enemy_picture, (int)collision_animation_frames, 1);
         remove_enemy_projectile();
         continue;
-L_5dd5:;
-        *(int *)image_buffer_cursor = *(int *)(((unsigned char *)moving_target_cursor + 0x10));
-        *(short *)(image_buffer_cursor + 4) = *(short *)moving_target_cursor;
-        *(short *)(image_buffer_cursor + 6) = *(short *)(((unsigned char *)moving_target_cursor + 4));
-        *(short *)(image_buffer_cursor + 8) = 0;
-        image_buffer_cursor += 0xa;
-        (*(unsigned char **)&moving_target_cursor) += 0x28;
+draw_surviving_projectile:;
+        image_buffer_cursor->sprite_or_frame = moving_target_cursor->sprite_info;
+        image_buffer_cursor->x = *(short *)moving_target_cursor;
+        image_buffer_cursor->y = *(short *)(((unsigned char *)moving_target_cursor + 4));
+        image_buffer_cursor->flags = 0;
+        ++image_buffer_cursor;
+        ++moving_target_cursor;
     }
 }
 
 void remove_enemy_projectile(void) {
-    int choice;
+    int bonus_drop_roll;
     if (bonus_index) {
         if (remaining_brick_count > 0) --remaining_brick_count;
-        choice = next_random_value(0, 7) - 2;
-        switch (choice) {
+        bonus_drop_roll = next_random_value(0, SPELL_SLOT_MAX) - 2;
+        switch (bonus_drop_roll) {
             case 5:
                 motion_dir = 1;
-                spawn_falling_spell(0xf, 0, moving_target_cursor->at_00, moving_target_cursor->at_04);
+                spawn_falling_spell(SPELL_ID_ADVANCE_RACKET, 0, moving_target_cursor->x, moving_target_cursor->y);
                 break;
             case 3:
-                spawn_falling_spell(0x1b, 0, moving_target_cursor->at_00, moving_target_cursor->at_04);
+                spawn_falling_spell(SPELL_ID_CLEAR_PROJECTILE_FLAGS, 0, moving_target_cursor->x, moving_target_cursor->y);
                 break;
             case 0: case 1: case 2:
-                spawn_falling_spell(1, 0, moving_target_cursor->at_00, moving_target_cursor->at_04);
+                spawn_falling_spell(SPELL_ID_CAPTURE_BALL, 0, moving_target_cursor->x, moving_target_cursor->y);
                 break;
             case 4:
                 break;
         }
     }
-    *(int *)(racket_state + 0x14) += 3 << racket_object->at_24;
-    submit_audio_request(0x25);
+    racket_state->score += 3 << racket_object->reward_level;
+    submit_audio_request(AUDIO_CUE_ENEMY_PROJECTILE_HIT);
     --moving_target_count;
     if (moving_target_number != moving_target_count)
-        memcpy(moving_target_cursor, moving_target_cursor + 1, (moving_target_count - moving_target_number) * 0x28);
+        memcpy(moving_target_cursor, moving_target_cursor + 1, (moving_target_count - moving_target_number) * sizeof(*moving_target_cursor));
     --moving_target_number;
 }
 
 void spawn_enemy_projectile(int start_x, int start_y, int flight_phase, int animation_index) {
-    if (moving_target_count >= 8) return;
+    if (moving_target_count >= ENEMY_PROJECTILE_CAPACITY) return;
     moving_target_cursor = moving_target_records;
     moving_target_cursor += moving_target_count;
-    moving_target_cursor->at_00 = start_x;
-    moving_target_cursor->at_04 = start_y;
-    moving_target_cursor->at_08 = -1;
-    moving_target_cursor->at_0c = 1;
+    moving_target_cursor->x = start_x;
+    moving_target_cursor->y = start_y;
+    moving_target_cursor->velocity_x = -1;
+    moving_target_cursor->velocity_y = 1;
     if (next_random_value() & 0x100)
-        moving_target_cursor->at_08 = -moving_target_cursor->at_08;
-    moving_target_cursor->at_14 = flight_phase;
-    moving_target_cursor->at_18 = 0;
-    moving_target_cursor->at_1c = (int)bonus_animations_by_type[animation_index];
-    moving_target_cursor->at_1c -= 8;
-    moving_target_cursor->at_10 = (int)(enemy_picture + 2);
-    moving_target_cursor->at_20 = (int)level_number / 20 + 2;
-    moving_target_cursor->flags &= 0xfd;
-    if (animation_index != 2) moving_target_cursor->flags &= 0xfe;
-    else moving_target_cursor->flags |= 1;
-    submit_audio_request(0x22);
+        moving_target_cursor->velocity_x = -moving_target_cursor->velocity_x;
+    moving_target_cursor->flight_phase = flight_phase;
+    moving_target_cursor->state_18 = 0;
+    moving_target_cursor->animation_sequence = (int)bonus_animations_by_type[animation_index];
+    moving_target_cursor->animation_sequence -= 8;
+    moving_target_cursor->sprite_info = (int)(enemy_picture + 2);
+    moving_target_cursor->hit_points = (int)level_number / 20 + 2;
+    moving_target_cursor->flags &= ENEMY_PROJECTILE_CLEAR_FLAG_02;
+    if (animation_index != PROJECTILE_ANIMATION_WITH_CAPTURE) moving_target_cursor->flags &= ENEMY_PROJECTILE_CLEAR_CAPTURE;
+    else moving_target_cursor->flags |= ENEMY_PROJECTILE_CAPTURE_FLAG;
+    submit_audio_request(AUDIO_CUE_ENEMY_PROJECTILE_LAUNCH);
     ++moving_target_count;
 }

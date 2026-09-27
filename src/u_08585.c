@@ -44,7 +44,7 @@ extern void set_mouse_bounds(int, int, int, int);
 extern void move_mouse_to(int, int);
 extern void update_mouse(void);
 void *memmove(void *, const void *, size_t);
-void clr_sp(void);
+void sprclr(void);
 void f_7112(void);
 void update_auxiliary_projectiles(void);
 void remove_auxiliary_projectile(void);

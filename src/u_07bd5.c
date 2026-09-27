@@ -44,7 +44,7 @@ int timed_change_count;
 
 extern void update_mouse(void);
 void *memmove(void *, const void *, size_t);
-void clr_sp(void);
+void sprclr(void);
 void f_7112(void);
 void update_auxiliary_projectiles(void);
 void remove_auxiliary_projectile(void);

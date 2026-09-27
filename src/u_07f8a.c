@@ -92,7 +92,7 @@ extern void restore_mouse_driver_sensitivity(void);
 extern void set_image_pages();
 int fade_level_to_white(void);
 int award_level_completion_bonus(void);
-void set_lc(void);
+void aitune(void);
 void set_pg(void);
 
 void draw_background_tiles(void)
