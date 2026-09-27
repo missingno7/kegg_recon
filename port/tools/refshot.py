@@ -3,7 +3,7 @@
 
     python port/tools/refshot.py [--keys "1500:39"]
         [--shots "1200=report,3500=title,6500=menu"]
-        [--out docs/port/reference-captures]
+        [--clicks "8000:150:82"] [--out docs/port/reference-captures]
 
 The key syntax matches smoke.py: milliseconds from DOSBox-X window startup,
 followed by a hexadecimal XT set-1 make code. The private AUTOEXEC launches
@@ -93,6 +93,11 @@ def parse_shots(spec: str) -> list[tuple[int, str]]:
     if len({name for _, name in result}) != len(result):
         raise ValueError("screenshot names must be unique")
     return result
+
+
+def hotkey_dispatch_ms(requested_ms: int) -> int:
+    """Account for the 60 ms F11 lead-in before DOSBox-X's second hotkey."""
+    return max(0, requested_ms - 60)
 
 
 def parse_clicks(spec: str) -> list[tuple[int, int, int]]:
@@ -192,6 +197,8 @@ def _activate_window(hwnd: int) -> bool:
     user32 = ctypes.windll.user32
     user32.GetForegroundWindow.restype = ctypes.c_void_p
     user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
+    if int(user32.GetForegroundWindow() or 0) == hwnd:
+        return True
     user32.ShowWindow(hwnd, 5)  # SW_SHOW
     for _attempt in range(4):
         user32.SetForegroundWindow(hwnd)
@@ -280,7 +287,8 @@ def _copy_assets(destination: Path) -> None:
 
 
 def capture(out_dir: Path, keys: list[tuple[int, int]], clicks: list[tuple[int, int, int]],
-            shots: list[tuple[int, str]], timeout: float) -> list[Path]:
+            shots: list[tuple[int, str]], timeout: float, record_video: bool = False,
+            video_start_ms: int = 0, video_stop_ms: int | None = None) -> list[Path]:
     # Import the repository's pinned runner only for its locked DOSBox-X binary
     # path/hash check; the compiler-oriented run_dosbox() is not suitable for a game.
     sys.path.insert(0, str(ROOT / "tools"))
@@ -326,27 +334,74 @@ def capture(out_dir: Path, keys: list[tuple[int, int]], clicks: list[tuple[int, 
             t0 = time.monotonic()
             events = [(ms, 1, "shot", name) for ms, name in shots]
             events.extend((ms, 0, "click", (x, y)) for ms, x, y in clicks)
+            if record_video:
+                events.append((video_start_ms, -1, "video_start", None))
+                if video_stop_ms is not None:
+                    events.append((video_stop_ms, 2, "video_stop", None))
             events.sort(key=lambda item: (item[0], item[1]))
+            recording_video = False
             for ms, _priority, kind, payload in events:
-                due = t0 + ms / 1000.0
+                # F11 is held for 60 ms before the second hotkey. Schedule
+                # host-hotkey triggers at the requested timestamp.
+                dispatch_ms = hotkey_dispatch_ms(ms) if kind in (
+                    "shot", "video_start", "video_stop") else ms
+                due = t0 + dispatch_ms / 1000.0
                 while time.monotonic() < due:
                     if proc.poll() is not None:
                         raise RuntimeError(f"DOSBox-X exited early with status {proc.returncode}")
                     time.sleep(min(0.02, due - time.monotonic()))
-                if kind == "click":
+                if kind == "video_start":
+                    _host_chord(hwnd, ord("I"))
+                    recording_video = True
+                    print(f"{ms:>6} ms  started DOSBox-X AVI capture")
+                elif kind == "video_stop":
+                    _host_chord(hwnd, ord("I"))
+                    recording_video = False
+                    print(f"{ms:>6} ms  stopped DOSBox-X AVI capture")
+                elif kind == "click":
                     x, y = payload
                     _activate_window(hwnd)
+                    dispatched_ms = (time.monotonic() - t0) * 1000.0
                     px, py = _click(hwnd, x, y)
-                    print(f"{ms:>6} ms  left click at VGA ({x},{y}), window ({px},{py})")
+                    print(f"{ms:>6} ms  left click at VGA ({x},{y}), window ({px},{py}); "
+                          f"dispatched {dispatched_ms:.1f} ms")
                 else:
                     name = payload
                     before = set(capture_dir.glob("*.png"))
+                    trigger_start = time.monotonic()
                     _host_chord(hwnd, ord("P"))
                     captured = _wait_capture(capture_dir, before, timeout)
                     target = out_dir / f"{name}.png"
                     shutil.copy2(captured, target)
                     captures.append(target)
-                    print(f"{ms:>6} ms  {target}  {captured.stat().st_size} bytes")
+                    actual_ms = (trigger_start + 0.06 - t0) * 1000.0
+                    print(f"{ms:>6} ms  {target}  {captured.stat().st_size} bytes; "
+                          f"capture triggered near {actual_ms:.1f} ms")
+            if recording_video:
+                _host_chord(hwnd, ord("I"))
+                recording_video = False
+            if record_video:
+                videos = sorted(capture_dir.glob("*.avi"), key=lambda p: p.stat().st_mtime_ns)
+                if not videos:
+                    raise RuntimeError("DOSBox-X did not create an AVI recording")
+                sizes = {video: video.stat().st_size for video in videos}
+                deadline = time.monotonic() + timeout
+                while time.monotonic() < deadline:
+                    time.sleep(0.15)
+                    current = {video: video.stat().st_size for video in videos if video.exists()}
+                    if len(current) == len(videos) and current == sizes:
+                        break
+                    sizes = current
+                if any(not video.exists() or video.stat().st_size <= 128 for video in videos):
+                    raise RuntimeError("DOSBox-X AVI recording was empty or not flushed")
+                for index, video in enumerate(videos, 1):
+                    target = (out_dir / "reference.avi" if len(videos) == 1 else
+                              out_dir / f"reference-part-{index:03d}.avi")
+                    shutil.copy2(video, target)
+                    print(f"refshot: video segment {index}/{len(videos)} saved to {target} "
+                          f"({video.stat().st_size} bytes)")
+                if len(videos) > 1:
+                    shutil.copy2(videos[-1], out_dir / "reference.avi")
             # Close through DOSBox-X's documented host shortcut.
             _exit_dosbox(hwnd)
             if proc.poll() is None:
@@ -388,12 +443,25 @@ def main() -> int:
     ap.add_argument("--out", default=str(ROOT / "docs" / "port" / "reference-captures"))
     ap.add_argument("--timeout", type=float, default=30.0,
                     help="maximum wait for a DOSBox screenshot file")
+    ap.add_argument("--video", action="store_true",
+                    help="record a DOSBox-X AVI alongside the scheduled screenshots")
+    ap.add_argument("--video-start-ms", type=int, default=0,
+                    help="start AVI recording at this event time (requires --video)")
+    ap.add_argument("--video-stop-ms", type=int,
+                    help="stop AVI recording at this event time; defaults to after the last event")
     args = ap.parse_args()
     try:
         keys = parse_keys(args.keys)
         clicks = parse_clicks(args.clicks)
         shots = parse_shots(args.shots)
-        capture(Path(args.out).resolve(), keys, clicks, shots, args.timeout)
+        if args.video_start_ms < 0 or (args.video_stop_ms is not None and args.video_stop_ms < 0):
+            raise ValueError("video event times must be nonnegative")
+        if args.video_stop_ms is not None and args.video_stop_ms <= args.video_start_ms:
+            raise ValueError("--video-stop-ms must be later than --video-start-ms")
+        if not args.video and (args.video_start_ms != 0 or args.video_stop_ms is not None):
+            raise ValueError("--video-start-ms and --video-stop-ms require --video")
+        capture(Path(args.out).resolve(), keys, clicks, shots, args.timeout, args.video,
+                args.video_start_ms, args.video_stop_ms)
     except (OSError, RuntimeError, ValueError, ImportError) as exc:
         print(f"refshot: {exc}", file=sys.stderr)
         return 1

@@ -76,6 +76,28 @@ def parse_shots(spec: str) -> list[tuple[int, str]]:
     return result
 
 
+def parse_frame_shots(spec: str) -> list[tuple[int, str]]:
+    result = []
+    for entry in filter(None, (part.strip() for part in spec.split(","))):
+        try:
+            frame_text, name = entry.split("=", 1)
+            frame, name = int(frame_text, 10), name.strip()
+        except ValueError as exc:
+            raise ValueError(f"invalid frame screenshot item {entry!r}; expected frame=name") from exc
+        if not 0 <= frame <= 0xffffffff or not name or not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+            raise ValueError(f"invalid frame screenshot item {entry!r}")
+        result.append((frame, name))
+    if not result:
+        raise ValueError("at least one frame screenshot is required")
+    if len(result) > 64:
+        raise ValueError("at most 64 frame screenshots can be scheduled in one run")
+    if result != sorted(result):
+        raise ValueError("frame screenshot targets must be nondecreasing")
+    if len({name for _, name in result}) != len(result):
+        raise ValueError("frame screenshot names must be unique")
+    return result
+
+
 def _bounded_int(value: Any, low: int, high: int, label: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
         raise ValueError(f"invalid {label}: {value!r}")
@@ -147,6 +169,8 @@ def main() -> int:
     ap.add_argument("--mouse", default="", help="comma-separated ms:x:y absolute moves in the 320x240 menu raster")
     ap.add_argument("--clicks", default=None, help="comma-separated ms:x:y left clicks in the 320x240 menu raster")
     ap.add_argument("--shots", default="", help="comma-separated ms=name screenshots, compatible with refshot.py")
+    ap.add_argument("--frame-shots", default="",
+                    help="comma-separated retrace-count=name screenshots (absolute virtual VGA retrace count)")
     ap.add_argument("--shot", default=None, help="save one frame at --ms minus 500 ms (legacy smoke option)")
     ap.add_argument("--shot-dir", default=None, help="directory for --shots BMP files")
     ap.add_argument("--timer-diag", action="store_true",
@@ -166,16 +190,17 @@ def main() -> int:
         mouse_moves = parse_mouse(a.mouse, "mouse move")
         clicks = parse_mouse(a.clicks or "", "click")
         shots = parse_shots(a.shots)
+        frame_shots = parse_frame_shots(a.frame_shots) if a.frame_shots else []
     except ValueError as exc:
         ap.error(str(exc))
-    if a.shot and shots:
-        ap.error("use either --shot or --shots")
+    if sum(bool(x) for x in (a.shot, shots, frame_shots)) > 1:
+        ap.error("use only one of --shot, --shots, or --frame-shots")
 
     exe = (Path(a.build) / "ke_sdl3.exe").resolve()
     env = dict(os.environ)
     for name in ("KE_AUTOKEYS", "KE_AUTOMOUSE", "KE_AUTOCLICKS", "KE_SCREENSHOT",
-                 "KE_SCREENSHOTS", "KE_REPLAY", "KE_REPLAY_START_MS", "KE_EXIT_AFTER_MS",
-                 "KE_TIMER_DIAG"):
+                 "KE_SCREENSHOTS", "KE_FRAME_SHOTS", "KE_REPLAY", "KE_REPLAY_START_MS",
+                 "KE_EXIT_AFTER_MS", "KE_TIMER_DIAG"):
         env.pop(name, None)
     env["KE_AUTOKEYS"] = ",".join(f"{ms}:{code:x}" for ms, code in keys)
     if mouse_moves:
@@ -216,6 +241,14 @@ def main() -> int:
             path = (shot_dir / f"{name}.bmp").resolve()
             entries.append(f"{ms}:{path}")
         env["KE_SCREENSHOTS"] = ",".join(entries)
+    elif frame_shots:
+        shot_dir = Path(a.shot_dir).resolve() if a.shot_dir else (Path(a.build).resolve() / "captures")
+        shot_dir.mkdir(parents=True, exist_ok=True)
+        entries = []
+        for frame, name in frame_shots:
+            path = (shot_dir / f"{name}.bmp").resolve()
+            entries.append(f"{frame}:{path}")
+        env["KE_FRAME_SHOTS"] = ",".join(entries)
 
     if a.ms is None:
         a.ms = 6000
@@ -248,7 +281,8 @@ def main() -> int:
     for line in faults:
         print(line)
     notable = [line for line in log if "replay" in line.lower() or "AUTOCLICKS" in line or
-               "AUTOMOUSE" in line or (not faults and re.search(r"screenshot .+ \(target \d+ ms\):", line))]
+               "AUTOMOUSE" in line or (not faults and re.search(
+                   r"screenshot .+ \(target (?:\d+ ms|frame \d+|retrace \d+)", line))]
     if len(notable) > 24:
         selected = notable[:12] + notable[-12:]
         omitted = len(notable) - len(selected)

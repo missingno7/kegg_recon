@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 #include "ke_port.h"
 #include "replay.h"
 
@@ -18,6 +19,7 @@ typedef struct ReplayEvent {
 static ReplayEvent *events;
 static size_t event_count, next_event;
 static unsigned frame_occurrence, replay_frame_count;
+static volatile LONG wait_for_tick_count;
 static int replay_loaded, replay_started, replay_complete, replay_reported;
 
 int ke_replay_load(const char *path)
@@ -149,6 +151,12 @@ void ke_replay_report(void)
 
 void __wrap_wait_for_tick(short wait_flags)
 {
+    InterlockedIncrement(&wait_for_tick_count);
     ke_replay_frame_entry();
     __real_wait_for_tick(wait_flags);
+}
+
+uint32_t ke_wait_for_tick_count(void)
+{
+    return (uint32_t)InterlockedCompareExchange(&wait_for_tick_count, 0, 0);
 }

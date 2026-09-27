@@ -15,6 +15,7 @@ int ke_replay_load(const char *path);
 void ke_replay_start(void);
 void ke_replay_frame_entry(void);
 void ke_replay_report(void);
+uint32_t ke_wait_for_tick_count(void);
 
 /* GNU ld --wrap=wait_for_tick: inject immediately before the original per-frame wait. */
 void __wrap_wait_for_tick(short wait_flags);

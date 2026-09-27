@@ -8,6 +8,7 @@
  * (close automatically; for smoke tests).
  */
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <direct.h>
@@ -22,6 +23,8 @@
 void ke_input_event(const SDL_Event *e);
 int ke_present_save_bmp(const char *path);
 
+#define MAX_AUTO_SHOTS 64
+
 /* Smoke-test automation: KE_AUTOKEYS="ms:scan,ms:scan" injects an XT make+break code
  * (hex) at a time after start; KE_SCREENSHOT="ms:file.bmp" saves the presented frame. */
 typedef struct AutoKey { uint64_t at_ns; unsigned code; } AutoKey;
@@ -30,11 +33,16 @@ typedef struct AutoClick {
     uint64_t at_ns, release_ns;
     int x, y, pressed, done;
 } AutoClick;
-typedef struct AutoShot { uint64_t at_ns; char path[MAX_PATH]; } AutoShot;
+typedef struct AutoShot {
+    uint64_t at_ns;
+    uint32_t at_frame;
+    int frame_based;
+    char path[MAX_PATH];
+} AutoShot;
 static AutoKey auto_keys[64];
 static AutoMouse auto_mouse[64];
 static AutoClick auto_clicks[64];
-static AutoShot auto_shots[16];
+static AutoShot auto_shots[MAX_AUTO_SHOTS];
 static int auto_key_count, auto_key_next;
 static int auto_mouse_count, auto_mouse_next;
 static int auto_click_count, auto_click_next;
@@ -92,7 +100,7 @@ static void parse_auto_shots(void)
 {
     const char *s = getenv("KE_SCREENSHOTS");
     if (s && *s) {
-        while (s && *s && auto_shot_count < 16) {
+        while (s && *s && auto_shot_count < MAX_AUTO_SHOTS) {
             char *end;
             const char *colon = strchr(s, ':');
             const char *comma;
@@ -111,6 +119,34 @@ static void parse_auto_shots(void)
             memcpy(path, colon + 1, path_len);
             path[path_len] = '\0';
             auto_shots[auto_shot_count].at_ns = (uint64_t)ms * 1000000ull;
+            auto_shots[auto_shot_count].frame_based = 0;
+            snprintf(auto_shots[auto_shot_count].path, MAX_PATH, "%s", path);
+            ++auto_shot_count;
+            s = comma;
+            if (s)
+                ++s;
+        }
+    } else if ((s = getenv("KE_FRAME_SHOTS")) != NULL && *s) {
+        while (s && *s && auto_shot_count < MAX_AUTO_SHOTS) {
+            char *end;
+            const char *colon = strchr(s, ':');
+            const char *comma;
+            unsigned long frame;
+            size_t path_len;
+            char path[MAX_PATH];
+            if (!colon)
+                break;
+            frame = strtoul(s, &end, 10);
+            if (end != colon || frame > UINT32_MAX || !colon[1])
+                break;
+            comma = strchr(colon + 1, ',');
+            path_len = comma ? (size_t)(comma - (colon + 1)) : strlen(colon + 1);
+            if (!path_len || path_len >= sizeof path)
+                break;
+            memcpy(path, colon + 1, path_len);
+            path[path_len] = '\0';
+            auto_shots[auto_shot_count].at_frame = (uint32_t)frame;
+            auto_shots[auto_shot_count].frame_based = 1;
             snprintf(auto_shots[auto_shot_count].path, MAX_PATH, "%s", path);
             ++auto_shot_count;
             s = comma;
@@ -122,6 +158,7 @@ static void parse_auto_shots(void)
         char path[MAX_PATH];
         if (sscanf(getenv("KE_SCREENSHOT"), "%u:%259s", &ms, path) == 2) {
             auto_shots[0].at_ns = (uint64_t)ms * 1000000ull;
+            auto_shots[0].frame_based = 0;
             snprintf(auto_shots[0].path, MAX_PATH, "%s", path);
             auto_shot_count = 1;
         }
@@ -164,7 +201,8 @@ static void run_auto_clicks(uint64_t since_start)
             ke_input_set_mouse_buttons(1);
             c->pressed = 1;
             c->release_ns = c->at_ns + 80000000ull;
-            ke_log(KE_LOG_INFO, "main", "KE_AUTOCLICKS: left down at %d,%d", c->x, c->y);
+            ke_log(KE_LOG_INFO, "main", "KE_AUTOCLICKS: left down at %d,%d (retrace %u, wait %u)",
+                   c->x, c->y, vga_frame_counter(), ke_wait_for_tick_count());
         }
         if (since_start < c->release_ns)
             break;
@@ -175,15 +213,27 @@ static void run_auto_clicks(uint64_t since_start)
     }
 }
 
-static void run_auto_shots(uint64_t since_start)
+static void run_auto_shots(uint64_t since_start, uint32_t frame)
 {
-    while (auto_shot_next < auto_shot_count &&
-           since_start >= auto_shots[auto_shot_next].at_ns) {
+    while (auto_shot_next < auto_shot_count) {
         AutoShot *shot = &auto_shots[auto_shot_next++];
+        int due = shot->frame_based ? frame >= shot->at_frame : since_start >= shot->at_ns;
+        if (!due) {
+            --auto_shot_next;
+            break;
+        }
         ke_log(KE_LOG_INFO, "main", "capturing scheduled frame %s", shot->path);
         int result = ke_present_save_bmp(shot->path);
-        ke_log(KE_LOG_INFO, "main", "screenshot %s (target %u ms): %s", shot->path,
-               (unsigned)(shot->at_ns / 1000000ull), result == 0 ? "saved" : "no graphics frame");
+        if (shot->frame_based)
+            ke_log(KE_LOG_INFO, "main", "screenshot %s (target retrace %u, captured retrace %u, "
+                   "wait %u): %s",
+                   shot->path, shot->at_frame, frame, ke_wait_for_tick_count(),
+                   result == 0 ? "saved" : "no graphics frame");
+        else
+            ke_log(KE_LOG_INFO, "main", "screenshot %s (target %u ms, retrace %u, wait %u): %s",
+                   shot->path, (unsigned)(shot->at_ns / 1000000ull), frame,
+                   ke_wait_for_tick_count(),
+                   result == 0 ? "saved" : "no graphics frame");
     }
 }
 
@@ -455,7 +505,7 @@ int main(int argc, char **argv)
                 ke_present_frame();
                 last_presented_frame = frame;
                 have_presented_frame = 1;
-                run_auto_shots(ke_now_ns() - start_ns);
+                run_auto_shots(ke_now_ns() - start_ns, frame);
             } else {
                 SDL_Delay(1);
             }
