@@ -1,18 +1,21 @@
-/* sb.c - Sound Blaster 2.0 / Pro DSP at 220h, IRQ 7, DMA 1 (attached with KE_SB=1),
+/* sb.c - Sound Blaster 2.0 / Pro DSP at 220h, IRQ 7, DMA 1 (on by default),
  * feeding an SDL3 audio stream.
  *
  * DSP: reset (226h) -> AAh; commands 10h direct DAC, 14h/1Ch single/auto-init 8-bit
  * output, 24h/2Ch 8-bit input, 40h time constant, 48h block size, 80h timed IRQ, D0h/D4h
- * pause/continue, D1h/D3h speaker, DAh exit auto-init, E1h version (3.02 = SB Pro), F2h
+ * pause/continue, D1h/D3h speaker, DAh exit auto-init, E1h version (2.01 = SB Pro), F2h
  * force IRQ. Mixer (224h/225h) registers are stored and read back (SB Pro detection).
  * Playback: the SDL audio thread pulls unsigned 8-bit mono at 1e6/(256-tc) Hz from the
  * programmed DMA channel; at the end of each DSP block it raises the SB IRQ, whose handler
  * (the game's) acknowledges by reading 22Eh and programs the next block. The consumer
  * (SDL device) is the clock, as the DAC was on the card.
  *
- * WORK PACKAGE "audio": stereo/high-speed modes if used, underrun policy, latency, verify
- * with the m_11258/m_11494 translations and the ProTracker player (m_11530).
+ * WAV dumps preserve the unsigned PCM bytes submitted to SDL; rate and block changes are
+ * written to a sidecar because a WAV header can describe only one rate.
  */
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 #include <SDL3/SDL.h>
@@ -40,13 +43,119 @@ static uint8_t irq_pending;
 static uint8_t mixer_index, mixer[256];
 static SDL_AudioStream *stream;
 static int stream_rate;
+static FILE *audio_dump;
+static FILE *audio_dump_log;
+static char audio_dump_path[MAX_PATH];
+static char audio_dump_log_path[MAX_PATH * 2];
+static uint64_t audio_sample_offset;
+static uint32_t audio_dump_bytes;
+static uint32_t audio_dump_rate = 7936;
+static uint64_t dma_block_start_offset;
+static unsigned dma_block_number;
+static int audio_dump_failed;
 
 static void mixer_reset_state(void)
 {
     memset(mixer, 0, sizeof mixer);
-    mixer[0x02] = 0x44;                      /* CT1345 legacy master volume: level 4 */
-    mixer[0x04] = 0xcc;                      /* CT1345 voice L/R: default level 12 */
-    mixer[0x22] = 0xcc;                      /* CT1345 master L/R: default level 12 */
+    /* Unity voice/master gain preserves raw PCM bytes from the game's .DIG samples. */
+    mixer[0x02] = 0xff;
+    mixer[0x04] = 0xff;
+    mixer[0x22] = 0xff;
+}
+
+static void dump_log(const char *format, ...)
+{
+    va_list args;
+    if (!audio_dump_log)
+        return;
+    va_start(args, format);
+    vfprintf(audio_dump_log, format, args);
+    va_end(args);
+    fputc('\n', audio_dump_log);
+}
+
+static void wav_u16(uint8_t *p, uint16_t value)
+{
+    p[0] = (uint8_t)value;
+    p[1] = (uint8_t)(value >> 8);
+}
+
+static void wav_u32(uint8_t *p, uint32_t value)
+{
+    p[0] = (uint8_t)value;
+    p[1] = (uint8_t)(value >> 8);
+    p[2] = (uint8_t)(value >> 16);
+    p[3] = (uint8_t)(value >> 24);
+}
+
+static void wav_header(FILE *file, uint32_t rate, uint32_t bytes)
+{
+    uint8_t h[44] = {0};
+    memcpy(h, "RIFF", 4);
+    wav_u32(h + 4, 36 + bytes);
+    memcpy(h + 8, "WAVEfmt ", 8);
+    wav_u32(h + 16, 16);
+    wav_u16(h + 20, 1);
+    wav_u16(h + 22, 1);
+    wav_u32(h + 24, rate);
+    wav_u32(h + 28, rate);
+    wav_u16(h + 32, 1);
+    wav_u16(h + 34, 8);
+    memcpy(h + 36, "data", 4);
+    wav_u32(h + 40, bytes);
+    fwrite(h, 1, sizeof h, file);
+}
+
+static void audio_dump_open(void)
+{
+    const char *path = getenv("KE_AUDIO_DUMP");
+    int n;
+    if (!path || !*path)
+        return;
+    n = snprintf(audio_dump_path, sizeof audio_dump_path, "%s", path);
+    if (n < 0 || n >= (int)sizeof audio_dump_path) {
+        ke_log(KE_LOG_WARN, "sb", "KE_AUDIO_DUMP path is too long; audio dump disabled");
+        return;
+    }
+    audio_dump = fopen(audio_dump_path, "wb+");
+    if (!audio_dump) {
+        ke_log(KE_LOG_WARN, "sb", "cannot open audio dump %s", audio_dump_path);
+        return;
+    }
+    setvbuf(audio_dump, NULL, _IOFBF, 65536);
+    wav_header(audio_dump, audio_dump_rate, 0);
+    n = snprintf(audio_dump_log_path, sizeof audio_dump_log_path, "%s.dsp.log", audio_dump_path);
+    if (n >= 0 && n < (int)sizeof audio_dump_log_path) {
+        audio_dump_log = fopen(audio_dump_log_path, "w");
+        if (audio_dump_log)
+            setvbuf(audio_dump_log, NULL, _IOLBF, 0);
+    }
+    if (!audio_dump_log)
+        ke_log(KE_LOG_WARN, "sb", "cannot open DSP log %s", audio_dump_log_path);
+    else
+        dump_log("AUDIO_DUMP wav=%s wav_header_rate=%u format=PCM_U8_MONO rate_changes=logged",
+                 audio_dump_path, audio_dump_rate);
+}
+
+static void audio_dump_close(void)
+{
+    if (audio_dump) {
+        if (!audio_dump_failed) {
+            fflush(audio_dump);
+            fseek(audio_dump, 0, SEEK_SET);
+            wav_header(audio_dump, audio_dump_rate, audio_dump_bytes);
+            fflush(audio_dump);
+        }
+        fclose(audio_dump);
+        audio_dump = NULL;
+    }
+    if (audio_dump_log) {
+        dump_log("AUDIO_DUMP_END samples=%llu bytes=%u wav_header_rate=%u failed=%d",
+                 (unsigned long long)audio_sample_offset, audio_dump_bytes,
+                 audio_dump_rate, audio_dump_failed);
+        fclose(audio_dump_log);
+        audio_dump_log = NULL;
+    }
 }
 
 static uint16_t mixer_voice_gain(void)
@@ -86,6 +195,59 @@ static void raise_irq(void)
 }
 
 static int rate_from_tc(uint8_t tc) { return 1000000 / (256 - tc); }
+
+static void dump_dma_prefix(void)
+{
+    uint32_t linear;
+    const uint8_t *p;
+    if (!audio_dump_log)
+        return;
+    linear = vdma_current_linear(SB_DMA);
+    if (linear < LOWMEM_BASE || linear + 16 > LOWMEM_END) {
+        dump_log("DMA_MEMORY address=%08X prefix=outside-low-memory", linear);
+        return;
+    }
+    p = (const uint8_t *)(uintptr_t)linear;
+    dump_log("DMA_MEMORY address=%08X prefix=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+             linear, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],
+             p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]);
+}
+
+static int update_stream_rate(SDL_AudioStream *s)
+{
+    int rate = rate_from_tc(time_constant);
+    if (rate != stream_rate) {
+        SDL_AudioSpec src = {SDL_AUDIO_U8, 1, rate};
+        if (SDL_SetAudioStreamFormat(s, &src, NULL)) {
+            stream_rate = rate;
+            dump_log("STREAM_FORMAT offset=%llu rate=%d tc=%u",
+                     (unsigned long long)audio_sample_offset, rate, time_constant);
+        } else {
+            ke_log_once("sb.stream-format", KE_LOG_WARN, "sb",
+                        "SDL audio stream format change to %d Hz failed: %s",
+                        rate, SDL_GetError());
+        }
+    }
+    return rate;
+}
+
+/* A single-cycle 640-byte DSP transfer can end in the middle of SDL's request. Let the
+ * independent PIC thread run the guest IRQ handler and re-arm DMA before filling the rest
+ * of this output chunk; otherwise the unfilled tail becomes a repeatable silence gap. */
+static int wait_for_dma_rearm(void)
+{
+    uint64_t deadline = ke_now_ns() + 5000000ull;
+    do {
+        int ready;
+        EnterCriticalSection(&sb_lock);
+        ready = dma_active && block_left && !dma_paused;
+        LeaveCriticalSection(&sb_lock);
+        if (ready)
+            return 1;
+        SwitchToThread();
+    } while (ke_now_ns() < deadline);
+    return 0;
+}
 
 static void dsp_command_complete(void)
 {
@@ -141,12 +303,29 @@ static void dsp_command_complete(void)
     case 0xd1: speaker = 1; break;
     case 0xd3: speaker = 0; break;
     case 0xda: dma_auto = 0; break;
-    case 0xe1: fifo_push(3); fifo_push(2); break;
+    case 0xe1: fifo_push(2); fifo_push(1); break;
     case 0xe0: fifo_push((uint8_t)~cmd_args[0]); break;
     case 0xf2: raise_irq(); break;
     default:
         ke_log_once("sb.cmd", KE_LOG_DEBUG, "sb", "DSP command %02Xh ignored", cmd);
         break;
+    }
+
+    dump_log("DSP offset=%llu cmd=%02X args=%02X%02X%02X%02X tc=%u rate=%u block=%u mode=%s mixer_voice=%02X mixer_master=%02X gain_q8=%u",
+             (unsigned long long)audio_sample_offset, cmd,
+             cmd_args[0], cmd_args[1], cmd_args[2], cmd_args[3], time_constant,
+             (unsigned)rate_from_tc(time_constant), (unsigned)block_len,
+             dma_auto ? "auto" : "single", mixer[0x04], mixer[0x22],
+             (unsigned)mixer_voice_gain());
+    if (cmd == 0x14 || cmd == 0x1c || cmd == 0x90 || cmd == 0x91) {
+        if (!dma_block_number)
+            audio_dump_rate = (uint32_t)rate_from_tc(time_constant);
+        dump_dma_prefix();
+        dma_block_start_offset = audio_sample_offset;
+        ++dma_block_number;
+        dump_log("DMA_BLOCK_START block=%u offset=%llu length=%u rate=%u tc=%u",
+                 dma_block_number, (unsigned long long)dma_block_start_offset,
+                 (unsigned)block_len, (unsigned)rate_from_tc(time_constant), time_constant);
     }
 }
 
@@ -199,12 +378,20 @@ static void sb_out(void *ctx, uint16_t port, uint32_t value, int size)
     (void)ctx; (void)size;
     EnterCriticalSection(&sb_lock);
     switch (port - SB_BASE) {
-    case 0x4: mixer_index = v; break;
+    case 0x4:
+        mixer_index = v;
+        dump_log("MIXER_SELECT offset=%llu reg=%02X",
+                 (unsigned long long)audio_sample_offset, mixer_index);
+        break;
     case 0x5:
-        if (mixer_index == 0)
+        if (mixer_index == 0) {
             mixer_reset_state();
-        else
+        } else {
             mixer[mixer_index] = v;
+        }
+        dump_log("MIXER_WRITE offset=%llu reg=%02X value=%02X voice=%02X master=%02X gain_q8=%u",
+                 (unsigned long long)audio_sample_offset, mixer_index, v,
+                 mixer[0x04], mixer[0x22], (unsigned)mixer_voice_gain());
         break;
     case 0x6:
         if (v & 1)
@@ -239,6 +426,7 @@ static void sb_out(void *ctx, uint16_t port, uint32_t value, int size)
             cmd = v;
             cmd_need = args_for(v);
             cmd_have = 0;
+            memset(cmd_args, 0, sizeof cmd_args);
             if (!cmd_need)
                 dsp_command_complete();
         }
@@ -255,43 +443,60 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
     (void)userdata; (void)total;
     while (additional > 0) {
         int want = additional < (int)sizeof buf ? additional : (int)sizeof buf;
-        int n = 0, rate, starved;
+        int n = 0, rate, starved, rearm_timeout = 0, committed = 0;
         uint8_t fill = 0x80;
         uint32_t diagnostic_left;
         uint16_t gain;
+        uint64_t chunk_base;
         memset(buf, 0x80, (size_t)want);
         EnterCriticalSection(&sb_lock);
-        rate = rate_from_tc(time_constant);
-        if (rate != stream_rate) {
-            SDL_AudioSpec src = {SDL_AUDIO_U8, 1, rate};
-            SDL_SetAudioStreamFormat(s, &src, NULL);
-            stream_rate = rate;
-        }
+        chunk_base = audio_sample_offset;
+        rate = update_stream_rate(s);
         gain = mixer_voice_gain();
-        while (n < want && dma_active && !dma_paused) {
-            int tc = 0, chunk = want - n, got;
-            if ((uint32_t)chunk > block_left)
-                chunk = (int)block_left;
-            got = dma_input ? vdma_write(SB_DMA, 0x80, chunk, &tc)
-                            : vdma_read(SB_DMA, buf + n, chunk, &tc);
-            if (got > 0 && got < chunk)
-                ke_log_once("sb.dma.short-read", KE_LOG_WARN, "sb",
-                            "DMA delivered %d of %d requested bytes (TC=%d, DSP block left=%u)",
-                            got, chunk, tc, block_left);
-            if (got <= 0)
-                break;
-            if (!dma_input && !speaker)
-                memset(buf + n, 0x80, (size_t)got);
-            n += got;
-            block_left -= (uint32_t)got;
-            if (block_left == 0) {
-                raise_irq();
-                if (dma_auto)
-                    block_left = block_len;
-                else {
-                    dma_active = 0;
-                    dma_input = high_speed = 0;
+        while (n < want) {
+            if (dma_active && !dma_paused) {
+                int tc = 0, chunk = want - n, got;
+                if ((uint32_t)chunk > block_left)
+                    chunk = (int)block_left;
+                got = dma_input ? vdma_write(SB_DMA, 0x80, chunk, &tc)
+                                : vdma_read(SB_DMA, buf + n, chunk, &tc);
+                if (got > 0 && got < chunk)
+                    ke_log_once("sb.dma.short-read", KE_LOG_WARN, "sb",
+                                "DMA delivered %d of %d requested bytes (TC=%d, DSP block left=%u)",
+                                got, chunk, tc, block_left);
+                if (got <= 0)
+                    break;
+                if (!dma_input && !speaker)
+                    memset(buf + n, 0x80, (size_t)got);
+                n += got;
+                block_left -= (uint32_t)got;
+                if (block_left == 0) {
+                    dump_log("DMA_BLOCK_END block=%u start=%llu end=%llu length=%u rate=%u tc=%u",
+                             dma_block_number, (unsigned long long)dma_block_start_offset,
+                             (unsigned long long)(chunk_base + (uint32_t)n),
+                             (unsigned)block_len, (unsigned)rate, time_constant);
+                    raise_irq();
+                    if (dma_auto) {
+                        block_left = block_len;
+                    } else {
+                        dma_active = 0;
+                        dma_input = high_speed = 0;
+                        audio_sample_offset += (uint32_t)(n - committed);
+                        committed = n;
+                        LeaveCriticalSection(&sb_lock);
+                        if (n < want && !wait_for_dma_rearm())
+                            rearm_timeout = 1;
+                        EnterCriticalSection(&sb_lock);
+                        if (rearm_timeout)
+                            break;
+                        if (n < want) {
+                            rate = update_stream_rate(s);
+                            gain = mixer_voice_gain();
+                        }
+                    }
                 }
+            } else {
+                break;
             }
         }
         if (timed_irq_samples) {
@@ -306,6 +511,7 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
             fill = direct_sample;
         starved = !dma_input && n < want && dma_active && !dma_paused;
         diagnostic_left = block_left;
+        audio_sample_offset += (uint32_t)(want - committed);
         LeaveCriticalSection(&sb_lock);
         if (n < want) {
             memset(buf + n, fill, (size_t)(want - n));
@@ -316,6 +522,23 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
             ke_log_once("sb.underrun", KE_LOG_WARN, "sb",
                         "audio DMA starved (DSP block left=%u); outputting unsigned silence until the next block",
                         diagnostic_left);
+        }
+        if (rearm_timeout) {
+            dump_log("DMA_REARM_TIMEOUT offset=%llu block=%u left=%u",
+                     (unsigned long long)(chunk_base + (uint32_t)n),
+                     dma_block_number, diagnostic_left);
+            ke_log_once("sb.dma.rearm-timeout", KE_LOG_WARN, "sb",
+                        "IRQ7 did not re-arm single-cycle DMA within 5 ms; inserting silence");
+        }
+        if (audio_dump && !audio_dump_failed) {
+            size_t written = fwrite(buf, 1, (size_t)want, audio_dump);
+            if (written != (size_t)want) {
+                audio_dump_failed = 1;
+                ke_log_once("sb.dump-write", KE_LOG_WARN, "sb", "audio dump write failed: %s",
+                            audio_dump_path);
+            } else {
+                audio_dump_bytes += (uint32_t)written;
+            }
         }
         SDL_PutAudioStreamData(s, buf, want);
         additional -= want;
@@ -332,6 +555,7 @@ void vsb_init(void)
         return;
     }
     mixer_reset_state();
+    audio_dump_open();
     vhw_register_ports(SB_BASE, SB_BASE + 0xf, sb_in, sb_out, NULL, "sound-blaster");
     stream_rate = rate_from_tc(time_constant);
     spec.format = SDL_AUDIO_U8;
@@ -339,12 +563,19 @@ void vsb_init(void)
     spec.freq = stream_rate;
     stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, sb_audio_callback, NULL);
     if (!stream) {
-        ke_log(KE_LOG_WARN, "sb", "SDL audio unavailable: %s (card stays silent)", SDL_GetError());
+        ke_log(KE_LOG_ERROR, "sb", "SDL_OpenAudioDeviceStream failed at %d Hz U8 mono: %s",
+               spec.freq, SDL_GetError());
         return;
     }
     SDL_SetAudioStreamGain(stream, (float)ke_config_volume() / 100.0f);
+    {
+        SDL_AudioSpec src, dst;
+        if (SDL_GetAudioStreamFormat(stream, &src, &dst))
+            ke_log(KE_LOG_INFO, "sb", "SDL audio stream opened: source %d Hz U8 mono, device %d Hz/%d channels",
+                   src.freq, dst.freq, dst.channels);
+    }
     SDL_ResumeAudioStreamDevice(stream);
-    ke_log(KE_LOG_INFO, "sb", "Sound Blaster Pro (DSP 3.02) at 220h IRQ %d DMA %d", SB_IRQ, SB_DMA);
+    ke_log(KE_LOG_INFO, "sb", "Sound Blaster Pro (DSP 2.01) at 220h IRQ %d DMA %d", SB_IRQ, SB_DMA);
 }
 
 void vsb_shutdown(void)
@@ -357,4 +588,5 @@ void vsb_shutdown(void)
         DeleteCriticalSection(&sb_lock);
         lock_initialized = 0;
     }
+    audio_dump_close();
 }
