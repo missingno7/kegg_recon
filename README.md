@@ -3,6 +3,10 @@
 Reconstruct source for `KE.EXE` (Watcom C/C++32 10.0-era, DOS/4GW LE executable) that the historical
 toolchain rebuilds into the original bytes — ultimately a byte-identical executable from one WLINK run.
 
+**Status: frozen historical oracle (`historical-exact-clean-v1`).** The cleaned, semantically named source rebuilds
+`KE.EXE` byte for byte (SHA-256 `5a465cc7…50b7ee`) from 71 objects with zero raw debt — see docs/freeze.md. Types:
+docs/types.md; remaining historical oddities: docs/unresolved.md; SDL3 migration map: docs/porting.md.
+
 ## Layout
 
 | path | content |
