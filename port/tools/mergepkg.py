@@ -17,6 +17,7 @@ GATES = [
     [sys.executable, "port/tools/check_layouts.py", "--data"],
     [sys.executable, "port/tools/gen_asm_stubs.py", "--check"],
     [sys.executable, "port/tools/smoke.py"],
+    [sys.executable, "port/tools/lockstep.py", "--frames", "1100", "--click-every", "100:60:150:82:400"],
 ]
 
 
