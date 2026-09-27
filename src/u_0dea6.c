@@ -1,5 +1,4 @@
-/* Frozen T06 imports g_75c4; retain that external spelling for the descriptive alias. */
-#pragma aux dpmi_memory_error "g_75c4";
+/* Short external name for the shared DPMI allocation error state. */
 unsigned int dpmi_dos_segment;
 unsigned int dpmi_selector_or_failure_marker;
 unsigned int dpmi_segment_linear_base;
@@ -33,7 +32,8 @@ unsigned int query_largest_dos_free_block(void);
 
 /* _DATA [0x75c0,0x75c8) */
 unsigned int largest_dos_free_block_bytes = 0;
-unsigned int dpmi_memory_error = 0;
+/* Shared DPMI allocation status/error code. */
+unsigned int dpmi_err = 0;
 
 unsigned int allocate_dpmi_memory(int byte_count) {
     union REGS regs;
@@ -43,13 +43,13 @@ unsigned int allocate_dpmi_memory(int byte_count) {
     int386(DPMI_INTERRUPT, &regs, &regs);
     if (regs.x.cflag != 0) {
         dpmi_selector_or_failure_marker = ((unsigned int)regs.w.bx << DOS_PARAGRAPH_SHIFT) | 1;
-        dpmi_memory_error = DPMI_MEMORY_ALLOCATION_ERROR_CODE;
+        dpmi_err = DPMI_MEMORY_ALLOCATION_ERROR_CODE;
         return 0;
     }
     if (byte_count == 0)
-        dpmi_memory_error = DPMI_MEMORY_ALLOCATION_ERROR_CODE;
+        dpmi_err = DPMI_MEMORY_ALLOCATION_ERROR_CODE;
     else
-        dpmi_memory_error = 0;
+        dpmi_err = 0;
     /* DPMI 0100h returns the DOS segment in AX and its selector in DX. */
     dpmi_dos_segment = regs.w.ax;
     dpmi_selector_or_failure_marker = regs.w.dx;

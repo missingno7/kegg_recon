@@ -77,8 +77,8 @@ extern void read_vga_palette(unsigned char *);
 int save_screen_image(char *filename);
 extern signed short sound_blaster_detected;
 extern unsigned char sound_blaster_irq;
-/* g_75a8 is the master PIC vector base; its linker name is retained by its owner. */
-extern unsigned char g_75a8;
+/* picvec is the master PIC vector base; its linker name is retained by its owner. */
+extern unsigned char picvec;
 extern unsigned char slave_pic_vector_base;
 extern unsigned char sndvec;
 extern unsigned char sound_system_irq_line;
@@ -94,9 +94,9 @@ extern int sound_callback_allocation_size;
 extern void stop_audio_stream(void);
 extern void stop_protracker_module(void);
 /* The defining unit aliases these linker symbols to save/restore interrupt state. */
-extern void f_d7b8(void *);
+extern void restore(void *);
 extern void free_dpmi_memory(int);
-extern void f_d656(void *, void(*)(void));
+extern void save_irq(void *, void(*)(void));
 extern void release_sound_callback(void);
 
 /* _DATA [0x7418,0x7420) */

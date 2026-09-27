@@ -23,11 +23,11 @@ extern signed short sound_blaster_detected;
 extern unsigned char sound_blaster_irq;
 extern unsigned char sndvec;
 extern unsigned char sound_system_irq_line;
-/* These linker spellings are frozen by T06; the defining TU has readable C aliases. */
-extern unsigned char g_75a8;
+/* PIC vectors and DPMI hooks are shared with the timer and keyboard setup. */
+extern unsigned char picvec;
 extern unsigned char slave_pic_vector_base;
 extern unsigned char sndirq[];
-extern void f_d656(void *, void(*)(void));
+extern void save_irq(void *, void(*)(void));
 extern void release_sound_system(void);
 void prepare_sound_system(void);
 extern unsigned char sound_callback_interrupt_number;
@@ -37,7 +37,7 @@ extern int sound_callback_allocation_size;
 extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
 extern void stop_protracker_module(void);
-extern void f_d7b8(void *);
+extern void restore(void *);
 extern void free_dpmi_memory(int);
 extern int save_screen_image(char *);
 extern void release_sound_callback(void);
@@ -48,12 +48,12 @@ extern int sound_system_handler_address;
 extern int sound_system_physical_start;
 extern int sound_system_mapping_state;
 extern int sound_system_mapped_address;
-extern unsigned g_75c4;
+extern unsigned dpmi_err;
 extern int audio_dma_memory;
 extern short sound_blaster_base_port;
 extern unsigned dpmi_selector_or_failure_marker;
 extern void __far sound_blaster_irq_handler(void);
-extern int f_da01(void *);
+extern int install(void *);
 extern unsigned allocate_dpmi_memory(int);
 
 /* _DATA [0x7420,0x7428) */
@@ -63,11 +63,11 @@ int audio_dma_allocation_bytes = 0;
 void prepare_sound_system(void)
 {
     if (sound_blaster_detected == -1) {
-        sound_system_irq_line = sound_blaster_irq + g_75a8;
+        sound_system_irq_line = sound_blaster_irq + picvec;
         sndvec = sound_system_irq_line;
         if (sound_blaster_irq >= 8)
-            sndvec += slave_pic_vector_base - 8 - g_75a8;
-        f_d656(&sndirq, release_sound_system);
+            sndvec += slave_pic_vector_base - 8 - picvec;
+        save_irq(&sndirq, release_sound_system);
     }
 }
 
@@ -75,7 +75,7 @@ void release_sound_system(void)
 {
     if (sound_blaster_detected == -1) {
         stop_audio_stream();
-        f_d7b8(&sndirq);
+        restore(&sndirq);
         free_dpmi_memory(audio_dma_allocation_bytes);
         audio_dma_allocation_bytes = 0;
     }
@@ -99,7 +99,7 @@ int configure_sound_dma(int bytes_requested)
     sound_system_physical_start = (int)a_0;
     sound_system_mapping_state = (int)((unsigned char __far *)a_0 + SOUND_IRQ_STUB_BYTES);
     /* Install the Sound Blaster transfer hook and reserve its DMA buffer. */
-    if (f_da01(sndirq) != -1) {
+    if (install(sndirq) != -1) {
         if ((bytes_requested & 1) == 1) {
             interrupt_stub = (struct SoundBlasterIrqStub *)sound_system_mapped_address;
             interrupt_stub->dsp_base_port = sound_blaster_base_port;
@@ -110,7 +110,7 @@ int configure_sound_dma(int bytes_requested)
                 interrupt_stub->pic_command_port = PIC_SLAVE_COMMAND_PORT;
             }
         }
-        if (g_75c4) {
+        if (dpmi_err) {
             return SOUND_ERROR_DMA_SETUP_FAILED;
         }
         if (bytes_requested) {

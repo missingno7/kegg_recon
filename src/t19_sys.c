@@ -27,7 +27,7 @@ extern int detect_sound_blaster(void);
 extern int initialize_mouse_driver(void);
 extern int detect_joystick(void);
 extern void poll_keyboard(void);
-extern int f_9974(void);
+extern int verify_timer(void);
 extern int f_9f64(void);
 extern unsigned int allocate_dpmi_memory(int);
 extern unsigned int query_largest_dpmi_free_block(void);
@@ -40,7 +40,7 @@ extern long cpu_type;
 extern unsigned long cpu_mode;
 extern unsigned long cpu_iopl;
 extern long largest_dos_free_block_bytes;
-extern unsigned int g_75c4;
+extern unsigned int dpmi_err;
 extern unsigned int dos_memory_error;
 extern unsigned int dpmi_selector_or_failure_marker;
 extern unsigned int heap_block;
@@ -76,7 +76,7 @@ struct DisplayState {
 };
 extern struct DisplayState vga_state;
 extern unsigned long keyboard_hook_flags;
-extern unsigned long g_7588;
+extern unsigned long irq_flags;
 extern short page_idx;
 extern unsigned int sound_blaster_mixer_test;
 extern short key_irq;
@@ -101,7 +101,7 @@ extern unsigned long ems_manager_handle;
 extern unsigned long dpmi_version_bcd;
 extern unsigned long sound_blaster_dsp_version;
 extern short sound_blaster_base_port;
-extern short g_73a6;
+extern short timer_ok;
 extern void restore_system_interrupt_vectors(void);
 extern void fatal_exit(unsigned long, unsigned long);
 extern void dispatch_keyboard(void);
@@ -109,8 +109,8 @@ extern void update_mouse(void);
 extern void poll_joystick_ports(void);
 extern int set_vga_display_start(int);
 extern int initialize_keyboard_manager(int);
-extern int f_9b44(int);
-extern void f_9d40(unsigned char);
+extern int start_timer(int);
+extern void wait_for_tick(unsigned char);
 extern short keyboard_state;
 extern void (*key_action_hook)(unsigned long, unsigned long);
 extern short *kbd_state_ptr;
@@ -371,7 +371,7 @@ int sys_report(int conventional_memory_bytes,int extended_memory_bytes,unsigned 
             report_status=-1;
             printf(MSG_NEED_CONVENTIONAL_MEMORY,conventional_memory_bytes/1024);
         }
-        if(g_75c4==0) free_dpmi_memory(dpmi_selector_or_failure_marker);
+        if(dpmi_err==0) free_dpmi_memory(dpmi_selector_or_failure_marker);
         printf(MSG_CONVENTIONAL_MEMORY_AVAILABLE,conventional_memory_bytes/1024,query_largest_dos_free_block()/1024);
     }
     if((report_flags&REPORT_EXTENDED_MEMORY)!=0) {
@@ -382,7 +382,7 @@ int sys_report(int conventional_memory_bytes,int extended_memory_bytes,unsigned 
         if(dos_memory_error==0) free_heap_block(heap_block);
         allocate_dpmi_memory(conventional_memory_bytes);
         printf(MSG_EXTENDED_MEMORY_AVAILABLE,extended_memory_bytes/1024,(int)query_largest_dpmi_free_block()/1024,(largest_dos_free_block_bytes-conventional_memory_bytes)/1024);
-        if(g_75c4==0) free_dpmi_memory(dpmi_selector_or_failure_marker);
+        if(dpmi_err==0) free_dpmi_memory(dpmi_selector_or_failure_marker);
     }
     if((report_flags&REPORT_MOUSE)!=0) if(initialize_mouse_driver()==-1) {
         printf(MSG_MOUSE_DETECTED);
@@ -410,7 +410,7 @@ int sys_report(int conventional_memory_bytes,int extended_memory_bytes,unsigned 
             }
         }
     }
-    if(report_flags&REPORT_VBL) if(f_9974()==-1) printf(MSG_VBL_COMPATIBILITY,f_9f64());
+    if(report_flags&REPORT_VBL) if(verify_timer()==-1) printf(MSG_VBL_COMPATIBILITY,f_9f64());
     return report_status;
 }
 
@@ -441,21 +441,21 @@ void sysinit(int vbl_manager_mode,int keyboard_manager_mode,int debug_compatibil
             printf("\n");
         }
     }
-    if(vbl_manager_mode==-1 && g_73a6==-1) {
+    if(vbl_manager_mode==-1 && timer_ok==-1) {
         if(debug_compatibility_mode==-1) manager_install_mode=2;
         else manager_install_mode=4;
-        manager_error_code=f_9b44(manager_install_mode);
+        manager_error_code=start_timer(manager_install_mode);
         if(manager_error_code) printf(error_message_categories[(manager_error_code&0xff00)>>8][(manager_error_code&0xff)-1]);
-        if(g_7588) {
+        if(irq_flags) {
             printf(MSG_VBL_MANAGER_INSTALLED);
-            if((g_7588&1)==1) printf("(REAL) ");
-            if(g_7588&2) printf("(DPMI) ");
-            if(g_7588&4) printf("(D4GW) ");
+            if((irq_flags&1)==1) printf("(REAL) ");
+            if(irq_flags&2) printf("(DPMI) ");
+            if(irq_flags&4) printf("(D4GW) ");
             printf("\n");
         }
     }
     for(key_poll_count=0;key_poll_count<50;key_poll_count++) {
-        f_9d40((int)1);
+        wait_for_tick((int)1);
         if(translated_key_bitmap[5].bytes.low&0x80) key_poll_count--;
     }
     if(mouse_setup_mode!=-1) {

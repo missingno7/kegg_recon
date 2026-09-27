@@ -86,7 +86,7 @@ int last_displayed_enemy_health;
 int attack_frame_count;
 int attack_delay;
 
-extern int g_e4d0_wfmxdlyju;
+extern int file_buf_ptr;
 extern void fatal_exit(unsigned, unsigned);
 extern void copy_screen_span_entry(int, int, int, int, int);
 extern void handle_s_key(void);
@@ -106,7 +106,7 @@ extern void update_auxiliary_projectiles(void);
 extern void update_enemy_attack_cycle(void);
 extern void animate(void);
 extern void spawn_animated_sprite(int, int, int, int, int, int, int);
-extern void f_9d40(unsigned char);
+extern void wait_for_tick(unsigned char);
 int enemy_shot_countdown;
 int enemy_fire_acceleration;
 struct AuxiliaryProjectile *bolt_cursor;
@@ -229,7 +229,7 @@ int run_level(void)
     old_display_mode = vga_state.viewport_bottom_or_height;
     vga_state.viewport_bottom_or_height = LEVEL_HUD_BOTTOM;
     fade_dac((void *)vga_buffer_base, 0, VGA_DAC_MAX_COMPONENT, 8);
-    g_e4d0_wfmxdlyju = file_error_state;
+    file_buf_ptr = file_error_state;
     load_monster_art();
     prep_level();
     *(unsigned char *)&hook_flags_word &= 0xf8;
@@ -238,8 +238,8 @@ int run_level(void)
     zapbol();
     sprclr();
     aitune();
-    f_9d40(0);
-    f_9d40(0);
+    wait_for_tick(0);
+    wait_for_tick(0);
     plot_transformed_pixel((void *)sprite_memory_base, page2);
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
@@ -249,7 +249,7 @@ int run_level(void)
     firein();
     fade_dac((void *)vga_buffer_base, VGA_DAC_MAX_COMPONENT, 0, 1);
     do {
-        f_9d40(3);
+        wait_for_tick(3);
         update_level_hud();
         handle_s_key();
         update_enemy_attack_cycle();
@@ -303,7 +303,7 @@ int fade_level_to_white(void)
                 *(unsigned char *)(unsigned char *)(vga_buffer_base + temp) = VGA_DAC_MAX_COMPONENT;
         }
         write_vga_palette((void *)vga_buffer_base);
-        f_9d40(3);
+        wait_for_tick(3);
     }
     palette_fade_delay_ticks = 1;
     return 0;

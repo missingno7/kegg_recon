@@ -1,5 +1,4 @@
-/* T08 is source-frozen, so keep its imported linker symbol while naming the C routine. */
-#pragma aux decode_pcx_image "f_a0e0";
+/* PCX decoder called by the picture-file loader. */
 #define PCX_HEADER_BYTES 0x80
 #define PCX_HEADER_SIGNATURE 0x0801050a
 #define PCX_RLE_MARKER 0xc0

@@ -82,9 +82,9 @@ extern int write_sound_blaster_byte(void);
 extern int read_sound_blaster_byte(void);
 extern int acknowledge_sound_blaster_irq(void);
 /* Frozen T06 requires these interrupt-hook linker names. */
-extern void f_d656(unsigned char *, int);
-extern int f_da01(unsigned char *);
-extern void f_d7b8(unsigned char *);
+extern void save_irq(unsigned char *, int);
+extern int install(unsigned char *);
+extern void restore(unsigned char *);
 extern void __interrupt sound_test_irq_handler(void);
 extern unsigned int dpmi_selector_or_failure_marker;
 extern unsigned int sound_dma_buffer_address;
@@ -98,7 +98,7 @@ extern void program_sound_dma_channel(void);
 extern void set_sound_blaster_sample_rate(unsigned int);
 extern void copy_ds_to_es(void);
 extern void send_pic_end_of_interrupt(void);
-extern unsigned int g_75a8;
+extern unsigned int picvec;
 extern unsigned int slave_pic_vector_base;
 /* Watcom emits const aggregates in _TEXT before the function bodies. */
 const unsigned char empty_sound_irq_config[INTERRUPT_STATE_BYTES] = { 0 };
@@ -222,14 +222,14 @@ int detect_sound_blaster_irq(void) {
         } else {
             sound_blaster_irq = irq_candidates.irq_lines[candidate_index++];
         }
-        interrupt_config.irq_line = (unsigned char)(sound_blaster_irq + (unsigned char)g_75a8);
+        interrupt_config.irq_line = (unsigned char)(sound_blaster_irq + (unsigned char)picvec);
         interrupt_config.interrupt_number = interrupt_config.irq_line;
         if (sound_blaster_irq >= 8)
-            interrupt_config.interrupt_number += (unsigned char)slave_pic_vector_base - 8 - (unsigned char)g_75a8;
+            interrupt_config.interrupt_number += (unsigned char)slave_pic_vector_base - 8 - (unsigned char)picvec;
         interrupt_config.hook_flags = 4;
-        f_d656((unsigned char *)&interrupt_config, 0);
+        save_irq((unsigned char *)&interrupt_config, 0);
         interrupt_config.handler_address = (unsigned int)sound_test_irq_handler;
-        f_da01((unsigned char *)&interrupt_config);
+        install((unsigned char *)&interrupt_config);
         acknowledge_sound_blaster_irq();
         sound_blaster_command_byte = SB_DSP_CMD_TEST_IRQ;
         write_sound_blaster_byte();
@@ -252,7 +252,7 @@ int detect_sound_blaster_irq(void) {
         }
         if (sound_irq_test_flag == -1)
             sound_blaster_irq = SOUND_CANDIDATE_END;
-        f_d7b8((unsigned char *)&interrupt_config);
+        restore((unsigned char *)&interrupt_config);
         if (irq_candidates.irq_lines[candidate_index] == SOUND_CANDIDATE_END)
             break;
         if (sound_irq_test_flag != -1)
@@ -299,14 +299,14 @@ int detect_sound_blaster_dma(void) {
     } else {
         sound_blaster_dma_channel = dma_candidates.dma_channels[candidate_index++];
     }
-    dma_config.irq_line = (unsigned char)(sound_blaster_irq + (unsigned char)g_75a8);
+    dma_config.irq_line = (unsigned char)(sound_blaster_irq + (unsigned char)picvec);
     dma_config.interrupt_number = dma_config.irq_line;
     if (sound_blaster_irq >= 8)
-        dma_config.interrupt_number += (unsigned char)slave_pic_vector_base - 8 - (unsigned char)g_75a8;
+        dma_config.interrupt_number += (unsigned char)slave_pic_vector_base - 8 - (unsigned char)picvec;
     dma_config.hook_flags = 4;
-    f_d656((unsigned char *)&dma_config, 0);
+    save_irq((unsigned char *)&dma_config, 0);
     dma_config.handler_address = (unsigned int)sound_test_irq_handler;
-    f_da01((unsigned char *)&dma_config);
+    install((unsigned char *)&dma_config);
     sound_dma_channel = sound_blaster_dma_channel;
     mask_sound_dma_channel();
     sound_dma_buffer_address = test_buffer;
@@ -327,7 +327,7 @@ int detect_sound_blaster_dma(void) {
         }
     }
     mask_sound_dma_channel();
-    f_d7b8((unsigned char *)&dma_config);
+    restore((unsigned char *)&dma_config);
     if (dma_candidates.dma_channels[candidate_index] == SOUND_CANDIDATE_END)
         break;
     if (sound_dma_test_result != -1)

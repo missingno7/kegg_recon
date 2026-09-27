@@ -101,14 +101,14 @@ extern unsigned char life_lost_flag;
 extern unsigned char arcade;
 extern unsigned char bonus_index;
 extern unsigned char level_number;
-extern int g_e1b8; /* T06-owned image-buffer cursor saved across one frame update. */
-extern short g_e1bc; /* T06-owned retrace counter for the current gameplay interval. */
-extern short g_e1c0; /* T06-owned retrace count used as this interval's frame limit. */
+extern int save_cur; /* T06-owned image-buffer cursor saved across one frame update. */
+extern short retrace_tick_count; /* T06-owned retrace counter for the current gameplay interval. */
+extern short ticklim; /* T06-owned retrace count used as this interval's frame limit. */
 extern unsigned char *image_buffer_cursor;
 extern unsigned char current_scan_code;
 extern unsigned char keyboard_scan_byte;
-extern int g_e4c8; /* Shared image/audio buffer capacity; T08 also passes it to decode_picture. */
-extern int g_e4d0_wfmxdlyju; /* Shared cursor/base for loading image and game assets. */
+extern int n_read; /* Shared image/audio buffer capacity; T08 also passes it to decode_picture. */
+extern int file_buf_ptr; /* Shared cursor/base for loading image and game assets. */
 extern void update_mouse(void);
 extern void fatal_exit(unsigned, unsigned);
 extern void handle_s_key(void);
@@ -138,7 +138,7 @@ extern void animate(void);
 extern void adjust(void);
 extern void handle_keyboard_controls(void);
 extern void update(void);
-extern void f_9d40(unsigned char); /* Frozen T06 wait_for_tick entry; arguments select its wait mode. */
+extern void wait_for_tick(unsigned char); /* Frozen T06 wait_for_tick entry; arguments select its wait mode. */
 extern void queue_audio(int, int, int, int);
 extern void stop_audio_stream(void);
 extern void set_image_pages(int, int, short, int, int);
@@ -636,12 +636,12 @@ void run_gameplay_session(void)
         next_lvl();
         if (score_state->life_balance < 0) goto session_failed_to_menu; /* Shared session cleanup. */
         if (level_number >= GAME_LEVEL_COUNT) goto session_finished; /* Exit to shared session cleanup. */
-        g_e4d0_wfmxdlyju = file_error_state;
+        file_buf_ptr = file_error_state;
         load_palette();
         load_assets();
         reset_level();
         load_and_draw_level();
-        queue_audio(sfx_data_ptr, g_e4c8, 0x157c, 0);
+        queue_audio(sfx_data_ptr, n_read, 0x157c, 0);
         if (wait_level()) {
             if (!bonus_index) {
                 entry_prompt();
@@ -664,20 +664,20 @@ start_round_after_load:;
         *(unsigned char *)&hook_flags_word &= GAMEPLAY_HOOK_OPTION_CLEAR_MASK;
         *(unsigned char *)&hook_flags_word |= GAMEPLAY_HOOK_ENABLE_MASK;
         set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
-        f_9d40(0);
-        f_9d40(0);
+        wait_for_tick(0);
+        wait_for_tick(0);
         for (temp = 0; temp < 4; ++temp) {
             update_mouse();
         }
 gameplay_frame_loop:;
-        f_9d40(3);
+        wait_for_tick(3);
         if (keyboard_cheat_flags & PALETTE_FLASH_CHEAT_FLAG) {
             set_vga_palette_rgb(0, 0, 0x3f, 0);
         }
-        g_e1bc = 0;
-        g_e1b8 = (int)image_buffer_cursor;
+        retrace_tick_count = 0;
+        save_cur = (int)image_buffer_cursor;
         do {
-            image_buffer_cursor = (unsigned char *)g_e1b8;
+            image_buffer_cursor = (unsigned char *)save_cur;
             handle_s_key();
             ++frames;
             adjust();
@@ -700,8 +700,8 @@ gameplay_frame_loop:;
             animate();
             update_enemy_projectiles();
             process_timed_level_changes();
-            ++g_e1bc;
-        } while (g_e1bc < g_e1c0);
+            ++retrace_tick_count;
+        } while (retrace_tick_count < ticklim);
         redraw_image_region(0, 0);
         if (image_buffer_error_code) {
             fatal_exit(image_buffer_error_code, 0);
@@ -713,7 +713,7 @@ gameplay_frame_loop:;
         if (remaining_brick_count > 0 || spell_count > 0) break;
         if (arcade) goto session_finished; /* Arcade completion shares the session tail. */
         for (temp = 0; temp < 5; ++temp) {
-            f_9d40(0);
+            wait_for_tick(0);
         }
     }
     handle_keyboard_controls();

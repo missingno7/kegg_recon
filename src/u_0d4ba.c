@@ -1,19 +1,6 @@
-#pragma aux save_interrupt_state "f_d656";
-#pragma aux restore_interrupt_state "f_d7b8";
-#pragma aux install_interrupt_state "f_da01";
-#pragma aux timer_interrupt_record "g_756f";
-#pragma aux timer_interrupt_number "g_7585";
-#pragma aux timer_irq_and_pic_mask "g_7586";
-#pragma aux timer_interrupt_hook_flags "g_7588";
-#pragma aux timer_interrupt_handler_address "g_758c";
-#pragma aux timer_interrupt_physical_start "g_7590";
-#pragma aux timer_interrupt_mapping_state "g_7594";
-#pragma aux timer_interrupt_mapped_address "g_75a4";
-#pragma aux master_pic_vector_base "g_75a8";
-#pragma aux dpmi_memory_error "g_75c4";
-/* Frozen T06 imports retain the linker spellings; these are the readable C names. */
+/* Short external names preserve object chunking; fields describe timer IRQ hook state. */
 int dpmi_entry_offset;
-/* TU [0xd4ba, 0xdce0): detect_dpmi_host..install_interrupt_state (DPMI / interrupt records); from worker u12 T12.c */
+/* TU [0xd4ba, 0xdce0): detect_dpmi_host..install (DPMI / interrupt records); from worker u12 T12.c */
 #include <conio.h>
 int dpmi_entry_selector;
 int dpmi_private_data_paragraphs;
@@ -91,10 +78,11 @@ struct DpmiDescriptorTail {
 extern unsigned int dpmi_selector_or_failure_marker;
 extern unsigned int allocate_dpmi_memory(int);
 extern void free_dpmi_memory(unsigned int);
-extern int dpmi_memory_error;
+extern int dpmi_err;
 /* Assembly byte-copy helper, called with source, destination and byte count. */
 extern void f_13889(int, int, int);
 
+/* Timer IRQ record and PIC/DPMI hook fields shared by the timer and audio setup. */
 /* _DATA [0x74b4,0x75b0): DPMI handles and four 57-byte interrupt records (split at the field names
    other objects import) */
 short dpmi_host_available = 0;
@@ -129,15 +117,16 @@ int keyboard_handler_address = 0;
 int keyboard_physical_start = 0;
 unsigned char keyboard_mapping_state[16] = {0};
 int keyboard_mapped_address = 0;
-unsigned char timer_interrupt_record[22] = {0};
-unsigned char timer_interrupt_number = 0;
-short timer_irq_and_pic_mask = 0;
-int timer_interrupt_hook_flags = 0;
-int timer_interrupt_handler_address = 0;
-int timer_interrupt_physical_start = 0;
-unsigned char timer_interrupt_mapping_state[16] = {0};
-int timer_interrupt_mapped_address = 0;
-unsigned int master_pic_vector_base = 8;
+unsigned char tmr_rec[22] = {0};
+unsigned char timer_num = 0;
+short pic_mask = 0;
+int irq_flags = 0;
+int irq_handler = 0;
+int irq_phys = 0;
+unsigned char irq_map[16] = {0};
+int irq_addr = 0;
+/* Master PIC vector base returned by DPMI. */
+unsigned int picvec = 8;
 unsigned int slave_pic_vector_base = PIC_SLAVE_VECTOR_BASE;
 
 int detect_dpmi_host(void) {
@@ -157,7 +146,7 @@ int detect_dpmi_host(void) {
 
         regs.w.ax = DPMI_GET_BASE_VECTORS_FUNCTION;
         int386x(DPMI_INTERRUPT, &regs, &regs, &sregs);
-        *(int *)&master_pic_vector_base = regs.h.dh;
+        *(int *)&picvec = regs.h.dh;
         *(int *)&slave_pic_vector_base = regs.h.dl;
         return dpmi_host_available = -1;
     }
@@ -179,7 +168,7 @@ int detect_ems_manager(void) {
     return ems_manager_available = 0;
 }
 
-void save_interrupt_state(struct InterruptState *record, int cleanup_handler) {
+void save_irq(struct InterruptState *record, int cleanup_handler) {
     union REGS regs;
     struct SREGS sregs;
     memset(&sregs, 0, DOS_EXTENDED_REGISTERS_BYTES);
@@ -218,7 +207,7 @@ void save_interrupt_state(struct InterruptState *record, int cleanup_handler) {
     record->state_saved = -1;
 }
 
-void restore_interrupt_state(struct InterruptState *record) {
+void restore(struct InterruptState *record) {
     struct SREGS sregs;
     union REGS regs;
 
@@ -266,7 +255,7 @@ void restore_interrupt_state(struct InterruptState *record) {
         record->state_saved = 1;
 }
 
-int install_interrupt_state(struct InterruptState *record) {
+int install(struct InterruptState *record) {
     int memory_word_address;
     union REGS regs;
     struct SREGS sregs;
@@ -315,7 +304,7 @@ int install_interrupt_state(struct InterruptState *record) {
             record->status = -1;
         } else {
             record->dpmi_memory_handle = 0;
-            dpmi_memory_error = 0;
+            dpmi_err = 0;
         }
 
         if (record->irq_line < PIC_MASTER_VECTOR_END)

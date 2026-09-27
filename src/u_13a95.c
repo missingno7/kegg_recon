@@ -11,12 +11,12 @@
 #define ASCII_UPPERCASE_S 0x53
 extern short audio_stream_stop_flag;
 extern int file_error_state;
-extern unsigned g_7c0c;
+extern unsigned buf_lim;
 extern int (*decode_hook)();
 extern unsigned char front_page_bufs[];
 extern unsigned char back_page_queue[];
 extern unsigned char sprite_commands[];
-extern unsigned char *g_e4d0_wfmxdlyju;
+extern unsigned char *file_buf_ptr;
 extern int decode_and_verify_asset(void);
 extern int sys_report(int, int, unsigned);
 extern void sysinit(int, int, int, int);
@@ -42,8 +42,8 @@ void main(void)
 
     sysinit(-1, -1, 0, -1);
     file_error_state = alloc_heap_block(MAIN_RESOURCE_ARENA_BYTES);
-    g_e4d0_wfmxdlyju = (unsigned char *)file_error_state;
-    g_7c0c = file_error_state + MAIN_RESOURCE_ARENA_BYTES;
+    file_buf_ptr = (unsigned char *)file_error_state;
+    buf_lim = file_error_state + MAIN_RESOURCE_ARENA_BYTES;
     decode_hook = (int)decode_and_verify_asset;
     audio_stream_stop_flag = -1;
     /* Register the arena and load the protected-mode game support code. */

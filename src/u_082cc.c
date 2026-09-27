@@ -41,16 +41,16 @@ extern short space_pressed;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
 /* These globals save the draw cursor and count work during transition frames. */
-extern int g_e1b8;
-extern short g_e1bc;
-extern short g_e1c0;
+extern int save_cur;
+extern short retrace_tick_count;
+extern short ticklim;
 extern unsigned char current_scan_code;
 extern unsigned char prior_key_ascii;
 extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
 extern void handle_s_key(void);
 /* Legacy frame hook called once before each transition draw. */
-extern void f_9d40(unsigned char);
+extern void wait_for_tick(unsigned char);
 extern void redraw_image_region(int, int);
 extern void show_page(void);
 
@@ -110,16 +110,16 @@ void await_input(int frame_limit)
     space_pressed = 0;
     hook_flags_word = (hook_flags_word & 0xfffe) & 0xfffd;
     do {
-        f_9d40(3);
-        g_e1bc = 0;
-        g_e1b8 = (int)image_buffer_cursor;
+        wait_for_tick(3);
+        retrace_tick_count = 0;
+        save_cur = (int)image_buffer_cursor;
         do {
-            image_buffer_cursor = (struct SpriteDrawCommand *)g_e1b8;
+            image_buffer_cursor = (struct SpriteDrawCommand *)save_cur;
             handle_s_key();
             advance_tracks();
             queue_draws();
-            ++g_e1bc;
-        } while (g_e1bc < g_e1c0);
+            ++retrace_tick_count;
+        } while (retrace_tick_count < ticklim);
         redraw_image_region(0, 0);
         show_page();
     } while ((prior_key_ascii == current_ascii || current_ascii != 0x20) && (mouse_btn == mouse_btn_old || !(*(unsigned char *)&mouse_btn & 7)) && (current_scan_code == keyboard_scan_byte || keyboard_scan_byte != 1) && tick < frame_limit);

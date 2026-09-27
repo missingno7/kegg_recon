@@ -1,45 +1,26 @@
-/*
- * PICTURE.C  -  picture file loader
- *
- * Loads a picture into the work buffer; the file format
- * is chosen from the file name extension:
- *
- *     .VGA          320 x 200 screen dump
- *     .IFF / .LBM   Deluxe Paint ILBM
- *     .GIF          CompuServe GIF
- *     .PCX          ZSoft Paintbrush
- *     .RAW          raw bitmaps
- *
- * Returns 0, else an error (0x301 bad type).
- */
+/* Load VGA, IFF/LBM, GIF, PCX, and raw picture files. */
 #include <stdlib.h>
 #include <string.h>
-extern int g_e4c8;
-extern unsigned char *g_e4d0_wfmxdlyju;
-extern int f_1065b(void *, void *);
+extern int n_read;
+extern unsigned char *file_buf_ptr;
+extern int read_file_with_decoder(void *, void *);
 extern int decode_picture(int, int, int, int);
-extern unsigned g_7c0c;
+extern unsigned buf_lim;
 extern void f_13889(int, int, int);
 extern int a_a284(int, int, void *);
-extern int f_a0e0(int, int, void *);
-extern int f_c685(int, void *, void *);
-extern int f_c826(int, int, int);
+extern int decode_pcx_image(int, int, void *);
+extern int decode_game_bitmap(int, void *, void *);
+extern int decode_gif_with_workspace(int, int, int);
 
-/*лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лл load_picture  load a picture file                                    лл
-  лл                                                                лл
-  лл Reads the file into the load buffer, then decodes it into      лл
-  лл the current picture (picture_pixels8).                                  лл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл
-  лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл*/
+
+
 
 int load_picture(int filename, int load_buffer, int image_buffer)
 {
     int status;
-    status = f_1065b((void *)filename, (void *)load_buffer);
+    status = read_file_with_decoder((void *)filename, (void *)load_buffer);
     if (!status) {
-        status = decode_picture(filename, (int)g_e4d0_wfmxdlyju, image_buffer, g_e4c8);
+        status = decode_picture(filename, (int)file_buf_ptr, image_buffer, n_read);
     }
     return status;
 }
@@ -54,8 +35,7 @@ int picture_y9n;
 int picture_bytes77;
 
 /* Picture decoder keeps decoded pixels in shared work memory. */                                                                      
-                                                                      
-                                                                      
+/*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            */
  /*ллл     ллл     л
      ллл     ллл*/                                                                      
                                                                       
@@ -65,19 +45,19 @@ int load_picture_keep(int filename)
 {
     int status;
     int aligned_buffer_end;
-    status = f_1065b((void *)filename, g_e4d0_wfmxdlyju);
+    status = read_file_with_decoder((void *)filename, file_buf_ptr);
     if (!status) {
-        aligned_buffer_end = (int)((g_e4d0_wfmxdlyju + g_e4c8) + 3) & -4;
-        status = decode_picture(filename, (int)g_e4d0_wfmxdlyju, aligned_buffer_end, g_e4c8);
+        aligned_buffer_end = (int)((file_buf_ptr + n_read) + 3) & -4;
+        status = decode_picture(filename, (int)file_buf_ptr, aligned_buffer_end, n_read);
         if (!status) {
-            if ((*(int *)((unsigned char *)&picture_pixels8) + picture_bytes77) > g_7c0c) {
+            if ((*(int *)((unsigned char *)&picture_pixels8) + picture_bytes77) > buf_lim) {
                 status = 0x302;
             } else {
-                f_13889(aligned_buffer_end, (int)g_e4d0_wfmxdlyju, picture_bytes77);
-                pic_of = (int)(g_e4d0_wfmxdlyju + (pic_of - *(int *)((unsigned char *)&picture_pixels8)));
-                *(int *)((unsigned char *)&picture_pixels8) = (int)g_e4d0_wfmxdlyju;
-                g_e4d0_wfmxdlyju += picture_bytes77;
-                g_e4d0_wfmxdlyju = (unsigned char *)((int)(g_e4d0_wfmxdlyju + 3) & -4);
+                f_13889(aligned_buffer_end, (int)file_buf_ptr, picture_bytes77);
+                pic_of = (int)(file_buf_ptr + (pic_of - *(int *)((unsigned char *)&picture_pixels8)));
+                *(int *)((unsigned char *)&picture_pixels8) = (int)file_buf_ptr;
+                file_buf_ptr += picture_bytes77;
+                file_buf_ptr = (unsigned char *)((int)(file_buf_ptr + 3) & -4);
             }
         }
     }
@@ -110,11 +90,11 @@ int decode_picture(int filename, int source_buffer, int destination, int source_
     } else if (!_stricmp((char *)extension, (char *)".IFF") || !_stricmp((char *)extension, (char *)".LBM")) {
         status = a_a284(source_buffer, destination, ((unsigned char *)&picture_pixels8));
     } else if (!_stricmp((char *)extension, (char *)".GIF")) {
-        status = f_c826(source_buffer, destination, (int)((unsigned char *)&picture_pixels8));
+        status = decode_gif_with_workspace(source_buffer, destination, (int)((unsigned char *)&picture_pixels8));
     } else if (!_stricmp((char *)extension, (char *)".PCX")) {
-        status = f_a0e0(source_buffer, destination, ((unsigned char *)&picture_pixels8));
+        status = decode_pcx_image(source_buffer, destination, ((unsigned char *)&picture_pixels8));
     } else if (!_stricmp((char *)extension, (char *)".RAW")) {
-        status = f_c685(source_buffer, (void *)destination, ((unsigned char *)&picture_pixels8));
+        status = decode_game_bitmap(source_buffer, (void *)destination, ((unsigned char *)&picture_pixels8));
     } else {
         status = 0x301;
     }

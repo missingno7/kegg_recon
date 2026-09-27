@@ -111,7 +111,7 @@ extern short mouse_sensitivity_y_axis;
 extern void submit_audio_request(int);
 extern void write_vga_palette(void *);
 /* Shared timer/wait helper; other source views expose it as wait_for_tick. */
-extern void f_9d40(int);
+extern void wait_for_tick(int);
 extern void fade_dac(void *, int, int, int);
 extern void query_mouse_sensitivity(void);
 extern void restore_mouse_driver_sensitivity(void);

@@ -168,9 +168,9 @@ typedef struct HighScoreRecord {
 
 extern unsigned char sndirq[];
 extern unsigned char key_irq[];
-extern unsigned char g_756f[];
-extern void f_9afc(void);
-extern void f_9b44(int);
+extern unsigned char tmr_rec[];
+extern void reset_timer(void);
+extern void start_timer(int);
 extern void release_sound_system(void);
 extern int configure_sound_dma(int);
 extern void set_audio_transfer_mode(int);
@@ -215,8 +215,8 @@ extern unsigned char current_scan_code;
 extern unsigned char prior_key_ascii;
 extern unsigned char keyboard_scan_byte;
 extern unsigned char current_ascii;
-extern int g_e4c8;
-extern int g_e4d0_wfmxdlyju;
+extern int n_read;
+extern int file_buf_ptr;
 extern unsigned current_file_name;
 extern void set_mouse_bounds(int, int, int, int);
 extern int load_next_file(void *);
@@ -227,7 +227,7 @@ extern void refresh_video_pages(int);
 extern void adjust(void);
 extern void set_page(void);
 extern void apply_palette_gradients(void *, void *);
-extern void f_9d40(unsigned char);
+extern void wait_for_tick(unsigned char);
 extern int load_picture_keep();
 extern void plot_transformed_pixel(void *, int);
 extern void draw_text(int, int, int);
@@ -330,7 +330,7 @@ extern unsigned char high_score_input_redraw_flag;
 extern void update_mouse(void);
 extern int saved_high_score_state;
 extern char *high_score_filename;
-extern int f_1065b(char *, void *);
+extern int read_file_with_decoder(char *, void *);
 extern void validate_high_score_records(void);
 void write_file_buffer(int a, int b, int c);
 extern unsigned char high_score_factor_a[];
@@ -1626,9 +1626,9 @@ extern int (*key_repeat)();
 extern int (*keyboard_release_handler)();
 extern int current_ball_count;
 extern unsigned char life_lost_flag;
-extern int g_e1b8;
-extern short g_e1bc;
-extern short g_e1c0;
+extern int save_cur;
+extern short retrace_tick_count;
+extern short ticklim;
 extern void init_game(void);
 extern void next_lvl(void);
 extern void update_racket_state(void);
@@ -1724,19 +1724,19 @@ void initialize_main_menu(void)
 
 void load_menu_graphics(void)
 {
-    g_e4d0_wfmxdlyju = file_error_state;
-    sprite_memory_base = (unsigned char *)g_e4d0_wfmxdlyju;
+    file_buf_ptr = file_error_state;
+    sprite_memory_base = (unsigned char *)file_buf_ptr;
     file_operation_result = load_picture_keep(title_image_file);
     if (file_operation_result) {
         fatal_exit(file_operation_result, title_image_file);
     }
     if ((short)sound_blaster_detected == -1) {
-        sfx_data_ptr = g_e4d0_wfmxdlyju;
+        sfx_data_ptr = file_buf_ptr;
         file_operation_result = load_next_file(title_data_filename);
         if (file_operation_result) {
             fatal_exit(file_operation_result, title_data_filename);
         }
-        queue_audio(sfx_data_ptr, g_e4c8, 8000, 0);
+        queue_audio(sfx_data_ptr, n_read, 8000, 0);
     }
 }
 
@@ -1755,7 +1755,7 @@ void wait_menu_select(void)
     space_pressed = 0;
     do {
         do {
-            f_9d40(3);
+            wait_for_tick(3);
             handle_s_key();
             /* Input leaves both nested polling loops at once. */
             if (space_pressed || (mouse_btn != mouse_btn_old && mouse_btn) || (current_scan_code != keyboard_scan_byte && keyboard_scan_byte == SCAN_CODE_ESCAPE)) goto menu_wait_complete;
@@ -1770,11 +1770,11 @@ void launch_print_order_form(void)
     int saved_state_756f;
     int saved_keyboard_irq_state;
     int saved_sound_irq_state;
-    saved_state_756f = *(short *)g_756f;
+    saved_state_756f = *(short *)tmr_rec;
     saved_keyboard_irq_state = *(short *)key_irq;
     saved_sound_irq_state = *(short *)sndirq;
     set_audio_transfer_mode(0);
-    f_9afc();
+    reset_timer();
     remove_keyboard_input_handler();
     release_sound_system();
     restore_bios();
@@ -1782,7 +1782,7 @@ void launch_print_order_form(void)
     clear_vga_palette();
     save_bios();
     if (saved_state_756f == -1) {
-        f_9b44(0);
+        start_timer(0);
     }
     if (saved_keyboard_irq_state == -1) {
         initialize_keyboard_manager(0);
@@ -1799,29 +1799,29 @@ void show_high_score_screen(void)
     int saved_palette_state;
     for (;;) {
         set_display_mode(2);
-        g_e4d0_wfmxdlyju = (unsigned char *)file_error_state;
-        sprite_memory_base = g_e4d0_wfmxdlyju;
+        file_buf_ptr = (unsigned char *)file_error_state;
+        sprite_memory_base = file_buf_ptr;
         file_operation_result = load_picture_keep(order_image_filename);
         if (file_operation_result) {
             fatal_exit(file_operation_result, current_file_name);
         }
-        game_sprite_base = g_e4d0_wfmxdlyju;
+        game_sprite_base = file_buf_ptr;
         file_operation_result = load_next_file((void *)order_sprite_filename);
         if (file_operation_result) {
             fatal_exit(file_operation_result, current_file_name);
         }
-        vga_buffer_base = g_e4d0_wfmxdlyju + 0x900;
+        vga_buffer_base = file_buf_ptr + 0x900;
         file_operation_result = load_next_file((void *)main_palette_fn);
         if (file_operation_result) {
             fatal_exit(file_operation_result, current_file_name);
         }
         if (sound_blaster_detected == -1) {
-            sfx_data_ptr = (int)g_e4d0_wfmxdlyju;
+            sfx_data_ptr = (int)file_buf_ptr;
             file_operation_result = load_next_file((void *)information_data_filename);
             if (file_operation_result) {
                 fatal_exit(file_operation_result, current_file_name);
             }
-            queue_audio(sfx_data_ptr, g_e4c8, 0x1d4c, -1);
+            queue_audio(sfx_data_ptr, n_read, 0x1d4c, -1);
         }
         saved_video_page = *(signed char *)&drawpage;
         saved_palette_state = image_color_depth;
@@ -1850,7 +1850,7 @@ void show_high_score_screen(void)
         space_pressed = 0;
         set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
 order_screen_poll:;
-        f_9d40(3);
+        wait_for_tick(3);
         if (prior_key_ascii == 0x50 || current_ascii != 0x50) break;
         launch_print_order_form();
     }
@@ -1884,31 +1884,31 @@ void update_menu_screen(void)
 
 void load_title_screen_assets(void)
 {
-    g_e4d0_wfmxdlyju = (unsigned char *)file_error_state;
-    sprite_memory_base = g_e4d0_wfmxdlyju;
+    file_buf_ptr = (unsigned char *)file_error_state;
+    sprite_memory_base = file_buf_ptr;
     file_operation_result = load_picture_keep(menu_image_filename);
     if (file_operation_result) {
         fatal_exit(file_operation_result, menu_image_filename);
     }
-    game_sprite_base = g_e4d0_wfmxdlyju;
+    game_sprite_base = file_buf_ptr;
     file_operation_result = load_next_file((void *)menu_sprite_filename);
     if (file_operation_result) {
         fatal_exit(file_operation_result, menu_sprite_filename);
     }
     if (sound_blaster_detected == -1) {
-        sfx_data_ptr = (int)g_e4d0_wfmxdlyju;
+        sfx_data_ptr = (int)file_buf_ptr;
         file_operation_result = load_next_file((void *)menu_data_filename);
         if (file_operation_result) {
             fatal_exit(file_operation_result, menu_data_filename);
         }
-        queue_audio(sfx_data_ptr, g_e4c8, 0x1f40, -1);
+        queue_audio(sfx_data_ptr, n_read, 0x1f40, -1);
     }
-    vga_buffer_base = g_e4d0_wfmxdlyju + 0xc00;
+    vga_buffer_base = file_buf_ptr + 0xc00;
     file_operation_result = load_next_file((void *)main_palette_fn);
     if (file_operation_result) {
         fatal_exit(file_operation_result, main_palette_fn);
     }
-    palette_entries = (g_e4c8 - 0xc00) / 3;
+    palette_entries = (n_read - 0xc00) / 3;
 }
 
 void draw_title_screen(void)
@@ -1948,7 +1948,7 @@ void run_title_screen_loop(void)
     space_pressed = 0;
     set_image_pages((int)sprite_commands, 0x100, 4, (int)front_page_bufs, (int)back_page_queue);
     while (menu_result == 0) {
-        f_9d40(3);
+        wait_for_tick(3);
         adjust();
         handle_s_key();
         update_menu_sprite_animation();
@@ -2153,15 +2153,15 @@ void show_game_over_screen(void)
 
 void load_game_over_assets(void)
 {
-    g_e4d0_wfmxdlyju = file_error_state;
-    sprite_memory_base = g_e4d0_wfmxdlyju;
+    file_buf_ptr = file_error_state;
+    sprite_memory_base = file_buf_ptr;
     load_picture_keep(score_image_filename);
-    game_sprite_base = g_e4d0_wfmxdlyju;
+    game_sprite_base = file_buf_ptr;
     load_next_file(font_sprite_filename);
     if ((short)sound_blaster_detected == -1) {
-        sfx_data_ptr = g_e4d0_wfmxdlyju;
+        sfx_data_ptr = file_buf_ptr;
         load_next_file(score_data_filename);
-        queue_audio(sfx_data_ptr, g_e4c8, 8000, -1);
+        queue_audio(sfx_data_ptr, n_read, 8000, -1);
     }
 }
 
@@ -2279,7 +2279,7 @@ void enter_high_score_name(void)
                     draw_text(0x24, 0xae, enter_name_text);
                 }
             }
-            f_9d40(1);
+            wait_for_tick(1);
         } while (keyboard_scan_byte != SCAN_CODE_ENTER && keyboard_scan_byte != SCAN_CODE_ESCAPE);
         strcpy((char *)high_score_records[points].name.bytes, (char *)text_entry_buffer);
         points = 0xffffffff;
@@ -2296,7 +2296,7 @@ void wait_for_key_or_click(void)
     show_page();
     update_mouse();
     do {
-        f_9d40(3);
+        wait_for_tick(3);
         handle_s_key();
         if (space_pressed || (mouse_btn != mouse_btn_old && *(unsigned char *)&mouse_btn & 7) || (current_scan_code != keyboard_scan_byte && keyboard_scan_byte == SCAN_CODE_ESCAPE)) break;
         --screen_timer;
@@ -2309,7 +2309,7 @@ void save_high_score_table(void)
     for (temp = 0; temp < HIGH_SCORE_VISIBLE_ROWS; ++temp)
         saved[temp] = high_score_records[temp];
     validate_high_score_records();
-    file_operation_result = f_1065b(high_score_filename, g_e4d0_wfmxdlyju);
+    file_operation_result = read_file_with_decoder(high_score_filename, file_buf_ptr);
     if (file_operation_result == 0) {
         validate_high_score_records();
         if (saved_high_score_state == result)
@@ -2324,12 +2324,12 @@ void write_high_score_table(void)
     validate_high_score_records();
     validate_high_score_records();
     saved_high_score_state = result;
-    write_file_buffer((int)high_score_filename, (int)g_e4d0_wfmxdlyju, HIGH_SCORE_FILE_SIZE);
+    write_file_buffer((int)high_score_filename, (int)file_buf_ptr, HIGH_SCORE_FILE_SIZE);
 }
 
 void validate_high_score_records(void)
 {
-    g_e4d0_wfmxdlyju = (int)high_score_records;
+    file_buf_ptr = (int)high_score_records;
     result = 0;
     for (high_score_record_index = 0; high_score_record_index < HIGH_SCORE_VISIBLE_ROWS; ++high_score_record_index) {
         result ^= ~(high_score_records[high_score_record_index].score << high_score_record_index);
@@ -2362,16 +2362,16 @@ void show_instructions(void)
 
 void load_instruction_assets(void)
 {
-    g_e4d0_wfmxdlyju = file_error_state;
-    sprite_memory_base = g_e4d0_wfmxdlyju;
+    file_buf_ptr = file_error_state;
+    sprite_memory_base = file_buf_ptr;
     load_picture_keep(scoref);
     load_next_file(main_palette_fn);
-    game_sprite_base = g_e4d0_wfmxdlyju;
+    game_sprite_base = file_buf_ptr;
     load_next_file(end_fn);
     if ((short)sound_blaster_detected == -1) {
-        sfx_data_ptr = g_e4d0_wfmxdlyju;
+        sfx_data_ptr = file_buf_ptr;
         load_next_file(information_data_filename);
-        queue_audio(sfx_data_ptr, g_e4c8, 7500, -1);
+        queue_audio(sfx_data_ptr, n_read, 7500, -1);
     }
 }
 
@@ -2416,16 +2416,16 @@ void show_ending_pages(void)
 
 void load_ending_assets(void)
 {
-    g_e4d0_wfmxdlyju = file_error_state;
-    sprite_memory_base = g_e4d0_wfmxdlyju;
+    file_buf_ptr = file_error_state;
+    sprite_memory_base = file_buf_ptr;
     load_picture_keep(score_background_filename);
     load_next_file(main_palette_fn);
     if ((short)sound_blaster_detected == -1) {
-        sfx_data_ptr = g_e4d0_wfmxdlyju;
+        sfx_data_ptr = file_buf_ptr;
         load_next_file(end_screen_data_filename);
-        queue_audio(sfx_data_ptr, g_e4c8, 12000, -1);
+        queue_audio(sfx_data_ptr, n_read, 12000, -1);
     }
-    game_sprite_base = g_e4d0_wfmxdlyju;
+    game_sprite_base = file_buf_ptr;
     load_next_file(score_font_filename);
 }
 
@@ -2463,18 +2463,18 @@ void run_screen_transition(void)
 
     stop_audio_stream();
     set_display_mode(1);
-    g_e4d0_wfmxdlyju = file_error_state;
+    file_buf_ptr = file_error_state;
     fade_dac(vga_buffer_base, 0, 0x3f, 8);
-    sprite_memory_base = (char *)g_e4d0_wfmxdlyju;
+    sprite_memory_base = (char *)file_buf_ptr;
     vga_buffer_base = sprite_memory_base + vga_state.buffer_size_or_draw_parameter;
     load_picture_keep(publisher_image_one_filename);
-    saved_screen_buffer_a = g_e4d0_wfmxdlyju;
+    saved_screen_buffer_a = file_buf_ptr;
     load_picture_keep(publisher_image_two_filename);
-    saved_screen_buffer_b = g_e4d0_wfmxdlyju;
+    saved_screen_buffer_b = file_buf_ptr;
     load_picture_keep(publisher_image_three_filename);
-    sfx_data_ptr = g_e4d0_wfmxdlyju;
+    sfx_data_ptr = file_buf_ptr;
     load_next_file(publisher_data_filename);
-    queue_audio(sfx_data_ptr, g_e4c8, 0x2ae4, -1);
+    queue_audio(sfx_data_ptr, n_read, 0x2ae4, -1);
     plot_transformed_pixel(sprite_memory_base, page2);
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
@@ -2482,7 +2482,7 @@ void run_screen_transition(void)
     for (fade_step = 0; fade_step < 0x40; fade_step++)
         set_vga_palette_rgb(1, (unsigned char)fade_step, (unsigned char)fade_step, (unsigned char)fade_step);
     for (fade_step = 0; fade_step < 0x15e; fade_step++)
-        f_9d40(1);
+        wait_for_tick(1);
     for (fade_step = 0; fade_step < 0x80; fade_step++)
         write_dac_palette(vga_buffer_base, 0x80, 0x80, 0x3f - fade_step / 2);
     fade_dac(vga_buffer_base, 0, -0x3f, -1);
@@ -2494,7 +2494,7 @@ void run_screen_transition(void)
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
     fade_dac(vga_buffer_base, -0x3f, 0, 1);
     for (fade_step = 0; fade_step < 0x8c; fade_step++)
-        f_9d40(1);
+        wait_for_tick(1);
     fade_dac(vga_buffer_base, 0, -0x3f, -3);
 
     sprite_memory_base = saved_screen_buffer_b;
@@ -2504,7 +2504,7 @@ void run_screen_transition(void)
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
     fade_dac(vga_buffer_base, -0x3f, 0, 1);
     for (fade_step = 0; fade_step < 0x8c; fade_step++)
-        f_9d40(1);
+        wait_for_tick(1);
     fade_dac(vga_buffer_base, 0, -0x3f, -3);
 }
 
@@ -2512,7 +2512,7 @@ void show_order_info(void)
 {
     stop_audio_stream();
     load_shared_game_assets();
-    queue_audio(sfx_data_ptr, g_e4c8, 0x1f40, -1);
+    queue_audio(sfx_data_ptr, n_read, 0x1f40, -1);
     render_image_with_options(page_idx, 8, fill_sprite_data + 0x7102, 0xa0, 100);
 }
 
@@ -2522,9 +2522,9 @@ void return_to_main_menu(void)
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);
     stop_audio_stream();
-    g_e4d0_wfmxdlyju = file_error_state;
+    file_buf_ptr = file_error_state;
     load_return_screen_assets();
-    queue_audio(sfx_data_ptr, g_e4c8, 0x1f40, -1);
+    queue_audio(sfx_data_ptr, n_read, 0x1f40, -1);
     transition_track_data = (unsigned char *)&main_menu_return_transition_tracks;
     prepare_game_asset_read();
     hook_flags_word = ((*(short *)&hook_flags_word) & 0xfffe) & 0xfffd;
@@ -2534,41 +2534,41 @@ void return_to_main_menu(void)
 
 void load_assets(void)
 {
-    file_mark = g_e4d0_wfmxdlyju;
-    tile_art_base = g_e4d0_wfmxdlyju;
+    file_mark = file_buf_ptr;
+    tile_art_base = file_buf_ptr;
     load_next_file(fill_sprite_filename);
-    fill_sprite_data = g_e4d0_wfmxdlyju;
+    fill_sprite_data = file_buf_ptr;
     load_next_file(game_font_filename);
-    level_data_cursor = g_e4d0_wfmxdlyju;
+    level_data_cursor = file_buf_ptr;
     load_next_file(level_table_filename);
-    if (g_e4c8 != 0x8958)
+    if (n_read != 0x8958)
         file_error_state = 0;
-    sfx_data_ptr = g_e4d0_wfmxdlyju;
+    sfx_data_ptr = file_buf_ptr;
     if (sound_blaster_detected == -1)
         load_next_file(level_screen_data_filename);
-    g_e4d0_wfmxdlyju = file_mark;
+    file_buf_ptr = file_mark;
 }
 
 void load_shared_game_assets(void)
 {
-    file_mark = g_e4d0_wfmxdlyju;
-    fill_sprite_data = g_e4d0_wfmxdlyju;
+    file_mark = file_buf_ptr;
+    fill_sprite_data = file_buf_ptr;
     load_next_file(game_font_filename);
-    sfx_data_ptr = g_e4d0_wfmxdlyju;
+    sfx_data_ptr = file_buf_ptr;
     if (sound_blaster_detected == -1)
         load_next_file(pause_screen_data_filename);
-    g_e4d0_wfmxdlyju = file_mark;
+    file_buf_ptr = file_mark;
 }
 
 void load_return_screen_assets(void)
 {
-    file_mark = g_e4d0_wfmxdlyju;
-    fill_sprite_data = g_e4d0_wfmxdlyju;
+    file_mark = file_buf_ptr;
+    fill_sprite_data = file_buf_ptr;
     load_next_file(game_font_filename);
-    sfx_data_ptr = g_e4d0_wfmxdlyju;
+    sfx_data_ptr = file_buf_ptr;
     if (sound_blaster_detected == -1)
         load_next_file(game_over_data_filename);
-    g_e4d0_wfmxdlyju = file_mark;
+    file_buf_ptr = file_mark;
 }
 
 void reset_level(void);

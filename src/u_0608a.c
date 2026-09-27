@@ -99,11 +99,11 @@ extern unsigned char *player_key_flags;
 extern int game_ball_slot;
 extern int current_ball_count;
 extern int motion_dir;
-extern int g_e4d0_wfmxdlyju; /* Shared cursor/base for the asset blocks loaded here. */
+extern int file_buf_ptr; /* Shared cursor/base for the asset blocks loaded here. */
 extern int previous_level_art_base;
 extern int audio_request_entries;
 extern int level_art_load_base;
-extern int g_e4c8; /* Shared image/audio buffer capacity. */
+extern int n_read; /* Shared image/audio buffer capacity. */
 extern int vga_buffer_base;
 extern int brick_art_start;
 extern unsigned char *spell_art_base;
@@ -191,47 +191,47 @@ void *memcpy(void *, const void *, size_t);
 
 /* Loads the palette followed immediately by the brick sprite block. */
 void load_palette(void) {
-    palette_base = (void *)g_e4d0_wfmxdlyju;
-    vga_buffer_base = g_e4d0_wfmxdlyju;
+    palette_base = (void *)file_buf_ptr;
+    vga_buffer_base = file_buf_ptr;
     load_next_file(main_palette_fn);
-    g_e4d0_wfmxdlyju -= g_e4c8 - 0x300;
-    brick_art_start = g_e4d0_wfmxdlyju;
+    file_buf_ptr -= n_read - 0x300;
+    brick_art_start = file_buf_ptr;
     load_next_file(brick_sprite_fn);
 }
 
 /* Loads the spell, enemy, racket, and digit sprite assets for a level. */
 void load_enemy(void) {
-    spell_art_base = (unsigned char *)g_e4d0_wfmxdlyju;
+    spell_art_base = (unsigned char *)file_buf_ptr;
     load_next_file(spell_sprite_fn);
-    enemy_picture = (unsigned char *)g_e4d0_wfmxdlyju;
+    enemy_picture = (unsigned char *)file_buf_ptr;
     load_next_file(foe_sprite_fn);
-    game_art_base = g_e4d0_wfmxdlyju;
+    game_art_base = file_buf_ptr;
     load_next_file(racket_sprite_filename);
-    monster_art = g_e4d0_wfmxdlyju;
+    monster_art = file_buf_ptr;
     load_next_file(digit_sprite_filename);
 }
 
 void load_monster_art(void) {
-    sprite_memory_base = g_e4d0_wfmxdlyju;
+    sprite_memory_base = file_buf_ptr;
     vga_buffer_base = sprite_memory_base + 0xfa00;
     load_picture_keep(monster_anim_fname);
-    game_sprite_base = g_e4d0_wfmxdlyju;
+    game_sprite_base = file_buf_ptr;
     load_next_file(monster_sprite_filename);
 }
 
 void prep_level(void) {
-    file_mark = g_e4d0_wfmxdlyju;
+    file_mark = file_buf_ptr;
     audio_request_entries = (int)level_layout_records;
     stop_audio_stream();
     for (temp = 0; temp < 0x6e; ++temp)
         level_layout_records[temp].source -= previous_level_art_base;
-    level_art_load_base = g_e4d0_wfmxdlyju;
+    level_art_load_base = file_buf_ptr;
     level_art_base = level_art_load_base;
     if (sound_blaster_detected == -1) load_next_file(main_screen_data_filename);
     for (temp = 0; temp < 0x6e; ++temp)
         level_layout_records[temp].source += level_art_base;
     previous_level_art_base = level_art_base;
-    g_e4d0_wfmxdlyju = file_mark;
+    file_buf_ptr = file_mark;
 }
 
 /* Handle shot cooldown, firing input, and updates to active shots. */

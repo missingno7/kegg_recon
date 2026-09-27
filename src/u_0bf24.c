@@ -27,8 +27,8 @@ extern short sound_blaster_base_port;
 extern int load_protracker_module(int, int, int, int, int);
 extern void stop_protracker_module(void);
 extern void release_sound_callback(void);
-/* These linker spellings are frozen by T06; the defining TU has readable C aliases. */
-extern unsigned char g_75a8;
+/* PIC vectors and DPMI hooks are shared with the timer and keyboard setup. */
+extern unsigned char picvec;
 extern unsigned char slave_pic_vector_base;
 extern unsigned char sndvec;
 extern unsigned char sound_system_irq_line;
@@ -38,9 +38,9 @@ extern short sndirq;
 extern int audio_dma_allocation_bytes;
 extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
-extern void f_d7b8(void *);
+extern void restore(void *);
 extern void free_dpmi_memory(int);
-extern void f_d656(void *, void(*)(void));
+extern void save_irq(void *, void(*)(void));
 extern int save_screen_image(char *);
 void prepare_sound_callback(void);
 /* Assembly callback stub base; its mapped template is 0x69 bytes long. */
@@ -49,8 +49,8 @@ extern int sound_callback_hook_flags;
 extern int sound_callback_physical_start;
 extern int sound_callback_mapping_state;
 extern int sound_callback_mapped_address;
-extern unsigned g_75c4;
-extern int f_da01(void *);
+extern unsigned dpmi_err;
+extern int install(void *);
 
 /* _DATA [0x7428,0x742c) */
 int sound_callback_allocation_size = 0;
@@ -80,7 +80,7 @@ void prepare_sound_callback(void)
         sound_callback_interrupt_number = sound_callback_irq_line;
         if (sound_blaster_irq >= 8)
             sound_callback_interrupt_number += SOUND_SLAVE_IRQ_VECTOR_OFFSET;
-        f_d656(&scbctx, release_sound_callback);
+        save_irq(&scbctx, release_sound_callback);
     }
 }
 
@@ -88,7 +88,7 @@ void release_sound_callback(void)
 {
     if (sound_blaster_detected == -1) {
         stop_audio_stream();
-        f_d7b8(&scbctx);
+        restore(&scbctx);
         free_dpmi_memory(sound_callback_allocation_size);
         sound_callback_allocation_size = 0;
     }
@@ -110,7 +110,7 @@ int configure_sound_callback(int allocation_bytes)
     prepare_sound_callback();
     sound_callback_physical_start = (int)a_70;
     sound_callback_mapping_state = (int)((unsigned char __far *)a_70 + SOUND_CALLBACK_STUB_BYTES);
-    if (f_da01(&scbctx) != -1) {
+    if (install(&scbctx) != -1) {
         if ((allocation_bytes & 1) == 1) {
             interrupt_stub = (struct SoundBlasterIrqStub *)sound_callback_mapped_address;
             interrupt_stub->dsp_base_port = sound_blaster_base_port;
@@ -121,7 +121,7 @@ int configure_sound_callback(int allocation_bytes)
                 interrupt_stub->pic_command_port = PIC_SLAVE_COMMAND_PORT;
             }
         }
-        if (g_75c4) {
+        if (dpmi_err) {
             return SOUND_ERROR_CALLBACK_SETUP_FAILED;
         }
     }

@@ -49,7 +49,7 @@ extern void handle_s_key(void);
 extern void refresh_video_pages(int);
 extern void set_page(void);
 /* Address-named timing/phase helper; observed callers here pass 0 or 1. */
-extern void f_9d40(unsigned char);
+extern void wait_for_tick(unsigned char);
 extern void configure_text_renderer(int, int, unsigned char, int, int);
 extern void set_text_clip_rect(int, int, int, int);
 extern void set_image_pages(int, int, short, int, int);
@@ -234,7 +234,7 @@ int wait_level(void)
             fatal_exit(image_buffer_error_code, 0);
         }
         show_page();
-        f_9d40(1);
+        wait_for_tick(1);
         handle_s_key();
         if (space_pressed || (mouse_btn != mouse_btn_old && mouse_btn) || keyboard_scan_byte == 1 || tick >= LEVEL_READY_TIMEOUT_TICKS) break;
     }
@@ -438,7 +438,7 @@ void refresh_video_pages(int palette_address)
     drawpage = value;
     copy_screen_span_entry(page2, 0, drawpage, 0, vga_state.buffer_size_or_draw_parameter);
     show_page();
-    f_9d40(0);
+    wait_for_tick(0);
     write_vga_palette(palette_address);
     copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size_or_draw_parameter);
     copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size_or_draw_parameter);

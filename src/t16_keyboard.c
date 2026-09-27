@@ -102,7 +102,7 @@ extern unsigned char current_ascii, pending_ascii_key, previous_scan_code, lates
 void ignore_keyboard_action(void);
 extern unsigned char keyboard_irq_line;
 extern unsigned char keyboard_interrupt_number;
-extern unsigned char g_75a8;
+extern unsigned char picvec;
 struct KeyboardInterruptRecord {
     short installation_status;
     unsigned char reserved[0x33];
@@ -115,18 +115,18 @@ struct KeyboardBufferState {
 };
 extern struct KeyboardInterruptRecord key_irq;
 extern void remove_keyboard_input_handler(void);
-extern void f_d656(unsigned char *, int);
+extern void save_irq(unsigned char *, int);
 void install_keyboard_input_handler(void);
-extern void f_d7b8(unsigned char *);
+extern void restore(unsigned char *);
 extern int keyboard_hook_flags;
 extern int keyboard_mapped_address;
-extern int g_75c4;
+extern int dpmi_err;
 extern void (*keyboard_handler_address)(void);
 extern void (*keyboard_physical_start)(void);
 extern void (*keyboard_mapping_state)(void);
 extern void clear_keyboard_state(void);
 extern void save_bios_keyboard_flags(void);
-extern void f_da01(int *);
+extern void install(int *);
 void __interrupt keyboard_interrupt_handler(void);
 extern void __far irq_110(void);
 extern void restore_bios_keyboard_flags(void);
@@ -185,12 +185,12 @@ void ignore_keyboard_action(void) {
 
 void install_keyboard_input_handler(void) {
     keyboard_irq_line = KEYBOARD_IRQ_LINE;
-    keyboard_interrupt_number = g_75a8 + KEYBOARD_INTERRUPT_REMAP_BASE;
-    f_d656((unsigned char *)&key_irq, (int)remove_keyboard_input_handler);
+    keyboard_interrupt_number = picvec + KEYBOARD_INTERRUPT_REMAP_BASE;
+    save_irq((unsigned char *)&key_irq, (int)remove_keyboard_input_handler);
 }
 
 void remove_keyboard_input_handler(void) {
-    f_d7b8((unsigned char *)&key_irq);
+    restore((unsigned char *)&key_irq);
 }
 
 int initialize_keyboard_manager(int manager_flags) {
@@ -207,7 +207,7 @@ int initialize_keyboard_manager(int manager_flags) {
         keyboard_handler_address = (void (*)(void))keyboard_interrupt_handler;
         keyboard_physical_start = (void (*)(void))irq_110;
         keyboard_mapping_state = (void (*)(void))((unsigned char __far *)irq_110 + 0x39);
-        f_da01((int *)&key_irq);
+        install((int *)&key_irq);
         if ((manager_flags & 1) == 1) {
             int bios_buffer_head_address;
             int bios_buffer_tail_address;
@@ -218,7 +218,7 @@ int initialize_keyboard_manager(int manager_flags) {
             ((struct KeyboardBufferState *)bios_buffer_address)->tail_index = *(unsigned short *)bios_buffer_tail_address;
             bios_keyboard_buffer = (char *)bios_buffer_address;
         }
-        if (g_75c4) return 0x501;
+        if (dpmi_err) return 0x501;
     }
     return 0;
 }
