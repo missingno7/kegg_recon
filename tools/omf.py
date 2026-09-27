@@ -61,6 +61,7 @@ class Module:
         self.publics = []              # (name, seg, off, local)
         self.comdefs = []
         self.fixups: list = []
+        self.chunks: list = []         # (seg index, offset, length) per LEDATA/LIDATA, in record order
         self.comments = []
         self.unsupported = {}
         self.easy = False
@@ -210,6 +211,7 @@ def parse_module(data: bytes, pos: int = 0):
             seg = m.segments[si]
             seg.data[off:off + len(chunk)] = chunk
             seg.covered[off:off + len(chunk)] = b"\x01" * len(chunk)
+            m.chunks.append((si, off, len(chunk)))
             last = (si, off)
         elif typ in (0xA2, 0xA3):
             si = r.idx(); off = r.off()
@@ -219,6 +221,7 @@ def parse_module(data: bytes, pos: int = 0):
             seg = m.segments[si]
             seg.data[off:off + len(chunk)] = chunk
             seg.covered[off:off + len(chunk)] = b"\x01" * len(chunk)
+            m.chunks.append((si, off, len(chunk)))
             last = (si, off)
         elif typ in (0x9C, 0x9D):
             while r.more():
