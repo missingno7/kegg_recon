@@ -1,6 +1,7 @@
 """Apply an object plan atomically: a set of translation units (+ symbol renames) replacing current units.
 
     python tools/replan.py PLAN.json [--dry-run]
+    python tools/replan.py PLAN.json --sandbox   # workers: full apply + validate --image in a throwaway copy
 
 PLAN.json = {"units": [{id, file, dest, range: [start, end], profile, place: [...]}, ...],
              "renames": {old: new}, "symbols": {name: "obj:off"}}
@@ -40,7 +41,31 @@ def lf(b: bytes):
     return b.replace(bytes([13, 10]), bytes([10]))
 
 
+def sandbox(argv):
+    """Apply the plan to a throwaway copy of the canonical tree (never touches it) and run the full gate."""
+    plan_path = Path(argv[1]).resolve()
+    plan = json.loads(plan_path.read_text())
+    for u in plan["units"]:
+        u["file"] = str((ROOT / u["file"]).resolve())  # sources stay where the worker wrote them
+    box = ROOT / "build" / "sandbox" / f"{plan_path.parent.name}-{time.strftime('%H%M%S')}"
+    if box.exists():
+        shutil.rmtree(box)
+    for d in ("src", "asm", "tools", "toolchain", "tests", "docs"):
+        shutil.copytree(ROOT / d, box / d)
+    for f in ("manifest.json",):
+        shutil.copyfile(ROOT / f, box / f)
+    (box / "assets").mkdir(parents=True)
+    shutil.copyfile(ROOT / "assets" / "KE.EXE", box / "assets" / "KE.EXE")
+    shutil.copytree(ROOT / "build" / "pylib", box / "build" / "pylib")
+    (box / "plan.json").write_text(json.dumps(plan, indent=1))
+    r = subprocess.run([sys.executable, str(box / "tools" / "replan.py"), str(box / "plan.json")], cwd=box)
+    print(f"sandbox: {box} -> {'PASS' if r.returncode == 0 else 'FAIL'}")
+    return r.returncode
+
+
 def main(argv):
+    if "--sandbox" in argv:
+        return sandbox([a for a in argv if a != "--sandbox"])
     plan = json.loads(Path(argv[1]).read_text())
     dry = "--dry-run" in argv
     renames = plan.get("renames", {})
@@ -106,6 +131,10 @@ def main(argv):
             dest = ROOT / u["dest"]
             dest.parent.mkdir(exist_ok=True)
             data = (ROOT / u["file"]).read_bytes()
+            prior = {k: v for k, v in man.get("renamed", {}).items() if k not in renames}
+            if prior and not P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {}).get("host"):
+                prx = re.compile(r"\b(" + "|".join(map(re.escape, sorted(prior, key=len, reverse=True))) + r")\b")
+                data = prx.sub(lambda m: prior[m.group(1)], data.decode("latin-1")).encode("latin-1")
             prof_ = P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {})
             pinned = bool(prof_.get("host")) and prof_.get("tool", "wcc386") == "wcc386"
             dest.write_bytes(data if pinned else lf(data))  # host-pinned profiles: exact bytes (CRLF) matter
@@ -120,6 +149,12 @@ def main(argv):
                               "profile": u.get("profile", "game-c"), "src_sha256": h,
                               **({"place": u["place"]} if u.get("place") else {}),
                               "note": u.get("note", "object plan (build/workers/objects)")})
+        log = man.setdefault("renamed", {})
+        for k in list(log):
+            if log[k] in renames:
+                log[k] = renames[log[k]]
+        for k, v in renames.items():
+            log.setdefault(k, v)
         man["units"] = sorted(keep_units + new_units, key=lambda u: (int(u["start"], 16), int(u["end"], 16)))
         # refresh hashes of every source (renames changed some)
         for f in man["functions"]:
