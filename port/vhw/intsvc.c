@@ -1,7 +1,6 @@
 /* intsvc.c - INT n services reached through Watcom int386()/int386x().
  *
- * Implemented as DOS/4GW + DOS 6.22 + VGA BIOS + MS mouse driver would answer, limited to
- * the services the game calls (inventory in docs/port/architecture.md):
+ * Emulates the DOS/4GW 10.0 + DOS 6.22 + VGA BIOS services reached by the frozen game:
  *   10h  00h set mode, 0Fh get mode, 1A00h display combination
  *   21h  25h/35h set/get vector (DOS/4GW: protected-mode vector), 30h version, 48h
  *        allocate (BX=FFFFh size query)
@@ -10,7 +9,7 @@
  *        0400h version (+PIC bases), 0500h free memory info, 0600h/0601h lock/unlock,
  *        0800h physical mapping (identity)
  *   33h  mouse (mouse.c)
- *   67h  EMS: not present (AH=84h)
+ *   67h  AH=46h EMS version, AX=DE00h VCPI check (both absent: AH=84h)
  * Anything else returns with CF set and is logged once.
  */
 #include <stdio.h>
@@ -46,6 +45,9 @@ static void int10(union REGS *r)
             r->h.al = 0x1a;
             r->h.bl = 0x08;     /* VGA with analog color display */
             r->h.bh = 0x00;
+        } else {
+            unknown(0x10, r);
+            return;
         }
         break;
     default:
@@ -79,8 +81,7 @@ static void int21(union REGS *r, struct SREGS *s)
     case 0x30:
         r->h.al = 6;            /* DOS 6.22 */
         r->h.ah = 22;
-        r->h.bh = 0;
-        r->x.ebx &= 0xffff00ffu;
+        r->x.ebx = 0;           /* OEM, revision, and serial number */
         r->w.cx = 0;
         break;
     case 0x48:
@@ -93,7 +94,7 @@ static void int21(union REGS *r, struct SREGS *s)
         }
         break;
     case 0x49:
-        if (s && lowmem_dos_free(s->es) != 0) {
+        if (!s || lowmem_dos_free(s->es) != 0) {
             r->w.ax = 9;
             CF_SET(r);
         }
@@ -185,16 +186,17 @@ static void int31(union REGS *r, struct SREGS *s)
         r->h.dl = (uint8_t)vpic_vector_base(1);
         break;
     case 0x0500:
-        if (s) {                /* ES:EDI -> 48-byte info block */
+        if (s && r->x.edi) {    /* ES:EDI -> 48-byte info block */
             uint32_t *info = (uint32_t *)(uintptr_t)r->x.edi;
             memset(info, 0xff, 48);
             info[0] = 16u << 20; /* largest free block: 16 MiB */
-            info[1] = info[0] / 4096;
-            info[2] = info[1];
+        } else {
+            CF_SET(r);          /* DPMI 0.9 requires an ES:EDI output buffer */
         }
         break;
     case 0x0600:
     case 0x0601:
+        /* DPMI 0.9 permits hosts to ignore region lock/unlock requests. */
         break;
     case 0x0800:                /* BX:CX physical -> BX:CX linear (identity) */
         break;
@@ -214,7 +216,14 @@ int vhw_int(int intno, union REGS *in, union REGS *out, struct SREGS *s)
     case 0x2f: int2f(&r, s); break;
     case 0x31: int31(&r, s); break;
     case 0x33: vmouse_int33(&r, s); CF_CLEAR(&r); break;
-    case 0x67: r.h.ah = 0x84; CF_CLEAR(&r); break;   /* EMS: function not supported */
+    case 0x67:
+        if (r.h.ah == 0x46 || r.w.ax == 0xde00) {
+            r.h.ah = 0x84;     /* EMS/VCPI absent: unsupported function */
+            CF_CLEAR(&r);
+        } else {
+            unknown(0x67, &r);
+        }
+        break;
     default: unknown(intno, &r); break;
     }
     *out = r;
