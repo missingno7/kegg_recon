@@ -95,24 +95,7 @@ KE_ASM_STUB(fill_planar_video_rows, "m_13712_137a8")
 
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 
-KE_ASM_STUB(update_attr_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_attr_register, "m_13944_13a48")
-KE_ASM_STUB(update_crtc_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_crtc_register, "m_13944_13a48")
-KE_ASM_STUB(update_seq_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_seq_register, "m_13944_13a48")
-KE_ASM_STUB(update_gc_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_gc_register, "m_13944_13a48")
-KE_ASM_STUB(set_seq_plane_mask_entry, "m_13944_13a48")
-KE_ASM_STUB(set_seq_plane_mask, "m_13944_13a48")
-KE_ASM_STUB(rotate_seq_plane_mask_entry, "m_13944_13a48")
-KE_ASM_STUB(rotate_seq_plane_mask, "m_13944_13a48")
-KE_ASM_STUB(set_gc_read_map_entry, "m_13944_13a48")
-KE_ASM_STUB(set_gc_read_map, "m_13944_13a48")
-KE_ASM_STUB(set_gc_mode_entry, "m_13944_13a48")
-KE_ASM_STUB(set_gc_mode, "m_13944_13a48")
+/* m_13944_13a48: owned by port/asm/m_13944_13a48.c */
 
-KE_ASM_STUB(write_dac_palette_entry, "m_13a48_13a95")
-KE_ASM_STUB(write_dac_palette, "m_13a48_13a95")
-KE_ASM_STUB(copy_ds_to_es, "m_13a48_13a95")
+/* m_13a48_13a95: owned by port/asm/m_13a48_13a95.c */
 
