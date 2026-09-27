@@ -28,6 +28,38 @@ the SDL presenter only saves VGA graphics scanout, so that scheduled shot is
 deferred until a graphics frame exists. The reference startup report is text
 mode and is not a valid raster comparison.
 
+## G3 transition frame synchronization
+
+`smoke.py --frame-shots N=name` now saves at the first presented virtual VGA
+retrace at or after absolute retrace `N`; the log also reports the current
+`wait_for_tick` entry count. This avoids assuming one fixed refresh rate across
+mode changes. In the scripted port run, the 10,000 ms and 12,500 ms captures
+were retraces 712 and 877 respectively; the latter mode runs at about 70 Hz,
+while the 320x240 menu mode before it runs at about 60 Hz.
+
+`refshot.py --video --video-start-ms A --video-stop-ms B` can record a short
+DOSBox-X segment around a transition. Screenshots and hotkeys are timestamped
+at their trigger, with the F11 lead-in compensated. The original reference
+AVI's Level 01 screenshot is an exact match at frame 107; the post-click
+reference image is frame 13. The 12.5 s port shot occurs 106 retraces after its
+second click (retrace 771), so the frame-aligned port window was also checked
+against the adjacent original AVI frames.
+
+**PROVEN:** at the transition, the port image alternates substantially between
+the two display pages: even retraces in 870..885 are 12.18–12.91% from their
+nearest original frames, while odd retraces are 21.69–21.93%. The captured
+320x200 VGA state uses CRTC offset 28h, byte mode, and an 80-byte plane
+stride. At sampled captures, the SEQ01 screen blank was clear, with no panning
+or split. Existing oracle fixtures cover game pages 0/1, scan-out, write modes,
+and the retrace start latch.
+
+**STRONG remaining lead:** the transition mismatch is not explained by the
+scheduled screenshot time alone. The two VGA pages contain different
+transition progress at adjacent retraces, which points to game-update/page
+flip timing relative to the VGA retrace. No scan-out or palette change was
+made; the exact page-update mismatch remains for the V1/game-loop owners to
+resolve. G2's `update_game_balls` area was not changed.
+
 **PROVEN blocker:** with the R1 clicks, the game faults as it enters the first
 ball update: write to `FF530000` at EIP `0040F4B4` (`update_game_balls`,
 `src/u_08585.c:537`). The same fault occurs without screenshot scheduling and
