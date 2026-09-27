@@ -1,3 +1,11 @@
+#define TEXT_TAB 9
+#define TEXT_LINE_FEED 10
+#define TEXT_SPACE 32
+#define TEXT_STOP_CHARACTER 0x12
+#define FONT_MODE_PROPORTIONAL 1
+#define DEFAULT_FONT_GLYPH_INDEX 0x41
+
+/* Packed shared state; the gameplay view calls line_advance its v20d field. */
 struct TextRenderState {
     unsigned char font_mode;
     int character_advance;
@@ -11,14 +19,15 @@ struct TextRenderState {
     unsigned char reserved[3];
 };
 
-unsigned char *g_font_bitmap_data;
-struct TextRenderState g_text_render_state;
-unsigned char *glyph_metrics_offsets;
+unsigned char *font_bitmap_data;
+struct TextRenderState text_render_state;
 
-typedef struct {
+struct FontGlyphMetricOffset {
     int bitmap_offset;
     int reserved;
-} FontGlyphOffset;
+};
+
+struct FontGlyphMetricOffset *font_glyph_metric_table;
 
 typedef struct {
     short reserved0;
@@ -43,6 +52,7 @@ typedef struct {
     short reserved1;
 } RectOffset;
 
+/* The BOB frame record supplies bounds and offsets; untouched shorts remain explicit. */
 typedef struct {
     short reserved0;
     short width;
@@ -70,75 +80,76 @@ int draw_text(int x, int y, int text_address)
     GlyphMetrics *glyph;
     GlyphMetrics *default_metrics;
 
-    default_metrics = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(glyph_metrics_offsets + 0x208));
-    g_text_render_state.cursor_x = x;
-    g_text_render_state.cursor_y = y;
+    default_metrics = (GlyphMetrics *)(font_bitmap_data + font_glyph_metric_table[DEFAULT_FONT_GLYPH_INDEX].bitmap_offset);
+    text_render_state.cursor_x = x;
+    text_render_state.cursor_y = y;
     if (default_metrics->edge_x < 0) {
-        g_text_render_state.cursor_x -= default_metrics->edge_x;
+        text_render_state.cursor_x -= default_metrics->edge_x;
     }
     if (default_metrics->edge_y < 0) {
-        g_text_render_state.cursor_y -= default_metrics->edge_y;
+        text_render_state.cursor_y -= default_metrics->edge_y;
     }
     do {
         character = *(unsigned char *)(unsigned char *)(text_address++);
         switch (character) {
-        case 9:
-            if (g_text_render_state.font_mode == 1) {
-                g_text_render_state.cursor_x += (default_metrics->advance + g_text_render_state.character_advance) << 3;
+        case TEXT_TAB:
+            if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
+                text_render_state.cursor_x += (default_metrics->advance + text_render_state.character_advance) << 3;
             } else {
-                g_text_render_state.cursor_x += g_text_render_state.character_advance << 3;
+                text_render_state.cursor_x += text_render_state.character_advance << 3;
             }
             continue;
-        case 32:
-            g_text_render_state.cursor_x += g_text_render_state.character_advance;
-            if (g_text_render_state.font_mode == 1) {
-                g_text_render_state.cursor_x += default_metrics->advance;
+        case TEXT_SPACE:
+            text_render_state.cursor_x += text_render_state.character_advance;
+            if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
+                text_render_state.cursor_x += default_metrics->advance;
             }
             continue;
-        case 10:
+        case TEXT_LINE_FEED:
 newline_control:;
-            g_text_render_state.cursor_x = g_text_render_state.clip_left;
-            g_text_render_state.cursor_y += g_text_render_state.line_advance;
-            if (g_text_render_state.font_mode == 1) {
-                g_text_render_state.cursor_y += default_metrics->line_advance;
+            text_render_state.cursor_x = text_render_state.clip_left;
+            text_render_state.cursor_y += text_render_state.line_advance;
+            if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
+                text_render_state.cursor_y += default_metrics->line_advance;
             }
             continue;
-        case 18:
+        case TEXT_STOP_CHARACTER:
             continue;
         case 0:
             continue;
         }
         lookahead_address = text_address;
         scan_character = character;
-        candidate_x = g_text_render_state.cursor_x;
+        candidate_x = text_render_state.cursor_x;
         while (scan_character != 0x20 && scan_character != 9 && scan_character != 0xa && scan_character != 0x12 && scan_character) {
-            candidate_x += g_text_render_state.character_advance;
-            if (g_text_render_state.font_mode == 1) {
-                glyph = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(glyph_metrics_offsets + (scan_character << 3)));
+            candidate_x += text_render_state.character_advance;
+            if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
+                glyph = (GlyphMetrics *)(font_bitmap_data + font_glyph_metric_table[scan_character].bitmap_offset);
                 candidate_x += glyph->advance;
             }
-            if ((candidate_x - 1) > g_text_render_state.clip_right) {
+            if ((candidate_x - 1) > text_render_state.clip_right) {
                 text_address += -1;
+                /* Reuse the line-feed case's shared cursor update. */
                 goto newline_control;
             }
             scan_character = *(unsigned char *)(unsigned char *)(lookahead_address++);
         }
-        glyph = (GlyphMetrics *)(g_font_bitmap_data + *(int *)(glyph_metrics_offsets + (character << 3)));
-        if (((glyph->edge_x + (g_text_render_state.cursor_x + glyph->advance)) - 1) <= g_text_render_state.clip_right) {
-            draw_bob_sprite_entry((int)glyph, g_text_render_state.cursor_x, g_text_render_state.cursor_y);
-            g_text_render_state.cursor_x += g_text_render_state.character_advance;
-            if (g_text_render_state.font_mode == 1) {
-                g_text_render_state.cursor_x += glyph->advance;
+        glyph = (GlyphMetrics *)(font_bitmap_data + font_glyph_metric_table[character].bitmap_offset);
+        if (((glyph->edge_x + (text_render_state.cursor_x + glyph->advance)) - 1) <= text_render_state.clip_right) {
+            draw_bob_sprite_entry((int)glyph, text_render_state.cursor_x, text_render_state.cursor_y);
+            text_render_state.cursor_x += text_render_state.character_advance;
+            if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
+                text_render_state.cursor_x += glyph->advance;
             }
         } else {
-            g_text_render_state.cursor_x = g_text_render_state.clip_left;
-            g_text_render_state.cursor_y += g_text_render_state.line_advance;
-            if (g_text_render_state.font_mode == 1) {
-                g_text_render_state.cursor_y += default_metrics->line_advance;
+            text_render_state.cursor_x = text_render_state.clip_left;
+            text_render_state.cursor_y += text_render_state.line_advance;
+            if (text_render_state.font_mode == FONT_MODE_PROPORTIONAL) {
+                text_render_state.cursor_y += default_metrics->line_advance;
             }
             text_address--;
         }
-    } while (g_text_render_state.cursor_y <= g_text_render_state.clip_bottom && character != 0x12 && character);
+    } while (text_render_state.cursor_y <= text_render_state.clip_bottom && character != TEXT_STOP_CHARACTER && character);
     if (!character) {
         return 0;
     }
@@ -162,14 +173,14 @@ void draw_zero_padded_number(int x, int y, int value, int base, int width)
     draw_text(x, y, (int)buffer);
 }
 
-void configure_text_renderer(unsigned char *glyph_offsets, unsigned char *bitmap_data,
+void configure_text_renderer(struct FontGlyphMetricOffset *glyph_metric_offsets, unsigned char *bitmap_data,
                              char font_mode, int character_advance, int line_advance)
 {
-    glyph_metrics_offsets = glyph_offsets;
-    g_font_bitmap_data = bitmap_data;
-    g_text_render_state.font_mode = font_mode;
-    g_text_render_state.character_advance = character_advance;
-    g_text_render_state.line_advance = line_advance;
+    font_glyph_metric_table = glyph_metric_offsets;
+    font_bitmap_data = bitmap_data;
+    text_render_state.font_mode = font_mode;
+    text_render_state.character_advance = character_advance;
+    text_render_state.line_advance = line_advance;
 }
 
 void set_text_clip_rect(int left, int top, int right, int bottom)
@@ -186,10 +197,10 @@ void set_text_clip_rect(int left, int top, int right, int bottom)
         top = bottom;
         bottom = swap;
     }
-    g_text_render_state.clip_left = left;
-    g_text_render_state.clip_right = right;
-    g_text_render_state.clip_top = top;
-    g_text_render_state.clip_bottom = bottom;
+    text_render_state.clip_left = left;
+    text_render_state.clip_right = right;
+    text_render_state.clip_top = top;
+    text_render_state.clip_bottom = bottom;
 }
 
 int rectangles_intersect(const IntRect *first, const IntRect *second)
@@ -214,7 +225,8 @@ void place_rect_from_offset(IntRect *rect, RectOffset size, RectOffset offset)
     rect->bottom = rect->top + size.delta_y;
 }
 
-short rect_fits_viewport(RectOffset rect, RectOffset offset, int ignored,
+/* The third argument is part of the original entry signature but is unused. */
+short rect_fits_viewport(RectOffset rect, RectOffset offset, int unused_argument,
                          int x, int y, int right, int bottom, int max_x, int max_y)
 {
     int rect_right;

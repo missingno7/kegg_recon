@@ -14,7 +14,7 @@ void clear_and_rotate_image_buffer(void);
 extern short image_buffer_error_code;
 extern void process_sprite_update_list_entry();
 void render_image_region(int x, int y);
-extern short draw_idx;
+extern short drawpage;
 extern void draw_bob_sprite_entry();
 extern short vga_state;
 void set_image_pages(unsigned char *, int, int, unsigned char *, unsigned char *);

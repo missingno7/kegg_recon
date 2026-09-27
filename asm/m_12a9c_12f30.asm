@@ -63,7 +63,7 @@ DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN image_buffer_error_code:WORD
 EXTRN image_color_depth:WORD
-EXTRN draw_idx:WORD
+EXTRN drawpage:WORD
 EXTRN page2:WORD
 EXTRN render_page_base:DWORD
 EXTRN active_video_page_buffer:DWORD
@@ -103,7 +103,7 @@ process_sprite_update_list PROC NEAR
         mov dx, VGA_GC_INDEX_DATA_PORT
         out dx, ax ; VGA Graphics Controller write mode 0.
 setup_update_list_video_pages:
-        movzx ebx, word ptr [draw_idx]
+        movzx ebx, word ptr [drawpage]
         shl ebx, 2
         mov edi, dword ptr [ebx + vga_state+VGA_STATE_PAGE_BASES]
         add edi, dword ptr [ebx + vga_state+VGA_STATE_PAGE_STARTS]
@@ -162,7 +162,7 @@ replay_sprite_update_list_entry LABEL NEAR
 replay_sprite_update_list PROC NEAR
         pushad
         lea ebp, [esp + 1Ch]
-        movzx ebx, word ptr [draw_idx]
+        movzx ebx, word ptr [drawpage]
         shl ebx, 2
         mov edi, dword ptr [ebx + vga_state+VGA_STATE_PAGE_BASES]
         add edi, dword ptr [ebx + vga_state+VGA_STATE_PAGE_STARTS]
@@ -251,7 +251,7 @@ draw_bob_sprite PROC NEAR
         mov dx, VGA_GC_INDEX_DATA_PORT
         out dx, ax ; VGA Graphics Controller write mode 0.
 draw_bob_setup_video_pages:
-        movzx ebx, word ptr [draw_idx]
+        movzx ebx, word ptr [drawpage]
         shl ebx, 2
         mov esi, dword ptr [ebx + vga_state+VGA_STATE_PAGE_BASES]
         add esi, dword ptr [ebx + vga_state+VGA_STATE_PAGE_STARTS]

@@ -13,10 +13,10 @@ int enemy_pattern;
 extern unsigned char bolt_impact_animation_frames[];
 extern short audio_stream_flag;
 extern short image_buffer_error_code;
-extern short disp_idx;
+extern short page_idx;
 extern short page2;
-extern short flip_src;
-extern short flip_dst;
+extern short src_page;
+extern short dst_page;
 extern short hook_flags_word;
 extern int file_error_state;
 extern unsigned char frnt_pg_upd_buf[];
@@ -72,12 +72,12 @@ extern void submit_audio_request(int);
 extern void set_image_pages(int, int, short, int, int);
 extern void redraw_image_region(int, int);
 extern int random_in_range(int, int);
-extern void fade_pal(void *, int, int, int);
+extern void fade_dac(void *, int, int, int);
 extern void show_page(void);
-extern int fade_delay;
+extern int palette_fade_delay_ticks;
 extern int work_value;
 extern int temp;
-extern void write_pal(void *);
+extern void write_vga_palette(void *);
 extern unsigned char difficulty_tier_index;
 extern unsigned char arcade;
 extern unsigned char g_e46b;
@@ -88,9 +88,9 @@ int level_intro_ticks;
 int enemy_attack_interval;
 
 extern unsigned char gameplay_tuning_by_stage[];
-extern short video_page_2_index;
-extern short vp3idx;
-extern short draw_idx;
+extern short stored_page_2_index;
+extern short page_3;
+extern short drawpage;
 extern short page3;
 extern unsigned short mouse_btn;
 extern unsigned short mouse_btn_old;
@@ -179,7 +179,7 @@ int run_level(void)
     hud_flash_ticks = 0;
     old_display_mode = vga_state.bottom;
     vga_state.bottom = 0xa6;
-    fade_pal((void *)vga_buffer_base, 0, 0x3f, 8);
+    fade_dac((void *)vga_buffer_base, 0, 0x3f, 8);
     g_e4d0_wfmxdlyju = file_error_state;
     load_monster_art();
     prep_brick();
@@ -192,13 +192,13 @@ int run_level(void)
     f_9d40(0);
     f_9d40(0);
     plot_transformed_pixel((void *)sprite_memory_base, page2);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    disp_idx = page2;
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
+    page_idx = page2;
     scan();
     update_enemy_attack_cycle();
     upd_sh();
-    fade_pal((void *)vga_buffer_base, 0x3f, 0, 1);
+    fade_dac((void *)vga_buffer_base, 0x3f, 0, 1);
     do {
         f_9d40(3);
         update_level_hud();
@@ -247,16 +247,16 @@ void restore_gameplay_display_mode(void) { vga_state.bottom = old_display_mode; 
 int fade_level_to_white(void)
 {
     submit_audio_request(0xb);
-    fade_delay = 2;
+    palette_fade_delay_ticks = 2;
     for (work_value = 0; work_value < 0x3f; ++work_value) {
         for (temp = 0; temp < 0x300; temp += 3) {
             if (++*(unsigned char *)(unsigned char *)(vga_buffer_base + temp) > 0x3f)
                 *(unsigned char *)(unsigned char *)(vga_buffer_base + temp) = 0x3f;
         }
-        write_pal((void *)vga_buffer_base);
+        write_vga_palette((void *)vga_buffer_base);
         f_9d40(3);
     }
-    fade_delay = 1;
+    palette_fade_delay_ticks = 1;
     return 0;
 }
 
@@ -265,9 +265,9 @@ int award_level_completion_bonus(void)
     submit_audio_request(0x26);
     if (arcade == 0)
         *(int *)((unsigned char *)racket_state + 20) += (5000 / total_level_time) * remaining_level_time + 5000;
-    fade_delay = 3;
-    fade_pal(vga_buffer_base, 0, -63, -1);
-    fade_delay = 1;
+    palette_fade_delay_ticks = 3;
+    fade_dac(vga_buffer_base, 0, -63, -1);
+    palette_fade_delay_ticks = 1;
     return 1;
 }
 
@@ -333,8 +333,8 @@ void update_level_hud(void)
     if (remaining_level_time != last_displayed_time) {
         last_displayed_time = remaining_level_time;
         vga_state.bottom = old_display_mode;
-        fill_clipped_vga_rectangle(draw_idx, ((remaining_level_time * 0x6f) / total_level_time) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
-        fill_clipped_vga_rectangle(disp_idx, ((remaining_level_time * 0x6f) / total_level_time) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
+        fill_clipped_vga_rectangle(drawpage, ((remaining_level_time * 0x6f) / total_level_time) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
+        fill_clipped_vga_rectangle(page_idx, ((remaining_level_time * 0x6f) / total_level_time) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
         vga_state.bottom = 0xa6;
         for (temp = 0; temp < 0x300; temp += 3) {
             if ((*(unsigned char *)(unsigned char *)(vga_buffer_base + temp) += 3) > 0x3f) {
@@ -351,8 +351,8 @@ void update_level_hud(void)
         }
         last_displayed_enemy_health = enemy_health_current;
         vga_state.bottom = old_display_mode;
-        fill_clipped_vga_rectangle(draw_idx, ((enemy_health_current * 0x6f) / enemy_max_health) + 0xb4, 0xb3, 0x123, 0xb9, 0);
-        fill_clipped_vga_rectangle(disp_idx, ((enemy_health_current * 0x6f) / enemy_max_health) + 0xb4, 0xb3, 0x123, 0xb9, 0);
+        fill_clipped_vga_rectangle(drawpage, ((enemy_health_current * 0x6f) / enemy_max_health) + 0xb4, 0xb3, 0x123, 0xb9, 0);
+        fill_clipped_vga_rectangle(page_idx, ((enemy_health_current * 0x6f) / enemy_max_health) + 0xb4, 0xb3, 0x123, 0xb9, 0);
         vga_state.bottom = 0xa6;
         hud_flash_ticks += 8;
         submit_audio_request(0x25);

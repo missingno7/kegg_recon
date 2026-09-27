@@ -1,5 +1,5 @@
 struct PaletteGradient { short first_index, last_index; unsigned char start_red, start_green, start_blue, end_red, end_green, end_blue; };
-extern void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
+extern void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 
 /* Interpolate each RGB ramp into the VGA palette or a packed color buffer. */
 void set_pal(struct PaletteGradient *gradients, unsigned char *rgb_output)
@@ -20,7 +20,7 @@ void set_pal(struct PaletteGradient *gradients, unsigned char *rgb_output)
         if (gradients->last_index < 0) break;
         if (gradients->last_index > 255) break;
         if (rgb_output == 0)
-            set_pal_rgb(gradients->first_index, gradients->start_red, gradients->start_green, gradients->start_blue);
+            set_vga_palette_rgb(gradients->first_index, gradients->start_red, gradients->start_green, gradients->start_blue);
         else {
             *rgb_output++ = gradients->start_red;
             *rgb_output++ = gradients->start_green;
@@ -43,7 +43,7 @@ void set_pal(struct PaletteGradient *gradients, unsigned char *rgb_output)
             blue = blue_delta * interpolation_step / interval_count + gradients->start_blue;
             if (rgb_output == 0) {
                 palette_index += index_step;
-                set_pal_rgb(palette_index, red, green, blue);
+                set_vga_palette_rgb(palette_index, red, green, blue);
             } else {
                 *rgb_output++ = red;
                 *rgb_output++ = green;

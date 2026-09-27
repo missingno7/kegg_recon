@@ -34,7 +34,7 @@ extern int configure_sound_dma(int);
 extern void set_audio_transfer_mode(int);
 extern void save_bios(void);
 extern void restore_bios(void);
-extern void clear_pal(void);
+extern void clear_vga_palette(void);
 extern void remove_keyboard_input_handler(void);
 extern int initialize_keyboard_manager(int);
 void launch_print_order_form(void);
@@ -45,9 +45,9 @@ extern int order_sprite_filename;
 extern int information_data_filename;
 extern short image_color_depth;
 extern short sound_blaster_detected;
-extern int fade_start;
-extern int fade_end;
-extern short draw_idx;
+extern int palette_fade_first_index;
+extern int palette_fade_end_index;
+extern short drawpage;
 extern short page2;
 extern short hook_flags_word;
 extern short space_pressed;
@@ -95,7 +95,7 @@ extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
 extern void set_image_pages(int, int, short, int, int);
 extern int set_display_mode();
-extern void fade_pal(void *, int, int, int);
+extern void fade_dac(void *, int, int, int);
 void run_title_screen_loop(void);
 extern int stop_audio_stream();
 void load_title_screen_assets(void);
@@ -142,8 +142,8 @@ extern int code_index;
 extern int prompt;
 extern unsigned char arcade;
 int decode_restart_code(unsigned long a0);
-extern short flip_src;
-extern short flip_dst;
+extern short src_page;
+extern short dst_page;
 extern void copy_clipped_screen_rectangle(int, int, int, int, int, int, int, int);
 extern unsigned int restart_word;
 extern unsigned char lives;
@@ -212,7 +212,7 @@ extern int main_screen_data_filename;
 extern int scoref;
 extern int end_fn;
 extern int game_title_text;
-extern short disp_idx;
+extern short page_idx;
 extern int ending_page_one;
 extern int ending_page_two;
 extern int ending_page_three;
@@ -228,7 +228,7 @@ extern int publisher_data_filename;
 extern int publisher_image_one_filename;
 extern int publisher_image_two_filename;
 extern int publisher_image_three_filename;
-void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
+void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int fill_sprite_data;
 void load_shared_game_assets(void);
 void render_image_with_options(int, int, int, int, int);
@@ -247,7 +247,7 @@ extern int pause_screen_data_filename;
 extern int game_over_data_filename;
 extern short page3;
 extern int tileid;
-void set_draw_page(int);
+void clear_draw_page(int);
 void draw_background_tiles(void);
 extern unsigned char bonus_index;
 extern int enemy_spawn_wait_time;
@@ -276,7 +276,7 @@ extern int level_palette_transition_tracks;
 extern int path_num;
 extern int palette_base;
 void init_tracks(void);
-void write_pal(int);
+void write_vga_palette(int);
 extern int level_number_transition_tracks_a;
 extern int tracks;
 void write_level_number_glyphs(void);
@@ -350,9 +350,9 @@ void update_falling_spells(void);
 
 void reset_lvl(void)
 {
-    set_draw_page(page3);
+    clear_draw_page(page3);
     image_color_depth = 8;
-    draw_idx = page3;
+    drawpage = page3;
     ++tileid;
     if (tileid >= 0x29)
         tileid = 0;
@@ -368,7 +368,7 @@ void load_and_draw_level(void)
     int row;
 
     image_color_depth = 8;
-    draw_idx = page2;
+    drawpage = page2;
     cell_cursor = (unsigned short *)&brick_code_map;
     remaining_brick_count = 0;
     if (bonus_index != 0) {
@@ -438,13 +438,13 @@ int wait_level(void)
     } else {
         start_result = 0;
     }
-    draw_idx = page2;
+    drawpage = page2;
     tick = 0x2e;
     advance_tracks();
     queue_draws();
     redraw_image_region(0, 0);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
     set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     return start_result;
 }
@@ -456,9 +456,9 @@ void init_stage_palette(void)
     track_data = (unsigned char *)&level_palette_transition_tracks;
     path_num = 12;
     init_tracks();
-    set_draw_page(flip_src);
-    set_draw_page(flip_dst);
-    write_pal(palette_base);
+    clear_draw_page(src_page);
+    clear_draw_page(dst_page);
+    write_vga_palette(palette_base);
 }
 
 void entry_prompt(void)
@@ -474,8 +474,8 @@ void entry_prompt(void)
             fatal_exit(image_buffer_error_code, 0);
         wait_input(0x32);
     }
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
 }
 
 void write_level_number_glyphs(void)
@@ -491,8 +491,8 @@ void redraw_level_state(void)
 {
     stop_audio_stream();
     prep_brick();
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
     move_mouse_to(((int *)racket_object)[0], ((int *)racket_object)[1]);
 }
 
@@ -508,15 +508,15 @@ void draw_status(void)
 {
     configure_text_renderer((int)monster_font_glyph_metrics, monster_art, 0, 8, 8);
     set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
-    draw_idx = page2;
+    drawpage = page2;
     racket_state[2] = -1;
     racket_state[6] = -1;
     draw_zero_padded_number(0x38, 4, racket_state[5], 10, 6);
     draw_zero_padded_number(0x99, 4, racket_state[1] / 0x71, 10, 2);
     draw_zero_padded_number(0x108, 4, *(int *)high_score_values, 10, 6);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    draw_idx = flip_src;
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
+    drawpage = src_page;
 }
 
 void update_game_status_panel(void)
@@ -524,7 +524,7 @@ void update_game_status_panel(void)
     unsigned char saved_video_page;
     int saved_palette_state;
 
-    saved_video_page = (unsigned char)draw_idx;
+    saved_video_page = (unsigned char)drawpage;
     saved_palette_state = image_color_depth;
     image_color_depth = 8;
     if (next_extra_life_score < racket_state[5]) {
@@ -540,21 +540,21 @@ void update_game_status_panel(void)
 
     if (racket_state[5] != racket_state[6]) {
         racket_state[6] = racket_state[5];
-        draw_idx = page2;
+        drawpage = page2;
         draw_zero_padded_number(0x38, 4, racket_state[5], 10, 6);
-        copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, flip_src, 0x38, 4);
-        copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, flip_dst, 0x38, 4);
+        copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, src_page, 0x38, 4);
+        copy_clipped_screen_rectangle(page2, 0x38, 4, 0x66, 0xb, dst_page, 0x38, 4);
     }
 
     if (racket_state[1] != racket_state[2]) {
         racket_state[2] = racket_state[1];
-        draw_idx = page2;
+        drawpage = page2;
         draw_zero_padded_number(0x99, 4, racket_state[1] / 0x71, 10, 2);
-        copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, flip_src, 0x99, 4);
-        copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, flip_dst, 0x99, 4);
+        copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, src_page, 0x99, 4);
+        copy_clipped_screen_rectangle(page2, 0x99, 4, 0xa6, 0xb, dst_page, 0x99, 4);
     }
 
-    draw_idx = saved_video_page;
+    drawpage = saved_video_page;
     image_color_depth = saved_palette_state;
 }
 
@@ -564,15 +564,15 @@ void process_brick_hit(int column, int cell_index, int velocity_x, int velocity_
     int pixel_x;
     int pixel_y;
 
-    saved_video_page = (unsigned char)draw_idx;
+    saved_video_page = (unsigned char)drawpage;
     pixel_x = column * 16 + 16;
     pixel_y = cell_index / 18 * 8 + 24;
     racket_state[5] += 1 << *(int *)(racket_object + 0x24);
-    draw_idx = page2;
+    drawpage = page2;
     copy_tile_to_page(pixel_x, pixel_y);
-    draw_idx = flip_src;
+    drawpage = src_page;
     copy_tile_to_page(pixel_x, pixel_y);
-    draw_idx = flip_dst;
+    drawpage = dst_page;
     copy_tile_to_page(pixel_x, pixel_y);
 
     if (velocity_x == 0 && velocity_y == 0) {
@@ -592,7 +592,7 @@ void process_brick_hit(int column, int cell_index, int velocity_x, int velocity_
     ((struct Cell *)cell_cursor)[column].flag = 0;
     if (current_brick_code >= 1 && current_brick_code <= 0x90)
         --remaining_brick_count;
-    draw_idx = saved_video_page;
+    drawpage = saved_video_page;
 }
 
 void draw_level_tile_on_pages(int column, int row_offset, int tile_id)
@@ -602,39 +602,39 @@ void draw_level_tile_on_pages(int column, int row_offset, int tile_id)
     int pixel_y;
     int saved_palette_state;
 
-    saved_video_page = (unsigned char)draw_idx;
+    saved_video_page = (unsigned char)drawpage;
     saved_palette_state = image_color_depth;
     image_color_depth = 8;
     pixel_x = column * 16 + 16;
     pixel_y = row_offset / 18 * 8 + 24;
     sprite_metadata = brick_art_start + *(int *)(brick_sprite_offsets_first + tile_id * 8);
-    draw_idx = page2;
+    drawpage = page2;
     draw_bob_sprite(sprite_metadata, pixel_x, pixel_y);
-    draw_idx = flip_src;
+    drawpage = src_page;
     draw_bob_sprite(sprite_metadata, pixel_x, pixel_y);
-    draw_idx = flip_dst;
+    drawpage = dst_page;
     draw_bob_sprite(sprite_metadata, pixel_x, pixel_y);
     image_color_depth = saved_palette_state;
-    draw_idx = saved_video_page;
+    drawpage = saved_video_page;
 }
 
 void copy_tile_to_page(int pixel_x, int pixel_y)
 {
-    copy_clipped_screen_rectangle(page3, pixel_x, pixel_y, pixel_x + 15, pixel_y + 7, draw_idx, pixel_x, pixel_y);
+    copy_clipped_screen_rectangle(page3, pixel_x, pixel_y, pixel_x + 15, pixel_y + 7, drawpage, pixel_x, pixel_y);
 }
 
 void refresh_video_pages(int a)
 {
     short value;
-    if (disp_idx != flip_src)
-        value = flip_src;
+    if (page_idx != src_page)
+        value = src_page;
     else
-        value = flip_dst;
-    draw_idx = value;
-    copy_screen_span_entry(page2, 0, draw_idx, 0, vga_state.buffer_size);
+        value = dst_page;
+    drawpage = value;
+    copy_screen_span_entry(page2, 0, drawpage, 0, vga_state.buffer_size);
     show_page();
     f_9d40(0);
-    write_pal(a);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    write_vga_palette(a);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
 }

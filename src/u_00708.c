@@ -27,7 +27,7 @@ extern int configure_sound_dma(int);
 extern void set_audio_transfer_mode(int);
 extern void save_bios(void);
 extern void restore_bios(void);
-extern void clear_pal(void);
+extern void clear_vga_palette(void);
 extern void remove_keyboard_input_handler(void);
 extern int initialize_keyboard_manager(int);
 void launch_print_order_form(void);
@@ -38,9 +38,9 @@ extern int order_sprite_filename;
 extern int information_data_filename;
 extern short image_color_depth;
 extern short sound_blaster_detected;
-extern int fade_start;
-extern int fade_end;
-extern short draw_idx;
+extern int palette_fade_first_index;
+extern int palette_fade_end_index;
+extern short drawpage;
 extern short page2;
 extern short hook_flags_word;
 extern short space_pressed;
@@ -88,7 +88,7 @@ extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
 extern void set_image_pages(int, int, short, int, int);
 extern int set_display_mode();
-extern void fade_pal(void *, int, int, int);
+extern void fade_dac(void *, int, int, int);
 void run_title_screen_loop(void);
 extern int stop_audio_stream();
 void load_title_screen_assets(void);
@@ -137,8 +137,8 @@ extern int code_index;
 extern int prompt;
 extern unsigned char arcade;
 int decode_restart_code(unsigned long a0);
-extern short flip_src;
-extern short flip_dst;
+extern short src_page;
+extern short dst_page;
 extern void copy_clipped_screen_rectangle(int, int, int, int, int, int, int, int);
 extern unsigned int parity;
 extern unsigned int decade;
@@ -171,7 +171,7 @@ extern int hall_of_fame_text;
 extern int result;
 extern unsigned char high_score_cursor;
 struct TextState { unsigned char mode; int v209, v20d, v211, v215, v219, v21d, v221, v225; unsigned char pad[3]; };
-extern struct TextState g_text_render_state;
+extern struct TextState text_render_state;
 extern unsigned minimum_high_score;
 extern unsigned points;
 extern char *strcpy(char *, const char *);
@@ -208,7 +208,7 @@ extern int main_screen_data_filename;
 extern int scoref;
 extern int end_fn;
 extern int game_title_text;
-extern short disp_idx;
+extern short page_idx;
 extern int ending_page_one;
 extern int ending_page_two;
 extern int ending_page_three;
@@ -224,7 +224,7 @@ extern int publisher_data_filename;
 extern int publisher_image_one_filename;
 extern int publisher_image_two_filename;
 extern int publisher_image_three_filename;
-void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
+void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 extern int fill_sprite_data;
 void load_shared_game_assets(void);
 void render_image_with_options(int, int, int, int, int);
@@ -243,7 +243,7 @@ extern int pause_screen_data_filename;
 extern int game_over_data_filename;
 extern short page3;
 extern int tileid;
-void set_draw_page(int);
+void clear_draw_page(int);
 void draw_background_tiles(void);
 extern unsigned char bonus_index;
 extern int enemy_spawn_wait_time;
@@ -272,7 +272,7 @@ extern int level_palette_transition_tracks;
 extern int path_num;
 extern int palette_base;
 void init_tracks(void);
-void write_pal(int);
+void write_vga_palette(int);
 extern int level_number_transition_tracks_a;
 extern int tracks;
 void write_level_number_glyphs(void);
@@ -1594,11 +1594,11 @@ void load_menu_graphics(void)
 
 void prep_menu_background(void) {
     vga_buffer_base = sprite_memory_base + vga_state.buffer_size;
-    fade_pal(vga_buffer_base, 0, -63, -1);
-    disp_idx = flip_src;
-    plot_transformed_pixel(sprite_memory_base, disp_idx);
-    draw_page(disp_idx);
-    fade_pal(vga_buffer_base, -63, 0, 1);
+    fade_dac(vga_buffer_base, 0, -63, -1);
+    page_idx = src_page;
+    plot_transformed_pixel(sprite_memory_base, page_idx);
+    draw_page(page_idx);
+    fade_dac(vga_buffer_base, -63, 0, 1);
 }
 
 void wait_menu_select(void)
@@ -1613,7 +1613,7 @@ void wait_menu_select(void)
         } while (!sound_blaster_detected);
     } while (audio_stream_flag == -1);
 L_9e0:;
-    fade_pal(vga_buffer_base, 0, 0x3f, 3);
+    fade_dac(vga_buffer_base, 0, 0x3f, 3);
 }
 
 void launch_print_order_form(void)
@@ -1630,7 +1630,7 @@ void launch_print_order_form(void)
     release_sound_system();
     restore_bios();
     spawnlp(0, (char *)("", "printord.bat"), (char *)"", 0);
-    clear_pal();
+    clear_vga_palette();
     save_bios();
     if (v_4 == -1) {
         f_9b44(0);
@@ -1674,22 +1674,22 @@ void show_high_score_screen(void)
             }
             queue_audio(sfx_data_ptr, g_e4c8, 0x1d4c, -1);
         }
-        saved_video_page = *(signed char *)&draw_idx;
+        saved_video_page = *(signed char *)&drawpage;
         saved_palette_state = image_color_depth;
-        clear_pal();
+        clear_vga_palette();
         plot_transformed_pixel(sprite_memory_base, page2);
         configure_text_renderer((int)menu_font_glyph_metrics, (int)game_sprite_base, 1, 1, 3);
         set_text_clip_rect((int)(vga_state.left + 6), (int)(vga_state.top + 4), vga_state.right - 6, vga_state.bottom - 2);
-        draw_idx = page2;
+        drawpage = page2;
         image_color_depth = 8;
         draw_text(8, 8, ordering_information_text);
-        draw_idx = (unsigned short)saved_video_page;
+        drawpage = (unsigned short)saved_video_page;
         image_color_depth = (unsigned short)saved_palette_state;
         refresh_video_pages(g_e1d8);
-        fade_start = 1;
-        fade_end = 0xbf;
-        fade_pal((void *)(g_e1d8 + 3), 0, -0x3f, -3);
-        fade_pal(vga_buffer_base + 3, -0x3f, 0, 3);
+        palette_fade_first_index = 1;
+        palette_fade_end_index = 0xbf;
+        fade_dac((void *)(g_e1d8 + 3), 0, -0x3f, -3);
+        fade_dac(vga_buffer_base + 3, -0x3f, 0, 3);
         set_mouse_bounds((int)vga_state.left, (int)vga_state.top, vga_state.right, 0xc4);
         palette_cycle_delay = 0xa;
         palette_cycle_offset = 0;
@@ -1718,8 +1718,8 @@ L_d7a:;
     if ((prior_key_ascii == current_ascii || current_ascii != 0x20) && (current_scan_code == keyboard_scan_byte || keyboard_scan_byte != 1)) {
         if (mouse_btn == mouse_btn_old || !(*(unsigned char *)&mouse_btn & 1)) goto L_d7a;
     }
-    fade_start = 0;
-    fade_end = 0x100;
+    palette_fade_first_index = 0;
+    palette_fade_end_index = 0x100;
 }
 
 void update_menu_screen(void)
@@ -1765,16 +1765,16 @@ void draw_title_screen(void)
 {
     unsigned char saved_video_page;
     int saved_palette_state;
-    saved_video_page = *(signed char *)&draw_idx;
+    saved_video_page = *(signed char *)&drawpage;
     saved_palette_state = image_color_depth;
-    clear_pal();
+    clear_vga_palette();
     plot_transformed_pixel(sprite_memory_base, page2);
     configure_text_renderer((int)menu_font_glyph_metrics, (int)game_sprite_base, 1, 1, 3);
     set_text_clip_rect((int)vga_state.left, (int)vga_state.top, vga_state.right, vga_state.bottom);
-    draw_idx = page2;
+    drawpage = page2;
     image_color_depth = 8;
     draw_text(0x10, 0x36, version_text);
-    draw_idx = (unsigned short)saved_video_page;
+    drawpage = (unsigned short)saved_video_page;
     image_color_depth = (unsigned short)saved_palette_state;
     refresh_video_pages((int)(sprite_memory_base + vga_state.buffer_size));
     set_mouse_bounds((int)vga_state.left, (int)vga_state.top, vga_state.right, 0xc4);
@@ -1924,19 +1924,19 @@ void draw_restart_code_text(int text)
 {
     unsigned char saved_video_page;
     int saved_palette_state;
-    saved_video_page = *(signed char *)&draw_idx;
+    saved_video_page = *(signed char *)&drawpage;
     saved_palette_state = image_color_depth;
     configure_text_renderer((int)menu_font_glyph_metrics, (int)game_sprite_base, 1, 1, 3);
     set_text_clip_rect(0x10, 0xda, vga_state.right, vga_state.bottom);
     image_color_depth = 8;
-    draw_idx = flip_src;
-    copy_clipped_screen_rectangle(page2, 0, 0xd7, 0x13f, 0xef, draw_idx, 0, 0xd7);
+    drawpage = src_page;
+    copy_clipped_screen_rectangle(page2, 0, 0xd7, 0x13f, 0xef, drawpage, 0, 0xd7);
     draw_text(0x10, 0xda, text);
-    draw_idx = flip_dst;
-    copy_clipped_screen_rectangle(page2, 0, 0xd7, 0x13f, 0xef, draw_idx, 0, 0xd7);
+    drawpage = dst_page;
+    copy_clipped_screen_rectangle(page2, 0, 0xd7, 0x13f, 0xef, drawpage, 0, 0xd7);
     draw_text(0x10, 0xda, text);
     image_color_depth = (unsigned short)saved_palette_state;
-    draw_idx = (unsigned short)saved_video_page;
+    drawpage = (unsigned short)saved_video_page;
 }
 
 int decode_restart_code(unsigned long a0)
@@ -1980,18 +1980,18 @@ void show_game_over_screen(void)
     set_display_mode(1);
     prepare_game_over_background();
     insert_high_score();
-    draw_idx = page2;
+    drawpage = page2;
     draw_high_score_table();
-    copy_screen_span_entry((short)page2, 0, (short)flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry((short)page2, 0, (short)flip_dst, 0, vga_state.buffer_size);
-    draw_idx = flip_dst;
-    draw_page((short)draw_idx);
+    copy_screen_span_entry((short)page2, 0, (short)src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry((short)page2, 0, (short)dst_page, 0, vga_state.buffer_size);
+    drawpage = dst_page;
+    draw_page((short)drawpage);
     enter_high_score_name();
-    draw_idx = page2;
+    drawpage = page2;
     draw_high_score_table();
-    copy_screen_span_entry((short)page2, 0, (short)flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry((short)page2, 0, (short)flip_dst, 0, vga_state.buffer_size);
-    draw_idx = flip_src;
+    copy_screen_span_entry((short)page2, 0, (short)src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry((short)page2, 0, (short)dst_page, 0, vga_state.buffer_size);
+    drawpage = src_page;
     show_page();
     if (image_buffer_error_code) {
         fatal_exit((short)image_buffer_error_code, 0);
@@ -2037,14 +2037,14 @@ void draw_high_score_table(void)
         strcat((char *)text_buffer, (char *)".");
         text_x = 0xe;
         draw_text(text_x, text_y, text_buffer);
-        text_y += g_text_render_state.v20d;
+        text_y += text_render_state.v20d;
     }
     text_y = 0x32;
     for (high_score_cursor = 0; high_score_cursor < 5; ++high_score_cursor) {
         text_x = 0x36;
         text_buffer = (int)((unsigned char *)high_score_records + (high_score_cursor * 0x19));
         draw_text(text_x, text_y, text_buffer);
-        text_y += g_text_render_state.v20d;
+        text_y += text_render_state.v20d;
     }
     text_y = 0x32;
     for (high_score_cursor = 0; high_score_cursor < 5; ++high_score_cursor) {
@@ -2053,7 +2053,7 @@ void draw_high_score_table(void)
         ltoa(result, (char *)text_buffer, 0xa);
         text_x = ((6 - strlen((char *)text_buffer)) * 0x11) + 0xd5;
         draw_text(text_x, text_y, text_buffer);
-        text_y += g_text_render_state.v20d;
+        text_y += text_render_state.v20d;
     }
 }
 
@@ -2121,11 +2121,11 @@ void enter_high_score_name(void)
             }
             if (high_score_input_redraw_flag) {
                 high_score_input_redraw_flag = 0;
-                copy_clipped_screen_rectangle(page2, 0xe, 0x32, vga_state.right, 0xa5, draw_idx, 0xe, 0x32);
-                draw_text(0x36, (g_text_render_state.v20d * points) + 0x32, (int)text_entry_buffer);
+                copy_clipped_screen_rectangle(page2, 0xe, 0x32, vga_state.right, 0xa5, drawpage, 0xe, 0x32);
+                draw_text(0x36, (text_render_state.v20d * points) + 0x32, (int)text_entry_buffer);
             }
             if (high_score_name_timer == 0x23) {
-                copy_clipped_screen_rectangle(page2, 0x24, 0xae, vga_state.right, 0xc5, draw_idx, 0x24, 0xae);
+                copy_clipped_screen_rectangle(page2, 0x24, 0xae, vga_state.right, 0xc5, drawpage, 0x24, 0xae);
                 if (cursor_direction < 0) {
                     draw_text(0x24, 0xae, enter_name_text);
                 }
@@ -2135,7 +2135,7 @@ void enter_high_score_name(void)
         strcpy((char *)((unsigned char *)high_score_records + (points * 0x19)), (char *)text_entry_buffer);
         points = 0xffffffff;
     }
-    draw_idx = page2;
+    drawpage = page2;
     draw_text(0x32, 0xae, enjoy_yourself_text);
 }
 
@@ -2235,9 +2235,9 @@ void prepare_instruction_background(void)
 
 void show_instruction_page(int a0)
 {
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    draw_idx = disp_idx;
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
+    drawpage = page_idx;
     configure_text_renderer((int)large_title_glyph_metrics, (int)game_sprite_base, 0, 0x11, 0x17);
     set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(0x40, 0xa, game_title_text);
@@ -2289,9 +2289,9 @@ void prepare_ending_background(void)
 
 void show_ending_page(int a)
 {
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    draw_idx = disp_idx;
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
+    drawpage = page_idx;
     configure_text_renderer((int)large_title_glyph_metrics, (int)game_sprite_base, 0, 17, 23);
     set_text_clip_rect(vga_state.left, vga_state.top, vga_state.right, vga_state.bottom);
     draw_text(0x40, 10, game_title_text);
@@ -2315,7 +2315,7 @@ void run_screen_transition(void)
     stop_audio_stream();
     set_display_mode(1);
     g_e4d0_wfmxdlyju = file_error_state;
-    fade_pal(vga_buffer_base, 0, 0x3f, 8);
+    fade_dac(vga_buffer_base, 0, 0x3f, 8);
     sprite_memory_base = (char *)g_e4d0_wfmxdlyju;
     vga_buffer_base = sprite_memory_base + vga_state.buffer_size;
     f_a574_wrvhrpegbz(publisher_image_one_filename);
@@ -2327,36 +2327,36 @@ void run_screen_transition(void)
     load_next_file(publisher_data_filename);
     queue_audio(sfx_data_ptr, g_e4c8, 0x2ae4, -1);
     plot_transformed_pixel(sprite_memory_base, page2);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
 
     for (fade_step = 0; fade_step < 0x40; fade_step++)
-        set_pal_rgb(1, (unsigned char)fade_step, (unsigned char)fade_step, (unsigned char)fade_step);
+        set_vga_palette_rgb(1, (unsigned char)fade_step, (unsigned char)fade_step, (unsigned char)fade_step);
     for (fade_step = 0; fade_step < 0x15e; fade_step++)
         f_9d40(1);
     for (fade_step = 0; fade_step < 0x80; fade_step++)
         write_dac_palette(vga_buffer_base, 0x80, 0x80, 0x3f - fade_step / 2);
-    fade_pal(vga_buffer_base, 0, -0x3f, -1);
+    fade_dac(vga_buffer_base, 0, -0x3f, -1);
 
     sprite_memory_base = saved_screen_buffer_a;
     vga_buffer_base = sprite_memory_base + vga_state.buffer_size;
     plot_transformed_pixel(sprite_memory_base, page2);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    fade_pal(vga_buffer_base, -0x3f, 0, 1);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
+    fade_dac(vga_buffer_base, -0x3f, 0, 1);
     for (fade_step = 0; fade_step < 0x8c; fade_step++)
         f_9d40(1);
-    fade_pal(vga_buffer_base, 0, -0x3f, -3);
+    fade_dac(vga_buffer_base, 0, -0x3f, -3);
 
     sprite_memory_base = saved_screen_buffer_b;
     vga_buffer_base = sprite_memory_base + vga_state.buffer_size;
     plot_transformed_pixel(sprite_memory_base, page2);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    fade_pal(vga_buffer_base, -0x3f, 0, 1);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
+    fade_dac(vga_buffer_base, -0x3f, 0, 1);
     for (fade_step = 0; fade_step < 0x8c; fade_step++)
         f_9d40(1);
-    fade_pal(vga_buffer_base, 0, -0x3f, -3);
+    fade_dac(vga_buffer_base, 0, -0x3f, -3);
 }
 
 void show_order_info(void)
@@ -2364,14 +2364,14 @@ void show_order_info(void)
     stop_audio_stream();
     load_shared_game_assets();
     queue_audio(sfx_data_ptr, g_e4c8, 0x1f40, -1);
-    render_image_with_options(disp_idx, 8, fill_sprite_data + 0x7102, 0xa0, 100);
+    render_image_with_options(page_idx, 8, fill_sprite_data + 0x7102, 0xa0, 100);
 }
 
 void return_to_main_menu(void)
 {
-    copy_screen_span_entry(disp_idx, 0, page2, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
-    copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page_idx, 0, page2, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, src_page, 0, vga_state.buffer_size);
+    copy_screen_span_entry(page2, 0, dst_page, 0, vga_state.buffer_size);
     stop_audio_stream();
     g_e4d0_wfmxdlyju = file_error_state;
     load_return_screen_assets();

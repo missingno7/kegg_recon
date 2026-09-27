@@ -77,7 +77,7 @@ struct DisplayState {
 extern struct DisplayState vga_state;
 extern unsigned long keyboard_hook_flags;
 extern unsigned long g_7588;
-extern short disp_idx;
+extern short page_idx;
 extern unsigned int sound_blaster_mixer_test;
 extern short key_irq;
 extern unsigned char sound_blaster_irq;
@@ -425,7 +425,7 @@ void sysinit(int vbl_manager_mode,int keyboard_manager_mode,int debug_compatibil
     kbd_poll_hook=poll_keyboard;
     mouse_update_hook=update_mouse;
     sprite_update_hook=poll_joystick_ports;
-    set_vga_display_start(disp_idx);
+    set_vga_display_start(page_idx);
     outp(PIC_MASTER_MASK_PORT,inp(PIC_MASTER_MASK_PORT)|PIC_IRQ0_MASK);
     if(debug_compatibility_mode==-1) printf(MSG_DEBUG_COMPATIBILITY);
     if(keyboard_manager_mode==-1) {

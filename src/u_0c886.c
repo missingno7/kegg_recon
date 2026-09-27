@@ -18,7 +18,7 @@ extern void replay_sprite_update_list_entry(int);
 void clear_and_rotate_image_buffer(void);
 extern void process_sprite_update_list_entry();
 void render_image_region(int x, int y);
-extern short draw_idx;
+extern short drawpage;
 extern void draw_bob_sprite_entry();
 extern short vga_state;
 extern short windows_environment_detected;
@@ -92,11 +92,11 @@ void redraw_image_region(int x, int y) {
 }
 
 void render_image_with_options(int display_state, int color_depth, int render_arg1, int render_arg2, int render_arg3) {
-    int previous_display_state = draw_idx;
+    int previous_display_state = drawpage;
     int previous_color_depth = image_color_depth;
     image_color_depth = color_depth;
-    draw_idx = display_state;
+    drawpage = display_state;
     draw_bob_sprite_entry(render_arg1, render_arg2, render_arg3);
-    draw_idx = previous_display_state;
+    drawpage = previous_display_state;
     image_color_depth = previous_color_depth;
 }

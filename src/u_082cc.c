@@ -17,14 +17,14 @@ void get_sprite_collision_bounds(int *rect, unsigned char *info);
 void init_tracks(void);
 void advance_tracks(void);
 void queue_draws(void);
-extern short disp_idx;
-extern short draw_idx;
+extern short page_idx;
+extern short drawpage;
 extern short page2;
 extern short page3;
-extern short flip_src;
-extern short flip_dst;
-extern short video_page_2_index;
-extern short vp3idx;
+extern short src_page;
+extern short dst_page;
+extern short stored_page_2_index;
+extern short page_3;
 extern unsigned char frnt_pg_upd_buf[];
 extern unsigned char back_pg_upd_buf[];
 extern unsigned char sprite_commands[];
@@ -90,10 +90,10 @@ void queue_draws(void)
 void set_pg(void)
 {
     set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
-    disp_idx = flip_src;
-    draw_idx = flip_dst;
-    page2 = video_page_2_index;
-    page3 = vp3idx;
+    page_idx = src_page;
+    drawpage = dst_page;
+    page2 = stored_page_2_index;
+    page3 = page_3;
 }
 
 void wait_input(int a0)

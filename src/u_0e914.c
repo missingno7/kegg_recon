@@ -2,51 +2,57 @@
 #pragma aux timer_interrupt_record "g_756f";
 #include <i86.h>
 #include <stdlib.h>
-extern struct DisplayModeInfo vga_state;
-struct VideoMode {
+#define VGA_CRTC_INDEX_PORT 0x3d4
+#define VGA_CRTC_OFFSET_REGISTER 0x13
+#define VGA_ATTRIBUTE_HORIZONTAL_PAN_REGISTER 0x13
+#define VGA_ATTRIBUTE_PAN_PRESERVE_MASK 0xf0
+#define VGA_ATTRIBUTE_PAN_BITS 3
+#define VGA_ATTRIBUTE_PAN_SHIFT 1
+extern struct VgaDisplayState vga_state;
+struct VideoModeInfo {
     int mode_id;
-    short bios_mode;
+    short bios_mode_number;
     short reserved;
-    union { int dword; short word; unsigned char bytes[4]; } video_mode;
+    union { int raw; short word; unsigned char bytes[4]; } bios_mode_data;
     unsigned char mode_flags;
-    unsigned char mode_class;
-    int width;
-    int height;
-    int row_bytes;
-    int image_size;
-    int buffer_size;
+    unsigned char storage_class;
+    int pixel_width;
+    int pixel_height;
+    int scanline_bytes;
+    int image_bytes;
+    int page_buffer_bytes;
 };
 
-struct DisplayModeInfo {
-    short state;
-    unsigned char page_base[16];
+struct VgaDisplayState {
+    short render_mode;
+    int framebuffer_base[4];
     int page_start[4];
     int page_display[4];
-    unsigned char page_class[4];
-    int buffer_size;
+    unsigned char storage_class[4];
+    int page_buffer_bytes;
     int scanline_bytes;
     int page_height;
     int screen_width;
     int screen_height;
-    int view_left;
-    int view_top;
-    int view_right;
-    int view_bottom;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right;
+    int viewport_bottom;
     unsigned char mode_flags;
-    unsigned char saved_reg_1;
-    unsigned char saved_reg_2;
+    unsigned char saved_seq_plane_mask;
+    unsigned char saved_gc_read_map;
     unsigned char bios_mode;
-    unsigned char original_mode;
-    unsigned char saved_reg_3;
-    unsigned char current_reg_1;
-    unsigned char current_reg_2;
-    unsigned char current_reg_3;
+    unsigned char original_bios_mode;
+    unsigned char saved_gc_mode;
+    unsigned char current_gc_mode;
+    unsigned char current_seq_plane_mask;
+    unsigned char current_gc_read_map;
     unsigned char tail;
 };
 struct VgaRegisterPreset {
-    unsigned char flags;
+    unsigned char restore_groups;
     unsigned char reserved[3];
-    unsigned char regs[48];
+    unsigned char register_bytes[48];
     int mode_id;
 };
 
@@ -54,13 +60,14 @@ struct VgaRegisterPreset {
 extern short bios_video_mode_saved;
 extern short video_restore_registered;
 
+/* T06 owns these legacy timer/video entry points; its source and imports are frozen. */
 extern void f_9afc(void);
 extern void f_9b44(int);
 extern void restore_bios(void);
 void save_bios(void);
 extern short timer_interrupt_record;
 
-extern struct VideoMode video_mode_table[];
+extern struct VideoModeInfo video_mode_table[];
 
 
 
@@ -89,10 +96,10 @@ extern struct VgaRegisterPreset vga_register_presets[];
 
 extern int clear_video_bytes_entry(int, int);
 extern void set_vga_memory_layout(int);
-void restore_vga_register_preset(unsigned char *p);
+void restore_vga_register_preset(struct VgaRegisterPreset *preset);
 extern void initialize_vga_map_mask(void);
-extern void set_draw_page(short);
-extern void clear_pal(void);
+extern void clear_draw_page(short);
+extern void clear_vga_palette(void);
 
 
 
@@ -108,25 +115,25 @@ extern void _enable(void);
 extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
 extern int old_display_mode;
 extern int fill_clipped_vga_rectangle();
-extern short disp_idx;
-extern short draw_idx;
+extern short page_idx;
+extern short drawpage;
 extern void set_vga_display_start(int);
 extern void advance_video_page_indices(void);
 
 extern int update_attr_register(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
-extern int fade_start;
-extern int fade_end;
-extern int fade_delay;
+extern int palette_fade_first_index;
+extern int palette_fade_end_index;
+extern int palette_fade_delay_ticks;
 extern void write_dac_palette(void *, int, int, int);
 extern void f_9d40(short);
 extern short vga_palette_saved;
 extern int outp(int, int);
 extern int inp(int);
-extern void write_pal(void *);
-extern void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
-extern short flip_src;
-extern short flip_dst;
+extern void write_vga_palette(void *);
+extern void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
+extern short flip_source_page_index;
+extern short flip_destination_page_index;
 
 void save_bios(void);
 
@@ -138,38 +145,39 @@ void save_vga_state(void);
 
 void restore_vga_register_state(void);
 
-void set_vga_memory_layout(int layout);
+void set_vga_memory_layout(int chain4_enabled);
 
-void restore_vga_register_preset(unsigned char *p);
+void restore_vga_register_preset(struct VgaRegisterPreset *preset);
 
 void initialize_vga_map_mask(void);
 
-void set_draw_page(short page_index);
+void clear_draw_page(short page_index);
 
 void set_video_viewport(int left, int top, int right, int bottom);
 
 /* _DATA [0x7b00,0x7b04) */
-int vga_crtc_offset = 0;
+int pending_horizontal_pan = 0;
 
 void set_video_display_address(int screen_x, int screen_y) {
-    disp_idx = draw_idx;
-    set_vga_display_start(screen_y * vga_state.scanline_bytes + vga_state.page_start[disp_idx] + screen_x);
+    page_idx = drawpage;
+    set_vga_display_start(screen_y * vga_state.scanline_bytes + vga_state.page_start[page_idx] + screen_x);
     advance_video_page_indices();
 }
 
 void set_vga_horizontal_panning(int new_panning)
 {
     extern void set_vga_horizontal_pan_register();
-    set_vga_horizontal_pan_register(vga_crtc_offset);
-    vga_crtc_offset = new_panning;
+    set_vga_horizontal_pan_register(pending_horizontal_pan);
+    pending_horizontal_pan = new_panning;
 }
 
 void set_vga_horizontal_pan_register(unsigned char pixel_pan) {
-    update_attr_register(0x13, 0xf0, (pixel_pan & 3) << 1);
+    update_attr_register(VGA_ATTRIBUTE_HORIZONTAL_PAN_REGISTER, VGA_ATTRIBUTE_PAN_PRESERVE_MASK,
+                         (pixel_pan & VGA_ATTRIBUTE_PAN_BITS) << VGA_ATTRIBUTE_PAN_SHIFT);
 }
 
 void set_vga_scanline_stride(int scanline_bytes) {
-    outpw(0x3d4, ((scanline_bytes >> 3) << 8) | 0x13);
+    outpw(VGA_CRTC_INDEX_PORT, ((scanline_bytes >> 3) << 8) | VGA_CRTC_OFFSET_REGISTER);
 }
 
 void write_vga_mode_register(unsigned char mode_register_value);
@@ -178,17 +186,17 @@ void set_vga_line_compare(int scanline);
 
 void set_vga_max_scan_line(unsigned char maximum_scanline);
 
-void fade_pal(void *a, int x, int y, int step);
+void fade_dac(void *palette_bytes, int start_level, int end_level, int fade_step);
 
-void read_vga_palette(unsigned char *p);
+void read_vga_palette(unsigned char *palette_bytes);
 
 void apply_saved_palette_once(void *palette_bytes);
 
-void write_pal(void *palette_bytes);
+void write_vga_palette(void *palette_bytes);
 
-void clear_pal(void);
+void clear_vga_palette(void);
 
-void set_pal_rgb(unsigned char a, unsigned char b, unsigned char c, unsigned char d);
+void set_vga_palette_rgb(unsigned char color_index, unsigned char red, unsigned char green, unsigned char blue);
 
 void show_page(void);
 
@@ -203,22 +211,22 @@ void set_vga_display_start(int start_address);
 extern short video_restore_registered;
 extern short bios_video_mode_saved;
 extern short vga_register_state_saved;
-extern struct VideoMode video_mode_table[16];
+extern struct VideoModeInfo video_mode_table[16];
 extern struct VgaRegisterPreset vga_register_presets[14];
 extern short g_7afe;
-extern int fade_start;
-extern int fade_end;
-extern int fade_delay;
+extern int palette_fade_first_index;
+extern int palette_fade_end_index;
+extern int palette_fade_delay_ticks;
 extern short vga_palette_saved;
 extern short g_7b12;
-extern short disp_idx;
-extern short draw_idx;
+extern short page_idx;
+extern short drawpage;
 extern short page2;
 extern short page3;
 extern short g_7b1c;
 extern short g_7b1e;
-extern short flip_src;
-extern short flip_dst;
-extern short video_page_2_index;
-extern short vp3idx;
-extern struct DisplayModeInfo vga_state;
+extern short flip_source_page_index;
+extern short flip_destination_page_index;
+extern short stored_page_2_index;
+extern short page_3;
+extern struct VgaDisplayState vga_state;

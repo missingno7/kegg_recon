@@ -2,10 +2,133 @@
 #pragma aux timer_interrupt_record "g_756f";
 #include <i86.h>
 #include <stdlib.h>
-struct VideoMode { int mode_id; short bios_mode; short reserved; union { int dword; short word; unsigned char bytes[4]; } video_mode; unsigned char mode_flags; unsigned char mode_class; int width; int height; int row_bytes; int image_size; int buffer_size; };
-struct DisplayModeInfo { short state; unsigned char page_base[16]; int page_start[4]; int page_display[4]; unsigned char page_class[4]; int buffer_size; int scanline_bytes; int page_height; int screen_width; int screen_height; int view_left; int view_top; int view_right; int view_bottom; unsigned char mode_flags; unsigned char saved_reg_1; unsigned char saved_reg_2; unsigned char bios_mode; unsigned char original_mode; unsigned char saved_reg_3; unsigned char current_reg_1; unsigned char current_reg_2; unsigned char current_reg_3; unsigned char tail; };
-struct VgaRegisterPreset { unsigned char flags; unsigned char reserved[3]; unsigned char regs[48]; int mode_id; };
-struct DisplayModeInfo vga_state;
+#define BIOS_VIDEO_MODE_13H 0x13
+#define VGA_STANDARD_APERTURE 0xa0000
+#define VGA_STANDARD_APERTURE_SIZE 0x10000
+#define VGA_STANDARD_APERTURE_LAST_OFFSET 0xffff
+#define VGA_EXTENDED_MEMORY_BASE 0x280000
+#define VGA_EXTENDED_MEMORY_LAST_OFFSET 0x3ffff
+#define VIDEO_PAGE_COUNT 4
+#define VIDEO_MODE_COUNT 16
+#define VGA_REGISTER_PRESET_COUNT 14
+#define VIDEO_MODE_320X200_STANDARD 0
+#define VIDEO_MODE_320X200_EXTENDED 1
+#define VIDEO_MODE_320X240 2
+#define VIDEO_MODE_360X200 3
+#define VIDEO_MODE_360X240 4
+#define VIDEO_MODE_320X400 5
+#define VIDEO_MODE_320X480 6
+#define VIDEO_MODE_360X400 7
+#define VIDEO_MODE_360X480 8
+#define VIDEO_MODE_256X200 9
+#define VIDEO_MODE_256X240 0x0a
+#define VIDEO_MODE_256X256 0x0b
+#define VIDEO_MODE_320X192 0x0c
+#define VIDEO_MODE_90X60_CLASS_8 0x0d
+#define VIDEO_MODE_80X50_CLASS_8 0x0e
+#define VIDEO_STORAGE_CLASS_STANDARD 0
+#define VIDEO_STORAGE_CLASS_EXTENDED 1
+#define VIDEO_STORAGE_CLASS_8 8
+#define VGA_MEMORY_LAYOUT_UNCHAINED 0
+#define VGA_MEMORY_LAYOUT_CHAINED 1
+
+#define BIOS_VIDEO_INTERRUPT 0x10
+#define BIOS_VIDEO_GET_MODE 0x0f
+#define BIOS_VIDEO_SET_MODE 0
+#define VIDEO_ERROR_UNAVAILABLE_MODE 0x503
+
+#define VGA_GRAPHICS_INDEX_PORT 0x3ce
+#define VGA_GRAPHICS_DATA_PORT 0x3cf
+#define VGA_SEQUENCER_INDEX_PORT 0x3c4
+#define VGA_SEQUENCER_DATA_PORT 0x3c5
+#define VGA_CRTC_INDEX_PORT 0x3d4
+#define VGA_CRTC_DATA_PORT 0x3d5
+#define VGA_ATTRIBUTE_PORT 0x3c0
+#define VGA_MISC_OUTPUT_PORT 0x3c2
+#define VGA_INPUT_STATUS_1_PORT 0x3da
+
+#define VGA_CRTC_HORIZONTAL_BLANK_END 0x03
+#define VGA_CRTC_VERTICAL_RETRACE_END 0x11
+#define VGA_CRTC_UNDERLINE_LOCATION 0x14
+#define VGA_CRTC_MODE_CONTROL 0x17
+#define VGA_CRTC_LINE_COMPARE 0x18
+#define VGA_CRTC_OVERFLOW 0x07
+#define VGA_CRTC_MAX_SCAN_LINE 0x09
+#define VGA_SEQUENCER_MEMORY_MODE 0x04
+#define VGA_GRAPHICS_MODE 0x05
+#define VGA_GRAPHICS_MISCELLANEOUS 0x06
+#define VGA_CRTC_LAST_REGISTER 0x18
+#define VGA_SEQUENCER_LAST_SMALL_REGISTER 4
+#define VGA_SEQUENCER_LAST_REGISTER 8
+#define VGA_ATTRIBUTE_FIRST_REGISTER 0x10
+#define VGA_ATTRIBUTE_LAST_REGISTER 0x14
+#define VGA_PRESET_SEQUENCER_SMALL_IMAGE_OFFSET 0x19
+#define VGA_PRESET_ATTRIBUTE_IMAGE_OFFSET 0x1e
+#define VGA_PRESET_SEQUENCER_IMAGE_OFFSET 0x23
+#define VGA_PRESET_MISC_OUTPUT_IMAGE_OFFSET 0x2c
+#define VGA_PRESET_INPUT_STATUS_1_IMAGE_OFFSET 0x2d
+#define VGA_ATTRIBUTE_DISPLAY_ENABLE 0x20
+
+#define VGA_PRESET_CRTC 0x01
+#define VGA_PRESET_SEQUENCER_SMALL 0x02
+#define VGA_PRESET_ATTRIBUTE 0x04
+#define VGA_PRESET_SEQUENCER 0x08
+#define VGA_PRESET_MISCELLANEOUS 0x10
+
+struct VideoModeInfo {
+    int mode_id;
+    short bios_mode_number;
+    short reserved;
+    union { int raw; short word; unsigned char bytes[4]; } bios_mode_data;
+    unsigned char mode_flags;
+    unsigned char storage_class;
+    int pixel_width;
+    int pixel_height;
+    int scanline_bytes;
+    int image_bytes;
+    int page_buffer_bytes;
+};
+/* U0A810 views the same first 100 bytes as mode-specific transform terms. */
+struct VgaDisplayState {
+    short render_mode;
+    int framebuffer_base[4];
+    int page_start[4];
+    int page_display[4];
+    unsigned char storage_class[4];
+    int page_buffer_bytes;
+    int scanline_bytes;
+    int page_height;
+    int screen_width;
+    int screen_height;
+    int viewport_left;
+    int viewport_top;
+    int viewport_right;
+    int viewport_bottom;
+    unsigned char mode_flags;
+    unsigned char saved_seq_plane_mask;
+    unsigned char saved_gc_read_map;
+    unsigned char bios_mode;
+    unsigned char original_bios_mode;
+    unsigned char saved_gc_mode;
+    unsigned char current_gc_mode;
+    unsigned char current_seq_plane_mask;
+    unsigned char current_gc_read_map;
+    unsigned char tail;
+};
+struct VgaRegisterPreset {
+    unsigned char restore_groups;
+    unsigned char reserved[3];
+    unsigned char register_bytes[48];
+    int mode_id;
+};
+struct BiosVideoModeRequest {
+    short ax;
+    short reserved_2;
+    short bx;
+    unsigned char reserved_6_to_27[22];
+};
+struct VgaDisplayState vga_state;
+/* T06 owns these legacy timer/video entry points; their names stay for its frozen imports. */
 extern void f_9afc(void);
 extern void f_9b44(int);
 extern void restore_bios(void);
@@ -13,48 +136,48 @@ void save_bios(void);
 extern short timer_interrupt_record;
 extern int clear_video_bytes_entry(int, int);
 extern void set_vga_memory_layout(int);
-void restore_vga_register_preset(unsigned char *p);
+void restore_vga_register_preset(struct VgaRegisterPreset *preset);
 extern void initialize_vga_map_mask(void);
-extern void set_draw_page(short);
-extern void clear_pal(void);
+extern void clear_draw_page(short);
+extern void clear_vga_palette(void);
 extern void _disable(void);
 extern void _enable(void);
 extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
 extern int old_display_mode;
 extern int fill_clipped_vga_rectangle();
-extern short disp_idx;
-extern short draw_idx;
+extern short page_idx;
+extern short drawpage;
 extern void set_vga_display_start(int);
 extern void advance_video_page_indices(void);
-extern int vga_crtc_offset;
+extern int pending_horizontal_pan;
 extern int update_attr_register(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
-extern int fade_start;
-extern int fade_end;
-extern int fade_delay;
+extern int palette_fade_first_index;
+extern int palette_fade_end_index;
+extern int palette_fade_delay_ticks;
 extern void write_dac_palette(void *, int, int, int);
+/* T06's delay helper is still identified only by its original entry address. */
 extern void f_9d40(short);
 extern short vga_palette_saved;
 extern int outp(int, int);
 extern int inp(int);
-extern void write_pal(void *);
-extern void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
-extern short flip_src;
-extern short flip_dst;
+extern void write_vga_palette(void *);
+extern void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
+extern short flip_source_page_index;
+extern short flip_destination_page_index;
 int set_display_mode(int requested_mode_id);
-/* Preserve the legacy object name while keeping the source routine readable. */
 void save_vga_state(void);
 void restore_vga_register_state(void);
 void set_video_viewport(int left, int top, int right, int bottom);
-void set_video_display_address(int a, int b);
+void set_video_display_address(int screen_x, int screen_y);
 void set_vga_horizontal_panning(int pixel_pan);
 void set_vga_horizontal_pan_register(unsigned char pixel_pan);
 void set_vga_scanline_stride(int scanline_bytes);
 void write_vga_mode_register(unsigned char mode_register_value);
 void set_vga_line_compare(int scanline);
 void set_vga_max_scan_line(unsigned char maximum_scanline);
-void fade_pal(void *a, int x, int y, int step);
-void read_vga_palette(unsigned char *p);
+void fade_dac(void *palette_bytes, int start_level, int end_level, int fade_step);
+void read_vga_palette(unsigned char *palette_bytes);
 void apply_saved_palette_once(void *palette_bytes);
 void show_page(void);
 void display_next_video_page(void);
@@ -64,34 +187,34 @@ extern short page2;
 extern short page3;
 extern short g_7b1c;
 extern short g_7b1e;
-extern short video_page_2_index;
-extern short vp3idx;
+extern short stored_page_2_index;
+extern short page_3;
 
 /* _DATA [0x75c8,0x7b00) */
 short video_restore_registered = 0;
 short bios_video_mode_saved = 0;
 short vga_register_state_saved = 0;
 /* Game mode IDs pair BIOS requests with geometry and page sizes. */
-struct VideoMode video_mode_table[16] = {
-    {0, 0, 0, {0x13}, 8, 0, 0x140, 0xc8, 0x140, 0x10000, 0xfa00},
-    {1, 0, 0, {0x13}, 8, 1, 0x140, 0xc8, 0x140, 0x10000, 0xfa00},
-    {2, 0, 0, {0x13}, 8, 1, 0x140, 0xf0, 0x140, 0x12c00, 0x12c00},
-    {3, 0, 0, {0x13}, 8, 1, 0x168, 0xc8, 0x168, 0x11940, 0x11940},
-    {4, 0, 0, {0x13}, 8, 1, 0x168, 0xf0, 0x168, 0x15180, 0x15180},
-    {5, 0, 0, {0x13}, 8, 1, 0x140, 0x190, 0x140, 0x20000, 0x1f400},
-    {6, 0, 0, {0x13}, 8, 1, 0x140, 0x1e0, 0x140, 0, 0x25800},
-    {7, 0, 0, {0x13}, 8, 1, 0x168, 0x190, 0x168, 0, 0x23280},
-    {8, 0, 0, {0x13}, 8, 1, 0x168, 0x1e0, 0x168, 0, 0x2a300},
-    {9, 0, 0, {0x13}, 8, 1, 0x100, 0xc8, 0x100, 0x10000, 0xc800},
-    {0xa, 0, 0, {0x13}, 8, 1, 0x100, 0xf0, 0x100, 0x10000, 0xf000},
-    {0xb, 0, 0, {0x13}, 8, 1, 0x100, 0x100, 0x100, 0x10000, 0x10000},
-    {0xc, 0, 0, {0x13}, 8, 1, 0x140, 0xc0, 0x148, 0x10000, 0xf600},
-    {0xd, 0, 0, {0x13}, 8, 8, 0x5a, 0x3c, 0x5a, 0x4000, 0x1518},
-    {0xe, 0, 0, {0x13}, 8, 8, 0x50, 0x32, 0x50, 0x4000, 0xfa0},
+struct VideoModeInfo video_mode_table[VIDEO_MODE_COUNT] = {
+    {VIDEO_MODE_320X200_STANDARD, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_STANDARD, 0x140, 0xc8, 0x140, 0x10000, 0xfa00},
+    {VIDEO_MODE_320X200_EXTENDED, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x140, 0xc8, 0x140, 0x10000, 0xfa00},
+    {VIDEO_MODE_320X240, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x140, 0xf0, 0x140, 0x12c00, 0x12c00},
+    {VIDEO_MODE_360X200, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x168, 0xc8, 0x168, 0x11940, 0x11940},
+    {VIDEO_MODE_360X240, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x168, 0xf0, 0x168, 0x15180, 0x15180},
+    {VIDEO_MODE_320X400, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x140, 0x190, 0x140, 0x20000, 0x1f400},
+    {VIDEO_MODE_320X480, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x140, 0x1e0, 0x140, 0, 0x25800},
+    {VIDEO_MODE_360X400, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x168, 0x190, 0x168, 0, 0x23280},
+    {VIDEO_MODE_360X480, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x168, 0x1e0, 0x168, 0, 0x2a300},
+    {VIDEO_MODE_256X200, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x100, 0xc8, 0x100, 0x10000, 0xc800},
+    {VIDEO_MODE_256X240, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x100, 0xf0, 0x100, 0x10000, 0xf000},
+    {VIDEO_MODE_256X256, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x100, 0x100, 0x100, 0x10000, 0x10000},
+    {VIDEO_MODE_320X192, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_EXTENDED, 0x140, 0xc0, 0x148, 0x10000, 0xf600},
+    {VIDEO_MODE_90X60_CLASS_8, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_8, 0x5a, 0x3c, 0x5a, 0x4000, 0x1518},
+    {VIDEO_MODE_80X50_CLASS_8, 0, 0, {BIOS_VIDEO_MODE_13H}, 8, VIDEO_STORAGE_CLASS_8, 0x50, 0x32, 0x50, 0x4000, 0xfa0},
     {-1, 0, 0, {0}, 0, 0, 0, 0, 0, 0, 0},
 };
 /* Each mask selects the VGA register groups to restore for a mode. */
-struct VgaRegisterPreset vga_register_presets[14] = {
+struct VgaRegisterPreset vga_register_presets[VGA_REGISTER_PRESET_COUNT] = {
     {0x11, {0}, {0x5f, 0x4f, 0x50, 0x82, 0x54, 0x80, 0xbf, 0x1f, 0, 0x41, 0, 0, 0, 0, 0, 0x31, 0x9c, 0x8e, 0x8f, 0x28, 0x40, 0x96, 0xb9, 0xa3, 0xff, 3, 1, 0xf, 0, 0xe, 0x41, 0, 0xf, 0, 0, 0, 0, 0, 0, 0, 0x40, 5, 0xf, 0xff, 0x63}, 0},
     {0x11, {0}, {0x5f, 0x4f, 0x50, 0x82, 0x54, 0x80, 0xbf, 0x1f, 0, 0x41, 0, 0, 0, 0, 0, 0x31, 0x9c, 0x8e, 0x8f, 0x28, 0x40, 0x96, 0xb9, 0xa3, 0xff, 3, 1, 0xf, 0, 0xe, 0x41, 0, 0xf, 0, 0, 0, 0, 0, 0, 0, 0x40, 5, 0xf, 0xff, 0x63}, 1},
     {0x11, {0}, {0x5f, 0x4f, 0x50, 0x82, 0x54, 0x80, 0xb, 0x3e, 0, 0x41, 0, 0, 0, 0, 0, 0x31, 0xea, 0x8c, 0xdf, 0x28, 0x40, 0xe7, 4, 0xa3, 0xff, 3, 1, 0xf, 0, 0xe, 0x41, 0, 0xf, 0, 0, 0, 0, 0, 0, 0, 0x40, 5, 0xf, 0xff, 0xe3}, 2},
@@ -107,14 +230,15 @@ struct VgaRegisterPreset vga_register_presets[14] = {
     {0x11, {0}, {0x5f, 0x4f, 0x50, 0x82, 0x54, 0x80, 0xbf, 0x1f, 0, 0x47, 0, 0, 0, 0, 0, 0x31, 0x9c, 0x8e, 0x8f, 0x28, 0x40, 0x96, 0xb9, 0xa3, 0xff, 3, 1, 0xf, 0, 0xe, 0x41, 0, 0xf, 0, 0, 0, 0, 0, 0, 0, 0x40, 5, 0xf, 0xff, 0x63}, 0xe},
     {0, {0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0xaa, 0xbb, 0xcc, 0xdd}, -1},
 };
+/* Initialized video-side word with no current C use; its original purpose is unknown. */
 short g_7afe = 0;
 
 void save_bios(void) {
     union REGS regs;
     if (bios_video_mode_saved != -1) {
-        regs.h.ah = 0x0f;
-        int386(0x10, &regs, &regs);
-        vga_state.original_mode = regs.h.al;
+        regs.h.ah = BIOS_VIDEO_GET_MODE;
+        int386(BIOS_VIDEO_INTERRUPT, &regs, &regs);
+        vga_state.original_bios_mode = regs.h.al;
         if (video_restore_registered == 0) {
             atexit(restore_bios);
             video_restore_registered = -1;
@@ -128,10 +252,10 @@ void restore_bios(void) {
     union REGS regs;
     if (bios_video_mode_saved == -1) {
         f_9afc();
-        regs.h.ah = 0;
-        vga_state.bios_mode = vga_state.original_mode;
+        regs.h.ah = BIOS_VIDEO_SET_MODE;
+        vga_state.bios_mode = vga_state.original_bios_mode;
         regs.h.al = vga_state.bios_mode;
-        int386(0x10, &regs, &regs);
+        int386(BIOS_VIDEO_INTERRUPT, &regs, &regs);
         bios_video_mode_saved = 1;
         if (timer_was_active == -1)
             f_9b44(0);
@@ -147,7 +271,7 @@ int set_display_mode(int requested_mode_id)
     int preset_index;
     int frame_buffer_base;
     int page_offset;
-    unsigned char bios_register_block[28];
+    struct BiosVideoModeRequest bios_register_block;
     previous_timer_state = timer_interrupt_record;
     mode_index = 0;
     if (bios_video_mode_saved != -1) {
@@ -158,69 +282,69 @@ int set_display_mode(int requested_mode_id)
     }
     if (video_mode_table[mode_index].mode_id != -1) {
         f_9afc();
-        clear_pal();
-        clear_video_bytes_entry(0xa0000, 0x10000);
-        if (vga_state.bios_mode != video_mode_table[mode_index].video_mode.dword) {
-            vga_state.bios_mode = video_mode_table[mode_index].video_mode.bytes[0];
-            *(short *)bios_register_block = video_mode_table[mode_index].video_mode.word;
-            *(short *)(bios_register_block + 4) = video_mode_table[mode_index].bios_mode;
-            int386(0x10, (void *)bios_register_block, (void *)bios_register_block);
+        clear_vga_palette();
+        clear_video_bytes_entry(VGA_STANDARD_APERTURE, VGA_STANDARD_APERTURE_SIZE);
+        if (vga_state.bios_mode != video_mode_table[mode_index].bios_mode_data.raw) {
+            vga_state.bios_mode = video_mode_table[mode_index].bios_mode_data.bytes[0];
+            bios_register_block.ax = video_mode_table[mode_index].bios_mode_data.word;
+            bios_register_block.bx = video_mode_table[mode_index].bios_mode_number;
+            int386(BIOS_VIDEO_INTERRUPT, (void *)&bios_register_block, (void *)&bios_register_block);
         }
-        clear_video_bytes_entry(0xa0000, 0x10000);
-        vga_state.screen_width = video_mode_table[mode_index].width;
-        vga_state.screen_height = video_mode_table[mode_index].height;
-        vga_state.scanline_bytes = video_mode_table[mode_index].row_bytes;
+        clear_video_bytes_entry(VGA_STANDARD_APERTURE, VGA_STANDARD_APERTURE_SIZE);
+        vga_state.screen_width = video_mode_table[mode_index].pixel_width;
+        vga_state.screen_height = video_mode_table[mode_index].pixel_height;
+        vga_state.scanline_bytes = video_mode_table[mode_index].scanline_bytes;
         vga_state.page_height = vga_state.screen_height;
-        vga_state.view_left = 0;
-        vga_state.view_top = 0;
-        vga_state.view_right = vga_state.screen_width - 1;
-        vga_state.view_bottom = vga_state.screen_height - 1;
-        vga_state.buffer_size = video_mode_table[mode_index].buffer_size;
-        switch (video_mode_table[mode_index].mode_class) {
-        case 0:
-            video_memory_limit = 0xffff;
-            frame_buffer_base = 0xa0000;
-            set_vga_memory_layout(0);
+        vga_state.viewport_left = 0;
+        vga_state.viewport_top = 0;
+        vga_state.viewport_right = vga_state.screen_width - 1;
+        vga_state.viewport_bottom = vga_state.screen_height - 1;
+        vga_state.page_buffer_bytes = video_mode_table[mode_index].page_buffer_bytes;
+        switch (video_mode_table[mode_index].storage_class) {
+        case VIDEO_STORAGE_CLASS_STANDARD:
+            video_memory_limit = VGA_STANDARD_APERTURE_LAST_OFFSET;
+            frame_buffer_base = VGA_STANDARD_APERTURE;
+            set_vga_memory_layout(VGA_MEMORY_LAYOUT_UNCHAINED);
             break;
-        case 1:
-            video_memory_limit = 0x3ffff;
-            frame_buffer_base = 0x280000;
-            set_vga_memory_layout(1);
+        case VIDEO_STORAGE_CLASS_EXTENDED:
+            video_memory_limit = VGA_EXTENDED_MEMORY_LAST_OFFSET;
+            frame_buffer_base = VGA_EXTENDED_MEMORY_BASE;
+            set_vga_memory_layout(VGA_MEMORY_LAYOUT_CHAINED);
             break;
-        case 8:
-            video_memory_limit = 0xffff;
-            frame_buffer_base = 0xa0000;
-            set_vga_memory_layout(1);
-            vga_state.state = 0;
+        case VIDEO_STORAGE_CLASS_8:
+            video_memory_limit = VGA_STANDARD_APERTURE_LAST_OFFSET;
+            frame_buffer_base = VGA_STANDARD_APERTURE;
+            set_vga_memory_layout(VGA_MEMORY_LAYOUT_CHAINED);
+            vga_state.render_mode = 0;
         }
         vga_state.mode_flags = video_mode_table[mode_index].mode_flags;
         page_offset = 0;
-        for (page_index = 0; page_index < 4; page_index++) {
-            *(int *)(vga_state.page_base + (page_index << 2)) = frame_buffer_base;
+        for (page_index = 0; page_index < VIDEO_PAGE_COUNT; page_index++) {
+            vga_state.framebuffer_base[page_index] = frame_buffer_base;
             vga_state.page_start[page_index] = page_offset;
             vga_state.page_display[page_index] = 0;
-            *(unsigned char *)(vga_state.page_class + page_index) = video_mode_table[mode_index].mode_class;
-            page_offset += video_mode_table[mode_index].image_size;
-            if ((page_offset + vga_state.buffer_size) > video_memory_limit) {
-                page_offset -= video_mode_table[mode_index].image_size;
+            vga_state.storage_class[page_index] = video_mode_table[mode_index].storage_class;
+            page_offset += video_mode_table[mode_index].image_bytes;
+            if ((page_offset + vga_state.page_buffer_bytes) > video_memory_limit) {
+                page_offset -= video_mode_table[mode_index].image_bytes;
             }
-            set_draw_page((short)page_index);
+            clear_draw_page((short)page_index);
         }
         initialize_vga_map_mask();
         preset_index = 0;
         do {
             if (vga_register_presets[preset_index].mode_id == video_mode_table[mode_index].mode_id) {
-                restore_vga_register_preset((unsigned char *)&vga_register_presets[preset_index]);
-                switch (video_mode_table[mode_index].mode_class) {
-                case 0:
-                    set_vga_memory_layout(0);
+                restore_vga_register_preset(&vga_register_presets[preset_index]);
+                switch (video_mode_table[mode_index].storage_class) {
+                case VIDEO_STORAGE_CLASS_STANDARD:
+                    set_vga_memory_layout(VGA_MEMORY_LAYOUT_UNCHAINED);
                     break;
-                case 1:
-                    set_vga_memory_layout(1);
+                case VIDEO_STORAGE_CLASS_EXTENDED:
+                    set_vga_memory_layout(VGA_MEMORY_LAYOUT_CHAINED);
                     break;
-                case 8:
-                    set_vga_memory_layout(1);
-                    vga_state.state = 0;
+                case VIDEO_STORAGE_CLASS_8:
+                    set_vga_memory_layout(VGA_MEMORY_LAYOUT_CHAINED);
+                    vga_state.render_mode = 0;
                 }
             }
             ++preset_index;
@@ -231,15 +355,15 @@ int set_display_mode(int requested_mode_id)
         return 0;
     }
     if (requested_mode_id) {
-        return 0x503;
+        return VIDEO_ERROR_UNAVAILABLE_MODE;
     }
     return 0;
 }
 
 void save_vga_state(void) {
-    vga_state.saved_reg_2 = vga_state.current_reg_3;
-    vga_state.saved_reg_1 = vga_state.current_reg_2;
-    vga_state.saved_reg_3 = vga_state.current_reg_1;
+    vga_state.saved_gc_read_map = vga_state.current_gc_read_map;
+    vga_state.saved_seq_plane_mask = vga_state.current_seq_plane_mask;
+    vga_state.saved_gc_mode = vga_state.current_gc_mode;
     vga_register_state_saved = -1;
 }
 
@@ -248,9 +372,9 @@ void restore_vga_register_state(void) {
     extern void set_seq_plane_mask(unsigned int);
     extern void set_gc_mode(unsigned int);
     if (vga_register_state_saved == -1) {
-        set_gc_read_map(vga_state.saved_reg_2);
-        set_seq_plane_mask(vga_state.saved_reg_1);
-        set_gc_mode(vga_state.saved_reg_3);
+        set_gc_read_map(vga_state.saved_gc_read_map);
+        set_seq_plane_mask(vga_state.saved_seq_plane_mask);
+        set_gc_mode(vga_state.saved_gc_mode);
         vga_register_state_saved = 1;
     }
 }
@@ -262,62 +386,62 @@ void set_vga_memory_layout(int chain4_enabled)
     extern void set_gc_mode(short);
     if (chain4_enabled == 1) {
         _disable();
-        outp(0x3ce, 5);
-        outp(0x3cf, inp(0x3cf) & 0xef);
-        outp(0x3ce, 6);
-        outp(0x3cf, inp(0x3cf) & 0xfd);
-        outp(0x3c4, 4);
-        outp(0x3c5, (inp(0x3c5) & 0xf7) | 4);
-        outp(0x3d4, 0x14);
-        outp(0x3d5, inp(0x3d5) & 0xbf);
-        outp(0x3d4, 0x17);
-        outp(0x3d5, inp(0x3d5) | 0x40);
+        outp(VGA_GRAPHICS_INDEX_PORT, VGA_GRAPHICS_MODE);
+        outp(VGA_GRAPHICS_DATA_PORT, inp(VGA_GRAPHICS_DATA_PORT) & 0xef);
+        outp(VGA_GRAPHICS_INDEX_PORT, VGA_GRAPHICS_MISCELLANEOUS);
+        outp(VGA_GRAPHICS_DATA_PORT, inp(VGA_GRAPHICS_DATA_PORT) & 0xfd);
+        outp(VGA_SEQUENCER_INDEX_PORT, VGA_SEQUENCER_MEMORY_MODE);
+        outp(VGA_SEQUENCER_DATA_PORT, (inp(VGA_SEQUENCER_DATA_PORT) & 0xf7) | 4);
+        outp(VGA_CRTC_INDEX_PORT, VGA_CRTC_UNDERLINE_LOCATION);
+        outp(VGA_CRTC_DATA_PORT, inp(VGA_CRTC_DATA_PORT) & 0xbf);
+        outp(VGA_CRTC_INDEX_PORT, VGA_CRTC_MODE_CONTROL);
+        outp(VGA_CRTC_DATA_PORT, inp(VGA_CRTC_DATA_PORT) | 0x40);
         _enable();
     } else if (!chain4_enabled) {
         _disable();
-        outp(0x3ce, 5);
-        outp(0x3cf, inp(0x3cf) | -0xf0);
-        outp(0x3ce, 6);
-        outp(0x3cf, inp(0x3cf) | -0xfe);
-        outp(0x3c4, 4);
-        outp(0x3c5, inp(0x3c5) | -0xf8);
-        outp(0x3d4, 0x14);
-        outp(0x3d5, inp(0x3d5) | -0xc0);
-        outp(0x3d4, 0x17);
-        outp(0x3d5, inp(0x3d5) & -0x41);
+        outp(VGA_GRAPHICS_INDEX_PORT, VGA_GRAPHICS_MODE);
+        outp(VGA_GRAPHICS_DATA_PORT, inp(VGA_GRAPHICS_DATA_PORT) | -0xf0);
+        outp(VGA_GRAPHICS_INDEX_PORT, VGA_GRAPHICS_MISCELLANEOUS);
+        outp(VGA_GRAPHICS_DATA_PORT, inp(VGA_GRAPHICS_DATA_PORT) | -0xfe);
+        outp(VGA_SEQUENCER_INDEX_PORT, VGA_SEQUENCER_MEMORY_MODE);
+        outp(VGA_SEQUENCER_DATA_PORT, inp(VGA_SEQUENCER_DATA_PORT) | -0xf8);
+        outp(VGA_CRTC_INDEX_PORT, VGA_CRTC_UNDERLINE_LOCATION);
+        outp(VGA_CRTC_DATA_PORT, inp(VGA_CRTC_DATA_PORT) | -0xc0);
+        outp(VGA_CRTC_INDEX_PORT, VGA_CRTC_MODE_CONTROL);
+        outp(VGA_CRTC_DATA_PORT, inp(VGA_CRTC_DATA_PORT) & -0x41);
         _enable();
     }
     set_gc_read_map(0);
     set_seq_plane_mask(0xf);
     set_gc_mode(0x40);
-    vga_state.state = (unsigned short)chain4_enabled;
+    vga_state.render_mode = (unsigned short)chain4_enabled;
 }
 
-void restore_vga_register_preset(unsigned char *preset_bytes) {
+void restore_vga_register_preset(struct VgaRegisterPreset *preset) {
     int register_index;
     initialize_vga_map_mask();
     _disable();
-    if (preset_bytes[0] & 1) {
-        for (register_index = 0; register_index <= 0x18; register_index++)
-            outpw(0x3d4, ((unsigned int)preset_bytes[register_index + 4] << 8) | register_index);
+    if (preset->restore_groups & VGA_PRESET_CRTC) {
+        for (register_index = 0; register_index <= VGA_CRTC_LAST_REGISTER; register_index++)
+            outpw(VGA_CRTC_INDEX_PORT, ((unsigned int)preset->register_bytes[register_index] << 8) | register_index);
     }
-    if (preset_bytes[0] & 2) {
-        for (register_index = 0; register_index <= 4; register_index++)
-            outpw(0x3c4, ((unsigned int)preset_bytes[register_index + 0x1d] << 8) | register_index);
+    if (preset->restore_groups & VGA_PRESET_SEQUENCER_SMALL) {
+        for (register_index = 0; register_index <= VGA_SEQUENCER_LAST_SMALL_REGISTER; register_index++)
+            outpw(VGA_SEQUENCER_INDEX_PORT, ((unsigned int)preset->register_bytes[register_index + VGA_PRESET_SEQUENCER_SMALL_IMAGE_OFFSET] << 8) | register_index);
     }
-    if (preset_bytes[0] & 4) {
-        for (register_index = 0x10; register_index <= 0x14; register_index++) {
-            outp(0x3c0, register_index | 0x20);
-            outp(0x3c0, preset_bytes[register_index + 0x22]);
+    if (preset->restore_groups & VGA_PRESET_ATTRIBUTE) {
+        for (register_index = VGA_ATTRIBUTE_FIRST_REGISTER; register_index <= VGA_ATTRIBUTE_LAST_REGISTER; register_index++) {
+            outp(VGA_ATTRIBUTE_PORT, register_index | VGA_ATTRIBUTE_DISPLAY_ENABLE);
+            outp(VGA_ATTRIBUTE_PORT, preset->register_bytes[register_index + VGA_PRESET_ATTRIBUTE_IMAGE_OFFSET]);
         }
     }
-    if (preset_bytes[0] & 8) {
-        for (register_index = 0; register_index <= 8; register_index++)
-            outpw(0x3c4, ((unsigned int)preset_bytes[register_index + 0x27] << 8) | register_index);
+    if (preset->restore_groups & VGA_PRESET_SEQUENCER) {
+        for (register_index = 0; register_index <= VGA_SEQUENCER_LAST_REGISTER; register_index++)
+            outpw(VGA_SEQUENCER_INDEX_PORT, ((unsigned int)preset->register_bytes[register_index + VGA_PRESET_SEQUENCER_IMAGE_OFFSET] << 8) | register_index);
     }
-    if (preset_bytes[0] & 0x10) {
-        outp(0x3c2, preset_bytes[0x30]);
-        outp(0x3da, preset_bytes[0x31]);
+    if (preset->restore_groups & VGA_PRESET_MISCELLANEOUS) {
+        outp(VGA_MISC_OUTPUT_PORT, preset->register_bytes[VGA_PRESET_MISC_OUTPUT_IMAGE_OFFSET]);
+        outp(VGA_INPUT_STATUS_1_PORT, preset->register_bytes[VGA_PRESET_INPUT_STATUS_1_IMAGE_OFFSET]);
     }
     _enable();
     initialize_vga_map_mask();
@@ -325,23 +449,23 @@ void restore_vga_register_preset(unsigned char *preset_bytes) {
 
 void initialize_vga_map_mask(void)
 {
-    update_crtc_register(3, 0xff, 0x80);
-    update_crtc_register(0x11, 0x7f, 0);
+    update_crtc_register(VGA_CRTC_HORIZONTAL_BLANK_END, 0xff, 0x80);
+    update_crtc_register(VGA_CRTC_VERTICAL_RETRACE_END, 0x7f, 0);
 }
 
-void set_draw_page(short page_index)
+void clear_draw_page(short page_index)
 {
-    fill_clipped_vga_rectangle((short)page_index, vga_state.view_left, vga_state.view_top, vga_state.view_right, vga_state.view_bottom, 0);
+    fill_clipped_vga_rectangle((short)page_index, vga_state.viewport_left, vga_state.viewport_top, vga_state.viewport_right, vga_state.viewport_bottom, 0);
 }
 
 void set_video_viewport(int left, int top, int right, int bottom) {
     int t;
     if (left > right) { t = left; left = right; right = t; }
     if (top > bottom) { t = top; top = bottom; bottom = t; }
-    vga_state.view_left = left;
-    vga_state.view_right = right;
-    vga_state.view_top = top;
-    vga_state.view_bottom = bottom;
-    vga_state.screen_height = vga_state.view_bottom - vga_state.view_top + 1;
-    vga_state.screen_width = vga_state.view_right - vga_state.view_left + 1;
+    vga_state.viewport_left = left;
+    vga_state.viewport_right = right;
+    vga_state.viewport_top = top;
+    vga_state.viewport_bottom = bottom;
+    vga_state.screen_height = vga_state.viewport_bottom - vga_state.viewport_top + 1;
+    vga_state.screen_width = vga_state.viewport_right - vga_state.viewport_left + 1;
 }

@@ -70,7 +70,7 @@ extern void stop_audio_stream(void);
 extern void set_image_pages(int, int, short, int, int);
 extern void redraw_image_region(int, int);
 extern int set_display_mode(int);
-extern void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
+extern void set_vga_palette_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
 extern void show_page(void);
 extern void reset_keyboard_action_handlers(void);
 /* Initialised data owned by this object: _DATA [0x269c,0x390a) and its CONST literal pool [0x4,0x100d)
@@ -543,9 +543,9 @@ extern int f_a574_wrvhrpegbz();
 extern unsigned char *vga_buffer_base;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
-extern short disp_idx;
-extern short flip_src;
-extern void fade_pal(void *, int, int, int);
+extern short page_idx;
+extern short src_page;
+extern void fade_dac(void *, int, int, int);
 extern void plot_transformed_pixel(void *, int);
 extern void draw_page(int);
 extern short audio_stream_flag;
@@ -598,7 +598,7 @@ L_d6:;
 L_16d:;
         f_9d40(3);
         if (keyboard_cheat_flags & 0x80) {
-            set_pal_rgb(0, 0, 0x3f, 0);
+            set_vga_palette_rgb(0, 0, 0x3f, 0);
         }
         g_e1bc = 0;
         g_e1b8 = (int)image_buffer_cursor;
@@ -609,14 +609,14 @@ L_16d:;
             rkt_mv();
             update_racket_state();
             if (keyboard_cheat_flags & 0x80) {
-                set_pal_rgb(0, 0, 0x2a, 0);
+                set_vga_palette_rgb(0, 0, 0x2a, 0);
             }
             if (arcade) {
                 *(unsigned char *)player_key_flags |= 8;
             }
             upd_bl();
             if (keyboard_cheat_flags & 0x80) {
-                set_pal_rgb(0, 0, 0x15, 0);
+                set_vga_palette_rgb(0, 0, 0x15, 0);
             }
             shot_cd();
             if (arcade) {

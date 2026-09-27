@@ -31,9 +31,9 @@ vga_gc_read_plane         DB ?
 VGA_STATE ENDS
 EXTRN fill_planar_video_rows:NEAR
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-EXTRN disp_idx:WORD
+EXTRN page_idx:WORD
 EXTRN vga_state:WORD
-EXTRN draw_idx:WORD
+EXTRN drawpage:WORD
 _DATA ENDS
 DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
@@ -75,7 +75,7 @@ pixel_y_clamp_low_complete:
 pixel_y_clamp_high_complete:
         cmp word ptr [vga_state], 0
         je short read_linear_vga_pixel
-        movzx ebx, word ptr [disp_idx]
+        movzx ebx, word ptr [page_idx]
         shl ebx, 2
         mov esi, dword ptr [ebx + vga_state+vga_page_origin_group0]
         add esi, dword ptr [ebx + vga_state+vga_page_origin_group1]
@@ -99,7 +99,7 @@ pixel_y_clamp_high_complete:
         pop ebp
         ret
 read_linear_vga_pixel:
-        movzx ebx, word ptr [disp_idx]
+        movzx ebx, word ptr [page_idx]
         shl ebx, 2
         mov esi, dword ptr [ebx + vga_state+vga_page_origin_group0]
         add esi, dword ptr [ebx + vga_state+vga_page_origin_group1]
@@ -147,7 +147,7 @@ write_vga_pixel PROC NEAR
         mov dx, VGA_GC_INDEX_PORT
         out dx, ax
 write_pixel_planar_mode_ready:
-        movzx ebx, word ptr [draw_idx]
+        movzx ebx, word ptr [drawpage]
         shl ebx, 2
         mov esi, dword ptr [ebx + vga_state+vga_page_origin_group0]
         add esi, dword ptr [ebx + vga_state+vga_page_origin_group1]
@@ -184,7 +184,7 @@ write_pixel_linear_mode:
         mov dx, VGA_GC_INDEX_PORT
         out dx, ax
 write_pixel_linear_mode_ready:
-        movzx ebx, word ptr [draw_idx]
+        movzx ebx, word ptr [drawpage]
         shl ebx, 2
         mov esi, dword ptr [ebx + vga_state+vga_page_origin_group0]
         add esi, dword ptr [ebx + vga_state+vga_page_origin_group1]

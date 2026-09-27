@@ -30,9 +30,9 @@ vga_seq_plane_mask        DB ?
 vga_gc_read_plane         DB ?
 VGA_STATE ENDS
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-EXTRN disp_idx:WORD
+EXTRN page_idx:WORD
 EXTRN vga_state:WORD
-EXTRN draw_idx:WORD
+EXTRN drawpage:WORD
 _DATA ENDS
 DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
