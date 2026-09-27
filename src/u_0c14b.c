@@ -16,29 +16,29 @@ int g_e278;
 int g_e27c;
 
 extern unsigned char g_74c4[];
-extern void exit_with_message(unsigned, unsigned);
+extern void fatal_exit(unsigned, unsigned);
 extern int configure_sound_dma(int);
 extern void initialize_audio_stream(void);
 extern void stop_audio_stream(void);
 void queue_audio(int source, int byte_count, int sample_rate, int playback_mode);
 extern int audio_dma_buffer_bytes;
-extern short g_7db8;
-extern int g_7db4;
+extern short sound_dma_transfer_count;
+extern int sound_dma_buffer_address;
 extern int rand_rng(int, int);
 extern void submit_audio_request(int);
 extern void transfer_audio_stream_block(void);
 extern void start_audio_stream_dma(void);
-extern void f_1133f(void);
-extern void f_11377(int);
+extern void configure_sound_dma_input(void);
+extern void set_sound_blaster_sample_rate(int);
 extern void *alloc_heap_block(int);
 extern void free_heap_block(void *);
-extern int f_11df8();
-extern short g_7db0;
-extern void f_11358(void);
-extern void f_11365(void);
+extern int decode_gif_image();
+extern short sound_dma_block_length;
+extern void stop_sound_blaster_dma(void);
+extern void mask_active_sound_dma_channel(void);
 unsigned char *audio_dma_memory;
 
-extern void f_112fa(void);
+extern void start_sound_blaster_dma_playback(void);
 extern int clear_video_bytes_entry(int, int);
 extern void f_13889(int, int, int);
 
@@ -68,7 +68,7 @@ void queue_audio(int source, int byte_count, int sample_rate, int playback_mode)
         if (*(short *)g_74c4 != -1) {
             sound_status = configure_sound_dma(4);
             if (sound_status != 0)
-                exit_with_message(sound_status, 0);
+                fatal_exit(sound_status, 0);
         }
         if (audio_stream_stop_flag == -1) {
             if (audio_stream_flag == -1)
@@ -126,16 +126,16 @@ void set_audio_transfer_mode(int value)
 
 void initialize_audio_stream(void)
 {
-    g_7db4 = audio_dma_memory;
-    g_7db8 = audio_dma_buffer_bytes;
-    f_1133f();
+    sound_dma_buffer_address = audio_dma_memory;
+    sound_dma_transfer_count = audio_dma_buffer_bytes;
+    configure_sound_dma_input();
     audio_buffer_offset = 0;
     audio_dma_half_bytes = (audio_dma_buffer_bytes >> 1);
     audio_dma_gap_bytes = 0;
     audio_dma_state = active_audio_mode;
     if (last_audio_sample_rate != active_audio_rate) {
     last_audio_sample_rate = active_audio_rate;
-    f_11377(last_audio_sample_rate);
+    set_sound_blaster_sample_rate(last_audio_sample_rate);
     }
 L_c397:;
     /* Alternate DMA halves while feeding queued music or effects. */
@@ -150,10 +150,10 @@ void stop_audio_stream(void)
     audio_dma_half_bytes = 0;
     if ((short)sound_blaster_detected == -1) {
     if ((short)audio_stream_flag == -1) {
-    f_11358();
+    stop_sound_blaster_dma();
     }
 L_c3e8:;
-    f_11365();
+    mask_active_sound_dma_channel();
     }
 L_c3ed:;
     audio_stream_flag = 0;
@@ -227,10 +227,10 @@ void start_audio_stream_dma(void)
     if (audio_dma_half_bytes != 0) {
         if (last_audio_sample_rate != active_audio_rate) {
             last_audio_sample_rate = active_audio_rate;
-            f_11377(last_audio_sample_rate);
+            set_sound_blaster_sample_rate(last_audio_sample_rate);
         }
-        g_7db0 = (short)audio_dma_half_bytes;
-        f_112fa();
+        sound_dma_block_length = (short)audio_dma_half_bytes;
+        start_sound_blaster_dma_playback();
         audio_stream_flag = -1;
     } else {
         audio_stream_flag = 0;

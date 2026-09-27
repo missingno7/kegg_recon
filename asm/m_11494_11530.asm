@@ -1,24 +1,25 @@
 .386P
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-        PUBLIC g_7db4
-g_7db4	DD 0
-        PUBLIC g_7db8
-g_7db8	DW 0
-        PUBLIC g_7dba
-g_7dba	DB 0
-        PUBLIC g_7dbb
-g_7dbb	DB 0
+        PUBLIC sound_dma_buffer_address
+sound_dma_buffer_address	DD 0
+        PUBLIC sound_dma_transfer_count
+sound_dma_transfer_count	DW 0
+        PUBLIC sound_dma_mode_bits
+sound_dma_mode_bits	DB 0
+        PUBLIC sound_dma_channel
+sound_dma_channel	DB 0
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_11494
-        PUBLIC f_11494
-f_11494 LABEL NEAR
-a_11494 PROC NEAR
+        PUBLIC sound_dma_mask_entry
+; Mask or program the selected 8237 DMA channel.
+        PUBLIC mask_sound_dma_channel
+mask_sound_dma_channel LABEL NEAR
+sound_dma_mask_entry PROC NEAR
         push eax
 L_11495:
-        mov al, byte ptr [g_7dbb]
+        mov al, byte ptr [sound_dma_channel]
 L_1149A:
         or al, 4
 L_1149C:
@@ -27,8 +28,8 @@ L_1149E:
         pop eax
 L_1149F:
         ret
-        PUBLIC f_114a0
-f_114a0 LABEL NEAR
+        PUBLIC program_sound_dma_channel
+program_sound_dma_channel LABEL NEAR
 L_114A0:
         push eax
 L_114A1:
@@ -36,7 +37,7 @@ L_114A1:
 L_114A2:
         push edx
 L_114A3:
-        mov cl, byte ptr [g_7dbb]
+        mov cl, byte ptr [sound_dma_channel]
 L_114A9:
         mov al, cl
 L_114AB:
@@ -48,7 +49,7 @@ L_114AF:
 L_114B1:
         mov al, cl
 L_114B3:
-        or al, byte ptr [g_7dba]
+        or al, byte ptr [sound_dma_mode_bits]
 L_114B9:
         out 0Bh, al
 L_114BB:
@@ -56,7 +57,7 @@ L_114BB:
 L_114BF:
         add dx, dx
 L_114C2:
-        mov eax, dword ptr [g_7db4]
+        mov eax, dword ptr [sound_dma_buffer_address]
 L_114C7:
         out dx, al
 L_114C8:
@@ -66,7 +67,7 @@ L_114CA:
 L_114CB:
         inc dx
 L_114CD:
-        mov ax, word ptr [g_7db8]
+        mov ax, word ptr [sound_dma_transfer_count]
 L_114D3:
         dec ax
 L_114D5:
@@ -106,7 +107,7 @@ L_114F4:
 L_114F5:
         push edx
 L_114F6:
-        movzx dx, byte ptr [g_7dbb]
+        movzx dx, byte ptr [sound_dma_channel]
 L_114FE:
         add dx, dx
 L_11501:
@@ -142,7 +143,7 @@ L_1151F:
 L_11521:
         neg ax
 L_11524:
-        add ax, word ptr [g_7db8]
+        add ax, word ptr [sound_dma_transfer_count]
 L_1152B:
         dec ax
 L_1152D:
@@ -151,6 +152,6 @@ L_1152E:
         pop ecx
 L_1152F:
         ret
-a_11494 ENDP
+sound_dma_mask_entry ENDP
 _TEXT ENDS
         END

@@ -43,8 +43,8 @@ int g_dDb8;
 int g_ddbc;
 
 extern unsigned char g_e13b;
-union KeyWord { unsigned short word; struct { unsigned char lo, hi; } bytes; };
-extern union KeyWord g_e468[8];
+union KeyboardKeyBitmap { unsigned short word; struct { unsigned char lo, hi; } bytes; };
+extern union KeyboardKeyBitmap scan_code_bitmap[8];
 extern unsigned char *x_dd40_xbukycw;
 extern void *r_dDDc_uzmlc;
 extern int g_8e1c;
@@ -79,16 +79,16 @@ extern short disp_idx;
 extern short draw_idx;
 extern short page2;
 extern short page3;
-extern unsigned short g_7bfe;
-extern unsigned short g_7c00;
-extern short g_e4a8;
-extern short n_e4c2;
+extern unsigned short mouse_btn;
+extern unsigned short mouse_btn_old;
+extern short mouse_sensitivity_x_o;
+extern short mouse_sensitivity_y_9;
 extern void submit_audio_request(int);
 extern void write_pal(void *);
 extern void f_9d40(int);
 extern void fade_pal(void *, int, int, int);
-extern void f_10369(void);
-extern void f_103b9(void);
+extern void query_mouse_sensitivity(void);
+extern void restore_mouse_driver_sensitivity(void);
 extern void set_img_buffers();
 int f_6e2e(void);
 int f_6ee8(void);
@@ -134,18 +134,18 @@ void f_8066(int *rect, unsigned char *info)
 
 void f_80d8(void)
 {
-    if (g_e468[1].bytes.hi & 0x20) {
-        if (g_7bfe != g_7c00) {
-            if (g_7bfe == 1) {
-                f_10369();
-                g_e4a8 -= 2;
-                n_e4c2 -= 2;
-                f_103b9();
-            } else if (g_7bfe == 2) {
-                f_10369();
-                g_e4a8 += 2;
-                n_e4c2 += 2;
-                f_103b9();
+    if (scan_code_bitmap[1].bytes.hi & 0x20) {
+        if (mouse_btn != mouse_btn_old) {
+            if (mouse_btn == 1) {
+                query_mouse_sensitivity();
+                mouse_sensitivity_x_o -= 2;
+                mouse_sensitivity_y_9 -= 2;
+                restore_mouse_driver_sensitivity();
+            } else if (mouse_btn == 2) {
+                query_mouse_sensitivity();
+                mouse_sensitivity_x_o += 2;
+                mouse_sensitivity_y_9 += 2;
+                restore_mouse_driver_sensitivity();
             }
         }
     }

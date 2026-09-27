@@ -11,18 +11,18 @@ extern int audio_dma_state;
 extern int audio_dma_gap_bytes;
 extern int last_audio_sample_rate;
 extern int active_audio_rate;
-extern short g_7db8;
-extern int g_7db4;
+extern short sound_dma_transfer_count;
+extern int sound_dma_buffer_address;
 extern int rand_rng(int, int);
 extern void queue_audio(int, int, int, int);
 extern void submit_audio_request(int);
 extern void transfer_audio_stream_block(void);
 extern void start_audio_stream_dma(void);
-extern void f_1133f(void);
-extern void f_11377(int);
+extern void configure_sound_dma_input(void);
+extern void set_sound_blaster_sample_rate(int);
 extern void *alloc_heap_block(int);
 extern void free_heap_block(void *);
-extern int f_11df8(int, int, int, void *);
+extern int decode_gif_image(int, int, int, void *);
 
 int decoded_bitmap_bytes;
 int decoded_image_bytes;
@@ -65,7 +65,7 @@ int f_c826(int source_size, int source_data, int image_state)
     if (!workspace) {
         return 0x909;
     } else {
-        result = f_11df8(source_size, source_data, image_state, workspace);
+        result = decode_gif_image(source_size, source_data, image_state, workspace);
         free_heap_block(workspace);
         return result;
     }

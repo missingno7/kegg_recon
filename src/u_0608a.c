@@ -15,17 +15,17 @@ extern void submit_audio_request(int);
 extern void f_8fce(int, int);
 extern void write_dac_palette(void *, int, int, int);
 extern void f_9053(void);
-extern void f_10502(int, int);
+extern void move_mouse_to(int, int);
 extern void update_racket_movement_bounds(void);
 extern void resize_racket(void);
 extern int get_racket_sprite_height(void);
-extern void f_1085a_eklzmb(int);
+extern void load_next_file(int);
 extern void f_a574_wrvhrpegbz(int);
 extern void stop_audio_stream(void);
 extern void f_6a1d(unsigned char, int, int, int);
 extern void f_6327(void);
-extern void f_1040c(int, int);
-extern void f_10487(int, int);
+extern void set_mouse_horizontal_bounds(int, int);
+extern void set_mouse_vertical_bounds(int, int);
 extern State *g_dee4;
 extern int g_dee0;
 extern unsigned char *image_buffer_cursor;
@@ -47,8 +47,8 @@ extern int k_DD48_jbwjbqarofg;
 extern int g_dd4c_ilunphmaok;
 extern int g_dDc8;
 extern short sound_blaster_detected;
-extern unsigned short g_7c00;
-extern unsigned short g_7bfe;
+extern unsigned short mouse_btn_old;
+extern unsigned short mouse_btn;
 extern Row16 g_6cbb[];
 extern int g_68f8_jwwqkwr;
 extern int g_6940_hqhettu;
@@ -74,8 +74,8 @@ extern int g_ddcc;
 extern Rec28 *g_dd94;
 extern Rec28 g_a848[];
 extern Pair8 racket_sprite_frames[];
-extern short g_e4c6;
-extern short m_E4c4;
+extern short mouse_x_recent_average_1c;
+extern short mouse_y_recent_average_g;
 extern void spawn_falling_spell(int, int, int, int);
 extern void f_7e62(int, int, int, int, int, int, int);
 extern int next_random_value();
@@ -126,21 +126,21 @@ void *memcpy(void *, const void *, size_t);
 void f_608a_ujonj(void) {
     g_ddd4_eoraaik = (void *)g_e4d0_wfmxdlyju;
     x_dd40_xbukycw = g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_68f8_jwwqkwr);
+    load_next_file(g_68f8_jwwqkwr);
     g_e4d0_wfmxdlyju -= g_e4c8 - 0x300;
     g_df24_krqpxkj = g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_6940_hqhettu);
+    load_next_file(g_6940_hqhettu);
 }
 
 void f_60e5_grt(void) {
     g_df34_nnyybtp = (unsigned char *)g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_6944_bdcftta);
+    load_next_file(g_6944_bdcftta);
     g_df2c_hwkico = (unsigned char *)g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_6948_kxwrlv);
+    load_next_file(g_6948_kxwrlv);
     g_dee0 = g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_694c_wjufexbevsk);
+    load_next_file(g_694c_wjufexbevsk);
     g_df20_rusvejgsscn = g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_6958_vghgxtjirow);
+    load_next_file(g_6958_vghgxtjirow);
 }
 
 void f_6156(void) {
@@ -148,7 +148,7 @@ void f_6156(void) {
     x_dd40_xbukycw = k_DD48_jbwjbqarofg + 0xfa00;
     f_a574_wrvhrpegbz(g_6960_juobaluykyr);
     g_dd4c_ilunphmaok = g_e4d0_wfmxdlyju;
-    f_1085a_eklzmb(g_695c_qurvlwasjp);
+    load_next_file(g_695c_qurvlwasjp);
 }
 
 void f_61a6_vby(void) {
@@ -159,7 +159,7 @@ void f_61a6_vby(void) {
         g_6cbb[g_8e20].v[0] -= g_67b0;
     g_df3c = g_e4d0_wfmxdlyju;
     g_8e48 = g_df3c;
-    if (sound_blaster_detected == -1) f_1085a_eklzmb(g_6964);
+    if (sound_blaster_detected == -1) load_next_file(g_6964);
     for (g_8e20 = 0; g_8e20 < 0x6e; ++g_8e20)
         g_6cbb[g_8e20].v[0] += g_8e48;
     g_67b0 = g_8e48;
@@ -169,7 +169,7 @@ void f_61a6_vby(void) {
 void f_6278(void) {
     if (g_dee4->at_60 == 0 && (m_de5c[0] & 0x80)) {
         if (g_dDc8 < g_dee4->at_68) {
-            if (g_7c00 == g_7bfe || !(g_7bfe & 2)) {
+            if (mouse_btn_old == mouse_btn || !(mouse_btn & 2)) {
                 if (!(m_de5c[0] & 8)) goto skip_call;
             }
             f_6a1d((unsigned char)g_dee4->at_6c, g_dee4->at_70,

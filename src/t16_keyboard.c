@@ -1,21 +1,49 @@
-/* TU T16: f_f690..f_ff9d [0xf690, 0xffbe), code and owned data. */
+/* These aliases keep descriptive names while preserving verified BSS linker names. */
+#define previous_scan_code previous_scan_code_20
+#define bios_keyboard_lock_flags bios_keyboard_lock_flags_c
+#define previous_ascii_key_2f previous_ascii_key_2f
+#define current_key_code_01 current_key_code_01
+#define KEY_HOOK_REPEAT_CHORD 0x01
+#define KEY_HOOK_PAUSE 0x02
+#define KEY_HOOK_SPACE_PRESS 0x04
+#define KEY_HOOK_EXIT_CHORD 0x08
+#define KEY_HOOK_ABORT_CHORD 0x10
+#define KEY_HOOK_LOCK_LEDS 0x20
+#define KEY_HOOK_CHORD_STATE 0x40
+#define KEY_HOOK_CHEAT_CODE 0x80
+
+/* TU T16: ignore_keyboard_action..request_keyboard_exit [0xf690, 0xffbe), code and owned data. */
 #include <stdlib.h>
 #include <i86.h>
 #include <conio.h>
+/* Keep raw scan-code and translated-key state in parallel bitmaps. */
+enum KeyboardScanCode { SCAN_PAUSE = 25, SCAN_ENTER = 0x1c, SCAN_SCROLL_LOCK = 0x46, SCAN_NUM_LOCK = 0x45, SCAN_CAPS_LOCK = 0x3a };
 
-union KeyWord { unsigned short word; struct { unsigned char lo, hi; } bytes; };
-union FlagWord { unsigned short word; unsigned char bytes[2]; };
-extern union KeyWord g_e468[8], g_e478_6[8];
-extern unsigned char g_e48f, g_e488, g_e489, g_e48a_1d, g_e48b_3, g_e48c_3, g_e48d_c, g_e48e_0g;
-void f_f690(void);
+union KeyboardKeyBitmap {
+    unsigned short word;
+    struct {
+        unsigned char low, high;
+    }
+    bytes;
+};
+union KeyboardHookFlags {
+    unsigned short word;
+    unsigned char bytes[2];
+};
+extern union KeyboardKeyBitmap scan_code_bitmap[8], translated_key_bitmap[8];
+extern unsigned char current_ascii, pending_ascii_key, previous_scan_code, latest_scan_byte, current_scan_code, bios_keyboard_lock_flags, previous_ascii_key_2f, current_key_code_01;
+void ignore_keyboard_action(void);
 extern unsigned char g_754d;
 extern unsigned char g_754c;
 extern unsigned char g_75a8;
-struct InterruptRecord { short status; unsigned char opaque[0x33]; };
-extern struct InterruptRecord key_irq;
-extern void f_f6d9(void);
+struct KeyboardInterruptRecord {
+    short installation_status;
+    unsigned char reserved[0x33];
+};
+extern struct KeyboardInterruptRecord key_irq;
+extern void remove_keyboard_input_handler(void);
 extern void f_d656(unsigned char *, int);
-void f_f6a1(void);
+void install_keyboard_input_handler(void);
 extern void f_d7b8(unsigned char *);
 extern int g_754f;
 extern int g_756b;
@@ -23,47 +51,50 @@ extern int g_75c4;
 extern void (*g_7553)(void);
 extern void (*g_7557)(void);
 extern void (*g_755b)(void);
-extern void f_f875(void);
-extern void f_f7e4(void);
+extern void clear_keyboard_state(void);
+extern void save_bios_keyboard_flags(void);
 extern void f_da01(int *);
-void __interrupt f_ff5c(void);
+void __interrupt keyboard_interrupt_handler(void);
 extern void __far irq_110(void);
-extern void f_f82d(void);
-extern void f_f905(unsigned char);
-void f_f8bb(void);
+extern void restore_bios_keyboard_flags(void);
+extern void update_key_state_from_scan_code(unsigned char);
+void read_keyboard_scan_code(void);
 extern int kbhit(void);
 extern int getch(void);
-void f_fa42(void);
-extern void f_fe6a(void);
-extern void f_fbc0(void);
-extern void f_fc1e(void);
-extern void f_fb92(void);
-extern void f_fd3b(void);
-extern void f_fd7b(void);
-extern void f_fcab(void);
-extern void (*g_7b3f_gng)(void);
-extern void (*g_7b43)(void);
-extern void (*g_7b47)(int, int);
-int f_ff0d(void);
-
-extern void f_f690(void);
-union FlagWord g_7b34_cbzosabe = {0x003c};
-unsigned char g_7b36 = 0;
-unsigned char g_7b37_reserved[2] = {0, 0};
-short g_7b39 = 0;
-short g_7b3b = 0;
-short g_7b3d_yrsiuxxd = 0;
-void (*g_7b3f_gng)(void) = f_f690;
-void (*g_7b43)(void) = f_f690;
-void (*g_7b47)(int, int) = (void (*)(int, int))f_f690;
-unsigned int g_7b4b[9] = {
+void poll_keyboard(void);
+extern void check_keyboard_cheat_code(void);
+extern void handle_keyboard_repeat_chord(void);
+extern void handle_pause_key(void);
+extern void record_space_key_press(void);
+extern void handle_keyboard_abort_chord(void);
+extern void toggle_keyboard_lock_leds(void);
+extern void update_keyboard_chord_state(void);
+extern void (*key_repeat)(void);
+extern void (*keyboard_release_handler)(void);
+extern void (*key_action_hook)(int, int);
+int wait_for_keyboard_controller(void);
+extern void ignore_keyboard_action(void);
+union KeyboardHookFlags hook_flags_word = {
+    0x003c
+};
+unsigned char keyboard_cheat_flags = 0;
+unsigned char keyboard_reserved_bytes[2] = {
+    0, 0
+};
+short keyboard_state = 0;
+short keyboard_chord_state = 0;
+short space_pressed = 0;
+void (*key_repeat)(void) = ignore_keyboard_action;
+void (*keyboard_release_handler)(void) = ignore_keyboard_action;
+void (*key_action_hook)(int, int) = (void (*)(int, int))ignore_keyboard_action;
+unsigned int keyboard_cheat_signatures[9] = {
     0x000b033d, 0x000a0315, 0x000902af, 0x00110512,
     0xffffffff, 0xffffffff, 0xffffffff, 0x0004012f, 0x0005017a
 };
-short g_7b6f = 0;
-char *g_7b71 = "";
-unsigned int g_7b75 = 0;
-unsigned char g_7b79[128] = {
+short bios_keyboard_flags_saved = 0;
+char *bios_keyboard_buffer = "";
+unsigned int keyboard_cheat_code_accumulator = 0;
+unsigned char scan_code_to_ascii[128] = {
     0x3f, 0x3f, 0x26, 0x82, 0x22, 0x27, 0x28, 0xf5, 0x8a, 0x21, 0x87, 0x85, 0x29, 0x2d, 0x3f, 0x3f,
     0x41, 0x5a, 0x45, 0x52, 0x54, 0x59, 0x55, 0x49, 0x4f, 0x50, 0x3f, 0x3f, 0x3f, 0x3f, 0x51, 0x53,
     0x44, 0x46, 0x47, 0x48, 0x4a, 0x4b, 0x4c, 0x4d, 0x25, 0x3f, 0x3f, 0x5c, 0x57, 0x58, 0x43, 0x56,
@@ -73,197 +104,268 @@ unsigned char g_7b79[128] = {
     0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f,
     0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f
 };
-unsigned char g_7bf9_reserved[3] = {0, 0, 0};
-
-void f_f690(void) { }
-
-void f_f6a1(void) {
-    g_754d = 9;
-    g_754c = g_75a8 + 1;
-    f_d656((unsigned char *)&key_irq, (int)f_f6d9);
+unsigned char keyboard_reserved_tail[3] = {
+    0, 0, 0
+};
+void ignore_keyboard_action(void) {
 }
 
-void f_f6d9(void) { f_d7b8((unsigned char *)&key_irq); }
+void install_keyboard_input_handler(void) {
+    g_754d = 9;
+    g_754c = g_75a8 + 1;
+    f_d656((unsigned char *)&key_irq, (int)remove_keyboard_input_handler);
+}
 
-int f_f6f8(int mode) {
-    int p;
-    if (mode == 0) {
-        mode = g_754f;
-        if (mode == 0) return 0;
+void remove_keyboard_input_handler(void) {
+    f_d7b8((unsigned char *)&key_irq);
+}
+
+int initialize_keyboard_manager(int manager_flags) {
+    int bios_buffer_address;
+    if (manager_flags == 0) {
+        manager_flags = g_754f;
+        if (manager_flags == 0) return 0;
     }
-    if (key_irq.status != -1) {
-        f_f875();
-        f_f7e4();
-        g_754f = mode;
-        f_f6a1();
-        g_7553 = (void (*)(void))f_ff5c;
+    if (key_irq.installation_status != -1) {
+        clear_keyboard_state();
+        save_bios_keyboard_flags();
+        g_754f = manager_flags;
+        install_keyboard_input_handler();
+        g_7553 = (void (*)(void))keyboard_interrupt_handler;
         g_7557 = (void (*)(void))irq_110;
         g_755b = (void (*)(void))((unsigned char __far *)irq_110 + 0x39);
         f_da01((int *)&key_irq);
-        if ((mode & 1) == 1) {
-            int addr1;
-            int addr2;
-            p = g_756b;
-            addr1 = 0x41a;
-            *(unsigned short *)(p + 4) = *(unsigned short *)addr1;
-            addr2 = 0x41c;
-            *(unsigned short *)(p + 6) = *(unsigned short *)addr2;
-            g_7b71 = (char *)p;
+        if ((manager_flags & 1) == 1) {
+            int bios_buffer_head_address;
+            int bios_buffer_tail_address;
+            bios_buffer_address = g_756b;
+            bios_buffer_head_address = 0x41a;
+            *(unsigned short *)(bios_buffer_address + 4) = *(unsigned short *)bios_buffer_head_address;
+            bios_buffer_tail_address = 0x41c;
+            *(unsigned short *)(bios_buffer_address + 6) = *(unsigned short *)bios_buffer_tail_address;
+            bios_keyboard_buffer = (char *)bios_buffer_address;
         }
         if (g_75c4) return 0x501;
     }
     return 0;
 }
 
-void f_f7e4(void) {
-    int p;
-    p = 0x417;
-    if (g_7b6f != -1) {
-        g_e48c_3 = *(unsigned char *)p >> 4;
-        atexit(f_f82d);
-        g_7b6f = -1;
+void save_bios_keyboard_flags(void) {
+    int bios_keyboard_flags_address;
+    bios_keyboard_flags_address = 0x417;
+    if (bios_keyboard_flags_saved != -1) {
+        bios_keyboard_lock_flags = *(unsigned char *)bios_keyboard_flags_address >> 4;
+        atexit(restore_bios_keyboard_flags);
+        bios_keyboard_flags_saved = -1;
     }
 }
 
-void f_f82d(void) {
-    unsigned char *p;
-    p = (unsigned char *)0x417;
-    if (g_7b6f == -1) {
-        *p = (*p & 0x8f) | ((g_e48c_3 << 4) & 0x70);
-        g_7b6f = 1;
+void restore_bios_keyboard_flags(void) {
+    unsigned char *bios_keyboard_flags_address;
+    bios_keyboard_flags_address = (unsigned char *)0x417;
+    if (bios_keyboard_flags_saved == -1) {
+        *bios_keyboard_flags_address = (*bios_keyboard_flags_address & 0x8f) | ((bios_keyboard_lock_flags << 4) & 0x70);
+        bios_keyboard_flags_saved = 1;
     }
 }
 
-void f_f875(void) {
-    int i;
-    for (i = 0; i < 8; i++) {
-        g_e468[i].word = 0;
-        g_e478_6[i].word = 0;
+void clear_keyboard_state(void) {
+    int bitmap_word_index;
+    for (bitmap_word_index = 0; bitmap_word_index < 8; bitmap_word_index++) {
+        scan_code_bitmap[bitmap_word_index].word = 0;
+        translated_key_bitmap[bitmap_word_index].word = 0;
     }
 }
 
-void f_f8bb(void) {
-    f_f905((unsigned char)inp(0x60));
-    if (*(unsigned char *)g_7b71) {
-        f_f905(*(unsigned char *)g_7b71);
-        *(unsigned char *)g_7b71 = 0;
+void read_keyboard_scan_code(void) {
+    update_key_state_from_scan_code((unsigned char)inp(0x60));
+    if (*(unsigned char *)bios_keyboard_buffer) {
+        update_key_state_from_scan_code(*(unsigned char *)bios_keyboard_buffer);
+        *(unsigned char *)bios_keyboard_buffer = 0;
     }
 }
 
-void f_f905(unsigned char key) {
-    if ((key & 0x6f) > 0x60) return;
-    g_e48a_1d = key;
-    key &= 0x7f;
-    g_e488 = g_7b79[key];
-    key = (unsigned char)((int)key >> 4);
-    if (g_e48a_1d & 0x80) {
-        g_e468[key].word = g_e468[key].word & (unsigned short)~(1 << (g_e48a_1d & 0x0f));
-        key = (unsigned char)((int)g_e488 >> 4);
-        g_e478_6[key].word = g_e478_6[key].word & (unsigned short)~(1 << (g_e488 & 0x0f));
-        g_e488 |= g_e48a_1d & 0x80;
-    } else {
-        g_e468[key].word = g_e468[key].word | (unsigned short)(1 << (g_e48a_1d & 0x0f));
-        key = (unsigned char)((int)g_e488 >> 4);
-        g_e478_6[key].word = g_e478_6[key].word | (unsigned short)(1 << (g_e488 & 0x0f));
+void update_key_state_from_scan_code(unsigned char current_scan_code) {
+    if ((current_scan_code & 0x6f) > 0x60) return;
+    latest_scan_byte = current_scan_code;
+    current_scan_code &= 0x7f;
+    pending_ascii_key = scan_code_to_ascii[current_scan_code];
+    current_scan_code = (unsigned char)((int)current_scan_code >> 4);
+    if (latest_scan_byte & 0x80) {
+        scan_code_bitmap[current_scan_code].word = scan_code_bitmap[current_scan_code].word & (unsigned short)~(1 << (latest_scan_byte & 0x0f));
+        current_scan_code = (unsigned char)((int)pending_ascii_key >> 4);
+        translated_key_bitmap[current_scan_code].word = translated_key_bitmap[current_scan_code].word & (unsigned short)~(1 << (pending_ascii_key & 0x0f));
+        pending_ascii_key |= latest_scan_byte & 0x80;
+    }
+    else {
+        scan_code_bitmap[current_scan_code].word = scan_code_bitmap[current_scan_code].word | (unsigned short)(1 << (latest_scan_byte & 0x0f));
+        current_scan_code = (unsigned char)((int)pending_ascii_key >> 4);
+        translated_key_bitmap[current_scan_code].word = translated_key_bitmap[current_scan_code].word | (unsigned short)(1 << (pending_ascii_key & 0x0f));
     }
 }
 
-void f_fa42(void) {
-    if (key_irq.status != -1) {
-        f_f8bb();
+void poll_keyboard(void) {
+    if (key_irq.installation_status != -1) {
+        read_keyboard_scan_code();
         if (kbhit()) {
-            g_e488 = (unsigned char)getch();
-            for (g_e48a_1d = 0; g_e48a_1d < 0x7f; ++g_e48a_1d) {
-                if (g_e488 == g_7b79[g_e48a_1d]) break;
+            pending_ascii_key = (unsigned char)getch();
+            for (latest_scan_byte = 0; latest_scan_byte < 0x7f; ++latest_scan_byte) {
+                if (pending_ascii_key == scan_code_to_ascii[latest_scan_byte]) break;
             }
         }
-    } else if (*(unsigned char *)g_7b71) {
-        f_f905(*(unsigned char *)g_7b71);
-        *(unsigned char *)g_7b71 = 0;
+    } else if (*(unsigned char *)bios_keyboard_buffer) {
+        update_key_state_from_scan_code(*(unsigned char *)bios_keyboard_buffer);
+        *(unsigned char *)bios_keyboard_buffer = 0;
     }
-    if (g_e489 == g_e48e_0g) goto update;
-    if (g_e48e_0g != g_e48a_1d) goto update;
-    goto finish;
-update:
-        g_e48d_c = g_e48f;
-        g_e48b_3 = g_e48e_0g;
-finish:
-    g_e48e_0g = g_e48a_1d;
-    g_e48f = g_e488;
-    g_e489 = g_e48e_0g;
+    if (previous_scan_code == current_key_code_01 || current_key_code_01 != latest_scan_byte) {
+        previous_ascii_key_2f = current_ascii;
+        current_scan_code = current_key_code_01;
+    }
+    current_key_code_01 = latest_scan_byte;
+    current_ascii = pending_ascii_key;
+    previous_scan_code = current_key_code_01;
 }
 
-void f_fb17(void) {
-    if (g_7b34_cbzosabe.word & 0x80) f_fe6a();
-    if ((g_7b34_cbzosabe.word & 1) == 1) f_fbc0();
-    if (g_7b34_cbzosabe.word & 2) f_fc1e();
-    if (g_7b34_cbzosabe.word & 4) f_fb92();
-    if (g_7b34_cbzosabe.word & 0x10) f_fd3b();
-    if (g_7b34_cbzosabe.word & 0x20) f_fd7b();
-    if (g_7b34_cbzosabe.word & 0x40) f_fcab();
+void dispatch_keyboard(void) {
+    if (hook_flags_word.word & KEY_HOOK_CHEAT_CODE) check_keyboard_cheat_code();
+    if ((hook_flags_word.word & KEY_HOOK_REPEAT_CHORD) == 1) handle_keyboard_repeat_chord();
+    if (hook_flags_word.word & KEY_HOOK_PAUSE) handle_pause_key();
+    if (hook_flags_word.word & KEY_HOOK_SPACE_PRESS) record_space_key_press();
+    if (hook_flags_word.word & KEY_HOOK_ABORT_CHORD) handle_keyboard_abort_chord();
+    if (hook_flags_word.word & KEY_HOOK_LOCK_LEDS) toggle_keyboard_lock_leds();
+    if (hook_flags_word.word & KEY_HOOK_CHORD_STATE) update_keyboard_chord_state();
 }
 
-void f_fb92(void) { if (g_e48d_c != 0x20 && g_e48f == 0x20) g_7b3d_yrsiuxxd = -1; }
-
-void f_fbc0(void) { while ((g_e468[3].bytes.lo & 0x40) && (g_e468[0].bytes.hi & 0x40)) { f_fa42(); if (g_7b39 == 0) { g_7b3f_gng(); g_7b39 = -1; } } if (g_7b39 != 0) { g_7b43(); g_7b39 = 0; } }
-
-void f_fc1e(void)
-{
-    if (g_e48e_0g != 25) goto L_fc81;
-    g_7b3f_gng();
-    g_7b39 = -1;
-L_fc42:;
-    while (g_e48e_0g == 25) {
-    f_fa42();
-    }
-L_fc52:;
-    while (g_e48e_0g != 25) {
-    f_fa42();
-    }
-L_fc62:;
-    while (g_e48e_0g == 25) {
-    f_fa42();
-    }
-L_fc72:;
-    g_7b43();
-    g_7b39 = 0;
-L_fc81:;
+void record_space_key_press(void) {
+    if (previous_ascii_key_2f != 0x20 && current_ascii == 0x20) space_pressed = -1;
 }
 
-void f_fc86(void) { g_7b3f_gng = f_f690; g_7b43 = f_f690; }
-
-void f_fcab(void) { if ((g_e468[2].bytes.hi & 4) && (g_e468[2].bytes.hi & 2)) g_7b3b = 1; else g_7b3b = 0; }
-
-void f_fce4(void) { if (g_e468[0].bytes.lo&2) goto test_high; goto low_skip; test_high: if (((int)(short)g_e468[0].word&0x8000) != 0) goto test_mask; low_skip: goto mask_skip; test_mask: if (g_e468[1].bytes.hi&0x20) goto test_b; mask_skip: goto b_skip; test_b: if (g_e48b_3==0x1c) goto b_skip; test_e: if (g_e48e_0g==0x1c) goto call_key; goto b_skip; b_skip: goto end; call_key: g_7b47(0x101,0); end: ; }
-
-void f_fd3b(void) {
-    if ((g_e468[1].bytes.hi & 0x20) && (g_e468[3].bytes.hi & 1) && (g_e468[5].bytes.lo & 8)) g_7b47(0x101, 0);
+/* Hold the repeat callback while the configured key chord remains down. */
+void handle_keyboard_repeat_chord(void) {
+    while ((scan_code_bitmap[3].bytes.low & 0x40) && (scan_code_bitmap[0].bytes.high & 0x40)) {
+        poll_keyboard();
+        if (keyboard_state == 0) {
+            key_repeat();
+            keyboard_state = -1;
+        }
+    }
+    if (keyboard_state != 0) {
+        keyboard_release_handler();
+        keyboard_state = 0;
+    }
 }
 
-void f_fd7b(void) { unsigned char old=g_e48c_3; int k46,k45,k3a; if (g_e48b_3!=0x46 && g_e48e_0g==0x46) k46=1; else k46=0; if(k46) g_e48c_3^=1; if (g_e48b_3!=0x45 && g_e48e_0g==0x45) k45=1; else k45=0; if(k45) g_e48c_3^=2; if (g_e48b_3!=0x3a && g_e48e_0g==0x3a) k3a=1; else k3a=0; if(k3a) g_e48c_3^=4; if(old!=g_e48c_3) { _disable(); f_ff0d(); outp(0x60,0xed); f_ff0d(); outp(0x60,g_e48c_3&7); _enable(); } }
+void handle_pause_key(void) {
+    if (current_key_code_01 != SCAN_PAUSE) return;
+    key_repeat();
+    keyboard_state = -1;
+    while (current_key_code_01 == SCAN_PAUSE) poll_keyboard();
+    while (current_key_code_01 != SCAN_PAUSE) poll_keyboard();
+    while (current_key_code_01 == SCAN_PAUSE) poll_keyboard();
+    keyboard_release_handler();
+    keyboard_state = 0;
+}
 
-void f_fe6a(void) { int i; if (g_e48e_0g != g_e48b_3 && g_e48e_0g < 0x7f) { if (g_e48e_0g == 0x1c) { for (i=0;(short)i<9;i++) { if (g_7b4b[(short)i] == g_7b75) { if ((short)i==8) g_7b36 ^= 0xff; else g_7b36 ^= 1<<(short)i; } } g_7b75=0; } else g_7b75 += (unsigned short)g_e48f + 0x10000U; } }
+void reset_keyboard_action_handlers(void) {
+    key_repeat = ignore_keyboard_action;
+    keyboard_release_handler = ignore_keyboard_action;
+}
 
-int f_ff0d(void) { int n=0x1388; poll: if ((inp(0x64)&2)==0) goto poll_exit; if (n>0) goto decrement; poll_exit: goto finish; decrement: n--; goto poll; finish: if(n>0) return 0; return -1; }
+void update_keyboard_chord_state(void) {
+    if ((scan_code_bitmap[2].bytes.high & 4) && (scan_code_bitmap[2].bytes.high & 2)) keyboard_chord_state = 1;
+    else keyboard_chord_state = 0;
+}
 
-void __interrupt f_ff5c(void) {
+/* Require the modifier bitmap and a fresh Enter make-code before requesting exit. */
+void handle_keyboard_exit_chord(void) {
+    if (scan_code_bitmap[0].bytes.low&2) goto check_second_modifier;
+    goto skip_second_modifier;
+    check_second_modifier: if (((int)(short)scan_code_bitmap[0].word&0x8000) != 0) goto check_third_modifier;
+    skip_second_modifier: goto skip_enter_check;
+    check_third_modifier: if (scan_code_bitmap[1].bytes.high&0x20) goto check_previous_enter;
+    skip_enter_check: goto skip_exit_callback;
+    check_previous_enter: if (current_scan_code==SCAN_ENTER) goto skip_exit_callback;
+    check_current_enter: if (current_key_code_01==SCAN_ENTER) goto request_exit;
+    goto skip_exit_callback;
+    skip_exit_callback: goto exit_chord_done;
+    request_exit: key_action_hook(0x101,0);
+    exit_chord_done: ;
+}
+
+void handle_keyboard_abort_chord(void) {
+    if ((scan_code_bitmap[1].bytes.high & 0x20) && (scan_code_bitmap[3].bytes.high & 1) && (scan_code_bitmap[5].bytes.low & 8)) key_action_hook(0x101, 0);
+}
+
+void toggle_keyboard_lock_leds(void) {
+    unsigned char previous_lock_flags=bios_keyboard_lock_flags;
+    int scroll_lock_pressed,num_lock_pressed,caps_lock_pressed;
+    if (current_scan_code!=SCAN_SCROLL_LOCK && current_key_code_01==SCAN_SCROLL_LOCK) scroll_lock_pressed=1;
+    else scroll_lock_pressed=0;
+    if(scroll_lock_pressed) bios_keyboard_lock_flags^=1;
+    if (current_scan_code!=SCAN_NUM_LOCK && current_key_code_01==SCAN_NUM_LOCK) num_lock_pressed=1;
+    else num_lock_pressed=0;
+    if(num_lock_pressed) bios_keyboard_lock_flags^=2;
+    if (current_scan_code!=SCAN_CAPS_LOCK && current_key_code_01==SCAN_CAPS_LOCK) caps_lock_pressed=1;
+    else caps_lock_pressed=0;
+    if(caps_lock_pressed) bios_keyboard_lock_flags^=4;
+    if(previous_lock_flags!=bios_keyboard_lock_flags) {
+        _disable();
+        wait_for_keyboard_controller();
+        outp(0x60,0xed);
+        wait_for_keyboard_controller();
+        outp(0x60,bios_keyboard_lock_flags&7);
+        _enable();
+    }
+}
+
+/* Accumulate translated key codes and compare the completed sequence on Enter. */
+void check_keyboard_cheat_code(void) {
+    int signature_index;
+    if (current_key_code_01 != current_scan_code && current_key_code_01 < 0x7f) {
+        if (current_key_code_01 == SCAN_ENTER) {
+            for (signature_index=0;(short)signature_index<9;signature_index++) {
+                if (keyboard_cheat_signatures[(short)signature_index] == keyboard_cheat_code_accumulator) {
+                    if ((short)signature_index==8) keyboard_cheat_flags ^= 0xff;
+                    else keyboard_cheat_flags ^= 1<<(short)signature_index;
+                }
+            }
+            keyboard_cheat_code_accumulator=0;
+        }
+        else keyboard_cheat_code_accumulator += (unsigned short)current_ascii + 0x10000U;
+    }
+}
+
+/* Poll the 8042 input-buffer-full bit with the original bounded retry count. */
+int wait_for_keyboard_controller(void) {
+    int poll_countdown=0x1388;
+    wait_for_input_buffer_clear: if ((inp(0x64)&2)==0) goto controller_wait_finished;
+    if (poll_countdown>0) goto decrement_wait_count;
+    controller_wait_finished: goto return_wait_status;
+    decrement_wait_count: poll_countdown--;
+    goto wait_for_input_buffer_clear;
+    return_wait_status: if(poll_countdown>0) return 0;
+    return -1;
+}
+
+void __interrupt keyboard_interrupt_handler(void) {
     copy_ds_to_es();
-    f_f8bb();
+    read_keyboard_scan_code();
     outp(0x20, 0x20);
-    if (g_7b34_cbzosabe.bytes[0] & 8)
-        f_fce4();
+    if (hook_flags_word.bytes[0] & KEY_HOOK_EXIT_CHORD)
+    handle_keyboard_exit_chord();
 }
 
-void f_ff9d(void) { g_7b47(0x101, 0); }
+void request_keyboard_exit(void) {
+    key_action_hook(0x101, 0);
+}
 
-
-union KeyWord g_e478_6[8];
-union KeyWord g_e468[8];
-unsigned char g_e48f;
-unsigned char g_e488;
-unsigned char g_e489;
-unsigned char g_e48a_1d;
-unsigned char g_e48b_3;
-unsigned char g_e48c_3;
-unsigned char g_e48d_c;
-unsigned char g_e48e_0g;
+union KeyboardKeyBitmap translated_key_bitmap[8];
+union KeyboardKeyBitmap scan_code_bitmap[8];
+unsigned char current_ascii;
+unsigned char pending_ascii_key;
+unsigned char previous_scan_code;
+unsigned char latest_scan_byte;
+unsigned char current_scan_code;
+unsigned char bios_keyboard_lock_flags;
+unsigned char previous_ascii_key_2f;
+unsigned char current_key_code_01;

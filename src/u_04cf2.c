@@ -11,7 +11,7 @@ typedef struct { int pad[5]; int at_14; } Rec20;
 extern unsigned char *best_of_the_bests_text;
 extern unsigned char *g_38fe;
 extern Pair8 bonus_sprite_animations[];
-extern int g_7c08_orxezsknd;
+extern int file_error_state;
 extern int g_8e1c;
 extern int g_8e20;
 extern int g_dda4;
@@ -29,9 +29,9 @@ extern State *g_dee4;
 extern char g_e13a;
 extern unsigned char g_e13b;
 extern unsigned char g_e46b;
-extern short m_E4c4;
-extern short g_e4c6;
-extern void f_10502(int, int);
+extern short mouse_y_recent_average_g;
+extern short mouse_x_recent_average_1c;
+extern void move_mouse_to(int, int);
 extern void write_dac_palette(void *, int, int, int);
 extern void draw_racket_and_effects(void);
 extern void update_racket_dimensions(void);
@@ -56,13 +56,13 @@ extern void f_9053(void);
 extern void update_racket_movement_bounds(void);
 extern void resize_racket(void);
 extern int get_racket_sprite_height(void);
-extern void f_1085a_eklzmb(int);
+extern void load_next_file(int);
 extern void f_a574_wrvhrpegbz(int);
 extern void stop_audio_stream(void);
 extern void f_6a1d(unsigned char, int, int, int);
 extern void f_6327(void);
-extern void f_1040c(int, int);
-extern void f_10487(int, int);
+extern void set_mouse_horizontal_bounds(int, int);
+extern void set_mouse_vertical_bounds(int, int);
 extern int g_e4d0_wfmxdlyju;
 extern int g_67b0;
 extern int audio_request_table_8;
@@ -77,8 +77,8 @@ extern int k_DD48_jbwjbqarofg;
 extern int g_dd4c_ilunphmaok;
 extern int g_dDc8;
 extern short sound_blaster_detected;
-extern unsigned short g_7c00;
-extern unsigned short g_7bfe;
+extern unsigned short mouse_btn_old;
+extern unsigned short mouse_btn;
 extern Row16 g_6cbb[];
 extern int g_68f8_jwwqkwr;
 extern int g_6940_hqhettu;
@@ -145,13 +145,13 @@ L_4d74:;
     if (v_4 < v_8) goto L_4d74;
     if (v_c) {
     v_c = 0;
-    g_7c08_orxezsknd = 0;
+    file_error_state = 0;
     g_dDa8 = 5000;
     }
     }
 L_4da9:;
     m_de5c[0] &= 0xfd;
-    f_10502(g_dee4->at_00, g_dee4->at_04);
+    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
     }
     }
     } else {
@@ -223,7 +223,7 @@ L_4f85:;
     if (--g_dee4->at_34 <= 0) {
     m_de5c[0] &= 0xf7;
     m_de5c[0] &= 0xfb;
-    f_10502(g_dee4->at_00, g_dee4->at_04);
+    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
     } else {
     if (g_dee4->at_34 < 140) {
     ((Flags *)m_de5c)->b2 = (g_dee4->at_34 >> 3) & 1;
@@ -319,26 +319,26 @@ L_5241:;
     if (m_de5c[1] & 1) {
     if (--g_dee4->at_3c <= 0) {
     m_de5c[1] &= 0xfe;
-    f_10502(g_dee4->at_00, g_dee4->at_04);
+    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
     }
     } else {
     if (m_de5c[0] & 0x10) {
     if (--g_dee4->at_38 <= 0) {
     m_de5c[0] &= 0xef;
     m_de5c[0] &= 0xfb;
-    g_dee4->at_00 = ((g_dee4->at_10 + g_dee4->at_0c) - (short)g_e4c6);
-    g_dee4->at_04 = (short)m_E4c4;
-    f_10502(g_dee4->at_00, g_dee4->at_04);
+    g_dee4->at_00 = ((g_dee4->at_10 + g_dee4->at_0c) - (short)mouse_x_recent_average_1c);
+    g_dee4->at_04 = (short)mouse_y_recent_average_g;
+    move_mouse_to(g_dee4->at_00, g_dee4->at_04);
     } else {
-    g_dee4->at_00 = ((g_dee4->at_10 + g_dee4->at_0c) - (short)g_e4c6);
-    g_dee4->at_04 = (short)m_E4c4;
+    g_dee4->at_00 = ((g_dee4->at_10 + g_dee4->at_0c) - (short)mouse_x_recent_average_1c);
+    g_dee4->at_04 = (short)mouse_y_recent_average_g;
     if (g_dee4->at_38 < 32) {
     ((Flags *)m_de5c)->b2 = (g_dee4->at_38 >> 2) & 1;
     }
     }
     } else {
-    g_dee4->at_00 = (short)g_e4c6;
-    g_dee4->at_04 = (short)m_E4c4;
+    g_dee4->at_00 = (short)mouse_x_recent_average_1c;
+    g_dee4->at_04 = (short)mouse_y_recent_average_g;
     }
     }
     }
@@ -463,11 +463,11 @@ void update_racket_dimensions(void) {
     g_8e20 = g_dee4->at_20 >> 1;
     g_dee4->at_0c = g_8e20 + 0x10;
     g_dee4->at_10 = 0x130 - g_8e20;
-    f_1040c(g_dee4->at_0c, g_dee4->at_10);
+    set_mouse_horizontal_bounds(g_dee4->at_0c, g_dee4->at_10);
     g_8e20 = g_dee4->at_00;
     if (m_de5c[0] & 0x10)
         g_8e20 = g_dee4->at_10 + g_dee4->at_0c - g_8e20;
-    f_10502(g_8e20, m_E4c4);
+    move_mouse_to(g_8e20, mouse_y_recent_average_g);
 }
 
 void update_racket_movement_bounds(void) {
@@ -475,8 +475,8 @@ void update_racket_movement_bounds(void) {
     else g_8e20 = 0xbc;
     g_dee4->at_14 = g_8e20;
     g_dee4->at_18 = 0xbc;
-    f_10487(g_dee4->at_14, g_dee4->at_18);
-    f_10502(g_e4c6, g_dee4->at_04);
+    set_mouse_vertical_bounds(g_dee4->at_14, g_dee4->at_18);
+    move_mouse_to(mouse_x_recent_average_1c, g_dee4->at_04);
 }
 
 int get_racket_sprite_height(void) {

@@ -6,8 +6,8 @@ extern unsigned char sound_blaster_irq;
 extern unsigned char sound_blaster_dma_channel;
 extern short g_74fd;
 extern short sound_blaster_base_port;
-extern int f_11530(int, int, int, int, int);
-extern void f_115da(void);
+extern int load_protracker_module(int, int, int, int, int);
+extern void stop_protracker_module(void);
 extern void release_sound_callback(void);
 extern unsigned char g_75a8;
 extern unsigned char slave_pic_vector_base;
@@ -41,8 +41,8 @@ short initialize_sound_device(int device_mode, short sample_rate)
     if (sound_blaster_detected == -1) {
         if (g_74fd == -1)
             release_sound_callback();
-        atexit(f_115da);
-        return f_11530(device_mode, sample_rate, sound_blaster_base_port, sound_blaster_irq, sound_blaster_dma_channel);
+        atexit(stop_protracker_module);
+        return load_protracker_module(device_mode, sample_rate, sound_blaster_base_port, sound_blaster_irq, sound_blaster_dma_channel);
     }
     return 0x605;
 }
@@ -50,7 +50,7 @@ short initialize_sound_device(int device_mode, short sample_rate)
 void restore_sound_device(void)
 {
     if (g_74fd == -1)
-        f_115da();
+        stop_protracker_module();
 }
 
 void prepare_sound_callback(void)

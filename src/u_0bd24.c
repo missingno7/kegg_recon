@@ -16,7 +16,7 @@ extern unsigned char g_74fd[];
 extern int sound_callback_allocation_size;
 extern char *next_screenshot_filename;
 extern void stop_audio_stream(void);
-extern void f_115da(void);
+extern void stop_protracker_module(void);
 extern void f_d7b8(void *);
 extern void free_dpmi_memory(int);
 extern int save_screen_image(char *);
@@ -31,7 +31,7 @@ extern unsigned g_75c4;
 extern int audio_dma_memory;
 extern short sound_blaster_base_port;
 extern unsigned dpmi_linear_address_value;
-extern void __far f_11258(void);
+extern void __far sound_blaster_irq_handler(void);
 extern int f_da01(void *);
 extern unsigned allocate_dpmi_memory(int);
 
@@ -75,7 +75,7 @@ L_be17:;
 L_be23:;
     g_74dd = bytes_requested;
     prepare_sound_system();
-    g_74e1 = (int)f_11258;
+    g_74e1 = (int)sound_blaster_irq_handler;
     g_74e5 = (int)a_0;
     g_74e9 = (int)((unsigned char __far *)a_0 + 0x69);
     /* Install the Sound Blaster transfer hook and reserve its DMA buffer. */

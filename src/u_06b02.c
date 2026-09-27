@@ -16,8 +16,8 @@ extern short disp_idx;
 extern short page2;
 extern short flip_src;
 extern short flip_dst;
-extern short g_7b34_cbzosabe;
-extern int g_7c08_orxezsknd;
+extern short hook_flags_word;
+extern int file_error_state;
 extern unsigned char h_ab40_jbfxrqns[];
 extern unsigned char g_bf40_whznxcth[];
 extern unsigned char g_d340_schtgisj[];
@@ -27,17 +27,17 @@ extern unsigned char *g_dd4c_ilunphmaok;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
 void save_bios(void);
-extern unsigned char g_e48b_3;
-extern unsigned char g_e48e_0g;
-extern short m_E4c4;
-extern short g_e4c6;
+extern unsigned char current_scan_code;
+extern unsigned char current_key_code_01;
+extern short mouse_y_recent_average_g;
+extern short mouse_x_recent_average_1c;
 int g_9490;
 int g_9494;
 int g_9498;
 int g_949c;
 
 extern int g_e4d0_wfmxdlyju;
-extern void exit_with_message(unsigned, unsigned);
+extern void fatal_exit(unsigned, unsigned);
 extern void copy_screen_span_entry(int, int, int, int, int);
 extern void handle_s_key(void);
 extern void f_6156(void);
@@ -91,12 +91,12 @@ extern short g_7b24;
 extern short g_7b26;
 extern short draw_idx;
 extern short page3;
-extern unsigned short g_7bfe;
-extern unsigned short g_7c00;
-extern short g_e4a8;
-extern short n_e4c2;
-extern void f_10369(void);
-extern void f_103b9(void);
+extern unsigned short mouse_btn;
+extern unsigned short mouse_btn_old;
+extern short mouse_sensitivity_x_o;
+extern short mouse_sensitivity_y_9;
+extern void query_mouse_sensitivity(void);
+extern void restore_mouse_driver_sensitivity(void);
 void f_80d8(void);
 void f_843a(void);
 extern unsigned char read_vga_pixel_entry(int, int);
@@ -112,17 +112,17 @@ extern void f_7bf4(void);
 unsigned char g_91ac[700];
 
 extern void f_85a4(void);
-extern void f_100fa(int, int, int, int);
-extern void f_10502(int, int);
-extern void f_10137_squghx(void);
+extern void set_mouse_bounds(int, int, int, int);
+extern void move_mouse_to(int, int);
+extern void update_mouse(void);
 void *memmove(void *, const void *, size_t);
 void f_788d(void);
 void f_7e12(void);
 void f_8585(void);
 void f_8f7e(void);
 void f_8fce(int x, int y);
-extern short g_e4ba;
-extern short g_e4bc;
+extern short mouse_x_sample_0_f;
+extern short mouse_y_sample_0;
 extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void write_dac_palette(void *, int, int, int);
 extern int g_68f4;
@@ -179,10 +179,10 @@ int f_6b02(void)
     g_947c = vga_state.bottom;
     vga_state.bottom = 0xa6;
     fade_pal((void *)x_dd40_xbukycw, 0, 0x3f, 8);
-    g_e4d0_wfmxdlyju = g_7c08_orxezsknd;
+    g_e4d0_wfmxdlyju = file_error_state;
     f_6156();
     f_61a6_vby();
-    *(unsigned char *)&g_7b34_cbzosabe &= 0xf8;
+    *(unsigned char *)&hook_flags_word &= 0xf8;
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
     f_7112_ngllzczwwhoqgnyg();
     f_7032();
@@ -208,7 +208,7 @@ L_6c3d:;
     f_7bd5();
     redraw_image_region(0, 0);
     if (image_buffer_error_code == 0) goto L_6c91;
-    exit_with_message(image_buffer_error_code, 0);
+    fatal_exit(image_buffer_error_code, 0);
 L_6c91:;
     show_page();
     if (g_94a8 <= 0) goto L_6cac;
@@ -238,7 +238,7 @@ L_6d4d:;
     if (audio_stream_flag != 0) goto L_6d61;
     submit_audio_request(0x6a);
 L_6d61:;
-    f_7e62(rand_rng(-0x10, 0x10) + (g_e4c6 + 4), (m_E4c4 + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)g_dd4c_ilunphmaok, (int)g_67b4, 1);
+    f_7e62(rand_rng(-0x10, 0x10) + (mouse_x_recent_average_1c + 4), (mouse_y_recent_average_g + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)g_dd4c_ilunphmaok, (int)g_67b4, 1);
     g_9470 = 0x19;
 L_6db7:;
     if (g_94a8 > 0) goto L_6dc9;
@@ -250,8 +250,8 @@ L_6dcb:;
     return f_6ee8();
 L_6dda:;
     if (g_9468 <= 0) goto L_6dfe;
-    if (g_e48b_3 == g_e48e_0g) goto L_6df9;
-    if (g_e48e_0g == 1) goto L_6dfe;
+    if (current_scan_code == current_key_code_01) goto L_6df9;
+    if (current_key_code_01 == 1) goto L_6dfe;
 L_6df9:;
     goto L_6c3d;
 L_6dfe:;
@@ -376,10 +376,10 @@ void f_7068(void)
 
 void f_7112_ngllzczwwhoqgnyg(void)
 {
-    f_100fa(4, 16, 4, 0x95);
-    f_10502(4, 0x52);
+    set_mouse_bounds(4, 16, 4, 0x95);
+    move_mouse_to(4, 0x52);
     for (g_8e20 = 0; g_8e20 < 4; ++g_8e20)
-        f_10137_squghx();
+        update_mouse();
     g_94a0 = 100;
     g_9490 = g_94a0;
     g_94b0 = g_9490;
@@ -389,7 +389,7 @@ void f_7184(void)
 {
     if (g_9490 > 0) goto L_71cb;
     g_9490 = 0;
-    f_100fa(g_e4ba, g_e4bc, g_e4ba, g_e4bc);
+    set_mouse_bounds(mouse_x_sample_0_f, mouse_y_sample_0, mouse_x_sample_0_f, mouse_y_sample_0);
 L_71cb:;
     if (g_9490 == g_94b0) goto L_72c0;
     g_94b0 = g_9490;
@@ -436,31 +436,31 @@ void f_73c0(void)
 {
     if (g_9490 <= 0) goto bottom;
     if (g_68f4 != 0) goto reset_gate;
-    if (g_7bfe == 3) goto reset_gate;
+    if (mouse_btn == 3) goto reset_gate;
     goto first_compare;
 reset_gate:
     goto reset_flag;
 first_compare:
-    if (g_7bfe == g_7c00) goto second_gate;
-    if ((g_7bfe & 1) == 1) goto first_side;
+    if (mouse_btn == mouse_btn_old) goto second_gate;
+    if ((mouse_btn & 1) == 1) goto first_side;
 second_gate:
     goto second_side;
 first_side:
     submit_audio_request(0x66);
-    f_78dd(0, 4, g_e4c6, m_E4c4, 0x40, 0, (int)g_6864);
-    g_e4ba -= 7;
+    f_78dd(0, 4, mouse_x_recent_average_1c, mouse_y_recent_average_g, 0x40, 0, (int)g_6864);
+    mouse_x_sample_0_f -= 7;
     g_68f4 = 1;
     goto second_exit;
 second_side:
-    if (g_7bfe == g_7c00) goto second_skip;
-    if (g_7bfe & 2) goto second_actions;
+    if (mouse_btn == mouse_btn_old) goto second_skip;
+    if (mouse_btn & 2) goto second_actions;
 second_skip:
     goto second_exit;
 second_actions:
     submit_audio_request(0x66);
-    f_78dd(0, 1, g_e4c6, m_E4c4, 0x60, 0x18, (int)g_6864);
-    f_78dd(0, 1, g_e4c6, m_E4c4, 0x60, -0x18, (int)g_6864);
-    g_e4ba -= 7;
+    f_78dd(0, 1, mouse_x_recent_average_1c, mouse_y_recent_average_g, 0x60, 0x18, (int)g_6864);
+    f_78dd(0, 1, mouse_x_recent_average_1c, mouse_y_recent_average_g, 0x60, -0x18, (int)g_6864);
+    mouse_x_sample_0_f -= 7;
     g_68f4 = 1;
 second_exit:
     goto bottom;
@@ -468,8 +468,8 @@ reset_flag:
     g_68f4 = 0;
 bottom:
     *(int *)image_buffer_cursor = (int)(g_dd4c_ilunphmaok + 0x35d6);
-    *(short *)(image_buffer_cursor + 4) = g_e4c6;
-    *(short *)(image_buffer_cursor + 6) = m_E4c4;
+    *(short *)(image_buffer_cursor + 4) = mouse_x_recent_average_1c;
+    *(short *)(image_buffer_cursor + 6) = mouse_y_recent_average_g;
     *(short *)(image_buffer_cursor + 8) = 0;
     image_buffer_cursor += 10;
 }
@@ -528,7 +528,7 @@ L_776c:;
 L_7771:;
     v_4 = (S18 *)(g_dd4c_ilunphmaok + 0x35d6);
     if (frames_intersect_inset(*v_4,
-               g_e4c6, m_E4c4,
+               mouse_x_recent_average_1c, mouse_y_recent_average_g,
                *v_8,
                (*(int *)(g_9478 + 4) >> 4) + 8, *(int *)(g_9478 + 8) >> 4,
                4, 4, 4, 4) != -1) goto L_7835;
@@ -596,8 +596,8 @@ void f_798c(void)
     --g_9498;
     if (g_9498 > 0) goto L_7af8;
     g_9498 = 7;
-    v_c = ((g_e4c6 - v_4) << 4) / 0x28;
-    v_10 = ((rand_rng(-0x1e, 0x1e) + (m_E4c4 - v_8)) << 4) / 0x28;
+    v_c = ((mouse_x_recent_average_1c - v_4) << 4) / 0x28;
+    v_10 = ((rand_rng(-0x1e, 0x1e) + (mouse_y_recent_average_g - v_8)) << 4) / 0x28;
     f_78dd(1, g_94ac, v_4, v_8, v_c, v_10, (int)g_687c);
     if (g_9490 <= 0) goto L_7aaf;
     submit_audio_request(0x58);

@@ -25,8 +25,8 @@ extern void set_audio_transfer_mode(int);
 extern void save_bios(void);
 extern void restore_bios(void);
 extern void clear_pal(void);
-extern void f_f6d9(void);
-extern int f_f6f8(int);
+extern void remove_keyboard_input_handler(void);
+extern int initialize_keyboard_manager(int);
 void launch_print_order_form(void);
 extern int ordering_information_text;
 extern int g_68f8_jwwqkwr;
@@ -39,11 +39,11 @@ extern int fade_start;
 extern int fade_end;
 extern short draw_idx;
 extern short page2;
-extern short g_7b34_cbzosabe;
-extern short g_7b3d_yrsiuxxd;
-extern unsigned short g_7bfe;
-extern unsigned short g_7c00;
-extern int g_7c08_orxezsknd;
+extern short hook_flags_word;
+extern short space_pressed;
+extern unsigned short mouse_btn;
+extern unsigned short mouse_btn_old;
+extern int file_error_state;
 extern int g_8428;
 extern unsigned char screen_palette_buffer[];
 extern unsigned char h_ab40_jbfxrqns[];
@@ -60,16 +60,16 @@ extern int h_df5c;
 extern int g_e1d8;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
-extern unsigned char g_e48b_3;
-extern unsigned char g_e48d_c;
-extern unsigned char g_e48e_0g;
-extern unsigned char g_e48f;
+extern unsigned char current_scan_code;
+extern unsigned char previous_ascii_key_2f;
+extern unsigned char current_key_code_01;
+extern unsigned char current_ascii;
 extern int g_e4c8;
 extern int g_e4d0_wfmxdlyju;
-extern unsigned g_e4d4;
-extern void f_100fa(int, int, int, int);
-extern int f_1085a_eklzmb(void *);
-extern void exit_with_message(unsigned, unsigned);
+extern unsigned current_file_name;
+extern void set_mouse_bounds(int, int, int, int);
+extern int load_next_file(void *);
+extern void fatal_exit(unsigned, unsigned);
 extern void write_dac_palette(void *, int, int, int);
 extern void handle_s_key(void);
 extern void refresh_video_pages(int);
@@ -111,8 +111,8 @@ extern void redraw_image_region(int, int);
 extern void show_page(void);
 extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
-extern short m_E4c4;
-extern short g_e4c6;
+extern short mouse_y_recent_average_g;
+extern short mouse_x_recent_average_1c;
 extern unsigned char g_6988[];
 extern unsigned char g_698c[];
 extern unsigned char g_6990[];
@@ -120,8 +120,8 @@ extern unsigned char g_6994[];
 extern int g_8e20;
 extern unsigned char g_e13f;
 extern unsigned char g_e46b;
-extern short g_e4ba;
-extern short g_e4bc;
+extern short mouse_x_sample_0_f;
+extern short mouse_y_sample_0;
 extern int invalid_code_text;
 extern int valid_code_text;
 extern unsigned char *enter_code_prompt;
@@ -175,12 +175,12 @@ extern int enjoy_yourself_text;
 extern int g_df64;
 extern int g_dF68;
 extern unsigned char g_e13d;
-extern void f_10137_squghx(void);
+extern void update_mouse(void);
 extern int saved_high_score_state;
 extern char *g_6924;
 extern int f_1065b(char *, void *);
 extern void validate_high_score_records(void);
-void f_107b6(int a, int b, int c);
+void write_file_buffer(int a, int b, int c);
 extern unsigned char high_score_factor_a[];
 extern unsigned char high_score_factor_b[];
 extern unsigned char high_score_checksums[];
@@ -276,7 +276,7 @@ extern int g_6b78;
 void write_level_number_glyphs(void);
 extern unsigned char *g_dee4;
 void f_61a6_vby(void);
-void f_10502(int, int);
+void move_mouse_to(int, int);
 extern char g_269c[];
 void draw_zero_padded_number(int, int, int, int, int);
 extern int g_8db0;
@@ -343,48 +343,48 @@ void update_falling_spells(void);
 
 void handle_gameplay_keypress(void)
 {
-    if (g_e48f == 0x2e && (g_e48e_0g & 0x80) == 0)
-        g_e48f = 0;
+    if (current_ascii == 0x2e && (current_key_code_01 & 0x80) == 0)
+        current_ascii = 0;
 
-    if (g_e48f == 0x2a && (g_e48e_0g & 0x80) == 0) {
+    if (current_ascii == 0x2a && (current_key_code_01 & 0x80) == 0) {
         g_e143_eayxx = (g_e143_eayxx / 10) * 10 + 9;
         g_dd78 = 0;
         g_ddc0 = 0;
-        g_e48f = 0;
+        current_ascii = 0;
     }
-    if (g_e48f == 0x2f && (g_e48e_0g & 0x80) == 0) {
+    if (current_ascii == 0x2f && (current_key_code_01 & 0x80) == 0) {
         g_dd78 = 0;
         g_ddc0 = 0;
-        g_e48f = 0;
+        current_ascii = 0;
     }
-    if (g_e48f >= 0x41 && g_e48f <= 0x5a && (g_e48e_0g & 0x80) == 0) {
-        spawn_falling_spell((unsigned char)(g_e48f - 0x41), 0, 0xa0, 0x64);
-        g_e48f = 0;
+    if (current_ascii >= 0x41 && current_ascii <= 0x5a && (current_key_code_01 & 0x80) == 0) {
+        spawn_falling_spell((unsigned char)(current_ascii - 0x41), 0, 0xa0, 0x64);
+        current_ascii = 0;
     }
-    if (g_e48f == 0x2f && (g_e48e_0g & 0x80) == 0) {
+    if (current_ascii == 0x2f && (current_key_code_01 & 0x80) == 0) {
         spawn_falling_spell(0x1a, 0, 0xa0, 0x64);
-        g_e48f = 0;
+        current_ascii = 0;
     }
-    if (g_e48f == 0x37 && (g_e48e_0g & 0x80) == 0) {
+    if (current_ascii == 0x37 && (current_key_code_01 & 0x80) == 0) {
         spawn_falling_spell(6, 0, 0xa0, 0x64);
-        g_e48f = 0;
+        current_ascii = 0;
     }
-    if (g_e48f == 0x39 && (g_e48e_0g & 0x80) == 0) {
+    if (current_ascii == 0x39 && (current_key_code_01 & 0x80) == 0) {
         spawn_falling_spell(0xf, 0, 0xa0, 0x64);
-        g_e48f = 0;
+        current_ascii = 0;
     }
-    if (g_e48f == 0x2e && (g_e48e_0g & 0x80) == 0) {
+    if (current_ascii == 0x2e && (current_key_code_01 & 0x80) == 0) {
         m_de5c[1] &= 0xfb;
         update_racket_movement_bounds();
         m_de5c[0] &= 0xbf;
         m_de5c[0] &= 0x7f;
-        g_e48f = 0;
+        current_ascii = 0;
     }
-    if (g_e48f == 0x47) {
-        g_e48f = 0;
+    if (current_ascii == 0x47) {
+        current_ascii = 0;
         g_dd78 = 0;
     }
-    if (g_e48e_0g == 0x1b) {
+    if (current_key_code_01 == 0x1b) {
         g_e143_eayxx = 0x3c;
         g_dd78 = 0;
     }

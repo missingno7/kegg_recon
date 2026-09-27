@@ -1,102 +1,103 @@
 .386P
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-        PUBLIC g_7dbc
-g_7dbc	DW 0
-        PUBLIC g_7dbe
-g_7dbe	DB 0
-        PUBLIC g_7dbf
-g_7dbf	DB 0
-        PUBLIC g_7dc0
-g_7dc0	DW 0
-        PUBLIC g_7dc2
-g_7dc2	DD 0
-        PUBLIC g_7dc6
-g_7dc6 LABEL DWORD
+        PUBLIC module_sound_io_base
+module_sound_io_base	DW 0
+        PUBLIC module_sound_irq_number
+module_sound_irq_number	DB 0
+        PUBLIC module_sound_dma_channel
+module_sound_dma_channel	DB 0
+        PUBLIC module_sample_rate
+module_sample_rate	DW 0
+        PUBLIC module_sample_period
+module_sample_period	DD 0
+        PUBLIC module_reserved_bytes
+module_reserved_bytes LABEL DWORD
         DB 0h, 0h
-        PUBLIC g_7dc8
-g_7dc8	DW 0
-        PUBLIC g_7dca
-g_7dca	DD 0
-        PUBLIC g_7dce
-g_7dce	DD 0
-        PUBLIC g_7dd2
-g_7dd2	DW 0
-        PUBLIC g_7dd4
-g_7dd4	DW 0
-        PUBLIC g_7dd6
-g_7dd6	DW 0
-        PUBLIC g_7dd8
-g_7dd8	DW 0
-        PUBLIC g_7dda
-g_7dda	DW 0
-        PUBLIC g_7ddc
-g_7ddc	DD 0
-        PUBLIC g_7de0
-g_7de0	DW 0
-        PUBLIC g_7de2
-g_7de2	DB 22 DUP (0)
-        PUBLIC g_7df8
-g_7df8	DB 22 DUP (0)
-        PUBLIC g_7e0e
-g_7e0e	DB 22 DUP (0)
-        PUBLIC g_7e24
-g_7e24	DB 22 DUP (0)
-        PUBLIC g_7e3a
-g_7e3a	DB 22 DUP (0)
-        PUBLIC g_7e50
-g_7e50	DB 22 DUP (0)
-        PUBLIC g_7e66
-g_7e66	DB 22 DUP (0)
-        PUBLIC g_7e7c
-g_7e7c	DB 22 DUP (0)
-        PUBLIC g_7e92
-g_7e92	DD g_7de2
-        DD g_7df8
-        DD g_7e0e
-        DD g_7e24
-        DD g_7e3a
-        DD g_7e50
-        DD g_7e66
-        DD g_7e7c
-        PUBLIC g_7eb2
-g_7eb2	DB 0
-        PUBLIC g_7eb3
-g_7eb3	DB 0
-        PUBLIC g_7eb4
-g_7eb4	DB 0
-        PUBLIC g_7eb5
-g_7eb5	DB 128 DUP (0)
-        PUBLIC g_7f35
-g_7f35	DD 0
-        PUBLIC g_7f39
-g_7f39	DB 0
-        PUBLIC g_7f3a
-g_7f3a	DB 0
-        PUBLIC g_7f3b
-g_7f3b	DB 0
-        PUBLIC g_7f3c
-g_7f3c	DB 48 DUP (0)
-        PUBLIC g_7f6c
-g_7f6c	DD 128 DUP (0)
-        PUBLIC g_816c
-g_816c	DD 32 DUP (0)
-        PUBLIC g_81ec
-g_81ec	DD 32 DUP (0)
-        PUBLIC g_826c
-g_826c	DD 32 DUP (0)
-        PUBLIC g_82ec
-g_82ec	DB 32 DUP (0)
-        PUBLIC g_830c
-g_830c	DD 0
-        PUBLIC g_8310
-g_8310	DD 0
+        PUBLIC module_pattern_order_count
+module_pattern_order_count	DW 0
+        PUBLIC module_song_data_pointer
+module_song_data_pointer	DD 0
+        PUBLIC module_sample_data_pointer
+module_sample_data_pointer	DD 0
+        PUBLIC module_pattern_count
+module_pattern_count	DW 0
+        PUBLIC module_pattern_index
+module_pattern_index	DW 0
+        PUBLIC module_sample_index
+module_sample_index	DW 0
+        PUBLIC module_row_index
+module_row_index	DW 0
+        PUBLIC module_tick_index
+module_tick_index	DW 0
+        PUBLIC module_tick_period
+module_tick_period	DD 0
+        PUBLIC module_channel_count
+module_channel_count	DW 0
+        PUBLIC module_channel_0_state
+module_channel_0_state	DB 22 DUP (0)
+        PUBLIC module_channel_1_state
+module_channel_1_state	DB 22 DUP (0)
+        PUBLIC module_channel_2_state
+module_channel_2_state	DB 22 DUP (0)
+        PUBLIC module_channel_3_state
+module_channel_3_state	DB 22 DUP (0)
+        PUBLIC module_channel_4_state
+module_channel_4_state	DB 22 DUP (0)
+        PUBLIC module_channel_5_state
+module_channel_5_state	DB 22 DUP (0)
+        PUBLIC module_channel_6_state
+module_channel_6_state	DB 22 DUP (0)
+        PUBLIC module_channel_7_state
+module_channel_7_state	DB 22 DUP (0)
+        PUBLIC module_channel_state_table
+module_channel_state_table	DD module_channel_0_state
+        DD module_channel_1_state
+        DD module_channel_2_state
+        DD module_channel_3_state
+        DD module_channel_4_state
+        DD module_channel_5_state
+        DD module_channel_6_state
+        DD module_channel_7_state
+        PUBLIC module_order_position
+module_order_position	DB 0
+        PUBLIC module_song_length
+module_song_length	DB 0
+        PUBLIC module_tick_counter
+module_tick_counter	DB 0
+        PUBLIC module_pattern_order_table
+module_pattern_order_table	DB 128 DUP (0)
+        PUBLIC module_current_pattern_row
+module_current_pattern_row	DD 0
+        PUBLIC module_ticks_per_row
+module_ticks_per_row	DB 0
+        PUBLIC module_row_tick_countdown
+module_row_tick_countdown	DB 0
+        PUBLIC module_tempo_bpm
+module_tempo_bpm	DB 0
+        PUBLIC module_channel_row_events
+module_channel_row_events	DB 48 DUP (0)
+        PUBLIC module_pattern_addresses
+module_pattern_addresses	DD 128 DUP (0)
+        PUBLIC module_sample_addresses
+module_sample_addresses	DD 32 DUP (0)
+        PUBLIC module_sample_loop_starts
+module_sample_loop_starts	DD 32 DUP (0)
+        PUBLIC module_sample_loop_ends
+module_sample_loop_ends	DD 32 DUP (0)
+        PUBLIC module_sample_volumes
+module_sample_volumes	DB 32 DUP (0)
+        PUBLIC module_player_error_code
+module_player_error_code	DD 0
+        PUBLIC module_player_timing_state
+module_player_timing_state	DD 0
 _DATA ENDS
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC f_11530
-f_11530 LABEL NEAR
-a_11530 PROC NEAR
+; Parse ProTracker MOD headers, sample tables, orders, and patterns.
+        PUBLIC load_protracker_module
+load_protracker_module LABEL NEAR
+parse_protracker_module PROC NEAR
 L_11530:
         enter 0, 0
 L_11534:
@@ -112,13 +113,13 @@ L_11540:
 L_11543:
         mov ch, byte ptr [ebp + 18h]
 L_11546:
-        mov word ptr [g_7dbc], dx
+        mov word ptr [module_sound_io_base], dx
 L_1154D:
-        mov byte ptr [g_7dbe], cl
+        mov byte ptr [module_sound_irq_number], cl
 L_11553:
-        mov byte ptr [g_7dbf], ch
+        mov byte ptr [module_sound_dma_channel], ch
 L_11559:
-        mov word ptr [g_7dc0], ax
+        mov word ptr [module_sample_rate], ax
 L_1155F:
         mov eax, 372C00h
 L_11564:
@@ -128,25 +129,25 @@ L_11566:
 L_1156A:
         shl eax, 10h
 L_1156D:
-        movzx ebx, word ptr [g_7dc0]
+        movzx ebx, word ptr [module_sample_rate]
 L_11574:
         div ebx
 L_11576:
-        mov dword ptr [g_7ddc], eax
+        mov dword ptr [module_tick_period], eax
 L_1157B:
-        mov dword ptr [g_830c], 602h
+        mov dword ptr [module_player_error_code], 602h
 L_11585:
         call L_115F1
 L_1158A:
         jb short L_115D2
 L_1158C:
-        mov dword ptr [g_830c], 603h
+        mov dword ptr [module_player_error_code], 603h
 L_11596:
         call L_118B6
 L_1159B:
         jb short L_115D2
 L_1159D:
-        mov dl, byte ptr [g_7f3b]
+        mov dl, byte ptr [module_tempo_bpm]
 L_115A3:
         call L_119D7
 L_115A8:
@@ -154,25 +155,25 @@ L_115A8:
 L_115AD:
         call L_11D12
 L_115B2:
-        mov dword ptr [g_830c], 0
+        mov dword ptr [module_player_error_code], 0
 L_115BC:
         call L_11BCE
 L_115C1:
         jae short L_115D2
 L_115C3:
-        mov dword ptr [g_830c], 604h
+        mov dword ptr [module_player_error_code], 604h
 L_115CD:
         call L_115DA
 L_115D2:
         popad
 L_115D3:
-        mov eax, dword ptr [g_830c]
+        mov eax, dword ptr [module_player_error_code]
 L_115D8:
         leave
 L_115D9:
         ret
-        PUBLIC f_115da
-f_115da LABEL NEAR
+        PUBLIC stop_protracker_module
+stop_protracker_module LABEL NEAR
 L_115DA:
         pushad
 L_115DB:
@@ -190,7 +191,7 @@ L_115F0:
 L_115F1:
         pushad
 L_115F2:
-        mov word ptr [g_7de0], 4
+        mov word ptr [module_channel_count], 4
 L_115FB:
         cmp dword ptr [edi + 438h], 2E4B2E4Dh
 L_11605:
@@ -200,7 +201,7 @@ L_11607:
 L_11611:
         je short L_1162E
 L_11613:
-        mov word ptr [g_7de0], 8
+        mov word ptr [module_channel_count], 8
 L_1161C:
         cmp dword ptr [edi + 438h], 4E484338h
 L_11626:
@@ -210,19 +211,19 @@ L_11628:
 L_11629:
         jmp near ptr L_116FE
 L_1162E:
-        mov byte ptr [g_7eb2], 0FFh
+        mov byte ptr [module_order_position], 0FFh
 L_11635:
-        mov byte ptr [g_7eb4], 40h
+        mov byte ptr [module_tick_counter], 40h
 L_1163C:
-        mov byte ptr [g_7f39], 6
+        mov byte ptr [module_ticks_per_row], 6
 L_11643:
-        mov byte ptr [g_7f3a], 0
+        mov byte ptr [module_row_tick_countdown], 0
 L_1164A:
-        mov byte ptr [g_7f3b], 7Dh
+        mov byte ptr [module_tempo_bpm], 7Dh
 L_11651:
         mov al, byte ptr [edi + 3B6h]
 L_11657:
-        mov byte ptr [g_7eb3], al
+        mov byte ptr [module_song_length], al
 L_1165C:
         mov ecx, 80h
 L_11661:
@@ -232,7 +233,7 @@ L_11663:
 L_11665:
         mov al, byte ptr [edi + ebx + 3B8h]
 L_1166C:
-        mov byte ptr [ebx + g_7eb5], al
+        mov byte ptr [ebx + module_pattern_order_table], al
 L_11672:
         cmp al, ah
 L_11674:
@@ -250,7 +251,7 @@ L_1167E:
 L_1167F:
         xor ebx, ebx
 L_11681:
-        movzx eax, word ptr [g_7de0]
+        movzx eax, word ptr [module_channel_count]
 L_11688:
         shl eax, 8
 L_1168B:
@@ -258,7 +259,7 @@ L_1168B:
 L_1168D:
         add esi, 43Ch
 L_11693:
-        mov dword ptr [ebx*4 + g_7f6c], esi
+        mov dword ptr [ebx*4 + module_pattern_addresses], esi
 L_1169A:
         add esi, eax
 L_1169C:
@@ -276,7 +277,7 @@ L_116A9:
 L_116AA:
         mov al, byte ptr [edi + 19h]
 L_116AD:
-        mov byte ptr [ebx + g_82ec], al
+        mov byte ptr [ebx + module_sample_volumes], al
 L_116B3:
         movzx eax, word ptr [edi + 16h]
 L_116B7:
@@ -316,11 +317,11 @@ L_116DC:
 L_116DE:
         add ebp, esi
 L_116E0:
-        mov dword ptr [ebx*4 + g_816c], esi
+        mov dword ptr [ebx*4 + module_sample_addresses], esi
 L_116E7:
-        mov dword ptr [ebx*4 + g_826c], edx
+        mov dword ptr [ebx*4 + module_sample_loop_ends], edx
 L_116EE:
-        mov dword ptr [ebx*4 + g_81ec], ebp
+        mov dword ptr [ebx*4 + module_sample_loop_starts], ebp
 L_116F5:
         mov esi, eax
 L_116F7:
@@ -338,11 +339,11 @@ L_116FF:
 L_11700:
         pushad
 L_11701:
-        dec byte ptr [g_7f3a]
+        dec byte ptr [module_row_tick_countdown]
 L_11707:
         jle short L_11724
 L_11709:
-        mov esi, OFFSET g_7f3c
+        mov esi, OFFSET module_channel_row_events
 L_1170E:
         xor ebx, ebx
 L_11710:
@@ -352,7 +353,7 @@ L_11715:
 L_11718:
         inc ebx
 L_11719:
-        cmp bx, word ptr [g_7de0]
+        cmp bx, word ptr [module_channel_count]
 L_11720:
         jb short L_11710
 L_11722:
@@ -360,41 +361,41 @@ L_11722:
 L_11723:
         ret
 L_11724:
-        mov al, byte ptr [g_7f39]
+        mov al, byte ptr [module_ticks_per_row]
 L_11729:
-        mov byte ptr [g_7f3a], al
+        mov byte ptr [module_row_tick_countdown], al
 L_1172E:
-        inc byte ptr [g_7eb4]
+        inc byte ptr [module_tick_counter]
 L_11734:
-        cmp byte ptr [g_7eb4], 40h
+        cmp byte ptr [module_tick_counter], 40h
 L_1173B:
         jb short L_11770
 L_1173D:
         xor ebx, ebx
 L_1173F:
-        mov byte ptr [g_7eb4], bl
+        mov byte ptr [module_tick_counter], bl
 L_11745:
-        mov bl, byte ptr [g_7eb2]
+        mov bl, byte ptr [module_order_position]
 L_1174B:
         inc bl
 L_1174D:
-        cmp bl, byte ptr [g_7eb3]
+        cmp bl, byte ptr [module_song_length]
 L_11753:
         jb short L_11757
 L_11755:
         xor bl, bl
 L_11757:
-        mov byte ptr [g_7eb2], bl
+        mov byte ptr [module_order_position], bl
 L_1175D:
-        mov bl, byte ptr [ebx + g_7eb5]
+        mov bl, byte ptr [ebx + module_pattern_order_table]
 L_11763:
-        mov edi, dword ptr [ebx*4 + g_7f6c]
+        mov edi, dword ptr [ebx*4 + module_pattern_addresses]
 L_1176A:
-        mov dword ptr [g_7f35], edi
+        mov dword ptr [module_current_pattern_row], edi
 L_11770:
-        mov edi, dword ptr [g_7f35]
+        mov edi, dword ptr [module_current_pattern_row]
 L_11776:
-        mov esi, OFFSET g_7f3c
+        mov esi, OFFSET module_channel_row_events
 L_1177B:
         xor ebx, ebx
 L_1177D:
@@ -406,11 +407,11 @@ L_11785:
 L_11788:
         inc ebx
 L_11789:
-        cmp bx, word ptr [g_7de0]
+        cmp bx, word ptr [module_channel_count]
 L_11790:
         jb short L_1177D
 L_11792:
-        mov dword ptr [g_7f35], edi
+        mov dword ptr [module_current_pattern_row], edi
 L_11798:
         popad
 L_11799:
@@ -434,7 +435,7 @@ L_117AB:
 L_117AE:
         movzx eax, al
 L_117B1:
-        mov al, byte ptr [eax + g_82ec]
+        mov al, byte ptr [eax + module_sample_volumes]
 L_117B7:
         mov byte ptr [esi + 3], al
 L_117BA:
@@ -462,11 +463,11 @@ L_117D9:
 L_117DA:
         movzx eax, byte ptr [esi + 2]
 L_117DE:
-        mov edx, dword ptr [eax*4 + g_816c]
+        mov edx, dword ptr [eax*4 + module_sample_addresses]
 L_117E5:
-        mov esi, dword ptr [eax*4 + g_81ec]
+        mov esi, dword ptr [eax*4 + module_sample_loop_starts]
 L_117EC:
-        mov edi, dword ptr [eax*4 + g_826c]
+        mov edi, dword ptr [eax*4 + module_sample_loop_ends]
 L_117F3:
         call L_1199C
 L_117F8:
@@ -524,13 +525,13 @@ L_11836:
 L_11838:
         jae short L_11845
 L_1183A:
-        mov byte ptr [g_7f39], al
+        mov byte ptr [module_ticks_per_row], al
 L_1183F:
-        mov byte ptr [g_7f3a], al
+        mov byte ptr [module_row_tick_countdown], al
 L_11844:
         ret
 L_11845:
-        mov byte ptr [g_7f3b], al
+        mov byte ptr [module_tempo_bpm], al
 L_1184A:
         mov dl, al
 L_1184C:
@@ -540,13 +541,13 @@ L_11851:
 L_11852:
         dec al
 L_11854:
-        mov byte ptr [g_7eb2], al
+        mov byte ptr [module_order_position], al
 L_11859:
-        mov byte ptr [g_7eb4], 40h
+        mov byte ptr [module_tick_counter], 40h
 L_11860:
         ret
 L_11861:
-        mov byte ptr [g_7eb4], 40h
+        mov byte ptr [module_tick_counter], 40h
 L_11868:
         ret
 L_11869:
@@ -592,11 +593,11 @@ L_11894:
 L_11895:
         movzx eax, byte ptr [esi + 2]
 L_11899:
-        add edx, dword ptr [eax*4 + g_816c]
+        add edx, dword ptr [eax*4 + module_sample_addresses]
 L_118A0:
-        mov esi, dword ptr [eax*4 + g_81ec]
+        mov esi, dword ptr [eax*4 + module_sample_loop_starts]
 L_118A7:
-        mov edi, dword ptr [eax*4 + g_826c]
+        mov edi, dword ptr [eax*4 + module_sample_loop_ends]
 L_118AE:
         call L_1199C
 L_118B3:
@@ -610,13 +611,13 @@ L_118B6:
 L_118B7:
         xor ax, ax
 L_118BA:
-        mov word ptr [g_7dd4], ax
+        mov word ptr [module_pattern_index], ax
 L_118C0:
-        mov word ptr [g_7dd8], ax
+        mov word ptr [module_row_index], ax
 L_118C6:
-        mov word ptr [g_7dda], ax
+        mov word ptr [module_tick_index], ax
 L_118CC:
-        mov word ptr [g_7dc8], ax
+        mov word ptr [module_pattern_order_count], ax
 L_118D2:
         mov ax, 100h
 L_118D6:
@@ -626,7 +627,7 @@ L_118DA:
 L_118DC:
         jb near ptr L_1197C
 L_118E2:
-        mov word ptr [g_7dc8], dx
+        mov word ptr [module_pattern_order_count], dx
 L_118E9:
         mov ecx, 140h
 L_118EE:
@@ -654,17 +655,17 @@ L_1190C:
 L_11912:
         and esi, 0FFFFFF00h
 L_11918:
-        mov dword ptr [g_7dca], esi
+        mov dword ptr [module_song_data_pointer], esi
 L_1191E:
-        mov dword ptr [g_7dce], edi
+        mov dword ptr [module_sample_data_pointer], edi
 L_11924:
         mov ecx, 120h
 L_11929:
-        mov word ptr [g_7dd2], cx
+        mov word ptr [module_pattern_count], cx
 L_11930:
-        mov [g_8310], es
+        mov [module_player_timing_state], es
 L_11936:
-        push dword ptr [g_8310]
+        push dword ptr [module_player_timing_state]
 L_1193C:
         mov ax, ds
 L_1193F:
@@ -676,13 +677,13 @@ L_11942:
 L_11944:
         rep stosb
 L_11946:
-        pop dword ptr [g_8310]
+        pop dword ptr [module_player_timing_state]
 L_1194C:
-        mov es, [g_8310]
+        mov es, [module_player_timing_state]
 L_11952:
-        mov edi, dword ptr [g_7dca]
+        mov edi, dword ptr [module_song_data_pointer]
 L_11958:
-        mov cx, word ptr [g_7de0]
+        mov cx, word ptr [module_channel_count]
 L_1195F:
         shr cx, 3
 L_11963:
@@ -718,7 +719,7 @@ L_1197E:
 L_1197F:
         mov ax, 101h
 L_11983:
-        mov dx, word ptr [g_7dc8]
+        mov dx, word ptr [module_pattern_order_count]
 L_1198A:
         test dx, dx
 L_1198D:
@@ -726,7 +727,7 @@ L_1198D:
 L_1198F:
         int 31h
 L_11991:
-        mov word ptr [g_7dc8], 0
+        mov word ptr [module_pattern_order_count], 0
 L_1199A:
         popad
 L_1199B:
@@ -734,7 +735,7 @@ L_1199B:
 L_1199C:
         push ebx
 L_1199D:
-        mov ebx, dword ptr [ebx*4 + g_7e92]
+        mov ebx, dword ptr [ebx*4 + module_channel_state_table]
 L_119A4:
         mov dword ptr [ebx], edx
 L_119A6:
@@ -754,9 +755,9 @@ L_119B0:
 L_119B1:
         jecxz L_119C6
 L_119B3:
-        mov ebx, dword ptr [ebx*4 + g_7e92]
+        mov ebx, dword ptr [ebx*4 + module_channel_state_table]
 L_119BA:
-        mov eax, dword ptr [g_7ddc]
+        mov eax, dword ptr [module_tick_period]
 L_119BF:
         xor edx, edx
 L_119C1:
@@ -774,7 +775,7 @@ L_119C9:
 L_119CA:
         push ebx
 L_119CB:
-        mov ebx, dword ptr [ebx*4 + g_7e92]
+        mov ebx, dword ptr [ebx*4 + module_channel_state_table]
 L_119D2:
         mov byte ptr [ebx + 14h], al
 L_119D5:
@@ -792,7 +793,7 @@ L_119DA:
 L_119DC:
         xor cl, cl
 L_119DE:
-        mov ax, word ptr [g_7dc0]
+        mov ax, word ptr [module_sample_rate]
 L_119E4:
         mov dx, 280h
 L_119E8:
@@ -800,7 +801,7 @@ L_119E8:
 L_119EB:
         div cx
 L_119EE:
-        mov word ptr [g_7dda], ax
+        mov word ptr [module_tick_index], ax
 L_119F4:
         pop edx
 L_119F5:
@@ -810,23 +811,23 @@ L_119F6:
 L_119F7:
         ret
 L_119F8:
-        movzx edi, word ptr [g_7dd4]
+        movzx edi, word ptr [module_pattern_index]
 L_119FF:
-        add edi, dword ptr [g_7dce]
+        add edi, dword ptr [module_sample_data_pointer]
 L_11A05:
-        movzx ecx, word ptr [g_7dd2]
+        movzx ecx, word ptr [module_pattern_count]
 L_11A0C:
         shr ecx, 1
 L_11A0E:
-        mov word ptr [g_7dd6], cx
+        mov word ptr [module_sample_index], cx
 L_11A15:
-        xor word ptr [g_7dd4], cx
+        xor word ptr [module_pattern_index], cx
 L_11A1C:
         push edi
 L_11A1D:
-        mov [g_8310], es
+        mov [module_player_timing_state], es
 L_11A23:
-        push dword ptr [g_8310]
+        push dword ptr [module_player_timing_state]
 L_11A29:
         mov ax, ds
 L_11A2C:
@@ -838,25 +839,25 @@ L_11A30:
 L_11A31:
         rep stosb
 L_11A33:
-        pop dword ptr [g_8310]
+        pop dword ptr [module_player_timing_state]
 L_11A39:
-        mov es, [g_8310]
+        mov es, [module_player_timing_state]
 L_11A3F:
         pop edi
 L_11A40:
-        cmp word ptr [g_7dd8], 0
+        cmp word ptr [module_row_index], 0
 L_11A48:
         jg short L_11A5C
 L_11A4A:
         call L_11700
 L_11A4F:
-        mov ax, word ptr [g_7dda]
+        mov ax, word ptr [module_tick_index]
 L_11A55:
-        add word ptr [g_7dd8], ax
+        add word ptr [module_row_index], ax
 L_11A5C:
-        mov ax, word ptr [g_7dd6]
+        mov ax, word ptr [module_sample_index]
 L_11A62:
-        mov cx, word ptr [g_7dd8]
+        mov cx, word ptr [module_row_index]
 L_11A69:
         add cx, 3Fh
 L_11A6D:
@@ -868,15 +869,15 @@ L_11A74:
 L_11A76:
         mov ax, cx
 L_11A79:
-        sub word ptr [g_7dd6], ax
+        sub word ptr [module_sample_index], ax
 L_11A80:
-        sub word ptr [g_7dd8], ax
+        sub word ptr [module_row_index], ax
 L_11A87:
         movzx ecx, ax
 L_11A8A:
-        mov ebx, OFFSET g_7de2
+        mov ebx, OFFSET module_channel_0_state
 L_11A8F:
-        mov dx, word ptr [g_7de0]
+        mov dx, word ptr [module_channel_count]
 L_11A96:
         push ebx
 L_11A97:
@@ -904,7 +905,7 @@ L_11AA8:
 L_11AAA:
         add edi, ecx
 L_11AAC:
-        cmp word ptr [g_7dd6], 0
+        cmp word ptr [module_sample_index], 0
 L_11AB4:
         jg short L_11A40
 L_11AB6:
@@ -940,7 +941,7 @@ L_11ADE:
 L_11AE1:
         and ebx, 0FF00h
 L_11AE7:
-        add ebx, dword ptr [g_7dca]
+        add ebx, dword ptr [module_song_data_pointer]
 L_11AED:
         test ecx, 7
 L_11AF3:
@@ -1085,7 +1086,7 @@ L_11B7D:
 L_11B7E:
         push edx
 L_11B7F:
-        mov dx, word ptr [g_7dbc]
+        mov dx, word ptr [module_sound_io_base]
 L_11B86:
         add dx, 0Ch
 L_11B8A:
@@ -1113,7 +1114,7 @@ L_11B9C:
 L_11B9D:
         pushad
 L_11B9E:
-        mov dx, word ptr [g_7dbc]
+        mov dx, word ptr [module_sound_io_base]
 L_11BA5:
         add dx, 6
 L_11BA9:
@@ -1177,7 +1178,7 @@ L_11BE4:
 L_11BE8:
         mul ax
 L_11BEB:
-        div word ptr [g_7dc0]
+        div word ptr [module_sample_rate]
 L_11BF2:
         neg ax
 L_11BF5:
@@ -1187,7 +1188,7 @@ L_11BFA:
 L_11BFC:
         call L_11B7C
 L_11C01:
-        mov ax, word ptr [g_7dd2]
+        mov ax, word ptr [module_pattern_count]
 L_11C07:
         shr ax, 1
 L_11C0A:
@@ -1219,7 +1220,7 @@ L_11C29:
 L_11C2A:
         pushad
 L_11C2B:
-        mov al, byte ptr [g_7dbf]
+        mov al, byte ptr [module_sound_dma_channel]
 L_11C30:
         or al, 4
 L_11C32:
@@ -1231,7 +1232,7 @@ L_11C35:
 L_11C36:
         pushad
 L_11C37:
-        mov cl, byte ptr [g_7dbf]
+        mov cl, byte ptr [module_sound_dma_channel]
 L_11C3D:
         mov al, cl
 L_11C3F:
@@ -1251,7 +1252,7 @@ L_11C4B:
 L_11C4F:
         add dx, dx
 L_11C52:
-        mov eax, dword ptr [g_7dce]
+        mov eax, dword ptr [module_sample_data_pointer]
 L_11C57:
         out dx, al
 L_11C58:
@@ -1261,7 +1262,7 @@ L_11C5A:
 L_11C5B:
         inc dx
 L_11C5D:
-        mov ax, word ptr [g_7dd2]
+        mov ax, word ptr [module_pattern_count]
 L_11C63:
         dec ax
 L_11C65:
@@ -1297,7 +1298,7 @@ L_11C82:
 L_11C83:
         push edx
 L_11C84:
-        movzx dx, byte ptr [g_7dbf]
+        movzx dx, byte ptr [module_sound_dma_channel]
 L_11C8C:
         add dx, dx
 L_11C8F:
@@ -1333,7 +1334,7 @@ L_11CAD:
 L_11CAF:
         neg ax
 L_11CB2:
-        add ax, word ptr [g_7dd2]
+        add ax, word ptr [module_pattern_count]
 L_11CB9:
         dec ax
 L_11CBB:
@@ -1357,7 +1358,7 @@ L_11CC7:
 L_11CC9:
         mov dx, 1
 L_11CCD:
-        mov cl, byte ptr [g_7dbe]
+        mov cl, byte ptr [module_sound_irq_number]
 L_11CD3:
         shl dx, cl
 L_11CD6:
@@ -1381,7 +1382,7 @@ L_11CE7:
 L_11CE9:
         add al, 8
 L_11CEB:
-        lds edx, fword ptr [g_7dc2]
+        lds edx, fword ptr [module_sample_period]
 L_11CF1:
         xor ebx, ebx
 L_11CF3:
@@ -1401,9 +1402,9 @@ L_11CFF:
 L_11D01:
         xor ebx, ebx
 L_11D03:
-        mov dword ptr [g_7dc2], ebx
+        mov dword ptr [module_sample_period], ebx
 L_11D09:
-        mov word ptr [g_7dc6], bx
+        mov word ptr [module_reserved_bytes], bx
 L_11D10:
         popad
 L_11D11:
@@ -1421,7 +1422,7 @@ L_11D1C:
 L_11D1D:
         mov ah, 35h
 L_11D1F:
-        mov al, byte ptr [g_7dbe]
+        mov al, byte ptr [module_sound_irq_number]
 L_11D24:
         cmp al, 8
 L_11D26:
@@ -1433,13 +1434,13 @@ L_11D2A:
 L_11D2C:
         int 21h
 L_11D2E:
-        mov dword ptr [g_7dc2], ebx
+        mov dword ptr [module_sample_period], ebx
 L_11D34:
-        mov [g_7dc6], es
+        mov [module_reserved_bytes], es
 L_11D3A:
         mov ah, 25h
 L_11D3C:
-        mov al, byte ptr [g_7dbe]
+        mov al, byte ptr [module_sound_irq_number]
 L_11D41:
         cmp al, 8
 L_11D43:
@@ -1453,7 +1454,7 @@ L_11D49:
 L_11D4C:
         mov ds, edx
 L_11D4E:
-        mov edx, OFFSET f_11d7e
+        mov edx, OFFSET protracker_irq_handler
 L_11D53:
         int 21h
 L_11D55:
@@ -1473,7 +1474,7 @@ L_11D61:
 L_11D63:
         mov dx, 1
 L_11D67:
-        mov cl, byte ptr [g_7dbe]
+        mov cl, byte ptr [module_sound_irq_number]
 L_11D6D:
         shl dx, cl
 L_11D70:
@@ -1490,8 +1491,8 @@ L_11D7C:
         popad
 L_11D7D:
         ret
-        PUBLIC f_11d7e
-f_11d7e LABEL DWORD
+        PUBLIC protracker_irq_handler
+protracker_irq_handler LABEL DWORD
 L_11D7E:
         push eax
 L_11D7F:
@@ -1509,7 +1510,7 @@ L_11D8A:
 L_11D8B:
         push edx
 L_11D8C:
-        mov dx, word ptr [g_7dbc]
+        mov dx, word ptr [module_sound_io_base]
 L_11D93:
         add dx, 0Eh
 L_11D97:
@@ -1539,7 +1540,7 @@ L_11DB1:
 L_11DB3:
         loopne L_11DB0
 L_11DB5:
-        mov ax, word ptr [g_7dd2]
+        mov ax, word ptr [module_pattern_count]
 L_11DBB:
         shr ax, 1
 L_11DBE:
@@ -1555,7 +1556,7 @@ L_11DC7:
 L_11DC9:
         loopne L_11DC6
 L_11DCB:
-        mov ax, word ptr [g_7dd2]
+        mov ax, word ptr [module_pattern_count]
 L_11DD1:
         shr ax, 1
 L_11DD4:
@@ -1573,7 +1574,7 @@ L_11DDB:
 L_11DDC:
         mov al, 20h
 L_11DDE:
-        cmp byte ptr [g_7dbe], 8
+        cmp byte ptr [module_sound_irq_number], 8
 L_11DE5:
         jl short L_11DE9
 L_11DE7:
@@ -1597,6 +1598,6 @@ L_11DF6:
 L_11DF7:
         iretd
 
-a_11530 ENDP
+parse_protracker_module ENDP
 _TEXT ENDS
         END

@@ -35,8 +35,8 @@ extern void set_audio_transfer_mode(int);
 extern void save_bios(void);
 extern void restore_bios(void);
 extern void clear_pal(void);
-extern void f_f6d9(void);
-extern int f_f6f8(int);
+extern void remove_keyboard_input_handler(void);
+extern int initialize_keyboard_manager(int);
 void launch_print_order_form(void);
 extern int ordering_information_text;
 extern int g_68f8_jwwqkwr;
@@ -49,11 +49,11 @@ extern int fade_start;
 extern int fade_end;
 extern short draw_idx;
 extern short page2;
-extern short g_7b34_cbzosabe;
-extern short g_7b3d_yrsiuxxd;
-extern unsigned short g_7bfe;
-extern unsigned short g_7c00;
-extern int g_7c08_orxezsknd;
+extern short hook_flags_word;
+extern short space_pressed;
+extern unsigned short mouse_btn;
+extern unsigned short mouse_btn_old;
+extern int file_error_state;
 extern int g_8428;
 extern unsigned char screen_palette_buffer[];
 extern unsigned char h_ab40_jbfxrqns[];
@@ -70,16 +70,16 @@ extern int h_df5c;
 extern int g_e1d8;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
-extern unsigned char g_e48b_3;
-extern unsigned char g_e48d_c;
-extern unsigned char g_e48e_0g;
-extern unsigned char g_e48f;
+extern unsigned char current_scan_code;
+extern unsigned char previous_ascii_key_2f;
+extern unsigned char current_key_code_01;
+extern unsigned char current_ascii;
 extern int g_e4c8;
 extern int g_e4d0_wfmxdlyju;
-extern unsigned g_e4d4;
-extern void f_100fa(int, int, int, int);
-extern int f_1085a_eklzmb(void *);
-extern void exit_with_message(unsigned, unsigned);
+extern unsigned current_file_name;
+extern void set_mouse_bounds(int, int, int, int);
+extern int load_next_file(void *);
+extern void fatal_exit(unsigned, unsigned);
 extern void write_dac_palette(void *, int, int, int);
 extern void handle_s_key(void);
 extern void refresh_video_pages(int);
@@ -121,8 +121,8 @@ extern void redraw_image_region(int, int);
 extern void show_page(void);
 extern int next_packed_table_value(void *, void *);
 extern unsigned char *image_buffer_cursor;
-extern short m_E4c4;
-extern short g_e4c6;
+extern short mouse_y_recent_average_g;
+extern short mouse_x_recent_average_1c;
 extern unsigned char g_6988[];
 extern unsigned char g_698c[];
 extern unsigned char g_6990[];
@@ -130,8 +130,8 @@ extern unsigned char g_6994[];
 extern int g_8e20;
 extern unsigned char g_e13f;
 extern unsigned char g_e46b;
-extern short g_e4ba;
-extern short g_e4bc;
+extern short mouse_x_sample_0_f;
+extern short mouse_y_sample_0;
 extern int invalid_code_text;
 extern int valid_code_text;
 extern unsigned char *enter_code_prompt;
@@ -181,12 +181,12 @@ extern int enjoy_yourself_text;
 extern int g_df64;
 extern int g_dF68;
 extern unsigned char g_e13d;
-extern void f_10137_squghx(void);
+extern void update_mouse(void);
 extern int saved_high_score_state;
 extern char *g_6924;
 extern int f_1065b(char *, void *);
 extern void validate_high_score_records(void);
-void f_107b6(int a, int b, int c);
+void write_file_buffer(int a, int b, int c);
 extern unsigned char high_score_factor_a[];
 extern unsigned char high_score_factor_b[];
 extern unsigned char high_score_checksums[];
@@ -282,7 +282,7 @@ extern int g_6b78;
 void write_level_number_glyphs(void);
 extern unsigned char *g_dee4;
 void f_61a6_vby(void);
-void f_10502(int, int);
+void move_mouse_to(int, int);
 extern char g_269c[];
 void draw_zero_padded_number(int, int, int, int, int);
 extern int g_8db0;
@@ -359,7 +359,7 @@ void reset_lvl(void)
     f_7f8a();
     copy_screen_span_entry(page3, 0, page2, 0, vga_state.buffer_size);
     if (image_buffer_error_code != 0)
-        exit_with_message(image_buffer_error_code, 0);
+        fatal_exit(image_buffer_error_code, 0);
 }
 
 void load_and_draw_level(void)
@@ -417,29 +417,29 @@ int wait_level(void)
     int start_result;
 
     init_stage_palette();
-    g_7b34_cbzosabe = ((*(short *)&g_7b34_cbzosabe) & 0xfffe) & 0xfffd;
-    g_7b3d_yrsiuxxd = 0;
+    hook_flags_word = ((*(short *)&hook_flags_word) & 0xfffe) & 0xfffd;
+    space_pressed = 0;
     set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
 
 retry:
-        f_10137_squghx();
+        update_mouse();
         f_8345_wsdytbf();
         f_83b1();
         redraw_image_region(0, 0);
         if (image_buffer_error_code != 0)
-            exit_with_message(image_buffer_error_code, 0);
+            fatal_exit(image_buffer_error_code, 0);
         show_page();
         f_9d40(1);
         handle_s_key();
-        if (g_7b3d_yrsiuxxd != 0) goto path_c6;
-        if (g_7bfe == g_7c00) goto path_c4;
-        if (g_7bfe != 0) goto path_c6;
+        if (space_pressed != 0) goto path_c6;
+        if (mouse_btn == mouse_btn_old) goto path_c4;
+        if (mouse_btn != 0) goto path_c6;
 path_c4:
         goto path_c8;
 path_c6:
         goto path_d1;
 path_c8:
-        if (g_e48e_0g != 1) goto path_d3;
+        if (current_key_code_01 != 1) goto path_d3;
 path_d1:
         goto path_dc;
 path_d3:
@@ -487,7 +487,7 @@ void entry_prompt(void)
         u_e150 = (unsigned char *)&g_6b78;
         write_level_number_glyphs();
         if (image_buffer_error_code != 0)
-            exit_with_message(image_buffer_error_code, 0);
+            fatal_exit(image_buffer_error_code, 0);
         f_84a0(0x32);
     }
     copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
@@ -509,7 +509,7 @@ void redraw_level_state(void)
     f_61a6_vby();
     copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
     copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    f_10502(((int *)g_dee4)[0], ((int *)g_dee4)[1]);
+    move_mouse_to(((int *)g_dee4)[0], ((int *)g_dee4)[1]);
 }
 
 void prepare_game_asset_read(void)

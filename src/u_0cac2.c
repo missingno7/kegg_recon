@@ -13,31 +13,31 @@ struct SoundBlasterConfig { unsigned char bytes[57]; };
 struct SoundBlasterIrqChoices { unsigned char bytes[7]; };
 struct SoundBlasterDmaChoices { unsigned char bytes[4]; };
 struct DPMIMapRecord { unsigned char opaque[0x2d]; char *allocation; unsigned int base; char *mapped; };
-extern unsigned char g_7db2;
-extern unsigned char g_7db3;
+extern unsigned char sound_blaster_response_byte;
+extern unsigned char sound_blaster_command_byte;
 extern int select_sound_blaster_port(void);
 extern int detect_sound_blaster_irq(void);
 extern int detect_sound_blaster_dma(void);
-extern int f_1144d(void);
-extern int f_11420(void);
-extern int f_113f8(void);
-extern int f_11485(void);
+extern int reset_sound_blaster_dsp(void);
+extern int write_sound_blaster_byte(void);
+extern int read_sound_blaster_byte(void);
+extern int acknowledge_sound_blaster_irq(void);
 extern void f_d656(unsigned char *, int);
 extern int f_da01(unsigned char *);
 extern void f_d7b8(unsigned char *);
 extern void __interrupt sound_test_irq_handler(void);
 extern unsigned int dpmi_linear_address_value;
-extern unsigned int g_7db4;
-extern short g_7db8;
-extern unsigned char g_7dba;
-extern unsigned char g_7dbb;
+extern unsigned int sound_dma_buffer_address;
+extern short sound_dma_transfer_count;
+extern unsigned char sound_dma_mode_bits;
+extern unsigned char sound_dma_channel;
 extern unsigned int allocate_dpmi_memory(int);
 extern void free_dpmi_memory(unsigned int);
-extern void f_11494(void);
-extern void f_114a0(void);
-extern void f_11377(unsigned int);
+extern void mask_sound_dma_channel(void);
+extern void program_sound_dma_channel(void);
+extern void set_sound_blaster_sample_rate(unsigned int);
 extern void copy_ds_to_es(void);
-extern void f_113bd(void);
+extern void send_pic_end_of_interrupt(void);
 extern unsigned int g_e300;
 extern unsigned int g_e304;
 extern unsigned int g_1258;
@@ -102,9 +102,9 @@ int detect_sound_blaster(void) {
         if (detect_sound_blaster_irq() == 0) {
             if (detect_sound_blaster_dma() == 0) {
                 sound_blaster_detected = -1;
-                f_1144d();
-                g_7db3 = 0xd1;
-                f_11420();
+                reset_sound_blaster_dsp();
+                sound_blaster_command_byte = 0xd1;
+                write_sound_blaster_byte();
                 outp(sound_blaster_base_port + 4, 0x22);
                 saved_sound_mixer_value = inp(sound_blaster_base_port + 5);
                 outp(sound_blaster_base_port + 4, 0x22);
@@ -116,12 +116,12 @@ int detect_sound_blaster(void) {
                     sound_blaster_mixer_test = 0;
                 outp(sound_blaster_base_port + 4, 0x22);
                 outp(sound_blaster_base_port + 5, saved_sound_mixer_value);
-                g_7db3 = 0xe1;
-                f_11420();
-                f_113f8();
-                sound_blaster_dsp_version = g_7db2 << 8;
-                f_113f8();
-                sound_blaster_dsp_version += ((g_7db2 / 10) << 4) | (g_7db2 % 10);
+                sound_blaster_command_byte = 0xe1;
+                write_sound_blaster_byte();
+                read_sound_blaster_byte();
+                sound_blaster_dsp_version = sound_blaster_response_byte << 8;
+                read_sound_blaster_byte();
+                sound_blaster_dsp_version += ((sound_blaster_response_byte / 10) << 4) | (sound_blaster_response_byte % 10);
             }
         }
     }
@@ -144,7 +144,7 @@ int select_sound_blaster_port(void)
             if (environment_value != 0) {
                 sound_blaster_base_port = (unsigned short)((((unsigned short)environment_value[1] - 0x30) << 8) + (((unsigned short)environment_value[2] - 0x30) << 4));
                 for (candidate_index = 0; candidate_index < 5; candidate_index++) {
-                    if (f_1144d() == 0)
+                    if (reset_sound_blaster_dsp() == 0)
                         return 0;
                 }
             }
@@ -154,7 +154,7 @@ int select_sound_blaster_port(void)
     /* Probe the conventional 0x210..0x250 Sound Blaster base ports. */
     for (sound_blaster_base_port = 0x210; sound_blaster_base_port < 0x260; sound_blaster_base_port += 0x10) {
         for (candidate_index = 0; candidate_index < 5; candidate_index++) {
-            if (f_1144d() == 0)
+            if (reset_sound_blaster_dsp() == 0)
                 return 0;
         }
     }
@@ -203,21 +203,21 @@ int detect_sound_blaster_irq(void) {
         f_d656(interrupt_config.bytes, 0);
         *(unsigned int *)(interrupt_config.bytes + 0x1d) = (unsigned int)sound_test_irq_handler;
         f_da01(interrupt_config.bytes);
-        f_11485();
-        g_7db3 = 0xf2;
-        f_11420();
+        acknowledge_sound_blaster_irq();
+        sound_blaster_command_byte = 0xf2;
+        write_sound_blaster_byte();
         for (wait_count = 0; wait_count < 0xc350; wait_count++) {
             if (sound_irq_test_complete_l == 0)
                 break;
         }
         if (sound_irq_test_complete_l == -1)
-            f_11485();
-        g_7db3 = 0x80;
-        f_11420();
-        g_7db3 = 3;
-        f_11420();
-        g_7db3 = 0;
-        f_11420();
+            acknowledge_sound_blaster_irq();
+        sound_blaster_command_byte = 0x80;
+        write_sound_blaster_byte();
+        sound_blaster_command_byte = 3;
+        write_sound_blaster_byte();
+        sound_blaster_command_byte = 0;
+        write_sound_blaster_byte();
         for (wait_count = 0; wait_count < 0xc350; wait_count++) {
             if (sound_irq_test_complete_l == 0)
                 break;
@@ -279,26 +279,26 @@ int detect_sound_blaster_dma(void) {
     f_d656(dma_config.bytes, 0);
     *(unsigned int *)(dma_config.bytes + 0x1d) = (unsigned int)sound_test_irq_handler;
     f_da01(dma_config.bytes);
-    g_7dbb = sound_blaster_dma_channel;
-    f_11494();
-    g_7db4 = test_buffer;
-    g_7db8 = 4;
-    g_7dba = 0x44;
-    f_114a0();
+    sound_dma_channel = sound_blaster_dma_channel;
+    mask_sound_dma_channel();
+    sound_dma_buffer_address = test_buffer;
+    sound_dma_transfer_count = 4;
+    sound_dma_mode_bits = 0x44;
+    program_sound_dma_channel();
     *(unsigned int *)test_buffer = 0x12345678;
-    f_11377(0x3e80);
-    g_7db3 = 0x24;
-    f_11420();
-    g_7db3 = g_7db8 - 1;
-    f_11420();
-    g_7db3 = (g_7db8 - 1) >> 8;
-    f_11420();
+    set_sound_blaster_sample_rate(0x3e80);
+    sound_blaster_command_byte = 0x24;
+    write_sound_blaster_byte();
+    sound_blaster_command_byte = sound_dma_transfer_count - 1;
+    write_sound_blaster_byte();
+    sound_blaster_command_byte = (sound_dma_transfer_count - 1) >> 8;
+    write_sound_blaster_byte();
     for (wait_count = 0; wait_count < 0xc350; wait_count++) {
         if (*(unsigned int *)test_buffer != 0x12345678) {
             sound_dma_test_result = 0;
         }
     }
-    f_11494();
+    mask_sound_dma_channel();
     f_d7b8(dma_config.bytes);
     if (dma_candidates.bytes[candidate_index] == 0xff)
         break;
@@ -312,8 +312,8 @@ int detect_sound_blaster_dma(void) {
 
 void __interrupt sound_test_irq_handler(void) {
     copy_ds_to_es();
-    f_11485();
-    f_113bd();
+    acknowledge_sound_blaster_irq();
+    send_pic_end_of_interrupt();
     sound_irq_test_complete_l = 0;
 }
 
