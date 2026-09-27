@@ -1,6 +1,10 @@
 .386
+_DATA SEGMENT DWORD PUBLIC USE32 'DATA'
 EXTRN vga_state:WORD
+_DATA ENDS
+DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME DS:DGROUP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
         PUBLIC copy_chunky_scanline_to_vga
@@ -44,7 +48,7 @@ L_12F68:
 L_12F6B:
         mov edx, 3
 L_12F70:
-        movsb byte ptr es:[edi], byte ptr [esi]
+        movsb
 L_12F71:
         add esi, edx
 L_12F73:

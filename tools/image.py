@@ -366,7 +366,7 @@ def canonical_items(ctx, cache, whatif=None, asm_modules=None):
                     src = src.relative_to(ROOT)
                 except ValueError:
                     raise SystemExit(f"assembly module source must be under repository root: {src}")
-            it = Item(f"asm-module:{start:x}", "asm", 1, start, end, src.as_posix(), "game-asm")
+            it = Item(f"asm-module:{start:x}", "asm", 1, start, end, src.as_posix(), m.get("profile", "game-asm-tasm31"))
             it.functions = functions
             module_items.append(it)
         expected = {f["name"] for f in ctx.funcs if f.get("object", 1) == 1 and f["kind"] == "asm"

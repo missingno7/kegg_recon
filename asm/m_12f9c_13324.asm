@@ -1,6 +1,10 @@
 .386
+_DATA SEGMENT DWORD PUBLIC USE32 'DATA'
 EXTRN vga_state:WORD
+_DATA ENDS
+DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME DS:DGROUP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
         PUBLIC copy_screen_span
@@ -84,7 +88,7 @@ L_13031:
 L_13034:
         shr edi, 2
 L_13037:
-        rep movsb byte ptr es:[edi], byte ptr [esi]
+        rep movsb
 L_13039:
         popad
 L_1303A:
@@ -142,13 +146,13 @@ L_130A5:
 L_130A8:
         shr ecx, 2
 L_130AB:
-        rep movsd dword ptr es:[edi], dword ptr [esi]
+        rep movsd
 L_130AD:
         mov ecx, dword ptr [ebp + 18h]
 L_130B0:
         and ecx, 3
 L_130B3:
-        rep movsb byte ptr es:[edi], byte ptr [esi]
+        rep movsb
 L_130B5:
         popad
 L_130B6:
@@ -409,7 +413,7 @@ L_13262:
 L_13265:
         mov ecx, ebx
 L_13267:
-        rep movsb byte ptr es:[edi], byte ptr [esi]
+        rep movsb
 L_13269:
         add esi, eax
 L_1326B:
@@ -509,11 +513,11 @@ L_13309:
 L_1330C:
         mov ecx, dword ptr [ebp - 8]
 L_1330F:
-        rep movsd dword ptr es:[edi], dword ptr [esi]
+        rep movsd
 L_13311:
         mov ecx, dword ptr [ebp - 0Ch]
 L_13314:
-        rep movsb byte ptr es:[edi], byte ptr [esi]
+        rep movsb
 L_13316:
         add esi, eax
 L_13318:

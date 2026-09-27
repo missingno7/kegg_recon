@@ -1,8 +1,12 @@
 .386
+_DATA SEGMENT DWORD PUBLIC USE32 'DATA'
 EXTRN disp_idx:WORD
 EXTRN vga_state:WORD
 EXTRN draw_idx:WORD
+_DATA ENDS
+DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
+        ASSUME DS:DGROUP
         ASSUME CS:_TEXT
         PUBLIC fill_planar_video_rows
 ; Fill successive VGA scan-line spans with one repeated pixel value.

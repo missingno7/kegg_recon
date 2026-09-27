@@ -1802,10 +1802,10 @@
    "start": "0x0982c",
    "end": "0x0995c",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_0982c_0995c.asm",
-   "src_sha256": "daaa62c837f89eaffc22de1cf69091c8aa3e96b3265d3aac806f7854cfbf66a5",
+   "src_sha256": "bd4c994ec9ec218d5e2a6791754684cba43f9af128a5740d55bd22b007e2d1a2",
    "unit": "M_0982c"
   },
   {
@@ -1945,10 +1945,10 @@
    "start": "0x09f64",
    "end": "0x0a03f",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_09f64_0a0d2.asm",
-   "src_sha256": "d520453a0aa469da559d7b5e4305b6abe218d3cf60f48e8335b5c52abdc91070",
+   "src_sha256": "2122766efb2e260a496655126109af829d47b306e9998b6a7803feb62276f6bf",
    "unit": "M_09f64"
   },
   {
@@ -1956,10 +1956,10 @@
    "start": "0x0a03f",
    "end": "0x0a067",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_09f64_0a0d2.asm",
-   "src_sha256": "d520453a0aa469da559d7b5e4305b6abe218d3cf60f48e8335b5c52abdc91070",
+   "src_sha256": "2122766efb2e260a496655126109af829d47b306e9998b6a7803feb62276f6bf",
    "unit": "M_09f64"
   },
   {
@@ -1967,10 +1967,10 @@
    "start": "0x0a067",
    "end": "0x0a0d2",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_09f64_0a0d2.asm",
-   "src_sha256": "d520453a0aa469da559d7b5e4305b6abe218d3cf60f48e8335b5c52abdc91070",
+   "src_sha256": "2122766efb2e260a496655126109af829d47b306e9998b6a7803feb62276f6bf",
    "unit": "M_09f64"
   },
   {
@@ -3958,10 +3958,10 @@
    "start": "0x12f30",
    "end": "0x12f9c",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12f30_12f9c.asm",
-   "src_sha256": "d0a01f1a5324bae5a70325b1cfa0f4e7a579fbed1a82993a2e268e154481c774",
+   "src_sha256": "69f74e4829e998709d42cdd720f1595d9ae2495a16b21df95e8d5ff2292d280e",
    "unit": "M_12f30"
   },
   {
@@ -3969,10 +3969,10 @@
    "start": "0x12f9c",
    "end": "0x13324",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_12f9c_13324.asm",
-   "src_sha256": "23216ae165168d6b03314c8d7eac463665a94042043188549bf551df15eb19a0",
+   "src_sha256": "619a389fd5f55b68b224ca50dea3d9d513148c346789de0100e4ea9f9ebb1a3e",
    "unit": "M_12f9c"
   },
   {
@@ -3980,10 +3980,10 @@
    "start": "0x13324",
    "end": "0x133f6",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13324_13712.asm",
-   "src_sha256": "8d10048a7ddddc06160859a2771efbdc592e9ad01ab318529ef730f4cc6c7d76",
+   "src_sha256": "7f81eaa2b72fd6ae54fc71c073ef2f244c0ac865f27f8b80b3d424d87c4031f3",
    "unit": "M_13324_13712"
   },
   {
@@ -3991,10 +3991,10 @@
    "start": "0x133f6",
    "end": "0x134f2",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13324_13712.asm",
-   "src_sha256": "8d10048a7ddddc06160859a2771efbdc592e9ad01ab318529ef730f4cc6c7d76",
+   "src_sha256": "7f81eaa2b72fd6ae54fc71c073ef2f244c0ac865f27f8b80b3d424d87c4031f3",
    "unit": "M_13324_13712"
   },
   {
@@ -4002,10 +4002,10 @@
    "start": "0x134f2",
    "end": "0x13712",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13324_13712.asm",
-   "src_sha256": "8d10048a7ddddc06160859a2771efbdc592e9ad01ab318529ef730f4cc6c7d76",
+   "src_sha256": "7f81eaa2b72fd6ae54fc71c073ef2f244c0ac865f27f8b80b3d424d87c4031f3",
    "unit": "M_13324_13712"
   },
   {
@@ -4013,10 +4013,10 @@
    "start": "0x13712",
    "end": "0x137a8",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13712_137a8.asm",
-   "src_sha256": "03d3e406f13443f2a42837ee76e3678adb269c3576ae7f4fd22aac4201369e8d",
+   "src_sha256": "c6bea5099e7105c836d7be0ed69e7997f00b8d7bfe28ccebb1cce8f4cb93d7c7",
    "unit": "M_13712_tail"
   },
   {
@@ -4024,10 +4024,10 @@
    "start": "0x137a8",
    "end": "0x13824",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_137a8_13944.asm",
-   "src_sha256": "35a708cfb2c26dd01c78dda10eee7a23c970e9e0118eb863a4f8c4238c211c3f",
+   "src_sha256": "30535f30ba0988c35a89f5d14a8fc50e7f423e53230d7cd40513bafcf4d3cffe",
    "unit": "M_137a8_13944"
   },
   {
@@ -4035,10 +4035,10 @@
    "start": "0x13824",
    "end": "0x13889",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_137a8_13944.asm",
-   "src_sha256": "35a708cfb2c26dd01c78dda10eee7a23c970e9e0118eb863a4f8c4238c211c3f",
+   "src_sha256": "30535f30ba0988c35a89f5d14a8fc50e7f423e53230d7cd40513bafcf4d3cffe",
    "unit": "M_137a8_13944"
   },
   {
@@ -4046,10 +4046,10 @@
    "start": "0x13889",
    "end": "0x13944",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_137a8_13944.asm",
-   "src_sha256": "35a708cfb2c26dd01c78dda10eee7a23c970e9e0118eb863a4f8c4238c211c3f",
+   "src_sha256": "30535f30ba0988c35a89f5d14a8fc50e7f423e53230d7cd40513bafcf4d3cffe",
    "unit": "M_137a8_13944"
   },
   {
@@ -4057,10 +4057,10 @@
    "start": "0x13944",
    "end": "0x13964",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4068,10 +4068,10 @@
    "start": "0x13964",
    "end": "0x13984",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4079,10 +4079,10 @@
    "start": "0x13984",
    "end": "0x139a4",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4090,10 +4090,10 @@
    "start": "0x139a4",
    "end": "0x139c4",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4101,10 +4101,10 @@
    "start": "0x139c4",
    "end": "0x139e3",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4112,10 +4112,10 @@
    "start": "0x139e3",
    "end": "0x13a0a",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4123,10 +4123,10 @@
    "start": "0x13a0a",
    "end": "0x13a29",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4134,10 +4134,10 @@
    "start": "0x13a29",
    "end": "0x13a48",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13944_13a48.asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "unit": "M_13944"
   },
   {
@@ -4145,10 +4145,10 @@
    "start": "0x13a48",
    "end": "0x13a95",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "status": "matching",
    "src": "asm/m_13a48_13a95.asm",
-   "src_sha256": "c8a87c434d41396f750458ae6693a27b756b9497f7dceb4e9386c2b9137a3d27",
+   "src_sha256": "0334495ee985f23747058e53b1c1658a74fac880855287c2ecc47958cd94be48",
    "unit": "M_13a48"
   },
   {
@@ -4178,7 +4178,7 @@
    "start": "0x00000",
    "end": "0x00069",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "object": 2,
    "status": "matching",
    "src": "asm/irq.asm",
@@ -4189,7 +4189,7 @@
    "start": "0x00070",
    "end": "0x000d9",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "object": 2,
    "status": "matching",
    "src": "asm/irq.asm",
@@ -4200,7 +4200,7 @@
    "start": "0x000e0",
    "end": "0x00103",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "object": 2,
    "status": "matching",
    "src": "asm/irq.asm",
@@ -4211,7 +4211,7 @@
    "start": "0x00110",
    "end": "0x00149",
    "kind": "asm",
-   "profile": "game-asm",
+   "profile": "game-asm-tasm31",
    "object": 2,
    "status": "matching",
    "src": "asm/irq.asm",
@@ -6326,8 +6326,8 @@
    "src": "asm/m_0982c_0995c.asm",
    "start": "0x982c",
    "end": "0x995c",
-   "profile": "game-asm",
-   "src_sha256": "daaa62c837f89eaffc22de1cf69091c8aa3e96b3265d3aac806f7854cfbf66a5",
+   "profile": "game-asm-tasm31",
+   "src_sha256": "bd4c994ec9ec218d5e2a6791754684cba43f9af128a5740d55bd22b007e2d1a2",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6347,8 +6347,8 @@
    "src": "asm/m_09f64_0a0d2.asm",
    "start": "0x9f64",
    "end": "0xa0d2",
-   "profile": "game-asm",
-   "src_sha256": "d520453a0aa469da559d7b5e4305b6abe218d3cf60f48e8335b5c52abdc91070",
+   "profile": "game-asm-tasm31",
+   "src_sha256": "2122766efb2e260a496655126109af829d47b306e9998b6a7803feb62276f6bf",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6731,35 +6731,35 @@
    "src": "asm/m_12f30_12f9c.asm",
    "start": "0x12f30",
    "end": "0x12f9c",
-   "profile": "game-asm",
-   "src_sha256": "d0a01f1a5324bae5a70325b1cfa0f4e7a579fbed1a82993a2e268e154481c774",
-   "note": "readability pass: names and explanatory comments"
+   "profile": "game-asm-tasm31",
+   "src_sha256": "69f74e4829e998709d42cdd720f1595d9ae2495a16b21df95e8d5ff2292d280e",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12f9c",
    "src": "asm/m_12f9c_13324.asm",
    "start": "0x12f9c",
    "end": "0x13324",
-   "profile": "game-asm",
-   "src_sha256": "23216ae165168d6b03314c8d7eac463665a94042043188549bf551df15eb19a0",
-   "note": "readability pass: names and explanatory comments"
+   "profile": "game-asm-tasm31",
+   "src_sha256": "619a389fd5f55b68b224ca50dea3d9d513148c346789de0100e4ea9f9ebb1a3e",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_13324_13712",
    "src": "asm/m_13324_13712.asm",
    "start": "0x13324",
    "end": "0x13712",
-   "profile": "game-asm",
-   "src_sha256": "8d10048a7ddddc06160859a2771efbdc592e9ad01ab318529ef730f4cc6c7d76",
-   "note": "readability pass: names and explanatory comments"
+   "profile": "game-asm-tasm31",
+   "src_sha256": "7f81eaa2b72fd6ae54fc71c073ef2f244c0ac865f27f8b80b3d424d87c4031f3",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_13712_tail",
    "src": "asm/m_13712_137a8.asm",
    "start": "0x13712",
    "end": "0x137a8",
-   "profile": "game-asm",
-   "src_sha256": "03d3e406f13443f2a42837ee76e3678adb269c3576ae7f4fd22aac4201369e8d",
+   "profile": "game-asm-tasm31",
+   "src_sha256": "c6bea5099e7105c836d7be0ed69e7997f00b8d7bfe28ccebb1cce8f4cb93d7c7",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6767,8 +6767,8 @@
    "src": "asm/m_137a8_13944.asm",
    "start": "0x137a8",
    "end": "0x13944",
-   "profile": "game-asm",
-   "src_sha256": "35a708cfb2c26dd01c78dda10eee7a23c970e9e0118eb863a4f8c4238c211c3f",
+   "profile": "game-asm-tasm31",
+   "src_sha256": "30535f30ba0988c35a89f5d14a8fc50e7f423e53230d7cd40513bafcf4d3cffe",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6776,8 +6776,8 @@
    "src": "asm/m_13944_13a48.asm",
    "start": "0x13944",
    "end": "0x13a48",
-   "profile": "game-asm",
-   "src_sha256": "f2e281a204ba0d33281b1f098d9bdde91fc42bfb8837c228b5f5f9ada53908cc",
+   "profile": "game-asm-tasm31",
+   "src_sha256": "10bf12ddafa253a07de9aaf8964848412fcb8e292dec97501f13a365e45ebd20",
    "note": "object plan (build/workers/objects)"
   },
   {
@@ -6785,8 +6785,8 @@
    "src": "asm/m_13a48_13a95.asm",
    "start": "0x13a48",
    "end": "0x13a95",
-   "profile": "game-asm",
-   "src_sha256": "c8a87c434d41396f750458ae6693a27b756b9497f7dceb4e9386c2b9137a3d27",
+   "profile": "game-asm-tasm31",
+   "src_sha256": "0334495ee985f23747058e53b1c1658a74fac880855287c2ecc47958cd94be48",
    "note": "object plan (build/workers/objects)"
   },
   {

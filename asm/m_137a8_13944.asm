@@ -1,6 +1,6 @@
 .386P
-EXTRN vga_state:WORD
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+EXTRN vga_state:WORD
         PUBLIC cpu_type
         PUBLIC cpu_mode
         PUBLIC cpu_iopl
@@ -31,7 +31,7 @@ L_137B8:
 L_137B9:
         mov ebp, esp
 L_137BB:
-        and sp, 0FFFCh
+        and sp, -4
 L_137BF:
         pushfd
 L_137C0:
@@ -283,13 +283,13 @@ L_1392D:
 L_1392F:
         shr ecx, 2
 L_13932:
-        rep movsd dword ptr es:[edi], dword ptr [esi]
+        rep movsd
 L_13934:
         mov ecx, dword ptr [ebp + 10h]
 L_13937:
         and ecx, 3
 L_1393A:
-        rep movsb byte ptr es:[edi], byte ptr [esi]
+        rep movsb
 L_1393C:
         cld
 L_1393D:

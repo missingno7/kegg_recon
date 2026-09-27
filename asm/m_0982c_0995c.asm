@@ -12,8 +12,8 @@ _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
         ASSUME CS:_TEXT
         PUBLIC decode_and_verify_asset
-        PUBLIC f_982c
-f_982c LABEL NEAR
+        PUBLIC decode_and_verify_asset
+decode_and_verify_asset LABEL NEAR
 decode_and_verify_asset PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
