@@ -475,6 +475,11 @@ def main(argv):
         olen = c1 - c0
     res, cand, orig, masked = compare(mod, si, c0, c1, a0, olen)
     check_data(mod, si, res)
+    if dosrun.config()["profiles"][a.profile].get("tool", "wcc386") == "wcc386":
+        std = {"_TEXT", "CONST", "CONST2", "_DATA", "_BSS", "$$SYMBOLS", "$$TYPES"}
+        odd = sorted({x.name for x in mod.segments if x and x.name not in std})
+        if odd:  # e.g. #pragma data_seg tricks to force placement: not how the game was built
+            res["problems"].append(f"non-standard segments in a C object: {odd}")
     own = {n for n, *_ in mod.publics}
     check_bindings(res, man, own)
     # internal consistency: symbols defined in this object must sit at the matching offset

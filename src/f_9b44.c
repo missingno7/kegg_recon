@@ -1,0 +1,67 @@
+/* Lifted by tools/lift.py (first draft); verify with tools/check.py. */
+#include <i86.h>
+extern short g_73a6;
+extern int g_73a8;
+extern unsigned g_73ac;
+extern unsigned char *g_73c8;
+extern unsigned char g_756f[];
+extern unsigned g_7588;
+extern int g_758c;
+extern int g_7590;
+extern int g_7594;
+extern int g_75a4;
+extern unsigned g_75c4;
+extern int g_e1b4;
+extern short g_e1be;
+extern int a_a03f(int);
+extern void __far a_a067(void);
+extern void f_9ac4(void);
+extern void f_9d40(unsigned char);
+extern void f_9f48(void);
+extern int f_9f64(void);
+extern int f_da01(void *);
+extern void __far o2_103(void);
+extern void __far o2_e0(void);
+int f_9b44(int a0)
+{
+    if (a0 != 0) goto L_9b70;
+    a0 = g_7588;
+    if (a0 != 0) goto L_9b70;
+    return 0;
+L_9b70:;
+    if (g_73a6 != -1) goto L_9b88;
+    if (*(short *)g_756f != -1) goto L_9b8d;
+L_9b88:;
+    goto L_9c81;
+L_9b8d:;
+    g_73ac = f_9f64();
+    if (g_73ac > 0x61a8) goto L_9baf;
+    if (g_73ac >= 0x2710) goto L_9bc4;
+L_9baf:;
+    g_73a6 = 0;
+    return 0;
+L_9bc4:;
+    g_7588 = a0;
+    f_9ac4();
+    g_73a8 = g_73ac - 0x100;
+    f_9f48();
+    g_e1b4 = 1;
+    g_e1be = 1;
+    _disable();
+    g_758c = (int)a_a067;
+    g_7590 = (int)o2_e0;
+    g_7594 = (int)o2_103;
+    f_da01(g_756f);
+    a_a03f(0xffff);
+    _enable();
+    if ((a0 & 1) != 1) goto L_9c59;
+    g_73c8 = (unsigned char *)g_75a4;
+L_9c59:;
+    if (g_75c4 == 0) goto L_9c6b;
+    return 0x502;
+L_9c6b:;
+    f_9d40(0);
+    f_9d40(0);
+L_9c81:;
+    return 0;
+}

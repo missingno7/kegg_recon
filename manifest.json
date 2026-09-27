@@ -1813,10 +1813,9 @@
    "end": "0x9971",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9960.c",
+   "src_sha256": "a3eb980477c846a5723a7194e73d463c051740126ea41888fba0452c8fd9850f"
   },
   {
    "name": "f_9974",
@@ -1824,10 +1823,9 @@
    "end": "0x9ac2",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9974.c",
+   "src_sha256": "fbeedf21503179849aebe0538baf3f7b7c421149f3442797232a062eabb3c408"
   },
   {
    "name": "f_9ac4",
@@ -1835,10 +1833,9 @@
    "end": "0x9afa",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9ac4.c",
+   "src_sha256": "fcf0bf4dd389d677c76f2507cc5c62fc45f5b6fa0f9931508f649c9dfb4852bb"
   },
   {
    "name": "f_9afc",
@@ -1846,10 +1843,9 @@
    "end": "0x9b43",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9afc.c",
+   "src_sha256": "c493b75a9d74607258d830c04a9f5bf9c0e47ab1f33db7faaa8c4bfc1f68df4a"
   },
   {
    "name": "f_9b44",
@@ -1857,10 +1853,9 @@
    "end": "0x9c90",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9b44.c",
+   "src_sha256": "2b1334c6e56486dc2629e568045316a1397ab16d81f01b6bb6dc227574717a2c"
   },
   {
    "name": "f_9c90",
@@ -1868,10 +1863,9 @@
    "end": "0x9ca1",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9c90.c",
+   "src_sha256": "27931f6a0be9cebd95273aa7dbd79b69e68911d5996568ad797102dcfcfe00e5"
   },
   {
    "name": "f_9ca4",
@@ -1879,10 +1873,9 @@
    "end": "0x9d3e",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9ca4.c",
+   "src_sha256": "4b218838662ec6cf909830f577fcd44d0accd9753456da366708c40ab973a715"
   },
   {
    "name": "f_9d40",
@@ -1890,10 +1883,9 @@
    "end": "0x9e0d",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9d40.c",
+   "src_sha256": "fa766cc4df5c4a8d081ea0a3b1f4566047753dbf55bea0b7d75dcef29c971d91"
   },
   {
    "name": "f_9e10",
@@ -1901,10 +1893,9 @@
    "end": "0x9e53",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9e10.c",
+   "src_sha256": "03d005b5beb6ce9fa1875cbda4213298dd1b2123852b3cd1167d68039f058103"
   },
   {
    "name": "f_9e54",
@@ -1912,10 +1903,9 @@
    "end": "0x9eec",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9e54.c",
+   "src_sha256": "7e6979cd0af5cd353a4af13b7e2af252bfd2a2b1f2404feef60df5516566b870"
   },
   {
    "name": "f_9eec",
@@ -1923,10 +1913,9 @@
    "end": "0x9f48",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9eec.c",
+   "src_sha256": "65d92b6e4a435ee0072f39fceb4d3eb204d5772a76b91d72416dc16c6c4c79b5"
   },
   {
    "name": "f_9f48",
@@ -1934,10 +1923,9 @@
    "end": "0x9f62",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot-dos",
-   "src": "src/t06.c",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "unit": "T06"
+   "profile": "game-c-ot",
+   "src": "src/f_9f48.c",
+   "src_sha256": "51dfc920a385cf693e590004bc9caae3cf206abf6516167b6dcd33c51e9091cc"
   },
   {
    "name": "a_9f64",
@@ -5189,14 +5177,7 @@
   "kbd_irq_hook": "3:73b8",
   "kbd_poll_hook": "3:73bc",
   "mouse_update_hook": "3:73c0",
-  "sprite_update_hook": "3:73c4",
-  "a_a03f": "1:a03f",
-  "f_9ac4": "1:9ac4",
-  "f_9f48": "1:9f48",
-  "t06_bss_head": "3:e164",
-  "a_a067": "1:a067",
-  "g_73a4": "3:73a4",
-  "f_9960": "1:9960"
+  "sprite_update_hook": "3:73c4"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -6176,25 +6157,6 @@
    "src_sha256": "d8c9c0f674e7a555b0937b98c5d46e8271fc46b7cc667e70cb4dfb0cd8888fd4",
    "data": [],
    "note": "MASM module; accepted by the whole-image link (image.py)"
-  },
-  {
-   "id": "T06",
-   "src": "src/t06.c",
-   "start": "0x9960",
-   "end": "0x9f62",
-   "profile": "game-c-ot-dos",
-   "src_sha256": "906a3cd7e63c851d42e41ff6668f99e1ccf13aefd9b4db2857da5bf1a78b8648",
-   "data": [
-    "CONST@3:11bc+0x2d",
-    "_DATA@3:73a4+0x30",
-    "T06_BSS_HEAD@3:e164+0x54",
-    "T06_BSS_E1BC@3:e1bc+0x4",
-    "T06_BSS_E1C0@3:e1c0+0x2"
-   ],
-   "place": [
-    "CONST=0x11bc"
-   ],
-   "note": "-ot object; CONST literal padding reproduced via CP437 comment banners positioned for the DOS-host source buffer (positions reconstructed from leaked bytes, not known); CRLF bytes are significant"
   },
   {
    "id": "M_09f64",

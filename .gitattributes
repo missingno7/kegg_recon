@@ -2,5 +2,4 @@
 *.exe binary
 *.obj binary
 *.cmd text eol=crlf
-src/t06.c -text
 src/t08.c -text
