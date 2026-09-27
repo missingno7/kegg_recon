@@ -57,7 +57,8 @@ def main(branches):
         head = run(["git", "rev-parse", "HEAD"])[1][0]
         rc, out = run(["git", "merge", "--no-ff", "--no-edit", br])
         if rc and auto_resolve():
-            rc, out = run(["git", "commit", "-q", "--no-edit"])
+            run(["git", "commit", "-q", "--no-edit"])
+            rc = 1 if (ROOT / ".git" / "MERGE_HEAD").exists() else 0
             run(["git", "merge", "--abort"])
             print(f"{br}: MERGE CONFLICT\n  " + "\n  ".join(out[-15:]))
             return 1
