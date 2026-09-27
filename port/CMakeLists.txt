@@ -110,6 +110,8 @@ target_include_directories(ke_oracle PRIVATE include)
 target_compile_options(ke_oracle PRIVATE
   $<$<COMPILE_LANGUAGE:C>:-std=gnu11 -O1 -g -Wall -Wno-unused-function -fno-strict-aliasing -fno-omit-frame-pointer>)
 target_link_libraries(ke_oracle PRIVATE SDL3::SDL3 winmm)
-target_link_options(ke_oracle PRIVATE -mconsole)
+# Keep the oracle image away from DOS/VGA space and disable ASLR, matching ke_sdl3. Original
+# VGA operands are relocated by the oracle because Windows may own A0000h..BFFFFh itself.
+target_link_options(ke_oracle PRIVATE -mconsole -Wl,--disable-dynamicbase -Wl,--image-base,0x00400000)
 add_custom_command(TARGET ke_oracle POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${KE_SDL3_DIR}/bin/SDL3.dll" "$<TARGET_FILE_DIR:ke_oracle>")

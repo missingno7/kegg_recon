@@ -59,8 +59,8 @@ static int test_pixels_and_spans(void)
         ram, A7_ARENA_BYTES, 0, 0);
 
     a7_make_state(baseline, 1, 64, 1);
-    /* LODSB against A0000h is outside O1's current fault-instruction decoder.  Encode a
-     * RAM-backed linear base (4 * pointer) so this same mode/plane arithmetic is oracle-safe. */
+    /* Keep this control case RAM-backed (4 * pointer); the following planar VGA case uses
+     * the relocated no-access alias and exercises the original LODSB fault path. */
     a7_set_page(baseline, 0, (uint32_t)(uintptr_t)(ram + 512) << 2, 0, 0);
     args[0] = 11; args[1] = 8;
     failures += a7_compare_call("read_vga_pixel (planar plane select)", a7_original_at(0x13324, "read_vga_pixel"),

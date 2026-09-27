@@ -48,6 +48,72 @@ static void a7_state32(unsigned char *state, unsigned offset, uint32_t value)
     state[offset + 3] = (uint8_t)(value >> 24);
 }
 
+static uint32_t a7_read_state32(const unsigned char *state, unsigned offset)
+{
+    return (uint32_t)state[offset] | ((uint32_t)state[offset + 1] << 8) |
+           ((uint32_t)state[offset + 2] << 16) | ((uint32_t)state[offset + 3] << 24);
+}
+
+static uint16_t a7_read_state16(const unsigned char *state, unsigned offset)
+{
+    return (uint16_t)(state[offset] | ((uint16_t)state[offset + 1] << 8));
+}
+
+static void a7_relocate_oracle_page_bases(void)
+{
+    unsigned page;
+    for (page = 0; page < 4; page++) {
+        unsigned offset = 0x02u + page * 4u;
+        uint32_t base = a7_read_state32(a7_original_state, offset);
+        if (base >= 0xa0000u && base < 0xc0000u) {
+            base = oracle_vga_host_address(base);
+        } else if (base >= 0x280000u && base < 0x300000u) {
+            uint32_t relocated = oracle_vga_host_address(base >> 2);
+            base = (relocated << 2) | (base & 3u);
+        }
+        a7_state32(a7_original_state, offset, base);
+    }
+}
+
+static void a7_canonicalize_oracle_page_bases(unsigned char *state)
+{
+    unsigned page;
+    for (page = 0; page < 4; page++) {
+        unsigned offset = 0x02u + page * 4u;
+        uint32_t base = a7_read_state32(state, offset);
+        uint32_t guest = oracle_vga_guest_address(base);
+        if (guest != base) {
+            base = guest;
+        } else {
+            guest = oracle_vga_guest_address(base >> 2);
+            if (guest != (base >> 2))
+                base = (guest << 2) | (base & 3u);
+        }
+        a7_state32(state, offset, base);
+    }
+}
+
+static uint32_t a7_normalize_relocated_pixel_result(
+    uint32_t result, const unsigned char state[A7_STATE_BYTES], short page,
+    const uint32_t *args)
+{
+    uint32_t page_offset = (uint16_t)page * 4u;
+    uint32_t base = a7_read_state32(state, 0x02u + page_offset);
+    uint32_t origin, x = args[0], y = args[1], stride;
+    int32_t sx = (int32_t)x, sy = (int32_t)y;
+    if (a7_read_state16(state, 0) == 0 ||
+        oracle_vga_host_address(base >> 2) == (base >> 2))
+        return result;
+    if (sx < (int32_t)a7_read_state32(state, 0x4au)) x = a7_read_state32(state, 0x4au);
+    if ((int32_t)x > (int32_t)a7_read_state32(state, 0x52u)) x = a7_read_state32(state, 0x52u);
+    if (sy < (int32_t)a7_read_state32(state, 0x4eu)) y = a7_read_state32(state, 0x4eu);
+    if ((int32_t)y > (int32_t)a7_read_state32(state, 0x56u)) y = a7_read_state32(state, 0x56u);
+    stride = a7_read_state32(state, 0x3au);
+    origin = base + a7_read_state32(state, 0x12u + page_offset) +
+             a7_read_state32(state, 0x22u + page_offset) + y * stride + x;
+    return (result & 0x00ffffffu) | ((origin & 0x00ff0000u) << 8);
+}
+
 static void a7_set_page(unsigned char *state, unsigned page, uint32_t base,
                         uint32_t start, uint32_t display)
 {
@@ -103,8 +169,10 @@ static void a7_init_pair(const unsigned char baseline[A7_STATE_BYTES], short pag
     a7_reset_device();
     memcpy(vga_state, baseline, A7_STATE_BYTES);
     a7_init_symbols();
-    if (a7_original_state)
+    if (a7_original_state) {
         memcpy(a7_original_state, baseline, A7_STATE_BYTES);
+        a7_relocate_oracle_page_bases();
+    }
     page_idx = page;
     drawpage = draw;
     if (a7_original_page_idx) *a7_original_page_idx = page;
@@ -186,6 +254,10 @@ static int a7_compare_call(const char *label, void *original, void *translated,
     oracle_trace_reset();
     result_original = argc == 8 ? a7_call_eight(original, args) : oracle_call(original, argc, args);
     memcpy(original_state, a7_original_state, A7_STATE_BYTES);
+    a7_canonicalize_oracle_page_bases(original_state);
+    if (compare_return && compare_vga)
+        result_original = a7_normalize_relocated_pixel_result(result_original, baseline,
+                                                              page, args);
     trace_count = oracle_trace_count();
     if (trace_count) {
         trace = (OracleEvent *)malloc((size_t)trace_count * sizeof *trace);
