@@ -30,6 +30,7 @@ void register_m_12f9c_tests(void);
 void register_m_12a9c_tests(void);
 void register_vhw_irq_tests(void);
 void register_vga_tests(void);
+void register_g2_tests(void);
 
 static struct { const char *name; oracle_test_fn fn; } tests[128];
 static int test_count;
@@ -130,6 +131,7 @@ int main(int argc, char **argv)
     register_m_12f9c_tests();
     register_vhw_irq_tests();
     register_vga_tests();
+    register_g2_tests();
     /* A9 trace fixtures replace PIC port callbacks, so run the live PIC test first. */
     register_m_11258_tests();
     register_m_11494_tests();

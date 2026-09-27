@@ -40,6 +40,7 @@ if(NOT KE_GAME_COUNT EQUAL 49)
   message(WARNING "expected 49 historical units in src/, found ${KE_GAME_COUNT}")
 endif()
 add_library(ke_game OBJECT ${KE_GAME_SOURCES})
+target_compile_definitions(ke_game PRIVATE KE_PORT=1)
 # The launcher rewrites GCC's assembly before assembling each object. Make its edits a
 # compilation dependency so merged builds cannot silently keep pre-layout game objects.
 set_property(SOURCE ${KE_GAME_SOURCES} APPEND PROPERTY OBJECT_DEPENDS
