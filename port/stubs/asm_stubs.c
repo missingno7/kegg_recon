@@ -17,8 +17,7 @@ KE_ASM_STUB(pit_channel0_interrupt, "m_09f64_0a0d2")
 
 /* m_11494_11530: owned by port/asm/m_11494_11530.c */
 
-KE_ASM_STUB(load_protracker_module, "m_11530_11df8")
-KE_ASM_STUB(stop_protracker_module, "m_11530_11df8")
+/* m_11530_11df8: owned by port/asm/m_11530_11df8.c */
 
 KE_ASM_STUB(decode_gif_image_entry, "m_11df8_12288")
 KE_ASM_STUB(decode_gif_image, "m_11df8_12288")
