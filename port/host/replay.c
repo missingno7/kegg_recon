@@ -1,4 +1,5 @@
-/* replay.c - input-only replay at the game's wait_for_tick frame entry.
+/* replay.c - input-only replay aligned to wait_for_tick entries, with a timed pump for
+ * blocking input loops that continue polling without reaching another frame entry.
  *
  * Input events are intentionally applied before the historical wait routine polls the
  * keyboard and mouse. The linker wrapper touches no game state or game logic. */
@@ -21,6 +22,75 @@ static size_t event_count, next_event;
 static unsigned frame_occurrence, replay_frame_count;
 static volatile LONG wait_for_tick_count;
 static int replay_loaded, replay_started, replay_complete, replay_reported;
+static uint64_t last_frame_entry_ns;
+static uint64_t last_key_event_ns;
+static uint64_t frame_period_ns = 1000000000ull / 70;
+static CRITICAL_SECTION replay_lock;
+static int replay_lock_initialized, replay_pump_stop;
+
+static unsigned replay_time_occurrence(uint64_t now)
+{
+    uint64_t elapsed, advanced;
+    unsigned due;
+    if (!last_frame_entry_ns || !frame_occurrence)
+        return 0;
+    elapsed = now - last_frame_entry_ns;
+    advanced = frame_period_ns ? elapsed / frame_period_ns : 0;
+    due = frame_occurrence - 1;
+    if (advanced > 0xffffffffu - due)
+        due = 0xffffffffu;
+    else
+        due += (unsigned)advanced;
+    if (due >= replay_frame_count)
+        due = replay_frame_count - 1;
+    return due;
+}
+
+static void replay_apply_event(const ReplayEvent *e)
+{
+    if (e->kind == REPLAY_MOUSE) {
+        ke_input_set_mouse_position(e->a, e->b);
+        ke_input_set_mouse_buttons(e->buttons);
+    } else {
+        ke_input_push_scancode((uint8_t)e->a);
+    }
+}
+
+static void replay_apply_through(unsigned occurrence, uint64_t now)
+{
+    while (next_event < event_count && events[next_event].occurrence <= occurrence) {
+        const ReplayEvent *event = &events[next_event];
+        if (event->kind == REPLAY_KEY && last_key_event_ns &&
+            now - last_key_event_ns < frame_period_ns)
+            return;
+        ++next_event;
+        replay_apply_event(event);
+        if (event->kind == REPLAY_KEY) {
+            last_key_event_ns = ke_now_ns();
+            return;
+        }
+    }
+}
+
+static DWORD WINAPI replay_pump_thread(LPVOID unused)
+{
+    (void)unused;
+    for (;;) {
+        uint64_t now;
+        Sleep(1);
+        EnterCriticalSection(&replay_lock);
+        if (replay_pump_stop || replay_complete) {
+            LeaveCriticalSection(&replay_lock);
+            break;
+        }
+        now = ke_now_ns();
+        replay_apply_through(replay_time_occurrence(now), now);
+        if (frame_occurrence >= replay_frame_count && next_event >= event_count)
+            replay_complete = 1;
+        LeaveCriticalSection(&replay_lock);
+    }
+    return 0;
+}
 
 int ke_replay_load(const char *path)
 {
@@ -98,6 +168,9 @@ int ke_replay_load(const char *path)
     replay_frame_count = frames;
     replay_loaded = 1;
     replay_started = replay_complete = replay_reported = 0;
+    last_frame_entry_ns = 0;
+    last_key_event_ns = 0;
+    frame_period_ns = 1000000000ull / 70;
     ke_log(KE_LOG_INFO, "replay", "loaded %u events over %u frame entries from %s",
            expected, frames, path);
     return 0;
@@ -105,48 +178,67 @@ int ke_replay_load(const char *path)
 
 void ke_replay_start(void)
 {
+    HANDLE thread;
     if (!replay_loaded || replay_started)
         return;
+    InitializeCriticalSection(&replay_lock);
+    replay_lock_initialized = 1;
+    replay_pump_stop = 0;
     replay_started = 1;
+    thread = CreateThread(NULL, 0, replay_pump_thread, NULL, 0, NULL);
+    if (thread)
+        CloseHandle(thread);
+    else
+        ke_log(KE_LOG_ERROR, "replay", "could not start replay input pump");
     ke_log(KE_LOG_INFO, "replay", "started at wait_for_tick occurrence 0");
 }
 
 void ke_replay_frame_entry(void)
 {
-    if (!replay_started || replay_complete)
+    uint64_t now, delta;
+    if (!replay_lock_initialized)
         return;
-    while (next_event < event_count && events[next_event].occurrence == frame_occurrence) {
-        const ReplayEvent *e = &events[next_event++];
-        if (e->kind == REPLAY_MOUSE) {
-            ke_input_set_mouse_position(e->a, e->b);
-            ke_input_set_mouse_buttons(e->buttons);
-        } else {
-            ke_input_push_scancode((uint8_t)e->a);
-        }
+    EnterCriticalSection(&replay_lock);
+    if (!replay_started || replay_complete) {
+        LeaveCriticalSection(&replay_lock);
+        return;
     }
+    now = ke_now_ns();
+    if (last_frame_entry_ns && now > last_frame_entry_ns) {
+        delta = now - last_frame_entry_ns;
+        if (delta >= 7000000ull && delta <= 100000000ull)
+            frame_period_ns = (frame_period_ns * 3 + delta) / 4;
+    }
+    last_frame_entry_ns = now;
+    replay_apply_through(frame_occurrence, now);
     if (next_event < event_count && events[next_event].occurrence < frame_occurrence) {
         ke_log(KE_LOG_WARN, "replay", "missed input occurrence %u at frame entry %u",
                events[next_event].occurrence, frame_occurrence);
-        while (next_event < event_count && events[next_event].occurrence < frame_occurrence)
-            ++next_event;
     }
     ++frame_occurrence;
     if (frame_occurrence &&
         ((frame_occurrence <= 60 && frame_occurrence % 10 == 0) || frame_occurrence % 100 == 0))
         ke_log(KE_LOG_INFO, "replay", "reached wait_for_tick occurrence %u/%u",
                frame_occurrence, replay_frame_count);
-    if (frame_occurrence >= replay_frame_count)
+    if (frame_occurrence >= replay_frame_count && next_event >= event_count)
         replay_complete = 1;
+    LeaveCriticalSection(&replay_lock);
 }
 
 void ke_replay_report(void)
 {
     if (!replay_loaded || replay_reported)
         return;
+    if (replay_lock_initialized) {
+        EnterCriticalSection(&replay_lock);
+        replay_pump_stop = 1;
+    }
     replay_reported = 1;
     ke_log(KE_LOG_INFO, "replay", "stopped at frame entry %u; applied %u/%u events%s",
            frame_occurrence, (unsigned)next_event, (unsigned)event_count,
            replay_complete ? " (complete)" : " (incomplete)");
+    if (replay_lock_initialized)
+        LeaveCriticalSection(&replay_lock);
 }
 
 void __wrap_wait_for_tick(short wait_flags)
