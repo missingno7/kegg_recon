@@ -59,9 +59,9 @@ extern int g_e36e;
 extern int g_e372;
 extern int g_e376;
 extern int g_e37a;
-extern unsigned char g_e48b;
-extern unsigned char g_e48d;
-extern unsigned char g_e48e;
+extern unsigned char g_e48b_3;
+extern unsigned char g_e48d_c;
+extern unsigned char g_e48e_0g;
 extern unsigned char g_e48f;
 extern int g_e4c8;
 extern int g_e4d0;
@@ -1557,7 +1557,7 @@ L_bd6:;
     f_c8c0((int)g_d340, 0x100, 4, (int)g_ab40, (int)g_bf40);
 L_d7a:;
     f_9d40(3);
-    if (g_e48d == 0x50) goto L_d9a;
+    if (g_e48d_c == 0x50) goto L_d9a;
     if (g_e48f == 0x50) goto L_d9c;
 L_d9a:;
     goto L_da6;
@@ -1574,11 +1574,11 @@ L_da6:;
     if ((g_df54 - 0x40) > ++g_df48) goto L_e0a;
     g_df48 = 0;
 L_e0a:;
-    if (g_e48d == g_e48f) goto L_e20;
+    if (g_e48d_c == g_e48f) goto L_e20;
     if (g_e48f == 0x20) goto L_e38;
 L_e20:;
-    if (g_e48b == g_e48e) goto L_e36;
-    if (g_e48e == 1) goto L_e38;
+    if (g_e48b_3 == g_e48e_0g) goto L_e36;
+    if (g_e48e_0g == 1) goto L_e38;
 L_e36:;
     goto L_e3a;
 L_e38:;
@@ -1701,8 +1701,8 @@ void f_1227(void) {
 
 void f_127e(void)
 {
-    if (g_e48b == 1) goto L_129c;
-    if (g_e48e == 1) goto L_12d9;
+    if (g_e48b_3 == 1) goto L_129c;
+    if (g_e48e_0g == 1) goto L_12d9;
 L_129c:;
     if (g_7c00 == g_7bfe) goto L_12b5;
     if (g_7bfe != 0) goto L_12b7;
@@ -1765,8 +1765,8 @@ void f_13aa(void) {
 
 void f_1416(void)
 {
-    if (g_e48b == 0x39) goto L_1434;
-    if (g_e48e == 0x39) goto L_1436;
+    if (g_e48b_3 == 0x39) goto L_1434;
+    if (g_e48e_0g == 0x39) goto L_1436;
 L_1434:;
     goto L_147d;
 L_1436:;
@@ -1777,13 +1777,13 @@ L_1436:;
     f_16bb((int)g_3906);
 L_147d:;
     if (g_df74 == 0) goto L_15cb;
-    if (g_e48e == g_e48b) goto L_14a0;
-    if ((g_e48e & 0x80) == 0) goto L_14a5;
+    if (g_e48e_0g == g_e48b_3) goto L_14a0;
+    if ((g_e48e_0g & 0x80) == 0) goto L_14a5;
 L_14a0:;
     goto L_15c6;
 L_14a5:;
-    g_8e46 = g_e48e;
-    g_e48b = g_8e46;
+    g_8e46 = g_e48e_0g;
+    g_e48b_3 = g_8e46;
     if (g_8e46 != 0xe) goto L_150f;
     if (g_df44 <= 0) goto L_14df;
     --g_df44;
@@ -1799,7 +1799,7 @@ L_150f:;
     *(unsigned char *)(g_3906 + 0x2f) = 0;
 L_152b:;
     g_8e46 = g_e48f;
-    g_e48d = g_8e46;
+    g_e48d_c = g_8e46;
     if (g_8e46 < 0x41) goto L_1551;
     if (g_8e46 <= 0x46) goto L_1565;
 L_1551:;
@@ -2053,9 +2053,9 @@ L_1eca:;
     g_df68 = 0x23;
     g_df64 = -g_df64;
 L_1ee9:;
-    if (g_e48e == g_e48b) goto L_1f3b;
-    g_8e46 = g_e48e;
-    g_e48b = g_8e46;
+    if (g_e48e_0g == g_e48b_3) goto L_1f3b;
+    g_8e46 = g_e48e_0g;
+    g_e48b_3 = g_8e46;
     if (g_8e46 != 0xe) goto L_1f3b;
     if (g_e141 == 0) goto L_1f34;
     --g_e141;
@@ -2063,9 +2063,9 @@ L_1ee9:;
 L_1f34:;
     g_e13d = 0x80;
 L_1f3b:;
-    if (g_e48f == g_e48d) goto L_1fd0;
+    if (g_e48f == g_e48d_c) goto L_1fd0;
     g_8e46 = g_e48f;
-    g_e48d = g_8e46;
+    g_e48d_c = g_8e46;
     if (g_8e46 < 0x41) goto L_1f72;
     if (g_8e46 <= 0x5a) goto L_1f86;
 L_1f72:;
@@ -2096,8 +2096,8 @@ L_202b:;
     f_b1df(0x24, 0xae, g_3892);
 L_2083:;
     f_9d40(1);
-    if (g_e48e == 0x1c) goto L_20a7;
-    if (g_e48e != 1) goto L_1eca;
+    if (g_e48e_0g == 0x1c) goto L_20a7;
+    if (g_e48e_0g != 1) goto L_1eca;
 L_20a7:;
     strcpy((char *)((unsigned char *)g_37f4 + (g_dedc * 0x19)), (char *)g_6984);
     g_dedc = 0xffffffff;
@@ -2124,8 +2124,8 @@ L_2156:;
 L_2158:;
     goto L_2172;
 L_215a:;
-    if (g_e48b == g_e48e) goto L_2170;
-    if (g_e48e == 1) goto L_2172;
+    if (g_e48b_3 == g_e48e_0g) goto L_2170;
+    if (g_e48e_0g == 1) goto L_2172;
 L_2170:;
     goto L_2174;
 L_2172:;
@@ -2518,7 +2518,7 @@ path_c4:
 path_c6:
         goto path_d1;
 path_c8:
-        if (g_e48e != 1) goto path_d3;
+        if (g_e48e_0g != 1) goto path_d3;
 path_d1:
         goto path_dc;
 path_d3:
@@ -2782,45 +2782,45 @@ void f_3e0f(int a, int b)
 
 void f_3e75(void)
 {
-    if (g_e48f == 0x2e && (g_e48e & 0x80) == 0)
+    if (g_e48f == 0x2e && (g_e48e_0g & 0x80) == 0)
         g_e48f = 0;
     else
         goto key_2a;
 key_2a:
-    if (g_e48f == 0x2a && (g_e48e & 0x80) == 0) {
+    if (g_e48f == 0x2a && (g_e48e_0g & 0x80) == 0) {
         g_e143 = (g_e143 / 10) * 10 + 9;
         g_dd78 = 0;
         g_ddc0 = 0;
         g_e48f = 0;
     } else goto key_2f;
 key_2f:
-    if (g_e48f == 0x2f && (g_e48e & 0x80) == 0) {
+    if (g_e48f == 0x2f && (g_e48e_0g & 0x80) == 0) {
         g_dd78 = 0;
         g_ddc0 = 0;
         g_e48f = 0;
     } else goto key_alpha;
 key_alpha:
-    if (g_e48f >= 0x41 && g_e48f <= 0x5a && (g_e48e & 0x80) == 0) {
+    if (g_e48f >= 0x41 && g_e48f <= 0x5a && (g_e48e_0g & 0x80) == 0) {
         f_42e1((unsigned char)(g_e48f - 0x41), 0, 0xa0, 0x64);
         g_e48f = 0;
     } else goto key_slash;
 key_slash:
-    if (g_e48f == 0x2f && (g_e48e & 0x80) == 0) {
+    if (g_e48f == 0x2f && (g_e48e_0g & 0x80) == 0) {
         f_42e1(0x1a, 0, 0xa0, 0x64);
         g_e48f = 0;
     } else goto key_37;
 key_37:
-    if (g_e48f == 0x37 && (g_e48e & 0x80) == 0) {
+    if (g_e48f == 0x37 && (g_e48e_0g & 0x80) == 0) {
         f_42e1(6, 0, 0xa0, 0x64);
         g_e48f = 0;
     } else goto key_39;
 key_39:
-    if (g_e48f == 0x39 && (g_e48e & 0x80) == 0) {
+    if (g_e48f == 0x39 && (g_e48e_0g & 0x80) == 0) {
         f_42e1(0xf, 0, 0xa0, 0x64);
         g_e48f = 0;
     } else goto key_dot;
 key_dot:
-    if (g_e48f == 0x2e && (g_e48e & 0x80) == 0) {
+    if (g_e48f == 0x2e && (g_e48e_0g & 0x80) == 0) {
         g_de5c[1] &= 0xfb;
         f_58b0();
         g_de5c[0] &= 0xbf;
@@ -2832,7 +2832,7 @@ key_g:
         g_e48f = 0;
         g_dd78 = 0;
     }
-    if (g_e48e == 0x1b) {
+    if (g_e48e_0g == 0x1b) {
         g_e143 = 0x3c;
         g_dd78 = 0;
     }

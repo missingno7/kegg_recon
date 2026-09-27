@@ -287,12 +287,14 @@ def cache_compile(ctx, src: Path, profile: str, cache: Path):
 
 def apply_plan(ctx, plan_path):
     """TESTING ONLY: candidate units from a plan file (list of {id, file, range: [start, end], profile?}, or
-    {"units": [...]}) replace, in memory, every manifest unit and function source they overlap, so a TU can be
+    {"units": [...], "symbols": {new name: "obj:addr"}}) replace, in memory, every manifest unit and function source they overlap, so a TU can be
     tried in the one-link image before promotion.  Members of a replaced manifest unit that lie outside every
     candidate lose their source (raw debt) for this run."""
     plan = json.loads(Path(plan_path).read_text())
+    renames = plan.get("symbols", {}) if isinstance(plan, dict) else {}
     plan = plan.get("units", plan) if isinstance(plan, dict) else plan
     man = dict(ctx.man)
+    man["symbols"] = {**man.get("symbols", {}), **renames}   # proposed names -> "obj:addr"
     cands = []
     for p in plan:
         a, b = p["range"]

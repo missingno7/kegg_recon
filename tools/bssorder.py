@@ -108,15 +108,20 @@ def before(a, b):
 # ----------------------------------------------------------------------------------------- solve
 
 def expand(pattern, chars, maxlen):
+    """Yield (tier, name): plain alternatives first (one tier each, in the given order), then free
+    suffixes by length.  The solver takes the smallest usable key inside the best tier."""
     alts = pattern.split("|")
+    t = 0
     for a in alts:
         if "{}" not in a:
-            yield a
-    for a in alts:
-        if "{}" in a:
-            for L in range(1, maxlen + 1):
-                for t in itertools.product(chars, repeat=L):
-                    yield a.replace("{}", "".join(t))
+            yield t, a
+            t += 1
+    for L in range(1, maxlen + 1):
+        for a in alts:
+            if "{}" in a:
+                for tup in itertools.product(chars, repeat=L):
+                    yield t, a.replace("{}", "".join(tup))
+        t += 1
 
 
 def solve(slots, chars="0123456789abcdefghijklmnopqrstuvwxyz", maxlen=2, taken=()):
@@ -131,7 +136,12 @@ def solve(slots, chars="0123456789abcdefghijklmnopqrstuvwxyz", maxlen=2, taken=(
     cands = []
     used = set(taken)
     for p, s, i in slots:
-        c = [n for n in dict.fromkeys(expand(p, chars, maxlen)) if n not in used]
+        seen = set()
+        c = []
+        for t, nm in expand(p, chars, maxlen):
+            if nm not in used and nm not in seen:
+                seen.add(nm)
+                c.append((t, nm))
         if not c:
             raise ValueError(f"no candidates for {p}")
         cands.append(c)
@@ -145,7 +155,7 @@ def solve(slots, chars="0123456789abcdefghijklmnopqrstuvwxyz", maxlen=2, taken=(
     best = [None] * n
     for k in range(n - 1, -1, -1):
         same_next = k + 1 < n and cls[k] == cls[k + 1]
-        feas = [key(c) for c in cands[k]
+        feas = [key(c) for _, c in cands[k]
                 if not same_next or ok_pair(key(c), slots[k][2], best[k + 1], slots[k + 1][2])]
         if not feas:
             raise ValueError(f"no name for slot {slots[k][0]} fits before the following slots")
@@ -155,7 +165,8 @@ def solve(slots, chars="0123456789abcdefghijklmnopqrstuvwxyz", maxlen=2, taken=(
     for k in range(n):
         same_prev = k > 0 and cls[k] == cls[k - 1]
         same_next = k + 1 < n and cls[k] == cls[k + 1]
-        for c in cands[k]:
+        fits = []
+        for t, c in cands[k]:
             if c in chosen:
                 continue
             kc = key(c)
@@ -163,12 +174,13 @@ def solve(slots, chars="0123456789abcdefghijklmnopqrstuvwxyz", maxlen=2, taken=(
                 continue
             if same_next and not ok_pair(kc, slots[k][2], best[k + 1], slots[k + 1][2]):
                 continue
-            names.append(c)
-            chosen.add(c)
-            prev = kc
-            break
-        else:
+            fits.append((t, kc, c))
+        if not fits:
             raise ValueError(f"greedy failed at slot {slots[k][0]}")
+        t, kc, c = min(fits)
+        names.append(c)
+        chosen.add(c)
+        prev = kc
     return names
 
 
@@ -276,7 +288,7 @@ def estimate_func_entries(text, seen_strings, seen_names):
             seen_strings.add(s)
             cnt += 1
     types = r"(?:unsigned|signed|int|char|short|long|float|double|void|struct|union|enum|static|register|extern|const|volatile)"
-    for stmt in re.findall(r"[{;}]\s*(" + types + r"\b[^;{}()]*(?:\([^;{}]*\))?[^;{}]*);", body):
+    for stmt in re.findall(r"(?<=[{;}])\s*(" + types + r"\b[^;{}()]*(?:\([^;{}]*\))?[^;{}]*);", body):
         cnt += 1 + stmt.count(",")
     return cnt
 
@@ -334,11 +346,17 @@ def bss_order(m):
     return out
 
 
-def probe_names(src):
-    for first in "QZXJ":
-        names = [first + c for c in string.digits + string.ascii_uppercase + "_" + string.ascii_lowercase]
-        if not any(re.search(r"\b%s\b" % re.escape(p), src) for p in names):
-            assert all(key(a) < key(b) for a, b in zip(names, names[1:]))
+def probe_names(src, n=53):
+    """n unused identifiers with distinct keys, in ascending key order."""
+    for prefix in ("bssprobe", "bssprobe_q", "bssprobe_zz"):
+        byk = {}
+        for k in range(5000):
+            nm = f"{prefix}{k}"
+            byk.setdefault(key(nm), nm)
+            if len(byk) >= n:
+                break
+        names = [byk[k] for k in sorted(byk)][:n]
+        if not any(re.search(r"%s" % re.escape(p), src) for p in names):
             return names
     raise RuntimeError("cannot find unused probe names")
 
@@ -455,7 +473,7 @@ def main(argv=None):
             ren = dict(r.split("=", 1) for r in a.rename)
             slots = [(ren.get(n, n), *info[n]) for n in want]
             src_text = Path(a.src).read_text(encoding="latin1")
-            taken = set(re.findall(r"[A-Za-z_]\w*", src_text)) - set(ren)
+            taken = set(re.findall(r"[A-Za-z_]\w*", src_text)) - set(want)
             names = solve(slots, a.chars, a.maxlen, taken)
             print("\nsolution (address order):")
             for n, new in zip(want, names):

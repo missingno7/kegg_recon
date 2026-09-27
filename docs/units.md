@@ -8,7 +8,9 @@ single WLINK link needs every TU as a real source; per-function matches are only
 Watcom 10.0 data layout (proven by probes, `-d2` and `-od` alike):
 - CONST: identical literals stored once; literals used in data initialisers first, then code literals in order of
   first use; no padding between; block 4-aligned. `-ot` objects pad each literal to 4 bytes (open problem).
-- _DATA: definition order, no padding. _BSS: not definition order (only block boundaries are usable).
+- _DATA: definition order, no padding. _BSS: sorted by size rank, declaration group and hashpjw(name)%241 —
+  identifier NAMES decide the layout (docs/compiler-notes.md "_BSS order"; `python tools/bssorder.py --src TU.c`
+  predicts it, `--solve` finds names). Renaming a global must be applied everywhere it is referenced.
 
 Tools
 ```

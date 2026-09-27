@@ -144,3 +144,62 @@ Idioms (all under `-d2`; `->` = emitted code; probe file in parentheses)
 - `and eax,1; and eax,1; mov edx,eax; and byte ptr [p],~m; shl edx,k; or dword ptr [p],edx` = a 1-bit bitfield
   store of an already-masked value: `((Flags *)g_de5c)->b2 = (x >> 3) & 1;` (f_4cf2 EXACT; manual
   `(*p & ~4) | (v << 2)` gives load/or/store).
+
+## Object-file layout: LEDATA chunking (worker `objects`, probes in `build/workers/objects/probe/`)
+
+wcc386 `-3s -d2 -s` writes an object's `_TEXT` in LEDATA records ("chunks"); WLINK processes each chunk's fixups in
+reverse, so the original chunking is visible in KE.EXE's per-page LE fixup order (chunks ascending, sites
+descending; `image.Original.chains`).  A chunk is flushed:
+- **size**: at the first instruction boundary at or after chunk start + 172 bytes (a switch jump-table entry is one
+  4-byte unit).  The object's `_TEXT` starts a fresh chunk at offset 0; function boundaries, LINNUM and PUBDEF
+  records, `$$SYMBOLS`/`$$TYPES` flushes and the fixup count (38 seen) do not cut code chunks.  PROVEN: the rule
+  predicts every `_TEXT` LEDATA of all 242 compiled game objects (`build/workers/objects/rulecheck.py`).
+- **imports**: every symbol an object references is imported at its first reference -- functions (even ones
+  defined in the same file, before or after), data (even the TU's own globals and statics), but not CONST
+  literals (segment-relative) -- as EXTDEF, or LEXTDEF for `static`.  Right after an instruction, if the pending
+  import record holds >= 192 bytes (sum of `len(name) + 2`), the code chunk is flushed with the imports
+  (`probe/T.c`: threshold exactly 192; `ext_long.c`: 44-char names cut after every 5th call).  The pending record
+  is also written (count restarts) whenever any segment's LEDATA is flushed (size flushes, `$$SYMBOLS` flushes at
+  function ends: `dbg1.c`) and when the import kind switches EXTDEF <-> LEXTDEF (`mix.c`).
+- Consequences: chunk boundaries depend on the object start and on **identifier lengths** (and indirectly on the
+  debug-info volume that triggers `$$SYMBOLS` flushes).  Address-named placeholders (`f_1a2b`, 8 import bytes)
+  practically never cause an import flush; the original did wherever a chunk is < 172 bytes.
+- Original evidence: 11 of the original's short chunks are import flushes (each after 11-16 first-referenced
+  symbols, i.e. names averaging ~10-15 chars); every other short chunk ends at an object start.  The object list
+  derived from this (DP over function starts, `build/workers/objects/objscan2.py`, `optpart.py`) is in
+  `build/workers/objects/REPORT.md`.  A TU reproduces the original fixup order iff its compiled chunks satisfy the
+  run constraints: `python build/workers/objects/chunkfit.py SRC.c START END` (fast check before image.py).
+
+## _BSS order (worker `bss`, probes + random tests in `build/workers/bss/`, tool `tools/bssorder.py`)
+PROVEN (≈470 random TUs up to 300 objects, mixed sizes/statics/functions/strings, `-d2`/`-od`/`-ot`/`-ox` alike,
+every layout predicted exactly; supervisor probes `build/workers/sup/probe/bss*.c` reproduced):
+- Every uninitialised file-scope object (public or `static`) gets `idx` = number of cfe symbol-table entries created
+  before its FIRST declaration (`extern` or definition; a later definition does not move it).
+  Entries: each new ordinary identifier (variable, function, typedef, implicit function declaration), each
+  parameter of a function *definition*, each block-scope declaration (autos, static locals, block `extern`), one
+  extra entry per non-void function definition, each distinct string literal (deduplicated TU-wide, in data
+  initialisers too). Not entries: enum constants, struct/union/enum tags, members, labels, macros, prototype
+  parameter names, numeric/float constants. `#include`d prototypes count (stdio.h/stdlib.h/string.h add 8/24/20 mod 25).
+- Layout (no padding, `_BSS` dword aligned) = objects sorted by
+  1. size rank, descending: `size%8==0` > `size%4==0` > `size%2==0 && size>2` > `size==2` > odd `>1` > `size==1`
+     (only the byte size matters, not the type: `short`==`char[2]`, `short[3]`==`char[6]`, 16-byte struct==`double`);
+  2. index group, descending: group 0 = idx 0..4, then groups of 25 (idx 5..29, 30..54, ...), later groups first;
+  3. `key = hashpjw(name) % 241`, ascending (cfe identifier hash, case-sensitive, every character:
+     `h=c0; h=(h<<4)+c1; loop { h&=0xfff; h=(h<<4)+c; h=(h^(h>>12))&0xfff; h=(h<<4)+c; h^=h>>12 }`);
+  4. same bucket in the same group: later declaration first.
+  So `int v1..v8;` -> v6 v7 v8 (group 1) then v1..v5; `unsigned g_e4dc, g_e4e0;` -> g_e4e0 (key 38) before
+  g_e4dc (101). Initialised data (`_DATA`) stays in definition order and CONST literals stay "data-initialiser
+  literals, then code literals by first use" (re-checked with 80 random names/literals: no hash effect).
+- Consequences: placeholder names decide the layout; renaming, adding/removing an `#include`, a prototype, a local
+  or a string literal before an object can reorder `_BSS`. A size-2 object can never precede a 16-byte one, so
+  T14's 100-byte `g_e324` (short at +0 followed by 16-byte arrays) must be one aggregate (a struct), not separate
+  variables. Static locals are emitted after all file-scope objects, per function; their inner order is not modelled.
+- Other emission orders: PUBDEF = definition order for code/_DATA, layout order for _BSS; EXTDEF = first use in
+  code, except that under `-d2` the TU's own global data objects are also EXTDEF'd (from `$$SYMBOLS` fixups) in the
+  same hash/group order, in the first EXTDEF record; `-d2` also splits code LEDATA where debug records are flushed
+  (without `-d2` one code LEDATA + one EXTDEF record). None of this changes image bytes; only chunk/fixup order.
+- Tool: `python tools/bssorder.py NAME[:SIZE][@IDX] ...` (layout), `--solve PATTERN[:SIZE] ...` (names for a
+  required address order; `a|b` alternatives, `{}` free suffix), `--src TU.c [--flags ...]` (measures each
+  object's idx with prefix probes, compares prediction with the compiler), `--src TU.c --want A,B,.. --rename
+  A=PAT --verify` (solve + recompile). Avoid suffixes that make `g_<hex>` names (check.py reads them as addresses):
+  use `g_e1d0_{}`.

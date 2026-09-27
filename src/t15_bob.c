@@ -30,8 +30,8 @@ extern short g_e41c;
 extern short g_e41e;
 extern short g_e420;
 extern short g_e422;
-extern unsigned char g_e48b;
-extern unsigned char g_e48e;
+extern unsigned char g_e48b_3;
+extern unsigned char g_e48e_0g;
 extern short g_e40a;
 extern short g_e410;
 extern short g_e426;
@@ -147,7 +147,7 @@ void f_f0f6(void) {
 void f_f253(void) {
     do { outp(0x201, 0xff); } while ((inp(0x201) & 0xf0) != 0xf0);
     do { f_efa0(); f_fa42(); }
-    while (g_e48b == g_e48e && (inp(0x201) & 0xf0) == 0xf0);
+    while (g_e48b_3 == g_e48e_0g && (inp(0x201) & 0xf0) == 0xf0);
     g_e40a = g_e3fc;
     g_e410 = g_e3fe;
     g_e426 = g_e418;
@@ -159,7 +159,7 @@ void f_f253(void) {
 void f_f306(void) {
     do { outp(0x201, 0xff); } while ((inp(0x201) & 0xf0) != 0xf0);
     do { f_efa0(); f_fa42(); }
-    while (g_e48b == g_e48e && (inp(0x201) & 0xf0) == 0xf0);
+    while (g_e48b_3 == g_e48e_0g && (inp(0x201) & 0xf0) == 0xf0);
     g_e408 = g_e3fc;
     g_e40e = g_e3fe;
     g_e424 = g_e418;
@@ -171,7 +171,7 @@ void f_f306(void) {
 void f_f3b9(void) {
     do { outp(0x201, 0xff); } while ((inp(0x201) & 0xf0) != 0xf0);
     do { f_efa0(); f_fa42(); }
-    while (g_e48b == g_e48e && (inp(0x201) & 0xf0) == 0xf0);
+    while (g_e48b_3 == g_e48e_0g && (inp(0x201) & 0xf0) == 0xf0);
     g_e40c = g_e3fc;
     g_e412 = g_e3fe;
     g_e428 = g_e418;
