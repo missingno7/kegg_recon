@@ -71,7 +71,7 @@ set(KE_VHW_SOURCES
   vhw/vhw.c vhw/cpu.c vhw/portio.c vhw/pic.c vhw/pit.c vhw/vga.c vhw/kbd.c vhw/mouse.c
   vhw/joy.c vhw/dma.c vhw/sb.c vhw/intsvc.c vhw/lowmem.c vhw/fault.c)
 set(KE_HOST_SOURCES
-  host/main_sdl.c host/gamethread.c host/log.c host/input.c host/present.c host/clib.c
+  host/main_sdl.c host/gamethread.c host/log.c host/config.c host/input.c host/present.c host/clib.c
   host/files.c)
 
 add_executable(ke_sdl3 ${KE_HOST_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES}
@@ -99,7 +99,7 @@ endif()
 # ke_oracle.exe links the whole port except the SDL main; tests live in oracle/test_*.c.
 # Needs build/port/oracle/ke_image.bin: python port/tools/le_export.py (from assets/KE.EXE).
 file(GLOB KE_ORACLE_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/oracle/test_*.c")
-set(KE_HOST_LIB_SOURCES host/gamethread.c host/log.c host/input.c host/present.c host/clib.c
+set(KE_HOST_LIB_SOURCES host/gamethread.c host/log.c host/config.c host/input.c host/present.c host/clib.c
   host/files.c)
 add_executable(ke_oracle oracle/oracle.c oracle/oracle_main.c ${KE_ORACLE_TESTS}
   ${KE_HOST_LIB_SOURCES} ${KE_VHW_SOURCES} ${KE_STUB_SOURCES} ${KE_ASM_TRANSLATIONS}

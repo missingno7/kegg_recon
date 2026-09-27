@@ -1,8 +1,8 @@
 /* main_sdl.c - process entry: SDL3 window + event pump on the main thread, the historical
  * game on the game thread (gamethread.c), the virtual PC underneath (port/vhw).
  *
- *   ke_sdl3.exe [DATA_DIR]        DATA_DIR (or KE_DATA) holds KE.EXE's data files; default
- *                                 is the current directory.
+ *   ke_sdl3.exe [DATA_DIR]        DATA_DIR (or ke_sdl3.ini asset_dir) holds the KE data;
+ *                                 default is the exe directory, then ./assets.
  * Environment: KE_IRQ, KE_WINDOWS, KE_SB, KE_JOY, KE_SCALE, KE_ASPECT, KE_LOG_LEVEL,
  * KE_LOG (log file path, default ke_sdl3.log next to the executable), KE_EXIT_AFTER_MS
  * (close automatically; for smoke tests).
@@ -177,9 +177,10 @@ int main(int argc, char **argv)
     uint32_t last_presented_frame = 0;
     int running = 1, quit_requested = 0, have_presented_frame = 0;
     int vhw_ready = 0, sdl_ready = 0, present_ready = 0, game_started = 0;
-    int game_terminated = 0, result = 2, fullscreen = 0;
+    int game_terminated = 0, result = 2, fullscreen;
     int child_exit;
     char shot_path[MAX_PATH] = "";
+    char missing[1024];
 
     if (relaunch_with_low_memory_reserved(&child_exit))
         return child_exit;
@@ -199,6 +200,21 @@ int main(int argc, char **argv)
         default_log_path(log_path, sizeof log_path);
     ke_log_init(log_path);
     ke_log(KE_LOG_INFO, "main", "Krypton Egg SDL3 port (historical source + virtual PC)");
+    if (!ke_config_validate_assets(missing, sizeof missing)) {
+        char message[1536];
+        snprintf(message, sizeof message,
+                 "Game data was not found in:\n%s\n\nCopy the original data files there or "
+                 "select an asset_dir. Missing files:\n%s\n\nKE.EXE is not needed at runtime.",
+                 ke_config.data_dir ? ke_config.data_dir : "(no data directory)", missing);
+        ke_log(KE_LOG_ERROR, "main", "%s", message);
+        MessageBoxA(NULL, message, "Krypton Egg - missing game data", MB_OK | MB_ICONERROR);
+        return 2;
+    }
+    ke_log(KE_LOG_INFO, "main", "assets: %s; scale=%d; fullscreen=%d; integer scaling=%d; "
+           "aspect=%s; audio=%d; joystick=%d; volume=%d%%", ke_config.data_dir,
+           ke_config.scale, ke_config_fullscreen(), ke_config_integer_scale(),
+           ke_config.aspect ? "4:3" : "square", ke_config.sound_blaster,
+           ke_config.joystick, ke_config_volume());
     if (ke_config.data_dir && _chdir(ke_config.data_dir) != 0) {
         ke_log(KE_LOG_ERROR, "main", "cannot enter data directory %s", ke_config.data_dir);
         return 2;
@@ -209,23 +225,30 @@ int main(int argc, char **argv)
     vhw_ready = 1;
 
     SDL_SetMainReady();
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
-        ke_log(KE_LOG_ERROR, "main", "SDL_Init: %s", SDL_GetError());
-        goto cleanup;
+    {
+        SDL_InitFlags flags = SDL_INIT_VIDEO;
+        if (ke_config.sound_blaster)
+            flags |= SDL_INIT_AUDIO;
+        if (ke_config.joystick)
+            flags |= SDL_INIT_GAMEPAD;
+        if (!SDL_Init(flags)) {
+            ke_log(KE_LOG_ERROR, "main", "SDL_Init: %s", SDL_GetError());
+            goto cleanup;
+        }
     }
     sdl_ready = 1;
-    if (ke_config.scale < 1 || ke_config.scale > 8) {
-        ke_log(KE_LOG_WARN, "main", "KE_SCALE must be 1..8; using 3");
-        ke_config.scale = 3;
-    }
-    ke_config.aspect = !!ke_config.aspect;
-    if (!SDL_CreateWindowAndRenderer("Krypton Egg (F11 fullscreen)", 320 * ke_config.scale,
+    fullscreen = ke_config_fullscreen();
+    if (!SDL_CreateWindowAndRenderer("Krypton Egg", 320 * ke_config.scale,
                                      (ke_config.aspect ? 240 : 200) * ke_config.scale,
                                      SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         ke_log(KE_LOG_ERROR, "main", "SDL window: %s", SDL_GetError());
         goto cleanup;
     }
     set_window_icon(window);
+    if (fullscreen && !SDL_SetWindowFullscreen(window, true)) {
+        ke_log(KE_LOG_WARN, "main", "initial fullscreen mode: %s", SDL_GetError());
+        fullscreen = 0;
+    }
     if (!SDL_SetRenderVSync(renderer, 0))
         ke_log(KE_LOG_WARN, "main", "cannot disable renderer vsync: %s", SDL_GetError());
     if (ke_present_init(window, renderer) != 0) {

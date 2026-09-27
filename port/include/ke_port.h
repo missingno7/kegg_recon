@@ -29,6 +29,10 @@ typedef struct KeConfig {
 } KeConfig;
 extern KeConfig ke_config;
 void ke_config_load(int argc, char **argv);
+int ke_config_fullscreen(void);
+int ke_config_integer_scale(void);
+int ke_config_volume(void);
+int ke_config_validate_assets(char *missing, size_t missing_size);
 
 /* ---- game thread lifecycle (port/host/gamethread.c) ------------------------------------ */
 /* The historical main() is compiled as ke_game_main (u_13a95.c gets -Dmain=ke_game_main). */

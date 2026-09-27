@@ -342,6 +342,7 @@ void vsb_init(void)
         ke_log(KE_LOG_WARN, "sb", "SDL audio unavailable: %s (card stays silent)", SDL_GetError());
         return;
     }
+    SDL_SetAudioStreamGain(stream, (float)ke_config_volume() / 100.0f);
     SDL_ResumeAudioStreamDevice(stream);
     ke_log(KE_LOG_INFO, "sb", "Sound Blaster Pro (DSP 3.02) at 220h IRQ %d DMA %d", SB_IRQ, SB_DMA);
 }

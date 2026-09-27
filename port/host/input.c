@@ -267,9 +267,7 @@ static void set_mouse_capture(int capture)
         return;
     if (SDL_SetWindowRelativeMouseMode(input_window, capture)) {
         mouse_captured = capture;
-        SDL_SetWindowTitle(input_window, capture ?
-            "Krypton Egg - mouse captured (Esc releases)" :
-            "Krypton Egg - click to capture mouse");
+        SDL_SetWindowTitle(input_window, "Krypton Egg");
     } else {
         if (!capture)
             mouse_captured = 0;
@@ -319,7 +317,7 @@ void ke_input_event(const SDL_Event *e)
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
         set_window_from_id(e->window.windowID);
         if (!mouse_captured && input_window)
-            SDL_SetWindowTitle(input_window, "Krypton Egg - click to capture mouse");
+            SDL_SetWindowTitle(input_window, "Krypton Egg");
         break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         release_held_keys();

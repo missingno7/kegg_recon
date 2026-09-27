@@ -5,30 +5,10 @@
 #include <windows.h>
 #include "ke_port.h"
 
-KeConfig ke_config;
 static FILE *log_file;
 static CRITICAL_SECTION log_lock;
 static int log_ready;
 static const char *level_name[] = {"ERROR", "WARN", "INFO", "DEBUG", "TRACE"};
-
-static int env_int(const char *name, int dflt)
-{
-    const char *v = getenv(name);
-    return (v && *v) ? atoi(v) : dflt;
-}
-
-void ke_config_load(int argc, char **argv)
-{
-    const char *irq = getenv("KE_IRQ");
-    ke_config.irq_async = !(irq && strcmp(irq, "sync") == 0);
-    ke_config.windows_host = env_int("KE_WINDOWS", 0);
-    ke_config.sound_blaster = env_int("KE_SB", 0);
-    ke_config.joystick = env_int("KE_JOY", 0);
-    ke_config.scale = env_int("KE_SCALE", 3);
-    ke_config.aspect = env_int("KE_ASPECT", 1);
-    ke_config.log_level = env_int("KE_LOG_LEVEL", KE_LOG_INFO);
-    ke_config.data_dir = (argc > 1) ? argv[1] : getenv("KE_DATA");
-}
 
 void ke_log_init(const char *path)
 {
