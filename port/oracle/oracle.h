@@ -11,10 +11,9 @@
  *   CLI/STI                             -> recorded (virtual IF)
  *   INT nn (CD nn)                      -> vhw_int() with the register image
  *   MOV Sreg,r16 (8E /r, mod=11)        -> ignored (every selector is flat)
- * Every emulated event is appended to a trace so a test can compare the I/O sequence of
- * the original with that of the translation. Accesses to the VGA window (A0000h) are NOT
- * emulated yet (work package "oracle-vga"): routines that write video memory directly can
- * only be compared once that hook exists.
+ *   accesses to reserved A0000h..BFFFFh -> the VGA byte API (MOV, MOVZX, string ops,
+ *                                        AND/OR/XOR memory forms)
+ * Emulated I/O, CLI/STI and INT events are appended to a trace for differential checks.
  */
 #ifndef KE_ORACLE_H
 #define KE_ORACLE_H
@@ -27,10 +26,38 @@ typedef struct OracleEvent {
     uint32_t value;
 } OracleEvent;
 
+/* A description of visible VGA state. Reading planar memory updates the hardware latches;
+ * the helper restores all register data/indexes and leaves the attribute flip-flop in its
+ * index phase. DAC components are stored as original 6-bit values.
+ */
+#define ORACLE_VGA_PLANE_SIZE 0x10000
+typedef struct OracleVgaSnapshot {
+    uint8_t planes[4][ORACLE_VGA_PLANE_SIZE];
+    uint8_t sequencer[8];
+    uint8_t graphics_controller[16];
+    uint8_t crtc[32];
+    uint8_t attribute[32];
+    uint8_t dac[256][3];
+    uint8_t misc_output;
+    uint8_t sequencer_index;
+    uint8_t graphics_index;
+    uint8_t crtc_index;
+    uint8_t attribute_index;
+} OracleVgaSnapshot;
+
 int oracle_load(const char *image_path, const char *symbols_path);
 void *oracle_object_base(int object);          /* 1..3 */
 void *oracle_sym(const char *name);             /* NULL if unknown */
 uint32_t oracle_call(void *fn, int argc, const uint32_t *args);
+/* Call a host-compiled historical C routine against the same virtual PC. */
+uint32_t oracle_port_call(void *fn, int argc, const uint32_t *args);
+
+/* The oracle reserves A0000h..BFFFFh as no-access and emulates original VGA accesses. */
+int oracle_vga_window_reserved(void);
+int oracle_vga_snapshot(OracleVgaSnapshot *snapshot);
+/* Return 0 when equal; otherwise print the first differing device block and return 1. */
+int oracle_vga_snapshot_equal(const OracleVgaSnapshot *a, const OracleVgaSnapshot *b,
+                              const char *label);
 
 /* I/O hooks used while original code runs (default: vhw_port_in / vhw_port_out). */
 typedef uint32_t (*oracle_in_fn)(uint16_t port, int size);

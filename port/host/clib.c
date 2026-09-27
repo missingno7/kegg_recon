@@ -1,13 +1,21 @@
 /* clib.c - Watcom C runtime entry points that must not reach the host C runtime directly.
- * Everything else (string, stdio, malloc, fopen, ...) is the host runtime: the Watcom and
- * MSVCRT semantics the game relies on (text/binary modes, ^Z handling) are the same DOS
- * heritage. */
+ * String, stdio streams, malloc, and similar calls use the host runtime, whose DOS-heritage
+ * text/binary behavior matches Watcom. fopen is routed through files.c for game-file policy. */
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "ke_port.h"
 #include "../vhw/vhw.h"
+
+/* Route the historical game's fopen calls through the DOS-file policy in files.c.  The
+ * host logger and oracle use fopen too; ke_fopen passes absolute/non-game paths through. */
+FILE *ke_fopen(const char *path, const char *mode);
+
+FILE *fopen(const char *path, const char *mode)
+{
+    return ke_fopen(path, mode);
+}
 
 /* launch_print_order_form() spawns the DOS print utility: never start host programs. */
 int spawnlp(int mode, const char *path, const char *arg0, ...)

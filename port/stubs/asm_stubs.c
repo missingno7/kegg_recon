@@ -3,64 +3,34 @@
  * translation (port/asm/<module>.c) owns yet. Each logs once and returns 0. */
 #include "ke_stub.h"
 
-KE_ASM_STUB(decode_and_verify_asset, "m_0982c_0995c")
+/* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
 /* m_09f64_0a0d2: owned by port/asm/m_09f64_0a0d2.c */
 
-KE_ASM_STUB(decode_iff_ilbm_image, "m_0a284_0a51f")
-KE_ASM_STUB(find_iff_chunk, "m_0a284_0a51f")
+/* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
 
-KE_ASM_STUB(noop_renderer_hook_one, "m_0a958_0a966")
-KE_ASM_STUB(noop_renderer_hook_two, "m_0a958_0a966")
+/* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
 
-KE_ASM_STUB(sound_blaster_irq_handler, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_dma_start_entry, "m_11258_11494")
-KE_ASM_STUB(start_sound_blaster_dma_playback, "m_11258_11494")
-KE_ASM_STUB(configure_sound_dma_input, "m_11258_11494")
-KE_ASM_STUB(stop_sound_blaster_dma, "m_11258_11494")
-KE_ASM_STUB(mask_active_sound_dma_channel, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_rate_entry, "m_11258_11494")
-KE_ASM_STUB(set_sound_blaster_sample_rate, "m_11258_11494")
-KE_ASM_STUB(pic_eoi_entry, "m_11258_11494")
-KE_ASM_STUB(send_pic_end_of_interrupt, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_speaker_on_entry, "m_11258_11494")
-KE_ASM_STUB(enable_sound_blaster_speaker, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_stop_entry, "m_11258_11494")
-KE_ASM_STUB(stop_sound_blaster_playback, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_read_entry, "m_11258_11494")
-KE_ASM_STUB(read_sound_blaster_byte, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_write_entry, "m_11258_11494")
-KE_ASM_STUB(write_sound_blaster_byte, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_reset_entry, "m_11258_11494")
-KE_ASM_STUB(reset_sound_blaster_dsp, "m_11258_11494")
-KE_ASM_STUB(sound_blaster_ack_entry, "m_11258_11494")
-KE_ASM_STUB(acknowledge_sound_blaster_irq, "m_11258_11494")
+/* m_11258_11494: owned by port/asm/m_11258_11494.c */
 
-KE_ASM_STUB(sound_dma_mask_entry, "m_11494_11530")
-KE_ASM_STUB(mask_sound_dma_channel, "m_11494_11530")
-KE_ASM_STUB(program_sound_dma_channel, "m_11494_11530")
+/* m_11494_11530: owned by port/asm/m_11494_11530.c */
 
 KE_ASM_STUB(load_protracker_module, "m_11530_11df8")
 KE_ASM_STUB(stop_protracker_module, "m_11530_11df8")
 
-KE_ASM_STUB(decode_gif_image_entry, "m_11df8_12288")
-KE_ASM_STUB(decode_gif_image, "m_11df8_12288")
+/* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
 
 KE_ASM_STUB(render_sprite_record_kind_5_entry, "m_12288_12680")
 KE_ASM_STUB(render_sprite_record_kind_5_draw, "m_12288_12680")
 KE_ASM_STUB(restore_sprite_background_record, "m_12288_12680")
 
-KE_ASM_STUB(noop_sprite_callback_12680, "m_12680_12683")
-KE_ASM_STUB(noop_sprite_callback_12681, "m_12680_12683")
-KE_ASM_STUB(noop_sprite_callback_12682, "m_12680_12683")
+/* m_12680_12683: owned by port/asm/m_12680_12683.c */
 
 KE_ASM_STUB(render_sprite_record_kind_3_entry, "m_12684_1296e")
 KE_ASM_STUB(render_sprite_record_kind_3_draw, "m_12684_1296e")
 KE_ASM_STUB(restore_sprite_background_from_record, "m_12684_1296e")
 
-KE_ASM_STUB(noop_sprite_callback_12970, "m_12970_12973")
-KE_ASM_STUB(noop_sprite_callback_12971, "m_12970_12973")
-KE_ASM_STUB(noop_sprite_callback_12972, "m_12970_12973")
+/* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
 KE_ASM_STUB(render_transparent_sprite_record_entry, "m_12974_12a9c")
 KE_ASM_STUB(draw_transparent_sprite_rows, "m_12974_12a9c")
@@ -74,43 +44,17 @@ KE_ASM_STUB(draw_bob_sprite, "m_12a9c_12f30")
 KE_ASM_STUB(draw_bob_sprite_entry, "m_12a9c_12f30")
 KE_ASM_STUB(clip_and_dispatch_sprite_record, "m_12a9c_12f30")
 
-KE_ASM_STUB(copy_chunky_scanline_to_vga, "m_12f30_12f9c")
-KE_ASM_STUB(copy_chunky_scanline_to_vga_entry, "m_12f30_12f9c")
+/* m_12f30_12f9c: owned by port/asm/m_12f30_12f9c.c */
 
-KE_ASM_STUB(copy_screen_span, "m_12f9c_13324")
-KE_ASM_STUB(copy_screen_span_entry, "m_12f9c_13324")
-KE_ASM_STUB(copy_clipped_screen_rectangle, "m_12f9c_13324")
+/* m_12f9c_13324: owned by port/asm/m_12f9c_13324.c */
 
-KE_ASM_STUB(read_vga_pixel, "m_13324_13712")
-KE_ASM_STUB(read_vga_pixel_entry, "m_13324_13712")
-KE_ASM_STUB(write_vga_pixel, "m_13324_13712")
-KE_ASM_STUB(write_vga_pixel_entry, "m_13324_13712")
-KE_ASM_STUB(fill_vga_span, "m_13324_13712")
-KE_ASM_STUB(fill_vga_span_entry, "m_13324_13712")
-KE_ASM_STUB(fill_clipped_vga_rectangle, "m_13324_13712")
+/* m_13324_13712: owned by port/asm/m_13324_13712.c */
 
-KE_ASM_STUB(fill_planar_video_rows, "m_13712_137a8")
+/* m_13712_137a8: owned by port/asm/m_13712_137a8.c */
 
 /* m_137a8_13944: owned by port/asm/m_137a8_13944.c */
 
-KE_ASM_STUB(update_attr_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_attr_register, "m_13944_13a48")
-KE_ASM_STUB(update_crtc_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_crtc_register, "m_13944_13a48")
-KE_ASM_STUB(update_seq_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_seq_register, "m_13944_13a48")
-KE_ASM_STUB(update_gc_register_entry, "m_13944_13a48")
-KE_ASM_STUB(update_gc_register, "m_13944_13a48")
-KE_ASM_STUB(set_seq_plane_mask_entry, "m_13944_13a48")
-KE_ASM_STUB(set_seq_plane_mask, "m_13944_13a48")
-KE_ASM_STUB(rotate_seq_plane_mask_entry, "m_13944_13a48")
-KE_ASM_STUB(rotate_seq_plane_mask, "m_13944_13a48")
-KE_ASM_STUB(set_gc_read_map_entry, "m_13944_13a48")
-KE_ASM_STUB(set_gc_read_map, "m_13944_13a48")
-KE_ASM_STUB(set_gc_mode_entry, "m_13944_13a48")
-KE_ASM_STUB(set_gc_mode, "m_13944_13a48")
+/* m_13944_13a48: owned by port/asm/m_13944_13a48.c */
 
-KE_ASM_STUB(write_dac_palette_entry, "m_13a48_13a95")
-KE_ASM_STUB(write_dac_palette, "m_13a48_13a95")
-KE_ASM_STUB(copy_ds_to_es, "m_13a48_13a95")
+/* m_13a48_13a95: owned by port/asm/m_13a48_13a95.c */
 

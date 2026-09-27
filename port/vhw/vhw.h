@@ -87,6 +87,7 @@ int vkbd_bios_getch(void);                /* blocks via vhw_idle                
 /* ---- mouse driver INT 33h (mouse.c) ---------------------------------------------------- */
 void vmouse_init(void);
 void vmouse_motion(float dx, float dy);   /* main thread, relative host motion            */
+void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns); /* SDL event time       */
 void vmouse_buttons(int mask);            /* bit0 left, bit1 right, bit2 middle           */
 void vmouse_int33(union REGS *r, struct SREGS *s);
 
@@ -98,6 +99,8 @@ void vjoy_set(int axis, float value, int buttons); /* value -1..1               
 void vdma_init(void);
 /* Pull up to `len` bytes from an 8-bit channel; returns bytes read, *terminal set at TC.    */
 int vdma_read(int channel, uint8_t *dst, int len, int *terminal);
+/* Write `len` copies of a device sample to an 8-bit channel; returns bytes, *terminal at TC. */
+int vdma_write(int channel, uint8_t sample, int len, int *terminal);
 void vsb_init(void);
 void vsb_shutdown(void);
 
