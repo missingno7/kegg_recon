@@ -86,8 +86,8 @@ extern unsigned g_e4d4;
 extern void f_100fa(int, int, int, int);
 extern void f_1085a_eklzmb(int);
 extern void shutdown_with_exit_message(unsigned, unsigned);
-extern void f_13a48(void *, int, int, int);
-extern void f_13b72(void);
+extern void write_dac_palette(void *, int, int, int);
+extern void handle_s_key(void);
 extern void f_3beb(int);
 extern void f_80d8(void);
 extern void f_843a(void);
@@ -656,7 +656,7 @@ void f_4602_state_handler(void) {
 void f_469b_state_handler(void) {
     f_c20d(0x56);
     m_de5c[1] |= 8;
-    f_13a48(g_ddd4_eoraaik, 0, 0x100, 0x20);
+    write_dac_palette(g_ddd4_eoraaik, 0, 0x100, 0x20);
     g_dee4->at_30 += g_dDb8 << 7;
 }
 

@@ -13,7 +13,7 @@ typedef unsigned int size_t;
 typedef struct { unsigned f : 2; } BF4_0_2;
 extern void f_c20d(int);
 extern void f_8fce(int, int);
-extern void f_13a48(void *, int, int, int);
+extern void write_dac_palette(void *, int, int, int);
 extern void f_9053(void);
 extern void f_10502(int, int);
 extern void f_58b0(void);

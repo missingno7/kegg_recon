@@ -1,16 +1,18 @@
 .386
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-        PUBLIC g_8424
-g_8424  DB 0
+        PUBLIC saved_ds
+saved_ds  DB 0
 _DATA ENDS
 DGROUP GROUP _DATA
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
         ASSUME CS:_TEXT
-        PUBLIC a_13a48
-        PUBLIC f_13a48
-f_13a48 LABEL NEAR
-a_13a48 PROC NEAR
+        PUBLIC write_dac_palette_entry
+        PUBLIC write_dac_palette
+; Parameters: RGB source, starting DAC index, color count, and brightness adjustment.
+; Apply the adjustment to each component, clamp to 0..63, and write the VGA DAC.
+write_dac_palette LABEL NEAR
+write_dac_palette_entry PROC NEAR
         pushad
 L_13A49:
         lea ebp, [esp + 1Ch]
@@ -70,14 +72,15 @@ L_13A85:
         ret
 L_13A86:
         add byte ptr [eax], al
-        PUBLIC f_13a88
-f_13a88 LABEL NEAR
+        PUBLIC copy_ds_to_es
+copy_ds_to_es LABEL NEAR
+; The game uses the data selector as the destination selector for string operations.
 L_13A88:
-        mov [g_8424], ds
+        mov [saved_ds], ds
 L_13A8E:
-        mov es, [g_8424]
+        mov es, [saved_ds]
 L_13A94:
         ret
-a_13a48 ENDP
+write_dac_palette_entry ENDP
 _TEXT ENDS
         END

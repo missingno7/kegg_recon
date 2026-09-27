@@ -3,10 +3,12 @@ EXTRN g_e324:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
-        PUBLIC a_13944
-        PUBLIC f_13944
-f_13944 LABEL NEAR
-a_13944 PROC NEAR
+        PUBLIC update_attr_register_entry
+        PUBLIC update_attr_register
+; Parameters: register index, bits to retain, and bits to set.
+; Read-modify-write an attribute-controller register.
+update_attr_register LABEL NEAR
+update_attr_register_entry PROC NEAR
         push ebp
 L_13945:
         lea ebp, [esp]
@@ -42,12 +44,14 @@ L_13962:
         pop ebp
 L_13963:
         ret
-a_13944 ENDP
+update_attr_register_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_13964
-        PUBLIC f_13964
-f_13964 LABEL NEAR
-a_13964 PROC NEAR
+        PUBLIC update_crtc_register_entry
+        PUBLIC update_crtc_register
+; Parameters: register index, bits to retain, and bits to set.
+; Read-modify-write a CRT-controller register.
+update_crtc_register LABEL NEAR
+update_crtc_register_entry PROC NEAR
         push ebp
 L_13965:
         lea ebp, [esp]
@@ -83,12 +87,14 @@ L_13982:
         pop ebp
 L_13983:
         ret
-a_13964 ENDP
+update_crtc_register_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_13984
-        PUBLIC f_13984
-f_13984 LABEL NEAR
-a_13984 PROC NEAR
+        PUBLIC update_seq_register_entry
+        PUBLIC update_seq_register
+; Parameters: register index, bits to retain, and bits to set.
+; Read-modify-write a VGA sequencer register.
+update_seq_register LABEL NEAR
+update_seq_register_entry PROC NEAR
         push ebp
 L_13985:
         lea ebp, [esp]
@@ -124,12 +130,14 @@ L_139A2:
         pop ebp
 L_139A3:
         ret
-a_13984 ENDP
+update_seq_register_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_139a4
-        PUBLIC f_139a4
-f_139a4 LABEL NEAR
-a_139a4 PROC NEAR
+        PUBLIC update_gc_register_entry
+        PUBLIC update_gc_register
+; Parameters: register index, bits to retain, and bits to set.
+; Read-modify-write a VGA graphics-controller register.
+update_gc_register LABEL NEAR
+update_gc_register_entry PROC NEAR
         push ebp
 L_139A5:
         lea ebp, [esp]
@@ -165,12 +173,13 @@ L_139C2:
         pop ebp
 L_139C3:
         ret
-a_139a4 ENDP
+update_gc_register_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_139c4
-        PUBLIC f_139c4
-f_139c4 LABEL NEAR
-a_139c4 PROC NEAR
+        PUBLIC set_seq_plane_mask_entry
+        PUBLIC set_seq_plane_mask
+; Set the sequencer's four-bit plane write mask and update its cached value.
+set_seq_plane_mask LABEL NEAR
+set_seq_plane_mask_entry PROC NEAR
         push ebp
 L_139C5:
         lea ebp, [esp]
@@ -196,12 +205,13 @@ L_139DF:
         shr eax, 8
 L_139E2:
         ret
-a_139c4 ENDP
+set_seq_plane_mask_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_139e3
-        PUBLIC f_139e3
-f_139e3 LABEL NEAR
-a_139e3 PROC NEAR
+        PUBLIC rotate_seq_plane_mask_entry
+        PUBLIC rotate_seq_plane_mask
+; Rotate 0x11 by the requested amount and use the low nibble as the plane mask.
+rotate_seq_plane_mask LABEL NEAR
+rotate_seq_plane_mask_entry PROC NEAR
         push ebp
 L_139E4:
         lea ebp, [esp]
@@ -233,12 +243,13 @@ L_13A06:
         shr eax, 8
 L_13A09:
         ret
-a_139e3 ENDP
+rotate_seq_plane_mask_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_13a0a
-        PUBLIC f_13a0a
-f_13a0a LABEL NEAR
-a_13a0a PROC NEAR
+        PUBLIC set_gc_read_map_entry
+        PUBLIC set_gc_read_map
+; Select the VGA plane used by graphics-controller reads.
+set_gc_read_map LABEL NEAR
+set_gc_read_map_entry PROC NEAR
         push ebp
 L_13A0B:
         lea ebp, [esp]
@@ -264,12 +275,13 @@ L_13A25:
         shr eax, 8
 L_13A28:
         ret
-a_13a0a ENDP
+set_gc_read_map_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_13a29
-        PUBLIC f_13a29
-f_13a29 LABEL NEAR
-a_13a29 PROC NEAR
+        PUBLIC set_gc_mode_entry
+        PUBLIC set_gc_mode
+; Set the cached VGA graphics-controller mode register.
+set_gc_mode LABEL NEAR
+set_gc_mode_entry PROC NEAR
         push ebp
 L_13A2A:
         lea ebp, [esp]
@@ -294,6 +306,6 @@ L_13A41:
 L_13A44:
         ret
         ORG $+3 ; original zero fill to the next aligned entry at 13A48h
-a_13a29 ENDP
+set_gc_mode_entry ENDP
 _TEXT ENDS
         END

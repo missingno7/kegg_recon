@@ -1,12 +1,12 @@
 .386P
 EXTRN g_e324:WORD
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-        PUBLIC g_8418
-        PUBLIC g_841c
-        PUBLIC g_8420
-g_8418  DD 0FFFFFFFFh
-g_841c  DD 0FFFFFFFFh
-g_8420  DD 0FFFFFFFFh
+        PUBLIC cpu_type
+        PUBLIC cpu_mode
+        PUBLIC cpu_iopl
+cpu_type  DD 0FFFFFFFFh
+cpu_mode  DD 0FFFFFFFFh
+cpu_iopl  DD 0FFFFFFFFh
 _DATA ENDS
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
@@ -14,17 +14,18 @@ DGROUP GROUP _DATA
         ASSUME CS:_TEXT
         ASSUME DS:DGROUP
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_137a8
-        PUBLIC f_137a8
-f_137a8 LABEL NEAR
-a_137a8 PROC NEAR
+        PUBLIC probe_cpu_environment_entry
+        PUBLIC probe_cpu_environment
+; Record the detected CPU generation, execution mode, and I/O privilege level.
+probe_cpu_environment LABEL NEAR
+probe_cpu_environment_entry PROC NEAR
         pushad
 L_137A9:
         lea ebp, [esp + 1Ch]
 L_137AD:
         cli
 L_137AE:
-        mov dword ptr [g_8418], 386h
+        mov dword ptr [cpu_type], 386h
 L_137B8:
         pushfd
 L_137B9:
@@ -60,9 +61,9 @@ L_137D2:
 L_137D7:
         je short L_137E3
 L_137D9:
-        mov dword ptr [g_8418], 486h
+        mov dword ptr [cpu_type], 486h
 L_137E3:
-        mov dword ptr [g_841c], 0
+        mov dword ptr [cpu_mode], 0
 L_137ED:
         smsw ax
 L_137F0:
@@ -70,7 +71,7 @@ L_137F0:
 L_137F2:
         je short L_13811
 L_137F4:
-        mov dword ptr [g_841c], 1
+        mov dword ptr [cpu_mode], 1
 L_137FE:
         pushfd
 L_137FF:
@@ -80,7 +81,7 @@ L_13800:
 L_13805:
         je short L_13811
 L_13807:
-        mov dword ptr [g_841c], 2
+        mov dword ptr [cpu_mode], 2
 L_13811:
         pushfd
 L_13812:
@@ -90,7 +91,7 @@ L_13813:
 L_13816:
         and eax, 3
 L_13819:
-        mov dword ptr [g_8420], eax
+        mov dword ptr [cpu_iopl], eax
 L_1381E:
         sti
 L_1381F:
@@ -98,12 +99,14 @@ L_1381F:
 L_13820:
         ret
         ORG $+3 ; original zero fill to the next aligned entry at 13824h
-a_137a8 ENDP
+probe_cpu_environment_entry ENDP
         ASSUME CS:_TEXT
-        PUBLIC a_13824
-        PUBLIC f_13824
-f_13824 LABEL NEAR
-a_13824 PROC NEAR
+        PUBLIC clear_video_bytes_entry
+        PUBLIC clear_video_bytes
+; Parameters: destination at [ebp+8], byte count at [ebp+0Ch].
+; Clear the range, switching VGA write planes when its start is in video memory.
+clear_video_bytes LABEL NEAR
+clear_video_bytes_entry PROC NEAR
         push ebp
 L_13825:
         lea ebp, [esp]
@@ -171,13 +174,15 @@ L_13887:
         pop ebp
 L_13888:
         ret
-a_13824 ENDP
+clear_video_bytes_entry ENDP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
-        PUBLIC a_13889
+        PUBLIC move_memory_bytes
         PUBLIC f_13889
+; Parameters: source at [ebp+8], destination at [ebp+0Ch], byte count at [ebp+10h].
+; Move overlapping ranges safely; use VGA latch-copy mode for eligible video-to-video copies.
 f_13889 LABEL NEAR
-a_13889 PROC NEAR
+move_memory_bytes PROC NEAR
         push ebp
 L_1388A:
         lea ebp, [esp]
@@ -300,6 +305,6 @@ L_13941:
 L_13942:
         ret
         ORG $+1 ; original zero fill to the next even code address
-a_13889 ENDP
+move_memory_bytes ENDP
 _TEXT ENDS
 END

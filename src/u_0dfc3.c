@@ -10,7 +10,7 @@ extern void f_9b44(int);
 extern void f_e028(void);
 void f_dfc3(void);
 extern short g_756f;
-extern int a_13824(int, int);
+extern int clear_video_bytes_entry(int, int);
 extern void f_e473(int);
 void f_e6b3(unsigned char *p);
 extern void f_e813(void);
@@ -18,7 +18,7 @@ extern void f_e855(short);
 extern void f_ec9c(void);
 extern void _disable(void);
 extern void _enable(void);
-extern int f_13964(unsigned char, unsigned char, unsigned char);
+extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
 extern int g_947c;
 extern int f_135e8();
 extern short g_7b14;
@@ -26,12 +26,12 @@ extern short g_7b16;
 extern void f_ee65(int);
 extern void f_eda0(void);
 extern int g_7b00;
-extern int f_13944(unsigned char, unsigned char, unsigned char);
+extern int update_attr_register(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
 extern int g_7b04;
 extern int g_7b08;
 extern int g_7b0c;
-extern void f_13a48(void *, int, int, int);
+extern void write_dac_palette(void *, int, int, int);
 extern void f_9d40(short);
 extern short g_7b10;
 extern int outp(int, int);
@@ -128,14 +128,14 @@ L_e0e9:;
     if (g_75ce[v_c].mode_id == -1) goto L_e3c7;
     f_9afc();
     f_ec9c();
-    a_13824(0xa0000, 0x10000);
+    clear_video_bytes_entry(0xa0000, 0x10000);
     if (g_e324.e381 == g_75ce[v_c].video_mode.dword) goto L_e168;
     g_e324.e381 = g_75ce[v_c].video_mode.bytes[0];
     *(short *)v_3c = g_75ce[v_c].video_mode.word;
     *(short *)(v_3c + 4) = g_75ce[v_c].bios_mode;
     int386(0x10, (void *)v_3c, (void *)v_3c);
 L_e168:;
-    a_13824(0xa0000, 0x10000);
+    clear_video_bytes_entry(0xa0000, 0x10000);
     g_e324.e366 = g_75ce[v_c].width;
     g_e324.e36a = g_75ce[v_c].height;
     g_e324.e35e = g_75ce[v_c].row_bytes;
@@ -228,22 +228,22 @@ void f_e3e5(void) {
 }
 
 void f_e41d(void) {
-    extern void f_13a0a(unsigned int);
-    extern void f_139c4(unsigned int);
-    extern void f_13a29(unsigned int);
+    extern void set_gc_read_map(unsigned int);
+    extern void set_seq_plane_mask(unsigned int);
+    extern void set_gc_mode(unsigned int);
     if (g_75cc == -1) {
-        f_13a0a(g_e324.e380);
-        f_139c4(g_e324.e37f);
-        f_13a29(g_e324.e383);
+        set_gc_read_map(g_e324.e380);
+        set_seq_plane_mask(g_e324.e37f);
+        set_gc_mode(g_e324.e383);
         g_75cc = 1;
     }
 }
 
 void f_e473(int a0)
 {
-    extern void f_13a0a(short);
-    extern void f_139c4(short);
-    extern void f_13a29(short);
+    extern void set_gc_read_map(short);
+    extern void set_seq_plane_mask(short);
+    extern void set_gc_mode(short);
     if (a0 != 1) goto L_e582;
     _disable();
     outp(0x3ce, 5);
@@ -273,9 +273,9 @@ L_e582:;
     outp(0x3d5, inp(0x3d5) & -0x41);
     _enable();
 L_e67e:;
-    f_13a0a(0);
-    f_139c4(0xf);
-    f_13a29(0x40);
+    set_gc_read_map(0);
+    set_seq_plane_mask(0xf);
+    set_gc_mode(0x40);
     g_e324.state = (unsigned short)a0;
 }
 
@@ -311,8 +311,8 @@ void f_e6b3(unsigned char *p) {
 
 void f_e813(void)
 {
-    f_13964(3, 0xff, 0x80);
-    f_13964(0x11, 0x7f, 0);
+    update_crtc_register(3, 0xff, 0x80);
+    update_crtc_register(0x11, 0x7f, 0);
 }
 
 void f_e855(short a0)

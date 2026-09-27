@@ -4,8 +4,9 @@ EXTRN g_e324:WORD
 EXTRN g_7b16:WORD
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
-        PUBLIC L_13712
-L_13712:
+        PUBLIC fill_planar_video_rows
+; Fill successive VGA scan-line spans with one repeated pixel value.
+fill_planar_video_rows:
         cmp byte ptr [g_e324+61h], 0Fh
 L_13719:
         je short L_1372C

@@ -14,7 +14,7 @@ void f_dfc3(void);
 extern short g_756f;
 extern struct VideoModeRecord g_75ce[];
 extern struct VideoPresetRecord g_77ee[];
-extern int a_13824(int, int);
+extern int clear_video_bytes_entry(int, int);
 extern void f_e473(int);
 void f_e6b3(unsigned char *p);
 extern void f_e813(void);
@@ -23,7 +23,7 @@ extern void f_ec9c(void);
 extern short g_75cc;
 extern void _disable(void);
 extern void _enable(void);
-extern int f_13964(unsigned char, unsigned char, unsigned char);
+extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
 extern int g_947c;
 extern int f_135e8();
 extern short g_7b14;
@@ -31,9 +31,9 @@ extern short g_7b16;
 extern void f_ee65(int);
 extern void f_eda0(void);
 extern int g_7b00;
-extern int f_13944(unsigned char, unsigned char, unsigned char);
+extern int update_attr_register(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
-extern void f_13a48(void *, int, int, int);
+extern void write_dac_palette(void *, int, int, int);
 extern void f_9d40(short);
 extern int outp(int, int);
 extern int inp(int);
@@ -74,17 +74,17 @@ short g_7b10 = 0;
 short g_7b12 = 0;
 
 void f_e9dd(unsigned char value) {
-    f_13964(0x17, 0, value);
+    update_crtc_register(0x17, 0, value);
 }
 
 void f_ea04(int value) {
-    f_13964(0x18, 0, (unsigned char)value);
-    f_13964(7, 0xef, (value & 0x100) >> 4);
-    f_13964(9, 0xbf, (value & 0x200) >> 3);
+    update_crtc_register(0x18, 0, (unsigned char)value);
+    update_crtc_register(7, 0xef, (value & 0x100) >> 4);
+    update_crtc_register(9, 0xbf, (value & 0x200) >> 3);
 }
 
 void f_ea71(unsigned char value) {
-    f_13964(9, 0xe0, value & 0x1f);
+    update_crtc_register(9, 0xe0, value & 0x1f);
 }
 
 void f_ea9f(void * a, int x, int y, int step) {
@@ -106,7 +106,7 @@ void f_ea9f(void * a, int x, int y, int step) {
         if (step > 0) {
             if (x > y) x = y;
         } else if (x < y) x = y;
-        f_13a48(a, g_7b04, g_7b08, x);
+        write_dac_palette(a, g_7b04, g_7b08, x);
         for (i = 0; i < g_7b0c; i++) f_9d40(0);
     } while (x != y);
 }
@@ -129,7 +129,7 @@ void f_ec44(void * value) {
 }
 
 void f_ec76(void * value) {
-    f_13a48(value, 0, 0x100, 0);
+    write_dac_palette(value, 0, 0x100, 0);
 }
 
 void f_ec9c(void) {

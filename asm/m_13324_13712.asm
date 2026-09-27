@@ -2,7 +2,7 @@
 EXTRN g_7b14:WORD
 EXTRN g_e324:WORD
 EXTRN g_7b16:WORD
-EXTRN L_13712:NEAR
+EXTRN fill_planar_video_rows:NEAR
 _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
@@ -540,7 +540,7 @@ L_13671:
 L_13672:
         cmp word ptr [g_e324], 0
 L_1367A:
-        je near ptr L_13712
+        je near ptr fill_planar_video_rows
 L_13680:
         cmp byte ptr [g_e324+61h], 0Fh
 L_13687:

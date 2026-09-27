@@ -73,8 +73,8 @@ extern unsigned g_e4d4;
 extern void f_100fa(int, int, int, int);
 extern int f_1085a_eklzmb(void *);
 extern void shutdown_with_exit_message(unsigned, unsigned);
-extern void f_13a48(void *, int, int, int);
-extern void f_13b72(void);
+extern void write_dac_palette(void *, int, int, int);
+extern void handle_s_key(void);
 extern void f_3beb(int);
 extern void f_80d8(void);
 extern void f_843a(void);
@@ -1609,7 +1609,7 @@ void f_951_vbfkytgovb(void)
     g_7b3d_yrsiuxxd = 0;
 L_976:;
     f_9d40(3);
-    f_13b72();
+    handle_s_key();
     if (g_7b3d_yrsiuxxd != 0) goto L_9ae;
     if (g_7bfe == g_7c00) goto L_9ac;
     if (g_7bfe != 0) goto L_9ae;
@@ -1726,8 +1726,8 @@ L_d9c:;
     goto L_aae;
 L_da6:;
     f_80d8();
-    f_13b72();
-    f_13a48((g_df48 * 3) + g_8870, 0xc0, 0x40, 0);
+    handle_s_key();
+    write_dac_palette((g_df48 * 3) + g_8870, 0xc0, 0x40, 0);
     --g_df4c;
     if (g_df4c != 0) goto L_e0a;
     g_df4c = 0xa;
@@ -1832,7 +1832,7 @@ L_1194:;
     if (h_df5c != 0) goto L_11fd;
     f_9d40(3);
     f_80d8();
-    f_13b72();
+    handle_s_key();
     f_1202();
     f_1227();
     f_127e();
@@ -1914,7 +1914,7 @@ L_13a0:;
 }
 
 void f_13aa(void) {
-    f_13a48(x_dd40_xbukycw + g_df48 * 3, 0xc0, 0x20, 0);
+    write_dac_palette(x_dd40_xbukycw + g_df48 * 3, 0xc0, 0x20, 0);
     --g_df4c;
     if (g_df4c == 0) {
         g_df4c = 2;
@@ -2275,7 +2275,7 @@ void f_20f4(void)
     f_10137_squghx();
 L_2121:;
     f_9d40(3);
-    f_13b72();
+    handle_s_key();
     if (g_7b3d_yrsiuxxd != 0) goto L_2158;
     if (g_7bfe == g_7c00) goto L_2156;
     if ((*(unsigned char *)&g_7bfe & 7) != 0) goto L_2158;
@@ -2500,7 +2500,7 @@ void f_2903(void)
     for (i = 0; i < 0x15e; i++)
         f_9d40(1);
     for (i = 0; i < 0x80; i++)
-        f_13a48(x_dd40_xbukycw, 0x80, 0x80, 0x3f - i / 2);
+        write_dac_palette(x_dd40_xbukycw, 0x80, 0x80, 0x3f - i / 2);
     f_ea9f(x_dd40_xbukycw, 0, -0x3f, -1);
 
     k_DD48_jbwjbqarofg = old1;

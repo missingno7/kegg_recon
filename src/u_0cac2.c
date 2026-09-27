@@ -36,7 +36,7 @@ extern void f_df49(unsigned int);
 extern void f_11494(void);
 extern void f_114a0(void);
 extern void f_11377(unsigned int);
-extern void f_13a88(void);
+extern void copy_ds_to_es(void);
 extern void f_113bd(void);
 extern unsigned int g_e300;
 extern unsigned int g_e304;
@@ -327,7 +327,7 @@ finish:
 }
 
 void __interrupt f_d252(void) {
-    f_13a88();
+    copy_ds_to_es();
     f_11485();
     f_113bd();
     g_e2f4 = 0;

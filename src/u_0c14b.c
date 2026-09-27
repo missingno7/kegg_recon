@@ -39,7 +39,7 @@ extern void f_11365(void);
 unsigned char *g_e26c;
 
 extern void f_112fa(void);
-extern int a_13824(int, int);
+extern int clear_video_bytes_entry(int, int);
 extern void f_13889(int, int, int);
 
 /* _DATA [0x742c,0x746c) */
@@ -171,7 +171,7 @@ void f_c3fb(void)
     f_13889(g_7444, g_7454, g_7458);
     goto L_c496;
 L_c482:;
-    a_13824(g_7454, g_7458);
+    clear_video_bytes_entry(g_7454, g_7458);
 L_c496:;
     if (g_7454 == (int)g_e26c) goto L_c4c9;
     memset((void *)(g_7454 + g_7458), *(unsigned char *)(unsigned char *)((g_7454 + g_7458) + -1), 0x10);
@@ -184,7 +184,7 @@ L_c4e4:;
     f_13889(g_7444, g_7454, g_7448);
     goto L_c51d;
 L_c509:;
-    a_13824(g_7454, g_7448);
+    clear_video_bytes_entry(g_7454, g_7448);
 L_c51d:;
     if (g_7460 != -1) goto L_c57d;
     g_7464 = g_7458 - g_7448;
@@ -192,7 +192,7 @@ L_c51d:;
     f_13889(g_7434, g_7454 + g_7448, g_7464);
     goto L_c57b;
 L_c561:;
-    a_13824(g_7454 + g_7448, g_7464);
+    clear_video_bytes_entry(g_7454 + g_7448, g_7464);
 L_c57b:;
     goto L_c5ad;
 L_c57d:;

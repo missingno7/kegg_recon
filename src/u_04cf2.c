@@ -32,7 +32,7 @@ extern unsigned char g_e46b;
 extern short m_E4c4;
 extern short g_e4c6;
 extern void f_10502(int, int);
-extern void f_13a48(void *, int, int, int);
+extern void write_dac_palette(void *, int, int, int);
 extern void f_5381(void);
 extern void f_57fa(void);
 extern Pair8 g_5e68[];
@@ -192,7 +192,7 @@ L_4ec7:;
     if (m_de5c[1] & 8) {
     g_8e20 = --g_dee4->at_30;
     if (g_8e20 < 32) {
-    f_13a48(g_ddd4_eoraaik, 0, 256, g_8e20);
+    write_dac_palette(g_ddd4_eoraaik, 0, 256, g_8e20);
     }
 L_4f06:;
     if (g_8e20 <= 0) {

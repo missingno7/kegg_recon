@@ -86,7 +86,7 @@ extern struct VideoPresetRecord g_77ee[];
 
 
 
-extern int a_13824(int, int);
+extern int clear_video_bytes_entry(int, int);
 extern void f_e473(int);
 void f_e6b3(unsigned char *p);
 extern void f_e813(void);
@@ -104,7 +104,7 @@ extern short g_75cc;
 
 extern void _disable(void);
 extern void _enable(void);
-extern int f_13964(unsigned char, unsigned char, unsigned char);
+extern int update_crtc_register(unsigned char, unsigned char, unsigned char);
 extern int g_947c;
 extern int f_135e8();
 extern short g_7b14;
@@ -112,12 +112,12 @@ extern short g_7b16;
 extern void f_ee65(int);
 extern void f_eda0(void);
 
-extern int f_13944(unsigned char, unsigned char, unsigned char);
+extern int update_attr_register(unsigned char, unsigned char, unsigned char);
 extern void outpw(int, int);
 extern int g_7b04;
 extern int g_7b08;
 extern int g_7b0c;
-extern void f_13a48(void *, int, int, int);
+extern void write_dac_palette(void *, int, int, int);
 extern void f_9d40(short);
 extern short g_7b10;
 extern int outp(int, int);
@@ -164,7 +164,7 @@ void f_e95c(int a0)
 }
 
 void f_e983(unsigned char value) {
-    f_13944(0x13, 0xf0, (value & 3) << 1);
+    update_attr_register(0x13, 0xf0, (value & 3) << 1);
 }
 
 void f_e9b3(int value) {
