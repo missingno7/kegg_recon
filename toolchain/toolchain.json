@@ -256,6 +256,25 @@
    "key_files": {
     "TASM.EXE": "672cc3814fb66fcb73550aa5ad98049bb52ebcd66c66dcdedbe81d83335e62ff"
    }
+  },
+  "asm_tasm31": {
+   "product": "Borland Turbo Assembler 3.1 (banner 'Turbo Assembler Version 3.1, Copyright (c) 1988, 1992 Borland')",
+   "status": "candidate",
+   "dir": "watcom-10.0/BIN",
+   "source": {
+    "origin": "file WATCOM/BIN/TASM.EXE (dated 2011-09-18) inside the pinned archive download/watcom/deaddoomer_WATCOM.zip (sha256 7bf0b04c...); a third-party addition to that installed tree, NOT pristine Borland media",
+    "local": "download/watcom/deaddoomer_WATCOM.zip",
+    "sha256": "7bf0b04c1d076400bf998a8ad2e2fe1fb7e4d61382b7079b07ed5b282e17a27b"
+   },
+   "hosts": {
+    "tasm": {
+     "msdos": "TASM.EXE"
+    }
+   },
+   "env": {},
+   "key_files": {
+    "TASM.EXE": "80534cd6a1e2c2b4376ae3f21954c6dbfa77a6998d5e0bf8b8bee6153f3174ea"
+   }
   }
  },
  "pending": {
@@ -391,6 +410,16 @@
    "host": "dosbox",
    "status": "strong",
    "evidence": "docs/compiler-notes.md: -ot pads CONST literals with stale bytes of the freed 4 KiB source-read buffer at BASE+k; BASE depends on includes, source path length and host; only the DOS host (C:\\CAND.C) is checkout-independent"
+  },
+  "game-asm-tasm31": {
+   "install": "asm_tasm31",
+   "tool": "tasm",
+   "flags": [
+    "/ml"
+   ],
+   "host": "msdos",
+   "status": "strong",
+   "evidence": "build/workers/asmfinal: KE fixup order = resolved fixups first, forward refs second in ~490-byte batches (TASM single-pass); ALIGN pads 87 DB; 32-bit fixup types only with 3.1 (1.x/2.x give 16-bit)"
   }
  }
 }

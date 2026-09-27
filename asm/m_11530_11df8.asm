@@ -1,193 +1,102 @@
 .386P
-_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
-EXTRN f_11b04:DWORD
-EXTRN f_11b6e:DWORD
-EXTRN f_11b74:DWORD
-EXTRN g_7db4:DWORD
-EXTRN g_7db8:WORD
-EXTRN g_7dba:BYTE
-EXTRN g_7dbb:BYTE
-EXTRN g_7dbc:WORD
-EXTRN g_7dbe:BYTE
-EXTRN g_7dbf:BYTE
-EXTRN g_7dc0:WORD
-EXTRN g_7dc2:DWORD
-EXTRN g_7dc6:BYTE
-EXTRN g_7dc8:WORD
-EXTRN g_7dca:DWORD
-EXTRN g_7dce:DWORD
-EXTRN g_7dd2:WORD
-EXTRN g_7dd4:WORD
-EXTRN g_7dd6:WORD
-EXTRN g_7dd8:WORD
-EXTRN g_7dda:WORD
-EXTRN g_7ddc:DWORD
-EXTRN g_7de0:WORD
-EXTRN g_7de2:BYTE
-EXTRN g_7e92:DWORD
-EXTRN g_7eb2:BYTE
-EXTRN g_7eb3:BYTE
-EXTRN g_7eb4:BYTE
-EXTRN g_7eb5:BYTE
-EXTRN g_7f35:DWORD
-EXTRN g_7f39:BYTE
-EXTRN g_7f3a:BYTE
-EXTRN g_7f3b:BYTE
-EXTRN g_7f3c:BYTE
-EXTRN g_7f6c:DWORD
-EXTRN g_816c:DWORD
-EXTRN g_81ec:DWORD
-EXTRN g_826c:DWORD
-EXTRN g_82ec:BYTE
-EXTRN g_830c:DWORD
-EXTRN g_8310:BYTE
-_DATA ENDS
 DGROUP GROUP _DATA
-_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
-        ASSUME CS:_TEXT
-        ASSUME DS:DGROUP
+_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+        PUBLIC g_7dbc
+g_7dbc	DW 0
+        PUBLIC g_7dbe
+g_7dbe	DB 0
+        PUBLIC g_7dbf
+g_7dbf	DB 0
+        PUBLIC g_7dc0
+g_7dc0	DW 0
+        PUBLIC g_7dc2
+g_7dc2	DD 0
+        PUBLIC g_7dc6
+g_7dc6 LABEL DWORD
+        DB 0h, 0h
+        PUBLIC g_7dc8
+g_7dc8	DW 0
+        PUBLIC g_7dca
+g_7dca	DD 0
+        PUBLIC g_7dce
+g_7dce	DD 0
+        PUBLIC g_7dd2
+g_7dd2	DW 0
+        PUBLIC g_7dd4
+g_7dd4	DW 0
+        PUBLIC g_7dd6
+g_7dd6	DW 0
+        PUBLIC g_7dd8
+g_7dd8	DW 0
+        PUBLIC g_7dda
+g_7dda	DW 0
+        PUBLIC g_7ddc
+g_7ddc	DD 0
+        PUBLIC g_7de0
+g_7de0	DW 0
+        PUBLIC g_7de2
+g_7de2	DB 22 DUP (0)
+        PUBLIC g_7df8
+g_7df8	DB 22 DUP (0)
+        PUBLIC g_7e0e
+g_7e0e	DB 22 DUP (0)
+        PUBLIC g_7e24
+g_7e24	DB 22 DUP (0)
+        PUBLIC g_7e3a
+g_7e3a	DB 22 DUP (0)
+        PUBLIC g_7e50
+g_7e50	DB 22 DUP (0)
+        PUBLIC g_7e66
+g_7e66	DB 22 DUP (0)
+        PUBLIC g_7e7c
+g_7e7c	DB 22 DUP (0)
+        PUBLIC g_7e92
+g_7e92	DD g_7de2
+        DD g_7df8
+        DD g_7e0e
+        DD g_7e24
+        DD g_7e3a
+        DD g_7e50
+        DD g_7e66
+        DD g_7e7c
+        PUBLIC g_7eb2
+g_7eb2	DB 0
+        PUBLIC g_7eb3
+g_7eb3	DB 0
+        PUBLIC g_7eb4
+g_7eb4	DB 0
+        PUBLIC g_7eb5
+g_7eb5	DB 128 DUP (0)
+        PUBLIC g_7f35
+g_7f35	DD 0
+        PUBLIC g_7f39
+g_7f39	DB 0
+        PUBLIC g_7f3a
+g_7f3a	DB 0
+        PUBLIC g_7f3b
+g_7f3b	DB 0
+        PUBLIC g_7f3c
+g_7f3c	DB 48 DUP (0)
+        PUBLIC g_7f6c
+g_7f6c	DD 128 DUP (0)
+        PUBLIC g_816c
+g_816c	DD 32 DUP (0)
+        PUBLIC g_81ec
+g_81ec	DD 32 DUP (0)
+        PUBLIC g_826c
+g_826c	DD 32 DUP (0)
+        PUBLIC g_82ec
+g_82ec	DB 32 DUP (0)
+        PUBLIC g_830c
+g_830c	DD 0
+        PUBLIC g_8310
+g_8310	DD 0
+_DATA ENDS
+_TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
-        PUBLIC a_11494
-        PUBLIC f_11494
-f_11494 LABEL NEAR
-a_11494 PROC NEAR
-        push eax
-L_11495:
-        mov al, byte ptr [g_7dbb]
-L_1149A:
-        or al, 4
-L_1149C:
-        out 0Ah, al
-L_1149E:
-        pop eax
-L_1149F:
-        ret
-        PUBLIC f_114a0
-f_114a0 LABEL NEAR
-L_114A0:
-        push eax
-L_114A1:
-        push ecx
-L_114A2:
-        push edx
-L_114A3:
-        mov cl, byte ptr [g_7dbb]
-L_114A9:
-        mov al, cl
-L_114AB:
-        or al, 4
-L_114AD:
-        out 0Ah, al
-L_114AF:
-        out 0Ch, al
-L_114B1:
-        mov al, cl
-L_114B3:
-        or al, byte ptr [g_7dba]
-L_114B9:
-        out 0Bh, al
-L_114BB:
-        movzx dx, cl
-L_114BF:
-        add dx, dx
-L_114C2:
-        mov eax, dword ptr [g_7db4]
-L_114C7:
-        out dx, al
-L_114C8:
-        mov al, ah
-L_114CA:
-        out dx, al
-L_114CB:
-        inc dx
-L_114CD:
-        mov ax, word ptr [g_7db8]
-L_114D3:
-        dec ax
-L_114D5:
-        out dx, al
-L_114D6:
-        mov al, ah
-L_114D8:
-        out dx, al
-L_114D9:
-        mov edx, 82818387h
-L_114DE:
-        shl cl, 3
-L_114E1:
-        shr edx, cl
-L_114E3:
-        xor dh, dh
-L_114E5:
-        shr cl, 3
-L_114E8:
-        shr eax, 10h
-L_114EB:
-        out dx, al
-L_114EC:
-        mov al, cl
-L_114EE:
-        out 0Ah, al
-L_114F0:
-        pop edx
-L_114F1:
-        pop ecx
-L_114F2:
-        pop eax
-L_114F3:
-        ret
-L_114F4:
-        push ecx
-L_114F5:
-        push edx
-L_114F6:
-        movzx dx, byte ptr [g_7dbb]
-L_114FE:
-        add dx, dx
-L_11501:
-        inc dx
-L_11503:
-        in al, dx
-L_11504:
-        mov ah, al
-L_11506:
-        in al, dx
-L_11507:
-        xchg al, ah
-L_11509:
-        mov cx, ax
-L_1150C:
-        in al, dx
-L_1150D:
-        mov ah, al
-L_1150F:
-        in al, dx
-L_11510:
-        xchg al, ah
-L_11512:
-        sub cx, ax
-L_11515:
-        cmp cx, 10h
-L_11519:
-        jg short L_11509
-L_1151B:
-        cmp cx, -10h
-L_1151F:
-        jl short L_11509
-L_11521:
-        neg ax
-L_11524:
-        add ax, word ptr [g_7db8]
-L_1152B:
-        dec ax
-L_1152D:
-        pop edx
-L_1152E:
-        pop ecx
-L_1152F:
-        ret
         PUBLIC f_11530
 f_11530 LABEL NEAR
+a_11530 PROC NEAR
 L_11530:
         enter 0, 0
 L_11534:
@@ -951,7 +860,7 @@ L_11A62:
 L_11A69:
         add cx, 3Fh
 L_11A6D:
-        and cx, 0FFC0h
+        and cx, -40h
 L_11A71:
         cmp ax, cx
 L_11A74:
@@ -1004,14 +913,16 @@ L_11AB7:
         push ebx
 L_11AB8:
         mov eax, dword ptr [ebx + 0Ch]
+        ASSUME DS:_TEXT ; keep: self-modifying stores into the code
 L_11ABB:
-        mov dword ptr [f_11b04], eax
+        mov dword ptr ds:[L_11B02+2], eax
 L_11AC0:
-        mov dword ptr [f_11b74], eax
+        mov dword ptr ds:[L_11B72+2], eax
 L_11AC5:
         sub eax, dword ptr [ebx + 8]
 L_11AC8:
-        mov dword ptr [f_11b6e], eax
+        mov dword ptr ds:[L_11B6C+2], eax
+        ASSUME DS:DGROUP ; keep
 L_11ACD:
         mov esi, dword ptr [ebx]
 L_11ACF:
@@ -1042,8 +953,7 @@ L_11AFA:
         neg ecx
 L_11AFC:
         jmp short L_11B02
-L_11AFE:
-        xchg ebx, ebx
+        ALIGN 4
 L_11B00:
         nop
 L_11B01:
@@ -1686,6 +1596,7 @@ L_11DF6:
         pop eax
 L_11DF7:
         iretd
-a_11494 ENDP
+
+a_11530 ENDP
 _TEXT ENDS
         END

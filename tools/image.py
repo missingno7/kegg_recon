@@ -466,6 +466,7 @@ def place_real(ctx, it):
             it.problems.append(f"code segment {s.name} ({'PARA' if s.align == 3 else s.align}): WLINK combines it "
                                f"with other {s.name} contributions after all _TEXT, not at {h(it.start)}")
         a = ALIGN_BYTES.get(s.align, 1)
+        it.data_align["_TEXT"] = a  # code SEGDEF alignment (used to recognise WLINK code fill in front of it)
         if it.start % a:
             it.problems.append(f"segment alignment {a} cannot place it at {h(it.start)}")
         if s.size != it.end - it.start:
@@ -582,10 +583,17 @@ class Plan:
         self.rejected_cuts = sorted(c for c in cuts if 0x10 < c < ctx.code_end and not self.split_ok(c))
         cuts = sorted(c for c in cuts if 0x10 < c < ctx.code_end and self.split_ok(c))
         raws = []
+        self.code_padding = []  # [(start, end, item it aligns)]: WLINK code fill, not raw debt
         cur = 0x10
         for r in self.real_code + [None]:
             end = r.start if r else ctx.code_end
-            if end > cur:
+            al = r.data_align.get("_TEXT", 1) if r else 1
+            if (r and 0 < end - cur < al and (cur + al - 1) // al * al == end
+                    and not any(ctx.orig.bytes[1][cur:end])):
+                # zero gap shorter than the next object's code alignment, ending at the aligned address:
+                # WLINK itself emits it (its image buffer is zero-filled); no object needed
+                self.code_padding.append((cur, end, r.key))
+            elif end > cur:
                 pts = [cur] + [c for c in cuts if cur < c < end] + [end]
                 for a, b in zip(pts, pts[1:]):
                     raws.append(Item(f"raw:1:{a:05x}", "raw", 1, a, b))
@@ -1113,6 +1121,8 @@ class Owners:
                 self.iv[3].append((a, b, f"{it.key} {cls}"))
         for cls, a, b, nxt in getattr(plan, "padding", []):
             self.iv[3].append((a, b, f"linker alignment padding {cls} before {nxt}"))
+        for a, b, nxt in getattr(plan, "code_padding", []):
+            self.iv[1].append((a, b, f"linker alignment padding _TEXT before {nxt}"))
         for v in self.iv.values():
             v.sort()
 
@@ -1200,6 +1210,8 @@ def accounting(ctx, plan):
             game3 += b - a
     for cls, a, b, _ in getattr(plan, "padding", []):
         add("obj3_bss" if cls == "_BSS" else "obj3_init", "padding", b - a)   # WLINK alignment fill
+    for a, b, _ in getattr(plan, "code_padding", []):
+        add("obj1", "padding", b - a)   # WLINK code alignment fill
         game3 += b - a
     g_init = sum(v for k, v in acc["obj3_init"].items())
     g_bss = sum(v for k, v in acc["obj3_bss"].items())
@@ -1508,7 +1520,8 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
         e["bytes"] += r.end - r.start
     report["rejection_categories"] = cats
     report["rejected_split_points"] = [h(c) for c in plan.rejected_cuts]
-    report["linker_padding"] = [f"{c} {h(a)}..{h(b)} before {n}" for c, a, b, n in getattr(plan, "padding", [])]
+    report["linker_padding"] = ([f"{c} {h(a)}..{h(b)} before {n}" for c, a, b, n in getattr(plan, "padding", [])] +
+                                [f"_TEXT {h(a)}..{h(b)} before {n}" for a, b, n in getattr(plan, "code_padding", [])])
     (out / "report.json").write_text(json.dumps(report, indent=1))
     print(summary(report, out))
 

@@ -1,29 +1,33 @@
 .386
+DGROUP GROUP _DATA
+_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN g_746c_mmw:WORD
 EXTRN g_746e:WORD
 EXTRN g_7b16:WORD
 EXTRN g_7b18:WORD
-EXTRN g_8360:DWORD
-EXTRN g_8368:DWORD
-EXTRN g_8374:WORD
-EXTRN g_8378:DWORD
-EXTRN g_837c:DWORD
-EXTRN g_8380:DWORD
-EXTRN g_8384:DWORD
-EXTRN g_8388:DWORD
-EXTRN g_83a2:DWORD
-EXTRN g_83aa:BYTE
-EXTRN g_8406:DWORD
-EXTRN g_840a:DWORD
-EXTRN g_840e:DWORD
-EXTRN u_e2E0:DWORD
 EXTRN g_e2e4:DWORD
 EXTRN g_e2e8:DWORD
 EXTRN g_e2ec:DWORD
 EXTRN g_e324:WORD
-_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
-        ASSUME CS:_TEXT
-        ASSUME CS:_TEXT
+EXTRN u_e2E0:DWORD
+_DATA ENDS
+_TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
+EXTRN f_12288:NEAR
+EXTRN f_122d1:NEAR
+EXTRN f_125ae:NEAR
+EXTRN f_12680:NEAR
+EXTRN f_12681:NEAR
+EXTRN f_12682:NEAR
+EXTRN f_12684:NEAR
+EXTRN f_126db:NEAR
+EXTRN f_1280a:NEAR
+EXTRN f_12970:NEAR
+EXTRN f_12971:NEAR
+EXTRN f_12972:NEAR
+EXTRN f_12974:NEAR
+EXTRN f_12999:NEAR
+EXTRN f_12a58:NEAR
+        ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC a_12a9c
         PUBLIC f_12a9c
 f_12a9c LABEL NEAR
@@ -140,7 +144,6 @@ L_12B92:
 L_12B93:
         ret
 a_12a9c ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_12b94
         PUBLIC f_12b94
 f_12b94 LABEL NEAR
@@ -277,7 +280,6 @@ L_12CBB:
 L_12CBC:
         ret
 a_12b94 ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_12cbd
         PUBLIC f_12cbd_pzyovjt
 f_12cbd_pzyovjt LABEL NEAR
@@ -602,4 +604,72 @@ L_12F2E:
         ORG $+1 ; original zero fill to the next even code address
 a_12cbd ENDP
 _TEXT ENDS
+_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+        PUBLIC g_8360
+g_8360	DD 2 DUP (0)
+        PUBLIC g_8368
+g_8368	DD 0
+        PUBLIC g_836c
+g_836c	DD 0
+        PUBLIC g_8370
+g_8370	DD 0
+        PUBLIC g_8374
+g_8374	DW 0
+        PUBLIC g_8376
+g_8376	DW 0
+        PUBLIC g_8378
+g_8378	DD 0
+        PUBLIC g_837c
+g_837c	DD 0
+        PUBLIC g_8380
+g_8380	DD 0
+        PUBLIC g_8384
+g_8384	DD 0
+        PUBLIC g_8388
+g_8388	DD 0
+        PUBLIC g_838c
+g_838c	DD 0
+        PUBLIC g_8390
+g_8390 LABEL DWORD
+        DB 18 DUP (0)
+        PUBLIC g_83a2
+g_83a2 LABEL DWORD
+        DB 0h, 0h
+        PUBLIC g_83a4
+g_83a4	DB 0
+        PUBLIC g_83a5
+g_83a5	DB 0
+        DD f_12a58
+        PUBLIC g_83aa
+g_83aa	DD f_12972
+        DD f_1280a
+        DD f_12682
+        DD f_125ae
+        DD L_12E5E
+        DD f_12974
+        DD f_12999
+        DD 0
+        DD L_12E5D
+        DD f_12970
+        DD f_12971
+        DD 0
+        DD L_12E5E
+        DD f_12684
+        DD f_126db
+        DD 0
+        DD L_12E5D
+        DD f_12680
+        DD f_12681
+        DD 0
+        DD L_12E5E
+        DD f_12288
+        DD f_122d1
+        PUBLIC g_8406
+g_8406	DD 0
+        PUBLIC g_840a
+g_840a	DD 0
+        PUBLIC g_840e
+g_840e LABEL DWORD
+        DB 10 DUP (0)
+_DATA ENDS
         END

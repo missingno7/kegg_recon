@@ -1,17 +1,141 @@
 .386
-EXTRN f_11494:NEAR
-EXTRN f_114a0:NEAR
+DGROUP GROUP _DATA
+_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+EXTRN g_742c:WORD
+EXTRN g_744c:DWORD
+EXTRN g_7458:DWORD
+EXTRN g_745c:DWORD
 EXTRN g_7486:BYTE
 EXTRN g_7487:BYTE
-EXTRN g_7db0:WORD
-EXTRN g_7db2:BYTE
-EXTRN g_7db3:BYTE
 EXTRN g_7dba:BYTE
 EXTRN g_7dbb:BYTE
 EXTRN g_e2fc:WORD
-_TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
-        ASSUME CS:_TEXT
-        ASSUME CS:_TEXT
+_DATA ENDS
+_TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
+EXTRN f_11494:NEAR
+EXTRN f_114a0:NEAR
+EXTRN f_c3fb:NEAR
+        ASSUME CS:_TEXT, DS:DGROUP
+        PUBLIC f_11258
+f_11258 LABEL NEAR
+a_11258 PROC NEAR
+        push eax
+L_11259:
+        push ecx
+L_1125A:
+        push edx
+L_1125B:
+        mov dx, ds
+L_1125E:
+        rol edx, 10h
+L_11261:
+        mov ax, SEG DGROUP
+L_11265:
+        mov ds, eax
+L_11267:
+        mov dx, word ptr [g_e2fc]
+L_1126E:
+        add dx, 0Eh
+L_11272:
+        in al, dx
+L_11273:
+        cmp dword ptr [g_7458], 0
+L_1127A:
+        je short L_112CF
+L_1127C:
+        mov eax, dword ptr [g_744c]
+L_11281:
+        cmp dword ptr [g_745c], eax
+L_11287:
+        jne short L_112BF
+L_11289:
+        add dx, -2
+L_1128D:
+        mov ecx, 3E8h
+L_11292:
+        in al, dx
+L_11293:
+        test al, 80h
+L_11295:
+        loopne L_11292
+L_11297:
+        mov al, 14h
+L_11299:
+        out dx, al
+L_1129A:
+        mov ecx, 3E8h
+L_1129F:
+        in al, dx
+L_112A0:
+        test al, 80h
+L_112A2:
+        loopne L_1129F
+L_112A4:
+        mov al, 7Fh
+L_112A6:
+        out dx, al
+L_112A7:
+        mov ecx, 3E8h
+L_112AC:
+        in al, dx
+L_112AD:
+        test al, 80h
+L_112AF:
+        loopne L_112AC
+L_112B1:
+        mov al, 2
+L_112B3:
+        out dx, al
+L_112B4:
+        mov word ptr [g_742c], 0FFFFh
+L_112BD:
+        jmp short L_112D8
+L_112BF:
+        mov dword ptr [g_745c], eax
+L_112C4:
+        push eax
+L_112C5:
+        call f_11377
+L_112CA:
+        add esp, 4
+L_112CD:
+        jmp short L_11289
+L_112CF:
+        mov word ptr [g_742c], 0
+L_112D8:
+        mov dx, es
+L_112DB:
+        cld
+L_112DC:
+        mov ax, SEG DGROUP
+L_112E0:
+        mov es, eax
+L_112E2:
+        pushad
+L_112E3:
+        sti
+L_112E4:
+        call f_113bd
+L_112E9:
+        call f_c3fb
+L_112EE:
+        popad
+L_112EF:
+        mov es, edx
+L_112F1:
+        rol edx, 10h
+L_112F4:
+        mov ds, edx
+L_112F6:
+        pop edx
+L_112F7:
+        pop ecx
+L_112F8:
+        pop eax
+L_112F9:
+        iretd
+a_11258 ENDP
+
         PUBLIC a_112fa
         PUBLIC f_112fa
 f_112fa LABEL NEAR
@@ -90,7 +214,6 @@ L_11375:
 L_11376:
         ret
 a_112fa ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_11377
         PUBLIC f_11377
 f_11377 LABEL NEAR
@@ -122,7 +245,6 @@ L_113B8:
         pop     ebp
         ret
 a_11377 ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_113bd
         PUBLIC f_113bd
 f_113bd LABEL NEAR
@@ -137,7 +259,6 @@ L_113CB:
         pop     eax
         ret
 a_113bd ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_113cf
         PUBLIC f_113cf
 f_113cf LABEL NEAR
@@ -147,7 +268,6 @@ a_113cf PROC NEAR
         call    f_11420
         ret
 a_113cf ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_113e1
         PUBLIC f_113e1
 f_113e1 LABEL NEAR
@@ -158,7 +278,6 @@ a_113e1 PROC NEAR
         call    f_11420
         ret
 a_113e1 ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_113f8
         PUBLIC f_113f8
 f_113f8 LABEL NEAR
@@ -183,7 +302,6 @@ L_1141D:
         pop     ecx
         ret
 a_113f8 ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_11420
         PUBLIC f_11420
 f_11420 LABEL NEAR
@@ -214,7 +332,6 @@ L_1144A:
         pop     eax
         ret
 a_11420 ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_1144d
         PUBLIC f_1144d
 f_1144d LABEL NEAR
@@ -242,7 +359,6 @@ L_11461:
 L_11484:
         ret
 a_1144d ENDP
-        ASSUME CS:_TEXT
         PUBLIC a_11485
         PUBLIC f_11485
 f_11485 LABEL NEAR
@@ -255,4 +371,12 @@ a_11485 PROC NEAR
         ret
 a_11485 ENDP
 _TEXT ENDS
+_DATA SEGMENT BYTE PUBLIC USE32 'DATA'
+        PUBLIC g_7db0
+g_7db0	DW 0
+        PUBLIC g_7db2
+g_7db2	DB 0
+        PUBLIC g_7db3
+g_7db3	DB 0
+_DATA ENDS
         END
