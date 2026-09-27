@@ -39,6 +39,8 @@ typedef uint32_t (*vhw_in_fn)(void *ctx, uint16_t port, int size);
 typedef void (*vhw_out_fn)(void *ctx, uint16_t port, uint32_t value, int size);
 void vhw_register_ports(uint16_t first, uint16_t last, vhw_in_fn in, vhw_out_fn out, void *ctx,
                         const char *device);
+/* Temporary high-priority I/O hooks for oracle fixtures; NULL callbacks use the device map. */
+void vhw_set_port_override(vhw_in_fn in, vhw_out_fn out, void *ctx);
 uint32_t vhw_port_in(uint16_t port, int size);
 void vhw_port_out(uint16_t port, uint32_t value, int size);
 

@@ -438,14 +438,43 @@ static void set_accumulator_part(DWORD *reg, uint32_t v, int size)
     else *reg = v;
 }
 
+static int oracle_emulate_int(CONTEXT *c, const uint8_t *p, int prefix_len)
+{
+    union REGS r;
+    struct SREGS s;
+    memset(&s, 0, sizeof s);
+    r.x.eax = c->Eax; r.x.ebx = c->Ebx; r.x.ecx = c->Ecx;
+    r.x.edx = c->Edx; r.x.esi = c->Esi; r.x.edi = c->Edi;
+    r.x.cflag = c->EFlags & 1;
+    oracle_trace_add('N', p[0], c->Eax, 4);
+    vhw_int(p[0], &r, &r, &s);
+    c->Eax = r.x.eax; c->Ebx = r.x.ebx; c->Ecx = r.x.ecx;
+    c->Edx = r.x.edx; c->Esi = r.x.esi; c->Edi = r.x.edi;
+    c->EFlags = (c->EFlags & ~1u) | (r.x.cflag ? 1u : 0u);
+    c->Eip += (DWORD)(prefix_len + 2);
+    return 1;
+}
+
 static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
 {
     CONTEXT *c = ep->ContextRecord;
     DWORD code = ep->ExceptionRecord->ExceptionCode;
     const uint8_t *p = (const uint8_t *)(uintptr_t)c->Eip;
     int opsize = 4, len = 0;
-    if (code == EXCEPTION_ACCESS_VIOLATION)
+    if (code == EXCEPTION_ACCESS_VIOLATION) {
+        const uint8_t *opcode = p;
+        int prefix_len = 0;
+        if (!IsBadReadPtr(opcode, 1) && *opcode == 0x66) {
+            opcode++;
+            prefix_len = 1;
+        }
+        /* Some Windows builds report user-mode INT n as an access violation, not #GP. */
+        if (!IsBadReadPtr(opcode, 2) && opcode[0] == 0xcd) {
+            oracle_emulate_int(c, opcode + 1, prefix_len);
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
         return oracle_emulate_vga_memory(ep) ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+    }
     if (code != EXCEPTION_PRIV_INSTRUCTION)
         return EXCEPTION_CONTINUE_SEARCH;
     if (IsBadReadPtr(p, 4))
@@ -489,19 +518,8 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
         len += 1;
         break;
     case 0xcd: {                                             /* INT nn */
-        union REGS r;
-        struct SREGS s;
-        memset(&s, 0, sizeof s);
-        r.x.eax = c->Eax; r.x.ebx = c->Ebx; r.x.ecx = c->Ecx;
-        r.x.edx = c->Edx; r.x.esi = c->Esi; r.x.edi = c->Edi;
-        r.x.cflag = c->EFlags & 1;
-        oracle_trace_add('N', p[1], c->Eax, 4);
-        vhw_int(p[1], &r, &r, &s);
-        c->Eax = r.x.eax; c->Ebx = r.x.ebx; c->Ecx = r.x.ecx;
-        c->Edx = r.x.edx; c->Esi = r.x.esi; c->Edi = r.x.edi;
-        c->EFlags = (c->EFlags & ~1u) | (r.x.cflag ? 1u : 0u);
-        len += 2;
-        break;
+        oracle_emulate_int(c, p + 1, len);
+        return EXCEPTION_CONTINUE_EXECUTION;
     }
     case 0x8e:                                               /* MOV Sreg, r/m16 */
         len += 1 + modrm_length(p + 1);
