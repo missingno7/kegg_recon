@@ -6,8 +6,8 @@
  * Functions: 00 reset, 03 position+buttons, 04 set position, 07/08 ranges, 0B motion
  * counters, 0F mickey ratio, 1A/1B sensitivity, 24 version. Others are logged once.
  *
- * WORK PACKAGE "mouse-joystick": match MS driver acceleration (threshold), relative-mode
- * policy, capture/grab UX.
+ * INT 33h function 1Ah's double-speed threshold is measured in mickeys per second. The host
+ * side supplies relative motion while its window is captured (port/host/input.c).
  */
 #include <stdio.h>
 #include <windows.h>
@@ -19,8 +19,31 @@ static double pos_x, pos_y;
 static int min_x, max_x = 639, min_y, max_y = 199;
 static int buttons;
 static int mickey_x, mickey_y;           /* motion counters for function 0Bh */
+static double mickey_fraction_x, mickey_fraction_y;
 static int ratio_x = 8, ratio_y = 16;    /* mickeys per 8 pixels */
 static int sens_x = 50, sens_y = 50, sens_threshold = 50;
+static LARGE_INTEGER motion_clock_frequency;
+static uint64_t last_motion_timestamp_ns;
+static int motion_clock_valid;
+
+static int mouse_accelerate(float dx, float dy, uint64_t timestamp_ns)
+{
+    double elapsed, threshold;
+    int speed_threshold = sens_threshold ? sens_threshold : 64;
+
+    if (!motion_clock_valid || timestamp_ns <= last_motion_timestamp_ns) {
+        last_motion_timestamp_ns = timestamp_ns;
+        motion_clock_valid = 1;
+        return 0;
+    }
+    elapsed = (double)(timestamp_ns - last_motion_timestamp_ns) / 1000000000.0;
+    last_motion_timestamp_ns = timestamp_ns;
+    if (elapsed <= 0.0)
+        return 0;
+
+    threshold = (double)speed_threshold * elapsed;
+    return (double)dx * dx + (double)dy * dy > threshold * threshold;
+}
 
 static void clamp(void)
 {
@@ -32,9 +55,31 @@ static void clamp(void)
 
 void vmouse_motion(float dx, float dy)
 {
+    LARGE_INTEGER now;
+    uint64_t timestamp_ns = 0;
+    if (motion_clock_frequency.QuadPart > 0 && QueryPerformanceCounter(&now))
+        timestamp_ns = (uint64_t)((double)now.QuadPart * 1000000000.0 /
+                                  (double)motion_clock_frequency.QuadPart);
+    vmouse_motion_at(dx, dy, timestamp_ns);
+}
+
+void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns)
+{
+    int accelerated;
+    double whole_x, whole_y;
+
     EnterCriticalSection(&mouse_lock);
-    mickey_x += (int)dx;
-    mickey_y += (int)dy;
+    accelerated = mouse_accelerate(dx, dy, timestamp_ns);
+    whole_x = dx + mickey_fraction_x;
+    whole_y = dy + mickey_fraction_y;
+    mickey_x += (int)whole_x;
+    mickey_y += (int)whole_y;
+    mickey_fraction_x = whole_x - (int)whole_x;
+    mickey_fraction_y = whole_y - (int)whole_y;
+    if (accelerated) {
+        dx *= 2.0f;
+        dy *= 2.0f;
+    }
     pos_x += dx * 8.0 / ratio_x * (sens_x / 50.0);
     pos_y += dy * 8.0 / ratio_y * (sens_y / 50.0);
     clamp();
@@ -60,6 +105,11 @@ void vmouse_int33(union REGS *r, struct SREGS *s)
         min_x = 0; max_x = 639; min_y = 0; max_y = 199;
         pos_x = 320; pos_y = 100;
         ratio_x = 8; ratio_y = 16;
+        buttons = 0;
+        mickey_x = mickey_y = 0;
+        mickey_fraction_x = mickey_fraction_y = 0.0;
+        sens_x = sens_y = sens_threshold = 50;
+        motion_clock_valid = 0;
         break;
     case 0x03:
         r->w.bx = (unsigned short)buttons;
@@ -91,7 +141,10 @@ void vmouse_int33(union REGS *r, struct SREGS *s)
         ratio_y = r->w.dx ? r->w.dx : 16;
         break;
     case 0x1a:
-        sens_x = r->w.bx; sens_y = r->w.cx; sens_threshold = r->w.dx;
+        sens_x = r->w.bx < 1 ? 1 : (r->w.bx > 100 ? 100 : r->w.bx);
+        sens_y = r->w.cx < 1 ? 1 : (r->w.cx > 100 ? 100 : r->w.cx);
+        sens_threshold = r->w.dx > 100 ? 100 : r->w.dx;
+        motion_clock_valid = 0;
         break;
     case 0x1b:
         r->w.bx = (unsigned short)sens_x;
@@ -111,4 +164,8 @@ void vmouse_int33(union REGS *r, struct SREGS *s)
     LeaveCriticalSection(&mouse_lock);
 }
 
-void vmouse_init(void) { InitializeCriticalSection(&mouse_lock); }
+void vmouse_init(void)
+{
+    InitializeCriticalSection(&mouse_lock);
+    QueryPerformanceFrequency(&motion_clock_frequency);
+}
