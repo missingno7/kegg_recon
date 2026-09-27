@@ -28,14 +28,15 @@ int vcpu_interrupts_enabled(void);
 void vcpu_cli(void);
 void vcpu_sti(void);
 void vhw_cpu_poll_yield(void);     /* cooperative yield for long legacy memory polls */
-void vhw_cpu_poll_begin(void);
-void vhw_cpu_poll_end(void);
 void vhw_idle(uint64_t max_ns);  /* game thread waits for devices (blocking BIOS calls)   */
+uint64_t vhw_clock_now_ns(void); /* shared PIT/VGA clock, with IRQ0 edge-time scope        */
+void vhw_clock_irq0_enter(uint64_t edge_ns);
+void vhw_clock_irq0_leave(void);
 void vhw_bind_game_thread(void);
 void vhw_bind_irq_thread(void);
 int vhw_on_irq_thread(void);
 void vhw_reset_nesting(void);   /* after ke_exit() abandons service/ISR frames          */
-extern volatile long vcpu_if_flag, vhw_game_depth, vhw_in_isr, vhw_cpu_polling;
+extern volatile long vcpu_if_flag, vhw_game_depth, vhw_in_isr;
 
 /* ---- port I/O (portio.c) --------------------------------------------------------------- */
 typedef uint32_t (*vhw_in_fn)(void *ctx, uint16_t port, int size);
@@ -48,6 +49,7 @@ void vhw_port_out(uint16_t port, uint32_t value, int size);
 /* ---- 8259 PIC pair + vector tables (pic.c) --------------------------------------------- */
 void vpic_init(void);
 void vpic_raise_irq(int irq);             /* any thread                                   */
+void vpic_raise_irq_at(int irq, uint64_t edge_ns); /* device edge time for IRQ0               */
 void vpic_lower_irq(int irq);
 int vpic_vector_base(int slave);          /* 0x08 / 0x70                                   */
 typedef void (*vhw_isr_fn)(void);
