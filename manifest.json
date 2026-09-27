@@ -2578,8 +2578,11 @@
    "start": "0xd010",
    "end": "0xd252",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "candidate",
+   "profile": "game-c",
+   "draft": "drafts/f_d010.c",
+   "mismatch": "578/578 bytes, 151/151 insns equal; data segment CONST (13 bytes) is not referenced by the compared code: cannot place it",
+   "note": "byte-exact inside TU build/workers/u12/T12.c (check --all 0xcac2..0xdce0 --place _DATA=0x747c EXACT); canonical integration waits for data ownership (image rejects: other units import names inside its _DATA)"
   },
   {
    "name": "f_d252",
@@ -2679,8 +2682,11 @@
    "start": "0xda01",
    "end": "0xdce0",
    "kind": "c",
-   "status": "identified",
-   "profile": "game-c"
+   "status": "candidate",
+   "profile": "game-c",
+   "draft": "drafts/f_da01.c",
+   "mismatch": "735/735 bytes, 236/236 insns equal; data segment CONST (13 bytes) is not referenced by the compared code: cannot place it; data segment _DATA (308 bytes) is not referenced by the compared code: cannot place it",
+   "note": "byte-exact inside TU build/workers/u12/T12.c (check --all 0xcac2..0xdce0 --place _DATA=0x747c EXACT); canonical integration waits for data ownership (image rejects: other units import names inside its _DATA)"
   },
   {
    "name": "f_dce0",
