@@ -136,6 +136,10 @@ def compile_audit(renames, plan):
     prof = {u["id"]: u.get("profile", "game-c") for u in man["units"]}
     units = c_units(plan)
     own = {u["id"] for u in (plan or {}).get("units", [])}
+    frozen_names = {o for o in renames if any(f and re.search(r"\b%s\b" % re.escape(o), t) for t, f in units.values())}
+    for o in sorted(frozen_names):
+        print(f"FROZEN  {o}: named in a byte-sensitive source; keep it (a `#pragma aux {renames[o]} \"{o}\"` alias is allowed)")
+    renames = {o: n for o, n in renames.items() if o not in frozen_names}
     jobs = []
     for uid, (text, frozen) in units.items():
         rel = {o: n for o, n in renames.items() if re.search(r"\b%s\b" % re.escape(o), text) and not defines(text, o)}

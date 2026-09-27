@@ -24,7 +24,9 @@ Hard constraints (the gate enforces them; know them to avoid churn)
   unit that imports a renamed symbol and names the first rename that changes its object layout (fix that name's
   length, rerun; usually only a handful of importers are near a flush). `--suggest NAME LEN` lists equal-length
   spellings; an equal-length rename is always layout-neutral. Symbols named in T06/T08 are FROZEN (plain audit).
-- No `#define readable_name f_HEX` aliases: the real symbol gets the readable name (fit its length instead). The
+- No `#define readable_name f_HEX` / `#pragma aux readable "f_HEX"` aliases: the real symbol gets the readable name
+  (fit its length instead). Sole exception: symbols FROZEN by T06/T08 keep their linker name via
+  `#pragma aux readable_name "f_HEX"` in the defining unit (namefit reports them). The
   fitted placeholder names in the tree (`x_dd40_xbukycw`, `f_608a_ujonj`, `g_dDc8`, ...) are length/hash padding
   from the object-layout phase, not historical names: replace them with readable names of a fitting length/hash.
 - _BSS order follows the name hash (`python tools/bssorder.py --src UNIT.c`; `--solve` to pick names).
