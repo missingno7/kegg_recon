@@ -75,29 +75,7 @@ _g_pit_elapsed_ticks:
     .long 0
 /* m_09f64_0a0d2 _DATA: 0x8 bytes */
 
-/* m_0a284_0a51f.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_0a284_0a51f_data:
-    .globl _g_iff_error
-_g_iff_error:
-    .long 0
-    .globl _g_iff_file
-_g_iff_file:
-    .long 0
-    .globl _g_iff_pixels
-_g_iff_pixels:
-    .long 0
-    .globl _g_iff_pixel_count
-_g_iff_pixel_count:
-    .long 0
-    .globl _g_iff_palette_bytes
-_g_iff_palette_bytes:
-    .long 0
-    .globl _g_iff_decoder_workspace
-_g_iff_decoder_workspace:
-    .fill 5, 4, 0
-/* m_0a284_0a51f _DATA: 0x28 bytes */
+/* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
 
 /* m_11258_11494.asm _DATA */
     .data
