@@ -7,8 +7,9 @@
  * address bits select the plane and the plane offset is (addr & 0xFFFC). Write modes 0-3,
  * read modes 0-1, latches, set/reset, data rotate / logical op and bit mask are implemented.
  *
- * Timing: retrace is derived from the host clock using the programmed CRTC vertical total
- * and a 31.469 kHz line rate (70 Hz for 400-line timing, 60 Hz for 480-line timing).
+ * Timing: retrace is derived from the same monotonic nanosecond clock used by the PIT. The
+ * horizontal line period comes from the selected VGA dot clock and CRTC horizontal total;
+ * the programmed vertical total then gives the 70.086 Hz and 59.94 Hz game timings.
  * Polling loops on 3DAh therefore see the historical cadence; a poll far from the next
  * retrace yields the CPU (see vga_status_poll).
  *
@@ -59,13 +60,32 @@ static int vdisplay_end_line(void)
     return crtc[0x12] | ((crtc[7] & 0x02) << 7) | ((crtc[7] & 0x40) << 3);
 }
 
-#define LINE_NS 31778ull   /* 1 / 31.469 kHz */
+static uint32_t dot_clock_hz(void)
+{
+    /* The game uses the standard 25.175 MHz (clock 0) and 28.322 MHz (clock 1). */
+    return ((misc_output >> 2) & 3) == 0 ? 25175000u : 28322000u;
+}
+
+static uint32_t horizontal_total_dots(void)
+{
+    uint32_t characters = (uint32_t)crtc[0] + 5u;
+    uint32_t dots_per_character = (seq[1] & 1) ? 8u : 9u;
+    return characters ? characters * dots_per_character : 800u;
+}
+
+static uint64_t elapsed_dot_clocks(uint64_t elapsed_ns)
+{
+    uint64_t seconds = elapsed_ns / 1000000000ull;
+    uint64_t remainder_ns = elapsed_ns % 1000000000ull;
+    uint32_t clock_hz = dot_clock_hz();
+    return seconds * clock_hz + (remainder_ns * clock_hz) / 1000000000ull;
+}
 
 /* Returns the current scan line and the number of vertical-retrace edges seen. */
 static int current_line(uint64_t *retrace)
 {
     uint64_t t = ke_now_ns() - timing_origin;
-    uint64_t lines = t / LINE_NS;
+    uint64_t lines = elapsed_dot_clocks(t) / horizontal_total_dots();
     int total = vertical_total_lines();
     int line = (int)(lines % (uint64_t)total);
     if (retrace) {
@@ -131,8 +151,10 @@ static uint8_t vga_status_poll(void)
         /* Busy polling far from the retrace edge: give the host CPU back. */
         int total = vertical_total_lines();
         int distance = (vrs - line + total) % total;
-        if (distance > 64 && !vhw_on_irq_thread())
-            ke_sleep_ns((uint64_t)(distance - 48) * LINE_NS / 4);
+        if (distance > 64 && !vhw_on_irq_thread()) {
+            uint64_t wait_dots = (uint64_t)(distance - 48) * horizontal_total_dots();
+            ke_sleep_ns(wait_dots * 1000000000ull / dot_clock_hz() / 4);
+        }
     }
     return v;
 }
@@ -314,9 +336,16 @@ static void vga_out(void *ctx, uint16_t port, uint32_t value, int size)
             attr[attr_index & 0x1f] = v;
         attr_flipflop ^= 1;
         break;
-    case 0x3c2: misc_output = v; break;
+    case 0x3c2:
+        misc_output = v;
+        restart_timing();
+        break;
     case 0x3c4: seq_index = v; break;
-    case 0x3c5: seq[seq_index & 7] = v; break;
+    case 0x3c5:
+        seq[seq_index & 7] = v;
+        if (seq_index == 1)
+            restart_timing();
+        break;
     case 0x3c6: dac_pel_mask = v; break;
     case 0x3c7: dac_read_index = v; dac_read_component = 0; break;
     case 0x3c8: dac_write_index = v; dac_component = 0; break;
@@ -340,7 +369,8 @@ static void vga_out(void *ctx, uint16_t port, uint32_t value, int size)
             break;
         }
         crtc[crtc_index & 31] = v;
-        if (crtc_index == 6 || crtc_index == 7 || crtc_index == 0x10 || crtc_index == 0x11)
+        if (crtc_index == 0 || crtc_index == 6 || crtc_index == 7 ||
+            crtc_index == 0x10 || crtc_index == 0x11)
             restart_timing();
         break;
     case 0x3da: case 0x3ba: break;                        /* feature control */
@@ -417,7 +447,7 @@ int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, i
     int row_repeat = max_scan * double_scan;
     int width, height, y, x;
     uint32_t start;
-    uint32_t row_bytes;
+    uint32_t plane_stride;
     uint32_t line_compare;
     int dword_mode = (crtc[0x14] & 0x40) != 0;
     int byte_mode = (crtc[0x17] & 0x40) != 0;
@@ -438,7 +468,9 @@ int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, i
     if (height > max_h) height = max_h;
     if (width <= 0 || height <= 0)
         return 0;
-    row_bytes = (uint32_t)crtc[0x13] << (address_shift + 1);
+    /* The CRTC Offset register is doubled in byte and dword modes, but not word mode.
+     * Unchained byte-mode scan-out indexes each plane by this per-plane byte stride. */
+    plane_stride = (uint32_t)crtc[0x13] * ((byte_mode || dword_mode) ? 2u : 1u);
     for (y = 0; y < height; y++) {
         uint8_t *row = dst + (size_t)y * dst_pitch;
         uint32_t physical_line = (uint32_t)y * (uint32_t)row_repeat;
@@ -452,6 +484,7 @@ int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, i
         else
             memory_line = (physical_line + (uint32_t)preset_row_scan) / (uint32_t)row_repeat;
         if (chain4()) {
+            uint32_t row_bytes = (uint32_t)crtc[0x13] << (address_shift + 1);
             uint32_t base = (base_start << address_shift) + memory_line * row_bytes +
                             ((uint32_t)bp << address_shift);
             for (x = 0; x < width; x++) {
@@ -459,8 +492,9 @@ int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, i
                 row[x] = planes[a & 3][a & 0xfffc];
             }
         } else {
-            uint32_t base = (base_start << address_shift) / 4 +
-                            (memory_line * row_bytes) / 4 + bp;
+            uint32_t base = (byte_mode ? base_start :
+                             (base_start << address_shift) / 4) +
+                            memory_line * plane_stride + bp;
             for (x = 0; x < width; x++) {
                 uint32_t px = (uint32_t)(x + pan);
                 row[x] = planes[px & 3][(base + (px >> 2)) & 0xffff];
@@ -473,6 +507,37 @@ int vga_scanout(uint8_t *dst, int dst_pitch, int max_w, int max_h, int *out_w, i
     *out_h = height;
     return 1;
 }
+
+#ifdef KE_ORACLE
+/* Snapshot loader used only by the external scan-out oracle. `plane_bytes` is plane-major. */
+void vga_oracle_load_snapshot(const uint8_t *plane_bytes, const uint8_t *crtc_bytes,
+                              const uint8_t *dac_bytes, uint16_t display_start,
+                              uint8_t chained, uint8_t map_mask, uint8_t read_map,
+                              uint8_t seq_clocking, uint8_t write_mode,
+                              uint8_t bit_mask, uint8_t misc)
+{
+    memcpy(planes, plane_bytes, sizeof planes);
+    memcpy(crtc, crtc_bytes, sizeof crtc);
+    memcpy(dac, dac_bytes, sizeof dac);
+    memset(seq, 0, sizeof seq);
+    memset(gc, 0, sizeof gc);
+    memset(attr, 0, sizeof attr);
+    seq[1] = seq_clocking;
+    seq[2] = map_mask & 0x0f;
+    seq[4] = chained ? 0x0e : 0x06;
+    gc[4] = read_map & 3;
+    gc[5] = write_mode & 3;
+    gc[6] = 0x05;                       /* A0000h graphics aperture */
+    gc[8] = bit_mask;
+    attr[0x10] = 0x01;                  /* graphics mode; no pel-pan reset on split */
+    attr[0x13] = 0;
+    misc_output = misc;
+    dac_pel_mask = 0xff;
+    display_start_latched = display_start;
+    timing_origin = ke_now_ns();
+    timing_last_retrace = 0;
+}
+#endif
 
 void vga_init(void)
 {
