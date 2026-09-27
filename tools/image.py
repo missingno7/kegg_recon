@@ -502,6 +502,10 @@ def place_real(ctx, it):
             continue
         base = next(iter(bases[i]))
         it.segbase[i] = (3, base)
+        al = ALIGN_BYTES.get(s.align, 1)
+        if base % al:
+            it.problems.append(f"data segment alignment: {s.name} ({al}-aligned) cannot start at {h(base)} "
+                               f"(WLINK would place it at {h((base + al - 1) // al * al)})")
         if s.name == "CONST2":
             it.problems.append(f"CONST2 contribution at {h(base)}: the original has no game CONST2 bytes")
         else:
@@ -1437,7 +1441,7 @@ def write_report(out, report, plan, ctx, rb, excluded_log):
         c = ("LE fixup order (cuts an original LEDATA chunk / chunking differs)" if p.startswith("LE fixup order") else
              "runtime demand order" if p.startswith("runtime demand") else
              "code segment not _TEXT (ASM_TEXT PARA)" if p.startswith("code segment") else
-             "segment alignment" if p.startswith("segment alignment") else
+             "segment alignment" if p.startswith(("segment alignment", "data segment alignment")) else
              "code size != extent (source holds more functions)" if p.startswith("code size") else
              "import-name conflict" if " imports " in p else
              "data placement" if p.startswith(("cannot place", "CONST2", "_DATA", "CONST", "_BSS")) else p[:60])
