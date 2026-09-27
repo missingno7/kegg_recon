@@ -66,38 +66,9 @@ _g_pit_elapsed_ticks:
 
 /* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
 
-/* m_11258_11494.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_11258_11494_data:
-    .globl _sound_dma_block_length
-_sound_dma_block_length:
-    .short 0
-    .globl _sound_blaster_response_byte
-_sound_blaster_response_byte:
-    .byte 0
-    .globl _sound_blaster_command_byte
-_sound_blaster_command_byte:
-    .byte 0
-/* m_11258_11494 _DATA: 0x4 bytes */
+/* m_11258_11494: owned by port/asm/m_11258_11494.c */
 
-/* m_11494_11530.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_11494_11530_data:
-    .globl _sound_dma_buffer_address
-_sound_dma_buffer_address:
-    .long 0
-    .globl _sound_dma_transfer_count
-_sound_dma_transfer_count:
-    .short 0
-    .globl _sound_dma_mode_bits
-_sound_dma_mode_bits:
-    .byte 0
-    .globl _sound_dma_channel
-_sound_dma_channel:
-    .byte 0
-/* m_11494_11530 _DATA: 0x8 bytes */
+/* m_11494_11530: owned by port/asm/m_11494_11530.c */
 
 /* m_11530_11df8.asm _DATA */
     .data
