@@ -20,7 +20,7 @@ extern int detect_xms_driver(void);
 extern int check_ems_manager_signature(void);
 extern int detect_ems_manager(void);
 extern int detect_dpmi_host(void);
-extern int query_dos_free_memory(void);
+extern int query_largest_dos_free_block(void);
 extern int alloc_heap_block(int);
 extern int free_heap_block(int);
 extern int detect_sound_blaster(void);
@@ -30,7 +30,7 @@ extern void poll_keyboard(void);
 extern int f_9974(void);
 extern int f_9f64(void);
 extern unsigned int allocate_dpmi_memory(int);
-extern unsigned int query_dpmi_free_memory(void);
+extern unsigned int query_largest_dpmi_free_block(void);
 extern void free_dpmi_memory(unsigned int);
 extern void print_encoded_version(int);
 extern void set_mouse_bounds(int, int, int, int);
@@ -39,10 +39,10 @@ extern int set_display_mode(int);
 extern long cpu_type;
 extern unsigned long cpu_mode;
 extern unsigned long cpu_iopl;
-extern long dos_free_memory_bytes;
+extern long largest_dos_free_block_bytes;
 extern unsigned int g_75c4;
 extern unsigned int dos_memory_error;
-extern unsigned int dpmi_linear_address_value;
+extern unsigned int dpmi_selector_or_failure_marker;
 extern unsigned int heap_block;
 extern unsigned int mouse_driver_version;
 extern unsigned int file_error;
@@ -371,8 +371,8 @@ int sys_report(int conventional_memory_bytes,int extended_memory_bytes,unsigned 
             report_status=-1;
             printf(MSG_NEED_CONVENTIONAL_MEMORY,conventional_memory_bytes/1024);
         }
-        if(g_75c4==0) free_dpmi_memory(dpmi_linear_address_value);
-        printf(MSG_CONVENTIONAL_MEMORY_AVAILABLE,conventional_memory_bytes/1024,query_dos_free_memory()/1024);
+        if(g_75c4==0) free_dpmi_memory(dpmi_selector_or_failure_marker);
+        printf(MSG_CONVENTIONAL_MEMORY_AVAILABLE,conventional_memory_bytes/1024,query_largest_dos_free_block()/1024);
     }
     if((report_flags&REPORT_EXTENDED_MEMORY)!=0) {
         if(alloc_heap_block(extended_memory_bytes)==0) {
@@ -381,8 +381,8 @@ int sys_report(int conventional_memory_bytes,int extended_memory_bytes,unsigned 
         }
         if(dos_memory_error==0) free_heap_block(heap_block);
         allocate_dpmi_memory(conventional_memory_bytes);
-        printf(MSG_EXTENDED_MEMORY_AVAILABLE,extended_memory_bytes/1024,(int)query_dpmi_free_memory()/1024,(dos_free_memory_bytes-conventional_memory_bytes)/1024);
-        if(g_75c4==0) free_dpmi_memory(dpmi_linear_address_value);
+        printf(MSG_EXTENDED_MEMORY_AVAILABLE,extended_memory_bytes/1024,(int)query_largest_dpmi_free_block()/1024,(largest_dos_free_block_bytes-conventional_memory_bytes)/1024);
+        if(g_75c4==0) free_dpmi_memory(dpmi_selector_or_failure_marker);
     }
     if((report_flags&REPORT_MOUSE)!=0) if(initialize_mouse_driver()==-1) {
         printf(MSG_MOUSE_DETECTED);

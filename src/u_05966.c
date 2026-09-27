@@ -205,7 +205,7 @@ extern void f_9d40(unsigned char);
 extern void plot_transformed_pixel(void *, int);
 extern void f_c8c0(int, int, short, int, int);
 extern void redraw_image_region(int, int);
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern void fade_pal(void *, int, int, int);
 extern void show_page(void);
 extern int fade_delay;

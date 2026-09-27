@@ -5,27 +5,44 @@ unsigned int xms_entry_offset;
 
 #include <string.h>
 
+#define VGA_BIOS_INTERRUPT 0x10
+#define DOS_INTERRUPT 0x21
+#define XMS_MULTIPLEX_INTERRUPT 0x2f
+#define VGA_BIOS_QUERY_DISPLAY_COMBINATION 0x1a00
+#define VGA_BIOS_RESPONSE_SIGNATURE 0x1a
+#define VGA_DISPLAY_CODE_MIN 7
+#define VGA_DISPLAY_CODE_MAX 0x0c
+#define XMS_MULTIPLEX_CHECK_INSTALL 0x4300
+#define XMS_MULTIPLEX_GET_ENTRY_POINT 0x4310
+#define XMS_MULTIPLEX_INSTALLED 0x80
+#define DOS_GET_EMS_VECTOR 0x3567
+#define EMS_GET_VERSION 0x46
+#define EMS_HANDLER_SIGNATURE "EMMX"
+
+
 /* _DATA [0x7498,0x74b4) */
 short vga_bios_mode_supported = 0;
-unsigned short u_749a = 0xffff;
-unsigned short u_749c = 0xffff;
+/* These initialized words have no proven meaning; their address labels stay neutral. */
+unsigned short unidentified_word_749a = 0xffff;
+unsigned short unidentified_word_749c = 0xffff;
 unsigned long vga_bios_version = 0x00000100UL;
-unsigned short u_74a2 = 0;
+unsigned short unidentified_word_74a2 = 0;
 short xms_driver_available = 0;
 unsigned long xms_driver_version = 0xffffffffUL;
-unsigned short u_74aa = 0;
+unsigned short unidentified_word_74aa = 0;
 short ems_manager_signature_found = 0;
 unsigned long ems_manager_version = 0xffffffffUL;
-unsigned short u_74b2 = 0;
+unsigned short unidentified_word_74b2 = 0;
 
 int detect_vga_bios_mode(void) {
     union REGS regs;
     struct SREGS sregs;
-    memset(&sregs, 0, 12);
-    regs.w.ax = 0x1a00;
-    int386x(0x10, &regs, &regs, &sregs);
-    if (regs.h.al == 0x1a)
-        if (regs.h.bl >= 7 && regs.h.bl <= 0xc)
+    /* INT 10h/AX=1A00h reports VGA display-combination support in AL and BL. */
+    memset(&sregs, 0, sizeof(sregs));
+    regs.w.ax = VGA_BIOS_QUERY_DISPLAY_COMBINATION;
+    int386x(VGA_BIOS_INTERRUPT, &regs, &regs, &sregs);
+    if (regs.h.al == VGA_BIOS_RESPONSE_SIGNATURE)
+        if (regs.h.bl >= VGA_DISPLAY_CODE_MIN && regs.h.bl <= VGA_DISPLAY_CODE_MAX)
             return vga_bios_mode_supported = -1;
     return vga_bios_mode_supported = 0;
 }
@@ -34,13 +51,15 @@ int detect_xms_driver(void) {
     int reserved_stack_slot; /* Preserves the original Watcom frame layout. */
     union REGS regs;
     struct SREGS sregs;
-    memset(&sregs, 0, 12);
-    regs.w.ax = 0x4300;
-    int386x(0x2f, &regs, &regs, &sregs);
-    if (regs.h.al == 0x80) {
-        regs.w.ax = 0x4310;
-        int386x(0x2f, &regs, &regs, &sregs);
+    /* INT 2Fh/AX=4300h tests installation; 4310h asks for the XMS entry point. */
+    memset(&sregs, 0, sizeof(sregs));
+    regs.w.ax = XMS_MULTIPLEX_CHECK_INSTALL;
+    int386x(XMS_MULTIPLEX_INTERRUPT, &regs, &regs, &sregs);
+    if (regs.h.al == XMS_MULTIPLEX_INSTALLED) {
+        regs.w.ax = XMS_MULTIPLEX_GET_ENTRY_POINT;
+        int386x(XMS_MULTIPLEX_INTERRUPT, &regs, &regs, &sregs);
         xms_entry_offset = regs.w.bx;
+        /* Keep the original AX capture, despite the conventional ES:BX XMS entry point. */
         xms_entry_segment = regs.w.ax;
         return xms_driver_available = -1;
     }
@@ -51,14 +70,15 @@ int check_ems_manager_signature(void) {
     union REGS regs;
     struct SREGS sregs;
     unsigned int interrupt_handler_address;
-    memset(&sregs, 0, 12);
-    regs.w.ax = 0x3567;
-    int386x(0x21, &regs, &regs, &sregs);
+    /* DOS returns the INT 67h vector; EMS function 46h returns its version. */
+    memset(&sregs, 0, sizeof(sregs));
+    regs.w.ax = DOS_GET_EMS_VECTOR;
+    int386x(DOS_INTERRUPT, &regs, &regs, &sregs);
     interrupt_handler_address = ((unsigned int)sregs.es << 4) +
                                 (unsigned short)regs.x.edi;
-    if (*(unsigned int *)interrupt_handler_address == (unsigned int)"EMMX") {
-        regs.h.ah = 0x46;
-        int386x(0x21, &regs, &regs, &sregs);
+    if (*(unsigned int *)interrupt_handler_address == (unsigned int)EMS_HANDLER_SIGNATURE) {
+        regs.h.ah = EMS_GET_VERSION;
+        int386x(DOS_INTERRUPT, &regs, &regs, &sregs);
         if (regs.h.ah == 0)
             ems_manager_version = regs.w.ax << 4;
         return ems_manager_signature_found = -1;

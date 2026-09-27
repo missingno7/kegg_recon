@@ -89,7 +89,7 @@ extern void f_9d40(int);
 extern void fade_pal(void *, int, int, int);
 extern void query_mouse_sensitivity(void);
 extern void restore_mouse_driver_sensitivity(void);
-extern void set_img_buffers();
+extern void set_image_pages();
 int fade_level_to_white(void);
 int award_level_completion_bonus(void);
 void set_lc(void);

@@ -93,7 +93,7 @@ extern void draw_text(int, int, int);
 extern void configure_text_renderer(int, int, unsigned char, int, int);
 extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
-extern void set_img_buffers(int, int, short, int, int);
+extern void set_image_pages(int, int, short, int, int);
 extern int set_display_mode();
 extern void fade_pal(void *, int, int, int);
 void run_title_screen_loop(void);
@@ -419,7 +419,7 @@ int wait_level(void)
     init_stage_palette();
     hook_flags_word = ((*(short *)&hook_flags_word) & 0xfffe) & 0xfffd;
     space_pressed = 0;
-    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     while (1) {
         update_mouse();
         advance_tracks();
@@ -445,7 +445,7 @@ int wait_level(void)
     redraw_image_region(0, 0);
     copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
     copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
-    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     return start_result;
 }
 

@@ -86,7 +86,7 @@ extern void draw_text(int, int, int);
 extern void configure_text_renderer(int, int, unsigned char, int, int);
 extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
-extern void set_img_buffers(int, int, short, int, int);
+extern void set_image_pages(int, int, short, int, int);
 extern int set_display_mode();
 extern void fade_pal(void *, int, int, int);
 void run_title_screen_loop(void);
@@ -1498,7 +1498,7 @@ void run_gameplay_session(void);
 extern unsigned char difficulty_tier_index;
 extern unsigned char score_storage[];
 extern void set_game_progress(int, int, int);
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern int run_level(void);
 extern int g_6230;
 extern int sprite_instance_count;
@@ -1699,7 +1699,7 @@ void show_high_score_screen(void)
         hook_flags_word = (((hook_flags_word & 0xfffe) & 0xfffd) & 0xfffb) & 0xff7f;
         menu_result = 0;
         space_pressed = 0;
-        set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+        set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
 L_d7a:;
         f_9d40(3);
         if (prior_key_ascii == 0x50 || current_ascii != 0x50) break;
@@ -1796,7 +1796,7 @@ void run_title_screen_loop(void)
     hook_flags_word = (((hook_flags_word & 0xfffe) & 0xfffd) & 0xfffb) & 0xff7f;
     menu_result = 0;
     space_pressed = 0;
-    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     while (menu_result == 0) {
         f_9d40(3);
         rkt_mv();

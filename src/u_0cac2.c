@@ -26,7 +26,7 @@ extern void f_d656(unsigned char *, int);
 extern int f_da01(unsigned char *);
 extern void f_d7b8(unsigned char *);
 extern void __interrupt sound_test_irq_handler(void);
-extern unsigned int dpmi_linear_address_value;
+extern unsigned int dpmi_selector_or_failure_marker;
 extern unsigned int sound_dma_buffer_address;
 extern short sound_dma_transfer_count;
 extern unsigned char sound_dma_mode_bits;
@@ -52,16 +52,16 @@ extern int g_75c4;
 extern void f_13889(int, int, int);
 
 extern short vga_bios_mode_supported;
-extern unsigned short u_749a;
-extern unsigned short u_749c;
+extern unsigned short unidentified_word_749a;
+extern unsigned short unidentified_word_749c;
 extern unsigned long vga_bios_version;
-extern unsigned short u_74a2;
+extern unsigned short unidentified_word_74a2;
 extern short xms_driver_available;
 extern unsigned long xms_driver_version;
-extern unsigned short u_74aa;
+extern unsigned short unidentified_word_74aa;
 extern short ems_manager_signature_found;
 extern unsigned long ems_manager_version;
-extern unsigned short u_74b2;
+extern unsigned short unidentified_word_74b2;
 extern short dpmi_host_available;
 extern unsigned long dpmi_version_bcd;
 extern unsigned short u_74ba;
@@ -251,7 +251,7 @@ int detect_sound_blaster_dma(void) {
     test_buffer = allocate_dpmi_memory(0x1080);
     if (test_buffer != 0) {
         test_buffer = (test_buffer + 0x3ffc) & 0xffffefff;
-        allocation_bytes = dpmi_linear_address_value;
+        allocation_bytes = dpmi_selector_or_failure_marker;
     } else {
         return sound_dma_test_result;
     }

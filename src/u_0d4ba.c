@@ -58,7 +58,7 @@ extern int install_interrupt_state(unsigned char *);
 extern void restore_interrupt_state(struct InterruptState *);
 extern void __interrupt sound_test_irq_handler(void);
 extern int sound_dma_test_result;
-extern unsigned int dpmi_linear_address_value;
+extern unsigned int dpmi_selector_or_failure_marker;
 extern unsigned int sound_dma_buffer_address;
 extern short sound_dma_transfer_count;
 extern unsigned char sound_dma_mode_bits;
@@ -91,16 +91,16 @@ extern short dos_version_query_succeeded;
 extern unsigned long dos_version_packed;
 extern unsigned short u_7496;
 extern short vga_bios_mode_supported;
-extern unsigned short u_749a;
-extern unsigned short u_749c;
+extern unsigned short unidentified_word_749a;
+extern unsigned short unidentified_word_749c;
 extern unsigned long vga_bios_version;
-extern unsigned short u_74a2;
+extern unsigned short unidentified_word_74a2;
 extern short xms_driver_available;
 extern unsigned long xms_driver_version;
-extern unsigned short u_74aa;
+extern unsigned short unidentified_word_74aa;
 extern short ems_manager_signature_found;
 extern unsigned long ems_manager_version;
-extern unsigned short u_74b2;
+extern unsigned short unidentified_word_74b2;
 
 /* _DATA [0x74b4,0x75b0): DPMI handles and four 57-byte interrupt records (split at the field names
    other objects import) */
@@ -302,7 +302,7 @@ int install_interrupt_state(unsigned char *interrupt_record_bytes) {
         if ((((struct InterruptState *)interrupt_record_bytes)->hook_flags & 1) == 1) {
             ((struct InterruptState *)interrupt_record_bytes)->mapping_length = ((struct InterruptState *)interrupt_record_bytes)->physical_end - ((struct InterruptState *)interrupt_record_bytes)->physical_start;
             if (((struct InterruptState *)interrupt_record_bytes)->allocated_base = allocate_dpmi_memory(((struct InterruptState *)interrupt_record_bytes)->mapping_length + 0x10)) {
-                ((struct InterruptState *)interrupt_record_bytes)->dpmi_memory_handle = dpmi_linear_address_value;
+                ((struct InterruptState *)interrupt_record_bytes)->dpmi_memory_handle = dpmi_selector_or_failure_marker;
                 ((struct DpmiMapping *)interrupt_record_bytes)->mapped_address =
                     ((struct DpmiMapping *)interrupt_record_bytes)->allocation_base + 0xd;
                 f_13889(((struct InterruptState *)interrupt_record_bytes)->physical_start, ((struct InterruptState *)interrupt_record_bytes)->allocated_base, ((struct InterruptState *)interrupt_record_bytes)->mapping_length);

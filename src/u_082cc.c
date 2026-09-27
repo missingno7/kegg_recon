@@ -28,7 +28,7 @@ extern short vp3idx;
 extern unsigned char frnt_pg_upd_buf[];
 extern unsigned char back_pg_upd_buf[];
 extern unsigned char sprite_commands[];
-extern void set_img_buffers(int, int, short, int, int);
+extern void set_image_pages(int, int, short, int, int);
 extern short hook_flags_word;
 extern short space_pressed;
 extern unsigned short mouse_btn;
@@ -89,7 +89,7 @@ void queue_draws(void)
 
 void set_pg(void)
 {
-    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     disp_idx = flip_src;
     draw_idx = flip_dst;
     page2 = video_page_2_index;

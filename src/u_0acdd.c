@@ -6,7 +6,7 @@ float g_height_noise_scale;
 #include <stdlib.h>
 
 extern signed short draw_idx;
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern void fill_clipped_vga_rectangle();
 extern void write_vga_pixel_entry();
 extern unsigned char read_vga_pixel_entry(short, short);
@@ -54,10 +54,10 @@ void generate_heightfield(float noise_scale, int left, int top, int right, int b
 {
     g_height_noise_scale = noise_scale;
     fill_clipped_vga_rectangle(draw_idx, left, top, right, bottom, g_height_min);
-    write_vga_pixel_entry(left, top, rand_rng(g_height_min + 1, g_height_max - 1));
-    write_vga_pixel_entry(right, top, rand_rng(g_height_min + 1, g_height_max - 1));
-    write_vga_pixel_entry(right, bottom, rand_rng(g_height_min + 1, g_height_max - 1));
-    write_vga_pixel_entry(left, bottom, rand_rng(g_height_min + 1, g_height_max - 1));
+    write_vga_pixel_entry(left, top, random_in_range(g_height_min + 1, g_height_max - 1));
+    write_vga_pixel_entry(right, top, random_in_range(g_height_min + 1, g_height_max - 1));
+    write_vga_pixel_entry(right, bottom, random_in_range(g_height_min + 1, g_height_max - 1));
+    write_vga_pixel_entry(left, bottom, random_in_range(g_height_min + 1, g_height_max - 1));
     subdivide_heightfield(left, top, right, bottom);
 }
 
@@ -93,9 +93,9 @@ void perturb_height_midpoint(short x1, short y1, short x2, short y2, short midpo
     if (read_vga_pixel_entry(midpoint_x, midpoint_y) != g_height_min)
         return;
 
-    midpoint_height = rand_rng(g_noise_min, g_noise_max) +
+    midpoint_height = random_in_range(g_noise_min, g_noise_max) +
                          ((read_vga_pixel_entry(x1, y1) + read_vga_pixel_entry(x2, y2)) >> 1) +
-                         (int)(rand_rng(-g_height_range >> 1, g_height_range >> 1) * g_height_noise_scale *
+                         (int)(random_in_range(-g_height_range >> 1, g_height_range >> 1) * g_height_noise_scale *
                                (float)(abs(x1 - x2) + abs(y1 - y2))) /
                              (g_height_range >> 1);
     if (midpoint_height < g_height_min + 1)

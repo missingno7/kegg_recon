@@ -30,7 +30,7 @@ extern int sound_system_mapped_address;
 extern unsigned g_75c4;
 extern int audio_dma_memory;
 extern short sound_blaster_base_port;
-extern unsigned dpmi_linear_address_value;
+extern unsigned dpmi_selector_or_failure_marker;
 extern void __far sound_blaster_irq_handler(void);
 extern int f_da01(void *);
 extern unsigned allocate_dpmi_memory(int);
@@ -96,7 +96,7 @@ int configure_sound_dma(int bytes_requested)
             audio_dma_memory = allocate_dpmi_memory(audio_dma_buffer_bytes + 0x1010);
             if (audio_dma_memory) {
                 audio_dma_memory = (audio_dma_memory + 0xfff) & 0xffffefff;
-                audio_dma_allocation_bytes = dpmi_linear_address_value;
+                audio_dma_allocation_bytes = dpmi_selector_or_failure_marker;
             } else {
                 return 0x607;
             }

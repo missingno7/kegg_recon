@@ -24,7 +24,7 @@ void queue_audio(int source, int byte_count, int sample_rate, int playback_mode)
 extern int audio_dma_buffer_bytes;
 extern short sound_dma_transfer_count;
 extern int sound_dma_buffer_address;
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern void submit_audio_request(int);
 extern void transfer_audio_stream_block(void);
 extern void start_audio_stream_dma(void);
@@ -98,7 +98,7 @@ void submit_audio_request(int index)
 
 void play_audio_request_at(int request_x, int request_y)
 {
-    submit_audio_request(rand_rng(request_x, request_y));
+    submit_audio_request(random_in_range(request_x, request_y));
 }
 
 void toggle_audio_transfer_mode(void)

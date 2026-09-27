@@ -83,7 +83,7 @@ extern void draw_text(int, int, int);
 extern void configure_text_renderer(int, int, unsigned char, int, int);
 extern void set_text_clip_rect(int, int, int, int);
 extern void queue_audio(int, int, int, int);
-extern void set_img_buffers(int, int, short, int, int);
+extern void set_image_pages(int, int, short, int, int);
 extern int set_display_mode();
 extern void fade_pal(void *, int, int, int);
 void run_title_screen_loop(void);

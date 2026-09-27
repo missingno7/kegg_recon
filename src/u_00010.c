@@ -67,7 +67,7 @@ extern void upd_bl(void);
 extern void f_9d40(unsigned char);
 extern void queue_audio(int, int, int, int);
 extern void stop_audio_stream(void);
-extern void set_img_buffers(int, int, short, int, int);
+extern void set_image_pages(int, int, short, int, int);
 extern void redraw_image_region(int, int);
 extern int set_display_mode(int);
 extern void set_pal_rgb(unsigned char, unsigned char, unsigned char, unsigned char);
@@ -492,7 +492,7 @@ extern unsigned char difficulty_tier_index;
 extern unsigned char start_decade;
 extern unsigned char score_storage[];
 extern void set_game_progress(int, int, int);
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern unsigned char codeok;
 extern void encode_restart_code(void);
 extern int run_level(void);
@@ -589,7 +589,7 @@ L_d6:;
         *(unsigned char *)&hook_flags_word |= 0x80;
         *(unsigned char *)&hook_flags_word &= 0xfb;
         *(unsigned char *)&hook_flags_word |= 3;
-        set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+        set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
         f_9d40(0);
         f_9d40(0);
         for (temp = 0; temp < 4; ++temp) {
@@ -666,7 +666,7 @@ void init_game(void) {
     level_number = (unsigned char)(start_decade * 10 - 1);
     temp = lives;
     if (arcade) {
-        level_number = (unsigned char)(rand_rng(0, 0x3b) - 1);
+        level_number = (unsigned char)(random_in_range(0, 0x3b) - 1);
         temp = 0;
     }
     racket_state = score_storage;

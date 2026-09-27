@@ -13,7 +13,7 @@ extern int last_audio_sample_rate;
 extern int active_audio_rate;
 extern short sound_dma_transfer_count;
 extern int sound_dma_buffer_address;
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern void queue_audio(int, int, int, int);
 extern void submit_audio_request(int);
 extern void transfer_audio_stream_block(void);

@@ -69,9 +69,9 @@ int attack_cooldown;
 
 extern void plot_transformed_pixel(void *, int);
 extern void submit_audio_request(int);
-extern void set_img_buffers(int, int, short, int, int);
+extern void set_image_pages(int, int, short, int, int);
 extern void redraw_image_region(int, int);
-extern int rand_rng(int, int);
+extern int random_in_range(int, int);
 extern void fade_pal(void *, int, int, int);
 extern void show_page(void);
 extern int fade_delay;
@@ -184,7 +184,7 @@ int run_level(void)
     load_monster_art();
     prep_brick();
     *(unsigned char *)&hook_flags_word &= 0xf8;
-    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
+    set_image_pages((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     initialize_level_hud();
     clr_bc();
     clr_sp();
@@ -221,14 +221,14 @@ int run_level(void)
                         submit_audio_request(0x6b);
                     }
                     for (enemy_shot_countdown = 0; enemy_shot_countdown < 2; ++enemy_shot_countdown) {
-                        spawn_animated_sprite(rand_rng(-0x1e, 0x1e) + 0x106, rand_rng(-0x1e, 0x1e) + 0x56, 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
+                        spawn_animated_sprite(random_in_range(-0x1e, 0x1e) + 0x106, random_in_range(-0x1e, 0x1e) + 0x56, 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                     }
                     enemy_shot_countdown = 8;
                 } else {
                     if (!audio_stream_flag) {
                         submit_audio_request(0x6a);
                     }
-                    spawn_animated_sprite(rand_rng(-0x10, 0x10) + (mouse_x_average_recent + 4), (mouse_y_mean_recent + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
+                    spawn_animated_sprite(random_in_range(-0x10, 0x10) + (mouse_x_average_recent + 4), (mouse_y_mean_recent + 8) + random_in_range(-0x10, 0x10), 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                     enemy_shot_countdown = 0x19;
                 }
             }
@@ -490,7 +490,7 @@ void update_enemy_attack_cycle(void)
             if (attack_frame_count <= 0) {
                 attack_frame_count = 7;
                 projectile_dx = ((mouse_x_average_recent - monster_x) << 4) / 0x28;
-                projectile_dy = ((rand_rng(-0x1e, 0x1e) + (mouse_y_mean_recent - monster_y)) << 4) / 0x28;
+                projectile_dy = ((random_in_range(-0x1e, 0x1e) + (mouse_y_mean_recent - monster_y)) << 4) / 0x28;
                 spawn_auxiliary_projectile(1, enemy_pattern, monster_x, monster_y, projectile_dx, projectile_dy, (int)enemy_projectile_animation_frames);
                 if (remaining_level_time > 0) {
                     submit_audio_request(0x58);
