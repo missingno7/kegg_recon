@@ -1,4 +1,8 @@
 .386
+; VGA DAC write-index and component-data ports.
+VGA_DAC_WRITE_INDEX_PORT  EQU 03C8h
+VGA_DAC_COMPONENT_PORT    EQU 03C9h
+VGA_DAC_COMPONENT_MAX     EQU 03Fh
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
         PUBLIC saved_ds
 saved_ds  DD 0
@@ -14,72 +18,44 @@ _TEXT SEGMENT BYTE PUBLIC USE32 'CODE'
 write_dac_palette LABEL NEAR
 write_dac_palette_entry PROC NEAR
         pushad
-L_13A49:
         lea ebp, [esp + 1Ch]
-L_13A4D:
         mov esi, dword ptr [ebp + 8]
-L_13A50:
         mov eax, dword ptr [ebp + 0Ch]
-L_13A53:
         mov ebx, dword ptr [ebp + 10h]
-L_13A56:
         mov ecx, dword ptr [ebp + 14h]
-L_13A59:
-        mov edx, 3C8h
-L_13A5E:
+        mov edx, VGA_DAC_WRITE_INDEX_PORT
         out dx, al
-L_13A5F:
         inc edx
-L_13A60:
         mov edi, ebx
-L_13A62:
         add ebx, ebx
-L_13A64:
         add edi, ebx
-L_13A66:
         xchg edi, ecx
-L_13A68:
-        mov ebp, 3Fh
-L_13A6D:
+        mov ebp, VGA_DAC_COMPONENT_MAX
+palette_next_component:
         lodsb
-L_13A6E:
         sub eax, edi
-L_13A70:
         or eax, eax
-L_13A72:
-        jge short L_13A7B
-L_13A74:
+        jge short palette_component_nonnegative
         sub eax, eax
-L_13A76:
         out dx, al
-L_13A77:
-        loop L_13A6D
-L_13A79:
-        jmp short L_13A84
-L_13A7B:
+        loop palette_next_component
+        jmp short palette_next_color_or_return
+palette_component_nonnegative:
         cmp eax, ebp
-L_13A7D:
-        jle short L_13A81
-L_13A7F:
+        jle short palette_component_within_range
         mov eax, ebp
-L_13A81:
+palette_component_within_range:
         out dx, al
-L_13A82:
-        loop L_13A6D
-L_13A84:
+        loop palette_next_component
+palette_next_color_or_return:
         popad
-L_13A85:
         ret
-L_13A86:
         add byte ptr [eax], al
         PUBLIC copy_ds_to_es
 copy_ds_to_es LABEL NEAR
 ; The game uses the data selector as the destination selector for string operations.
-L_13A88:
         mov [saved_ds], ds
-L_13A8E:
         mov es, [saved_ds]
-L_13A94:
         ret
 write_dac_palette_entry ENDP
 _TEXT ENDS

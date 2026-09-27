@@ -1,11 +1,27 @@
 .386
-EXTRN f_9e10:NEAR
-EXTRN f_9e54:NEAR
+; PIT channel 0, both 8259 masks, and the RTC/NMI index port.
+RTC_INDEX_PORT              EQU 070h
+RTC_NMI_DISABLE_BIT         EQU 080h
+RTC_INDEX_MASK              EQU 07Fh
+PIC_MASTER_COMMAND_PORT     EQU 020h
+PIC_MASTER_MASK_PORT        EQU 021h
+PIC_SLAVE_MASK_PORT         EQU 0A1h
+PIC_EOI_COMMAND             EQU 020h
+PIC_MASK_ALL                EQU 0FFh
+PIT_CHANNEL0_PORT           EQU 040h
+PIT_COMMAND_PORT            EQU 043h
+PIT_CHANNEL0_RATEGEN_LH     EQU 034h
+PIT_RELOAD_ALL_ONES         EQU 0FFFFh
+PIT_COUNTER_MODULUS         EQU 10000h
+PIT_SETTLE_LOOP_SEED        EQU 0FFFFFC18h
+EXTRN f_9e10:NEAR ; T06 helper that waits for vertical retrace.
+EXTRN f_9e54:NEAR ; T06 helper that advances the timer-event callbacks.
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
-EXTRN g_73a8:DWORD
-EXTRN g_e1b4_35:DWORD
+EXTRN g_73a8:DWORD ; Current PIT reload value supplied by T06.
+EXTRN g_e1b4_35:DWORD ; T06 global incremented once per PIT IRQ; higher-level meaning is unclear.
         PUBLIC g_73d4
         PUBLIC g_pit_elapsed_ticks
+; This separate initialized dword precedes the named sample result in the original data block.
 g_73d4  DD 0
 g_pit_elapsed_ticks DD 0
 _DATA ENDS
@@ -13,56 +29,58 @@ DGROUP GROUP _DATA
 _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
         ASSUME CS:_TEXT, DS:DGROUP
         ASSUME CS:_TEXT, DS:DGROUP
+; Legacy entry name is called by the frozen T06 timing code; the descriptive alias is used here.
         PUBLIC f_9f64
         PUBLIC measure_pit_channel0
+; Mask both PICs while sampling channel 0, then restore the RTC/NMI index and PIC masks.
 f_9f64 LABEL NEAR
 measure_pit_channel0 PROC NEAR
         pushad
         lea     ebp,[esp+1Ch]
         pushfd
         cli
-        in      al,70h
+        in      al,RTC_INDEX_PORT
         mov     ah,al
-        and     ah,80h
-        or      al,80h
-        jmp     short L_9F76
-L_9F76:
-        jmp     short L_9F78
-L_9F78:
-        jmp     short L_9F7A
-L_9F7A:
-        out     70h,al
+        and     ah,RTC_NMI_DISABLE_BIT
+        or      al,RTC_NMI_DISABLE_BIT
+        jmp     short rtc_index_delay_1
+rtc_index_delay_1:
+        jmp     short rtc_index_delay_2
+rtc_index_delay_2:
+        jmp     short rtc_index_write
+rtc_index_write:
+        out     RTC_INDEX_PORT,al
         shl     eax,8
-        in      al,21h
+        in      al,PIC_MASTER_MASK_PORT
         mov     ah,al
-        in      al,0A1h
+        in      al,PIC_SLAVE_MASK_PORT
         push    eax
-        mov     al,0FFh
-        out     21h,al
-        out     0A1h,al
+        mov     al,PIC_MASK_ALL
+        out     PIC_MASTER_MASK_PORT,al
+        out     PIC_SLAVE_MASK_PORT,al
         call    f_9e10
         call    f_9e10
-        mov     al,34h
-        out     43h,al
-        jmp     short L_9F9C
-L_9F9C:
-        jmp     short L_9F9E
-L_9F9E:
-        jmp     short L_9FA0
-L_9FA0:
+        mov     al,PIT_CHANNEL0_RATEGEN_LH
+        out     PIT_COMMAND_PORT,al
+        jmp     short pit_mode_delay_1
+pit_mode_delay_1:
+        jmp     short pit_mode_delay_2
+pit_mode_delay_2:
+        jmp     short pit_mode_delay_3
+pit_mode_delay_3:
         mov     al,0
-        out     40h,al
-        jmp     short L_9FA6
-L_9FA6:
-        jmp     short L_9FA8
-L_9FA8:
-        jmp     short L_9FAA
-L_9FAA:
-        out     40h,al
+        out     PIT_CHANNEL0_PORT,al
+        jmp     short pit_counter_load_low_delay_1
+pit_counter_load_low_delay_1:
+        jmp     short pit_counter_load_low_delay_2
+pit_counter_load_low_delay_2:
+        jmp     short pit_counter_load_low_write
+pit_counter_load_low_write:
+        out     PIT_CHANNEL0_PORT,al
         push    ecx
         push    eax
-        mov     ecx,0FFFFFC18h
-L_9FB3:
+        mov     ecx,PIT_SETTLE_LOOP_SEED
+pit_settle_spin:
         btc     eax,1
         btc     eax,1
         btc     eax,1
@@ -79,46 +97,46 @@ L_9FB3:
         btc     eax,1
         btc     eax,1
         inc     ecx
-        jne     short L_9FB3
+        jne     short pit_settle_spin
         pop     eax
         pop     ecx
         call    f_9e10
-        out     43h,al
-        jmp     short L_9FFD
-L_9FFD:
-        jmp     short L_9FFF
-L_9FFF:
-        jmp     short L_A001
-L_A001:
-        in      al,40h
-        jmp     short L_A005
-L_A005:
-        jmp     short L_A007
-L_A007:
-        jmp     short L_A009
-L_A009:
+        out     PIT_COMMAND_PORT,al
+        jmp     short pit_latch_delay_1
+pit_latch_delay_1:
+        jmp     short pit_latch_delay_2
+pit_latch_delay_2:
+        jmp     short pit_latch_command
+pit_latch_command:
+        in      al,PIT_CHANNEL0_PORT
+        jmp     short pit_read_low_delay_1
+pit_read_low_delay_1:
+        jmp     short pit_read_low_delay_2
+pit_read_low_delay_2:
+        jmp     short pit_read_low
+pit_read_low:
         mov     ah,al
-        in      al,40h
+        in      al,PIT_CHANNEL0_PORT
         xchg    ah,al
         movzx   eax,ax
-        mov     ebx,10000h
+        mov     ebx,PIT_COUNTER_MODULUS
         sub     ebx,eax
         mov     dword ptr g_pit_elapsed_ticks,ebx
         pop     eax
-        out     0A1h,al
+        out     PIC_SLAVE_MASK_PORT,al
         mov     al,ah
-        out     21h,al
+        out     PIC_MASTER_MASK_PORT,al
         shr     eax,8
-        in      al,70h
-        and     al,7Fh
+        in      al,RTC_INDEX_PORT
+        and     al,RTC_INDEX_MASK
         or      al,ah
-        jmp     short L_A031
-L_A031:
-        jmp     short L_A033
-L_A033:
-        jmp     short L_A035
-L_A035:
-        out     70h,al
+        jmp     short rtc_restore_delay_1
+rtc_restore_delay_1:
+        jmp     short rtc_restore_delay_2
+rtc_restore_delay_2:
+        jmp     short rtc_restore_index
+rtc_restore_index:
+        out     RTC_INDEX_PORT,al
         popfd
         popad
         mov     eax,dword ptr g_pit_elapsed_ticks
@@ -134,24 +152,24 @@ set_pit_channel0_reload PROC NEAR
         pushfd
         cli
         mov     ebx,[ebp+8]
-        mov     al,34h
-        out     43h,al
-        jmp     short L_A050
-L_A050:
-        jmp     short L_A052
-L_A052:
-        jmp     short L_A054
-L_A054:
+        mov     al,PIT_CHANNEL0_RATEGEN_LH
+        out     PIT_COMMAND_PORT,al
+        jmp     short pit_reload_low_delay_1
+pit_reload_low_delay_1:
+        jmp     short pit_reload_low_delay_2
+pit_reload_low_delay_2:
+        jmp     short pit_reload_low_write
+pit_reload_low_write:
         mov     al,bl
-        out     40h,al
-        jmp     short L_A05A
-L_A05A:
-        jmp     short L_A05C
-L_A05C:
-        jmp     short L_A05E
-L_A05E:
+        out     PIT_CHANNEL0_PORT,al
+        jmp     short pit_reload_high_delay_1
+pit_reload_high_delay_1:
+        jmp     short pit_reload_high_delay_2
+pit_reload_high_delay_2:
+        jmp     short pit_reload_high_write
+pit_reload_high_write:
         mov     al,bh
-        out     40h,al
+        out     PIT_CHANNEL0_PORT,al
         popfd
         pop     ebx
         pop     eax
@@ -163,24 +181,24 @@ set_pit_channel0_reload ENDP
 pit_channel0_interrupt PROC NEAR
         push    eax
         push    edx
-        mov     al,34h
-        out     43h,al
-        mov     ax,0FFFFh
-        jmp     short L_A073
-L_A073:
-        jmp     short L_A075
-L_A075:
-        jmp     short L_A077
-L_A077:
-        out     40h,al
-        jmp     short L_A07B
-L_A07B:
-        jmp     short L_A07D
-L_A07D:
-        jmp     short L_A07F
-L_A07F:
+        mov     al,PIT_CHANNEL0_RATEGEN_LH
+        out     PIT_COMMAND_PORT,al
+        mov     ax,PIT_RELOAD_ALL_ONES
+        jmp     short irq_pit_low_delay_1
+irq_pit_low_delay_1:
+        jmp     short irq_pit_low_delay_2
+irq_pit_low_delay_2:
+        jmp     short irq_pit_low_write
+irq_pit_low_write:
+        out     PIT_CHANNEL0_PORT,al
+        jmp     short irq_pit_high_delay_1
+irq_pit_high_delay_1:
+        jmp     short irq_pit_high_delay_2
+irq_pit_high_delay_2:
+        jmp     short irq_pit_high_write
+irq_pit_high_write:
         mov     al,ah
-        out     40h,al
+        out     PIT_CHANNEL0_PORT,al
         mov     dx,ds
         rol     edx,10h
         mov     dx,es
@@ -190,30 +208,30 @@ L_A07F:
         mov     ds,eax
         mov     es,eax
         call    f_9e10
-        mov     al,34h
-        out     43h,al
+        mov     al,PIT_CHANNEL0_RATEGEN_LH
+        out     PIT_COMMAND_PORT,al
         mov     eax,dword ptr g_73a8
-        jmp     short L_A0A6
-L_A0A6:
-        jmp     short L_A0A8
-L_A0A8:
-        jmp     short L_A0AA
-L_A0AA:
-        out     40h,al
-        jmp     short L_A0AE
-L_A0AE:
-        jmp     short L_A0B0
-L_A0B0:
-        jmp     short L_A0B2
-L_A0B2:
+        jmp     short irq_pit_reload_low_delay_1
+irq_pit_reload_low_delay_1:
+        jmp     short irq_pit_reload_low_delay_2
+irq_pit_reload_low_delay_2:
+        jmp     short irq_pit_reload_low_write
+irq_pit_reload_low_write:
+        out     PIT_CHANNEL0_PORT,al
+        jmp     short irq_pit_reload_high_delay_1
+irq_pit_reload_high_delay_1:
+        jmp     short irq_pit_reload_high_delay_2
+irq_pit_reload_high_delay_2:
+        jmp     short irq_pit_reload_high_write
+irq_pit_reload_high_write:
         mov     al,ah
-        out     40h,al
+        out     PIT_CHANNEL0_PORT,al
         pushad
         inc     dword ptr g_e1b4_35
         call    f_9e54
         popad
-        mov     al,20h
-        out     20h,al
+        mov     al,PIC_EOI_COMMAND
+        out     PIC_MASTER_COMMAND_PORT,al
         pop     edx
         mov     es,edx
         rol     edx,10h

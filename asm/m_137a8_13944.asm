@@ -1,4 +1,36 @@
 .386P
+; VGA indexed-register ports and the cached planar write settings.
+VGA_A000_MEMORY_START       EQU 0A0000h
+VGA_B000_MEMORY_START       EQU 0B0000h
+VGA_SEQ_INDEX_PORT         EQU 03C4h
+VGA_GC_INDEX_PORT          EQU 03CEh
+VGA_SEQ_PLANE_MASK_INDEX   EQU 02h
+VGA_GC_READ_PLANE_INDEX    EQU 04h
+VGA_GC_MODE_INDEX          EQU 05h
+VGA_ALL_PLANES_MASK        EQU 0Fh
+VGA_GC_PLANAR_MODE_VALUE   EQU 040h
+VGA_SEQ_ALL_PLANES_COMMAND EQU 0F02h
+VGA_GC_PLANAR_MODE_COMMAND EQU 4005h
+VGA_GC_LATCH_COPY_MODE     EQU 041h
+VGA_GC_LATCH_COPY_COMMAND  EQU 4105h
+; Byte offsets in the shared renderer state block (all byte-packed).
+VGA_STATE STRUC
+vga_mode_flags           DB 2 DUP (?)
+vga_page_origin_group0   DB 10h DUP (?)
+vga_page_origin_group1   DB 10h DUP (?)
+vga_page_origin_group2   DB 10h DUP (?)
+vga_state_reserved_32    DB 8 DUP (?)
+vga_screen_stride        DB 4 DUP (?)
+vga_state_reserved_3e    DB 0Ch DUP (?)
+vga_clip_left            DB 4 DUP (?)
+vga_clip_top             DB 4 DUP (?)
+vga_clip_right           DB 4 DUP (?)
+vga_clip_bottom          DB 4 DUP (?)
+vga_state_reserved_5a    DB 6 DUP (?)
+vga_gc_mode               DB ?
+vga_seq_plane_mask        DB ?
+vga_gc_read_plane         DB ?
+VGA_STATE ENDS
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN vga_state:WORD
         PUBLIC cpu_type
@@ -16,87 +48,61 @@ DGROUP GROUP _DATA
         ASSUME CS:_TEXT, DS:DGROUP
         PUBLIC probe_cpu_environment_entry
         PUBLIC probe_cpu_environment
+CPU_TYPE_80386             EQU 386h
+CPU_TYPE_80486             EQU 486h
+EFLAGS_AC_FLAG             EQU 40000h
+EFLAGS_VM_FLAG             EQU 20000h
+CR0_PROTECTED_MODE_BIT     EQU 1
+CPU_MODE_REAL              EQU 0
+CPU_MODE_PROTECTED         EQU 1
+CPU_MODE_VIRTUAL_8086       EQU 2
+EFLAGS_IOPL_SHIFT          EQU 0Ch
+EFLAGS_IOPL_MASK           EQU 3
 ; Record the detected CPU generation, execution mode, and I/O privilege level.
 probe_cpu_environment LABEL NEAR
 probe_cpu_environment_entry PROC NEAR
         pushad
-L_137A9:
         lea ebp, [esp + 1Ch]
-L_137AD:
         cli
-L_137AE:
-        mov dword ptr [cpu_type], 386h
-L_137B8:
+        mov dword ptr [cpu_type], CPU_TYPE_80386
         pushfd
-L_137B9:
         mov ebp, esp
-L_137BB:
         and sp, -4
-L_137BF:
         pushfd
-L_137C0:
         cli
-L_137C1:
         pop eax
-L_137C2:
         mov ebx, eax
-L_137C4:
-        xor eax, 40000h
-L_137C9:
+        xor eax, EFLAGS_AC_FLAG
         push eax
-L_137CA:
         popfd
-L_137CB:
         pushfd
-L_137CC:
         pop eax
-L_137CD:
         xor eax, ebx
-L_137CF:
         mov esp, ebp
-L_137D1:
         popfd
-L_137D2:
-        test eax, 40000h
-L_137D7:
-        je short L_137E3
-L_137D9:
-        mov dword ptr [cpu_type], 486h
-L_137E3:
-        mov dword ptr [cpu_mode], 0
-L_137ED:
+        test eax, EFLAGS_AC_FLAG
+        je short cpu_is_386_or_earlier
+        mov dword ptr [cpu_type], CPU_TYPE_80486
+cpu_is_386_or_earlier:
+        mov dword ptr [cpu_mode], CPU_MODE_REAL
         smsw ax
-L_137F0:
-        test al, 1
-L_137F2:
-        je short L_13811
-L_137F4:
-        mov dword ptr [cpu_mode], 1
-L_137FE:
+        test al, CR0_PROTECTED_MODE_BIT
+        je short cpu_mode_detected
+        mov dword ptr [cpu_mode], CPU_MODE_PROTECTED
         pushfd
-L_137FF:
         pop eax
-L_13800:
-        test eax, 20000h
-L_13805:
-        je short L_13811
-L_13807:
-        mov dword ptr [cpu_mode], 2
-L_13811:
+        test eax, EFLAGS_VM_FLAG
+        je short cpu_mode_detected
+        mov dword ptr [cpu_mode], CPU_MODE_VIRTUAL_8086
+cpu_mode_detected:
         pushfd
-L_13812:
         pop eax
-L_13813:
-        shr eax, 0Ch
-L_13816:
-        and eax, 3
-L_13819:
+        shr eax, EFLAGS_IOPL_SHIFT
+        and eax, EFLAGS_IOPL_MASK
         mov dword ptr [cpu_iopl], eax
-L_1381E:
+        ; This historical probe enables interrupts on exit rather than restoring the entry IF bit.
         sti
-L_1381F:
         popad
-L_13820:
         ret
         ORG $+3 ; original zero fill to the next aligned entry at 13824h
 probe_cpu_environment_entry ENDP
@@ -108,201 +114,118 @@ probe_cpu_environment_entry ENDP
 clear_video_bytes LABEL NEAR
 clear_video_bytes_entry PROC NEAR
         push ebp
-L_13825:
         lea ebp, [esp]
-L_13828:
         push eax
-L_13829:
         push ecx
-L_1382A:
         push edi
-L_1382B:
         mov edi, dword ptr [ebp + 8]
-L_1382E:
         sub eax, eax
-L_13830:
-        cmp edi, 0B0000h
-L_13836:
-        jge short L_13874
-L_13838:
-        cmp edi, 0A0000h
-L_1383E:
-        jl short L_13874
-L_13840:
-        cmp byte ptr [vga_state+61h], 0Fh
-L_13847:
-        je short L_1385A
-L_13849:
-        mov byte ptr [vga_state+61h], 0Fh
-L_13850:
-        mov ax, 0F02h
-L_13854:
-        mov dx, 3C4h
-L_13858:
+        cmp edi, VGA_B000_MEMORY_START
+        jge short clear_memory_range
+        cmp edi, VGA_A000_MEMORY_START
+        jl short clear_memory_range
+        cmp byte ptr [vga_state+vga_seq_plane_mask], VGA_ALL_PLANES_MASK
+        je short clear_video_plane_mask_ready
+        mov byte ptr [vga_state+vga_seq_plane_mask], VGA_ALL_PLANES_MASK
+        mov ax, VGA_SEQ_ALL_PLANES_COMMAND
+        mov dx, VGA_SEQ_INDEX_PORT
         out dx, ax
-L_1385A:
-        cmp byte ptr [vga_state+60h], 40h
-L_13861:
-        je short L_13874
-L_13863:
-        mov byte ptr [vga_state+60h], 40h
-L_1386A:
-        mov ax, 4005h
-L_1386E:
-        mov dx, 3CEh
-L_13872:
+clear_video_plane_mask_ready:
+        cmp byte ptr [vga_state+vga_gc_mode], VGA_GC_PLANAR_MODE_VALUE
+        je short clear_memory_range
+        mov byte ptr [vga_state+vga_gc_mode], VGA_GC_PLANAR_MODE_VALUE
+        mov ax, VGA_GC_PLANAR_MODE_COMMAND
+        mov dx, VGA_GC_INDEX_PORT
         out dx, ax
-L_13874:
+clear_memory_range:
         mov ecx, dword ptr [ebp + 0Ch]
-L_13877:
         shr ecx, 2
-L_1387A:
         rep stosd
-L_1387C:
         mov ecx, dword ptr [ebp + 0Ch]
-L_1387F:
         and ecx, 3
-L_13882:
         rep stosb
-L_13884:
         pop edi
-L_13885:
         pop ecx
-L_13886:
         pop eax
-L_13887:
         pop ebp
-L_13888:
         ret
 clear_video_bytes_entry ENDP
         ASSUME CS:_TEXT
         ASSUME CS:_TEXT
         PUBLIC move_memory_bytes
+; f_13889 remains the linker name used by frozen T08 and callers across other units.
         PUBLIC f_13889
 ; Parameters: source at [ebp+8], destination at [ebp+0Ch], byte count at [ebp+10h].
 ; Move overlapping ranges safely; use VGA latch-copy mode for eligible video-to-video copies.
 f_13889 LABEL NEAR
 move_memory_bytes PROC NEAR
         push ebp
-L_1388A:
         lea ebp, [esp]
-L_1388D:
         push ecx
-L_1388E:
         push edx
-L_1388F:
         push esi
-L_13890:
         push edi
-L_13891:
         mov esi, dword ptr [ebp + 8]
-L_13894:
         mov edi, dword ptr [ebp + 0Ch]
-L_13897:
         mov ecx, dword ptr [ebp + 10h]
-L_1389A:
         cmp esi, edi
-L_1389C:
-        jge short L_138A5
-L_1389E:
+        jge short copy_backward_endpoints_ready
         std
-L_1389F:
         add esi, ecx
-L_138A1:
         add edi, ecx
-L_138A3:
         dec esi
-L_138A4:
         dec edi
-L_138A5:
-        cmp esi, 0B0000h
-L_138AB:
-        jge short L_138EB
-L_138AD:
-        cmp esi, 0A0000h
-L_138B3:
-        jl short L_138EB
-L_138B5:
-        cmp edi, 0B0000h
-L_138BB:
-        jge short L_138FB
-L_138BD:
-        cmp edi, 0A0000h
-L_138C3:
-        jl short L_138FB
-L_138C5:
+copy_backward_endpoints_ready:
+        cmp esi, VGA_B000_MEMORY_START
+        jge short copy_source_outside_video_memory
+        cmp esi, VGA_A000_MEMORY_START
+        jl short copy_source_outside_video_memory
+        cmp edi, VGA_B000_MEMORY_START
+        jge short copy_destination_in_video_memory
+        cmp edi, VGA_A000_MEMORY_START
+        jl short copy_destination_in_video_memory
         cmp word ptr [vga_state], 1
-L_138CD:
-        jne short L_138E9
-L_138CF:
-        cmp byte ptr [vga_state+60h], 41h
-L_138D6:
-        je short L_138E9
-L_138D8:
-        mov byte ptr [vga_state+60h], 41h
-L_138DF:
-        mov ax, 4105h
-L_138E3:
-        mov dx, 3CEh
-L_138E7:
+        jne short video_to_video_copy_mode_ready
+        cmp byte ptr [vga_state+vga_gc_mode], VGA_GC_LATCH_COPY_MODE
+        je short video_to_video_copy_mode_ready
+        mov byte ptr [vga_state+vga_gc_mode], VGA_GC_LATCH_COPY_MODE
+        mov ax, VGA_GC_LATCH_COPY_COMMAND
+        mov dx, VGA_GC_INDEX_PORT
         out dx, ax
-L_138E9:
-        jmp short L_1393A
-L_138EB:
-        cmp edi, 0B0000h
-L_138F1:
-        jge short L_1392F
-L_138F3:
-        cmp edi, 0A0000h
-L_138F9:
-        jl short L_1392F
-L_138FB:
-        cmp byte ptr [vga_state+61h], 0Fh
-L_13902:
-        je short L_13915
-L_13904:
-        mov byte ptr [vga_state+61h], 0Fh
-L_1390B:
-        mov ax, 0F02h
-L_1390F:
-        mov dx, 3C4h
-L_13913:
+video_to_video_copy_mode_ready:
+        jmp short copy_forward_tail
+copy_source_outside_video_memory:
+        cmp edi, VGA_B000_MEMORY_START
+        jge short clear_video_copy_graphics_mode_ready
+        cmp edi, VGA_A000_MEMORY_START
+        jl short clear_video_copy_graphics_mode_ready
+copy_destination_in_video_memory:
+        cmp byte ptr [vga_state+vga_seq_plane_mask], VGA_ALL_PLANES_MASK
+        je short clear_video_copy_plane_mask_ready
+        mov byte ptr [vga_state+vga_seq_plane_mask], VGA_ALL_PLANES_MASK
+        mov ax, VGA_SEQ_ALL_PLANES_COMMAND
+        mov dx, VGA_SEQ_INDEX_PORT
         out dx, ax
-L_13915:
-        cmp byte ptr [vga_state+60h], 40h
-L_1391C:
-        je short L_1392F
-L_1391E:
-        mov byte ptr [vga_state+60h], 40h
-L_13925:
-        mov ax, 4005h
-L_13929:
-        mov dx, 3CEh
-L_1392D:
+clear_video_copy_plane_mask_ready:
+        cmp byte ptr [vga_state+vga_gc_mode], VGA_GC_PLANAR_MODE_VALUE
+        je short clear_video_copy_graphics_mode_ready
+        mov byte ptr [vga_state+vga_gc_mode], VGA_GC_PLANAR_MODE_VALUE
+        mov ax, VGA_GC_PLANAR_MODE_COMMAND
+        mov dx, VGA_GC_INDEX_PORT
         out dx, ax
-L_1392F:
+clear_video_copy_graphics_mode_ready:
         shr ecx, 2
-L_13932:
         rep movsd
-L_13934:
         mov ecx, dword ptr [ebp + 10h]
-L_13937:
         and ecx, 3
-L_1393A:
+copy_forward_tail:
         rep movsb
-L_1393C:
         cld
-L_1393D:
         pop edi
-L_1393E:
         pop esi
-L_1393F:
         pop edx
-L_13940:
         pop ecx
-L_13941:
         pop ebp
-L_13942:
         ret
         ORG $+1 ; original zero fill to the next even code address
 move_memory_bytes ENDP

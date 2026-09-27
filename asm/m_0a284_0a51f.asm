@@ -1,4 +1,34 @@
 .386
+; Big-endian IFF chunk identifiers as they appear in the little-endian file words.
+IFF_FORM_ID                 EQU 4D524F46h
+IFF_BODY_ID                 EQU 424F4459h
+IFF_BMHD_ID                 EQU 424D4844h
+IFF_CMAP_ID                 EQU 434D4150h
+IFF_ILBM_ID                 EQU 4D424C49h
+IFF_FORM_TYPE_OFFSET        EQU 8
+IFF_BITMAP_HEADER_WIDTH     EQU 4
+IFF_BITMAP_HEADER_HEIGHT    EQU 6
+IFF_BITMAP_HEADER_COMPRESSION EQU 0Eh
+IFF_ERROR_CLASS             EQU 8
+IFF_ERROR_INVALID_FORM      EQU 1
+IFF_ERROR_BODY_MISSING      EQU 2
+IFF_ERROR_HEADER_MISSING    EQU 3
+IFF_ERROR_PALETTE_MISSING   EQU 4
+IFF_ERROR_BODY_OVERRUN      EQU 5
+BYTERUN1_NOOP_CONTROL       EQU 080h
+IFF_COMPRESSION_NONE        EQU 0
+; Dword fields written into the caller's decoded-image descriptor.
+IFF_IMAGE_LAYOUT STRUC
+IFF_IMAGE_PIXEL_BUFFER       DD ?
+IFF_IMAGE_PALETTE_BUFFER     DD ?
+IFF_IMAGE_WIDTH_PIXELS       DD ?
+IFF_IMAGE_HEIGHT_PIXELS      DD ?
+IFF_IMAGE_FORMAT_CODE        DD ?
+IFF_IMAGE_PALETTE_ENTRIES    DD ?
+IFF_IMAGE_FILE_BYTE_COUNT    DD ?
+IFF_IMAGE_PALETTE_BYTE_COUNT DD ?
+IFF_IMAGE_PIXEL_COUNT        DD ?
+IFF_IMAGE_LAYOUT ENDS
 DGROUP GROUP _DATA
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
 EXTRN iff_width_pixels:DWORD
@@ -20,31 +50,32 @@ decode_iff_ilbm_image PROC NEAR
         mov     esi,[ebp+8]
         mov     dword ptr g_iff_file,esi
         mov     dword ptr g_iff_pixels,ebx
-        cmp     dword ptr [esi],4D524F46h
-        je      short L_A2B4
-        mov     al,1
-L_A2A5:
-        mov     ah,8
+        cmp     dword ptr [esi],IFF_FORM_ID
+        je      short form_header_valid
+        mov     al,IFF_ERROR_INVALID_FORM
+set_iff_decode_error:
+        ; The high byte is the decode error class; AL identifies the failed chunk or body check.
+        mov     ah,IFF_ERROR_CLASS
         movzx   eax,ax
         mov     dword ptr g_iff_error,eax
-        jmp     near ptr L_A47E
-L_A2B4:
-        mov     edx,424F4459h
+        jmp     near ptr store_iff_result
+form_header_valid:
+        mov     edx,IFF_BODY_ID
         call    find_iff_chunk
-        mov     al,2
-        jb      short L_A2A5
+        mov     al,IFF_ERROR_BODY_MISSING
+        jb      short set_iff_decode_error
         mov     eax,[ebx]
         xchg    al,ah
         rol     eax,10h
         xchg    al,ah
-        lea     esi,[ebx+4]
+        lea     esi,[ebx+IFF_BITMAP_HEADER_WIDTH]
         mov     edi,dword ptr g_iff_pixels
-        mov     edx,424D4844h
+        mov     edx,IFF_BMHD_ID
         call    find_iff_chunk
-        mov     al,3
-        jb      short L_A2A5
-        movzx   eax,word ptr [ebx+4]
-        movzx   ecx,word ptr [ebx+6]
+        mov     al,IFF_ERROR_HEADER_MISSING
+        jb      short set_iff_decode_error
+        movzx   eax,word ptr [ebx+IFF_BITMAP_HEADER_WIDTH]
+        movzx   ecx,word ptr [ebx+IFF_BITMAP_HEADER_HEIGHT]
         xchg    al,ah
         xchg    cl,ch
         mov     dword ptr iff_width_pixels,eax
@@ -53,43 +84,43 @@ L_A2B4:
         mov     dword ptr g_iff_pixel_count,eax
         lea     ecx,[edi+eax]
         mov     dword ptr g_iff_decoder_workspace,ecx
-        cmp     byte ptr [ebx+0Eh],0
-        je      short L_A34B
+        cmp     byte ptr [ebx+IFF_BITMAP_HEADER_COMPRESSION],IFF_COMPRESSION_NONE
+        je      short copy_uncompressed_body
         sub     ecx,ecx
-L_A311:
+byterun_next_control:
         mov     cl,byte ptr [esi]
         inc     esi
-        cmp     cl,80h
-        jb      short L_A336
-        ja      short L_A31D
-        jmp     short L_A311
-L_A31D:
+        cmp     cl,BYTERUN1_NOOP_CONTROL
+        jb      short byterun_literal_run
+        ja      short byterun_repeat_run
+        jmp     short byterun_next_control
+byterun_repeat_run:
         neg     cl
         inc     cl
         lodsb
         rep     stosb
         cmp     edi,dword ptr g_iff_decoder_workspace
-        jl      short L_A311
-        mov     al,5
-        jne     near ptr L_A2A5
-        jmp     short L_A356
-L_A336:
+        jl      short byterun_next_control
+        mov     al,IFF_ERROR_BODY_OVERRUN
+        jne     near ptr set_iff_decode_error
+        jmp     short find_cmap_chunk
+byterun_literal_run:
         inc     ecx
         rep     movsb
         cmp     edi,dword ptr g_iff_decoder_workspace
-        jl      short L_A311
-        mov     al,5
-        jne     near ptr L_A2A5
-        jmp     short L_A356
-L_A34B:
+        jl      short byterun_next_control
+        mov     al,IFF_ERROR_BODY_OVERRUN
+        jne     near ptr set_iff_decode_error
+        jmp     short find_cmap_chunk
+copy_uncompressed_body:
         mov     ecx,dword ptr g_iff_pixel_count
         shr     ecx,2
         rep     movsd
-L_A356:
-        mov     edx,434D4150h
+find_cmap_chunk:
+        mov     edx,IFF_CMAP_ID
         call    find_iff_chunk
-        mov     al,4
-        jb      near ptr L_A2A5
+        mov     al,IFF_ERROR_PALETTE_MISSING
+        jb      near ptr set_iff_decode_error
         mov     esi,ebx
         lodsd
         mov     ecx,eax
@@ -97,29 +128,29 @@ L_A356:
         rol     ecx,10h
         xchg    cl,ch
         mov     dword ptr g_iff_palette_bytes,ecx
-L_A37A:
+scale_palette_component:
         lodsb
         shr     al,2
         stosb
-        loop    short L_A37A
+        loop    short scale_palette_component
         sub     edi,dword ptr g_iff_pixels
         mov     esi,dword ptr g_iff_file
-        cmp     dword ptr [esi+8],4D424C49h
-        jne     near ptr L_A47E
+        cmp     dword ptr [esi+IFF_FORM_TYPE_OFFSET],IFF_ILBM_ID
+        jne     near ptr store_iff_result
         mov     esi,dword ptr g_iff_pixels
         mov     edi,dword ptr g_iff_file
         mov     ecx,dword ptr iff_height_pixels
-L_A3AC:
+ilbm_row_loop:
         push    ecx
         mov     ecx,dword ptr iff_width_pixels
         shr     ecx,4
-L_A3B6:
+ilbm_sixteen_pixel_group_loop:
         push    ecx
         mov     ecx,2
-L_A3BC:
+ilbm_eight_pixel_block_loop:
         push    ecx
         mov     ecx,8
-L_A3C2:
+ilbm_plane_bit_loop:
         sub     al,al
         dec     ecx
         mov     edx,dword ptr iff_width_pixels
@@ -160,20 +191,20 @@ L_A3C2:
         inc     ecx
         stosb
         dec     cx
-        je      short L_A428
-        jmp     short L_A3C2
-L_A428:
+        je      short ilbm_pixel_block_complete
+        jmp     short ilbm_plane_bit_loop
+ilbm_pixel_block_complete:
         inc     esi
         pop     ecx
         dec     cx
-        je      short L_A430
-        jmp     short L_A3BC
-L_A430:
+        je      short ilbm_byte_block_complete
+        jmp     short ilbm_eight_pixel_block_loop
+ilbm_byte_block_complete:
         pop     ecx
         dec     cx
-        je      short L_A43A
-        jmp     near ptr L_A3B6
-L_A43A:
+        je      short ilbm_sixteen_pixel_group_complete
+        jmp     near ptr ilbm_sixteen_pixel_group_loop
+ilbm_sixteen_pixel_group_complete:
         mov     edx,dword ptr iff_width_pixels
         mov     ecx,edx
         shr     ecx,3
@@ -181,9 +212,9 @@ L_A43A:
         add     esi,edx
         pop     ecx
         dec     cx
-        je      short L_A453
-        jmp     near ptr L_A3AC
-L_A453:
+        je      short ilbm_image_complete
+        jmp     near ptr ilbm_row_loop
+ilbm_image_complete:
         mov     eax,dword ptr iff_width_pixels
         mul     dword ptr iff_height_pixels
         mov     ecx,eax
@@ -198,28 +229,28 @@ L_A453:
         cld
         mov     edi,eax
         add     edi,dword ptr g_iff_palette_bytes
-L_A47E:
+store_iff_result:
         mov     dword ptr iff_output_byte_count,edi
         mov     edi,dword ptr g_iff_pixel_count
         mov     dword ptr iff_decoded_pixel_count,edi
         mov     ebx,[ebp+10h]
         mov     eax,[ebp+0Ch]
-        mov     [ebx],eax
+        mov     [ebx+IFF_IMAGE_PIXEL_BUFFER],eax
         mov     eax,dword ptr iff_width_pixels
         mul     dword ptr iff_height_pixels
-        mov     [ebx+20h],eax
+        mov     [ebx+IFF_IMAGE_PIXEL_COUNT],eax
         add     eax,[ebp+0Ch]
-        mov     [ebx+4],eax
+        mov     [ebx+IFF_IMAGE_PALETTE_BUFFER],eax
         mov     eax,dword ptr iff_width_pixels
-        mov     [ebx+8],eax
+        mov     [ebx+IFF_IMAGE_WIDTH_PIXELS],eax
         mov     eax,dword ptr iff_height_pixels
-        mov     [ebx+0Ch],eax
-        mov     dword ptr [ebx+14h],100h
-        mov     dword ptr [ebx+1Ch],300h
-        mov     eax,[ebx+1Ch]
-        add     eax,[ebx+20h]
-        mov     [ebx+18h],eax
-        mov     dword ptr [ebx+10h],1
+        mov     [ebx+IFF_IMAGE_HEIGHT_PIXELS],eax
+        mov     dword ptr [ebx+IFF_IMAGE_PALETTE_ENTRIES],100h
+        mov     dword ptr [ebx+IFF_IMAGE_PALETTE_BYTE_COUNT],300h
+        mov     eax,[ebx+IFF_IMAGE_PALETTE_BYTE_COUNT]
+        add     eax,[ebx+IFF_IMAGE_PIXEL_COUNT]
+        mov     [ebx+IFF_IMAGE_FILE_BYTE_COUNT],eax
+        mov     dword ptr [ebx+IFF_IMAGE_FORMAT_CODE],1
         popad
         mov     eax,dword ptr g_iff_error
         ret
@@ -238,10 +269,10 @@ find_iff_chunk PROC NEAR
         xchg    cl,ch
         lea     esi,[edi+0Ch]
         add     ecx,esi
-L_A4FF:
+scan_iff_chunks:
         lodsd
         cmp     eax,edx
-        je      short L_A519
+        je      short iff_chunk_found
         lodsd
         xchg    al,ah
         rol     eax,10h
@@ -250,13 +281,13 @@ L_A4FF:
         inc     esi
         and     esi,-2
         cmp     esi,ecx
-        jl      short L_A4FF
+        jl      short scan_iff_chunks
         stc
-        jmp     short L_A51C
-L_A519:
+        jmp     short iff_chunk_search_result
+iff_chunk_found:
         clc
         mov     ebx,esi
-L_A51C:
+iff_chunk_search_result:
         pop     edi
         pop     esi
         ret
