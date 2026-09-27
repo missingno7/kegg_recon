@@ -191,7 +191,7 @@ static int test_async_irq(void)
     uint64_t retrace_start_ns, retrace_end_ns;
     uint64_t probe_start_ns, probe_elapsed_ns;
     uint32_t measured_sample;
-    double probe_expected_hz, probe_actual_hz;
+    double probe_expected_hz, probe_actual_hz, retrace_hz, nominal_retrace_hz;
     HANDLE retrace_timer;
     uint64_t retrace_measure_duration;
     uint8_t saved_game_timer_record[2];
@@ -302,7 +302,7 @@ static int test_async_irq(void)
     retrace_count5 = 0;
     frame_start = vga_frame_counter();
     retrace_start_ns = ke_now_ns();
-    retrace_measure_duration = 10000000000ull;
+    retrace_measure_duration = 40000000000ull;
     InterlockedExchange(&retrace_measure_stop, 0);
     retrace_timer = CreateThread(NULL, 0, stop_retrace_measure, &retrace_measure_duration, 0,
                                  NULL);
@@ -321,6 +321,8 @@ static int test_async_irq(void)
     CloseHandle(retrace_timer);
     frame_end = vga_frame_counter();
     frame_ticks = frame_end - frame_start;
+    retrace_hz = frame_ticks * 1e9 / (double)(retrace_end_ns - retrace_start_ns);
+    nominal_retrace_hz = fabs(retrace_hz - 60.0) < fabs(retrace_hz - 70.0) ? 60.0 : 70.0;
     outp(0x21, inp(0x21) | 1);
     memcpy(tmr_rec, saved_game_timer_record, sizeof saved_game_timer_record);
     printf("    game timer: %ld PIT edges, %d wait_for_tick returns, %d IRQ0 handler calls, "
@@ -344,7 +346,8 @@ static int test_async_irq(void)
     if (!frame_ticks || game_wait_ticks <= 0 ||
         fabs(game_wait_ticks - (double)(frame_end - frame_start)) >
             frame_ticks * 0.005 ||
-        fabs((double)timer_enabled09 - (double)frame_ticks) > frame_ticks * 0.005)
+        fabs((double)timer_enabled09 - (double)frame_ticks) > frame_ticks * 0.001 ||
+        fabs(retrace_hz - nominal_retrace_hz) > nominal_retrace_hz * 0.005)
         failures++;
     vhw_shutdown();
     return failures;
