@@ -23,6 +23,15 @@ static uint32_t next_random(void)
     return rng_state;
 }
 
+/* The original uses POPFD, which Windows does not trap at CPL3; native CLI/STI emulation can
+ * therefore leave virtual IF clear. Keep this module's test fixtures isolated. */
+static void restore_test_if(int saved_if)
+{
+    vcpu_sti();
+    if (!saved_if)
+        vcpu_cli();
+}
+
 static int traces_match(const OracleEvent *a, int an, const OracleEvent *b, int bn)
 {
     int ai = 0, bi = 0, index = 0;
@@ -80,6 +89,7 @@ static int test_measure_and_trace(void)
 {
     int i, failures = 0;
     int result;
+    int saved_if = vcpu_interrupts_enabled();
     vpit_init();
     for (i = 0; i < 3; i++)
         failures += run_measure_pair(i == 0);
@@ -89,6 +99,7 @@ static int test_measure_and_trace(void)
         printf("    verify_timer returned %d (timer_ok=%d)\n", result, timer_ok);
         failures++;
     }
+    restore_test_if(saved_if);
     return failures;
 }
 
@@ -97,6 +108,7 @@ static int test_reload_trace(void)
     static const uint32_t values[] = { 0, 1, 0xffff, 0x1234abcd, 0x80000000u, 0xffffffffu };
     unsigned i;
     int failures = 0;
+    int saved_if = vcpu_interrupts_enabled();
     for (i = 0; i < sizeof values / sizeof values[0] + 64; i++) {
         uint32_t value = i < sizeof values / sizeof values[0] ? values[i] : next_random();
         uint32_t args[1] = { value };
@@ -116,6 +128,7 @@ static int test_reload_trace(void)
         if (!traces_match(original_trace, n, oracle_trace(), oracle_trace_count()))
             failures++;
     }
+    restore_test_if(saved_if);
     return failures;
 }
 
