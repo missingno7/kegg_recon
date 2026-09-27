@@ -1981,7 +1981,7 @@
     "1:0x2f0c": {
       "start": "0x2f0c",
       "object": 1,
-      "name": "reset_lvl",
+      "name": "reset_level",
       "unit": "U02f0c",
       "src": "src/u_02f0c.c",
       "subsystem": "level assets and HUD",
@@ -4044,7 +4044,7 @@
     "1:0x61a6": {
       "start": "0x61a6",
       "object": 1,
-      "name": "prep_brick",
+      "name": "prep_level",
       "unit": "U0608a",
       "src": "src/u_0608a.c",
       "subsystem": "gameplay rules",
@@ -4444,7 +4444,7 @@
     "1:0x7032": {
       "start": "0x7032",
       "object": 1,
-      "name": "clr_bc",
+      "name": "zapbol",
       "unit": "U06b02",
       "src": "src/u_06b02.c",
       "subsystem": "gameplay rules",
@@ -4462,7 +4462,7 @@
     "1:0x704d": {
       "start": "0x704d",
       "object": 1,
-      "name": "clr_sp",
+      "name": "sprclr",
       "unit": "U06b02",
       "src": "src/u_06b02.c",
       "subsystem": "gameplay rules",
@@ -4480,7 +4480,7 @@
     "1:0x7068": {
       "start": "0x7068",
       "object": 1,
-      "name": "set_lc",
+      "name": "aitune",
       "unit": "U06b02",
       "src": "src/u_06b02.c",
       "subsystem": "gameplay rules",
@@ -4600,7 +4600,7 @@
     "1:0x73c0": {
       "start": "0x73c0",
       "object": 1,
-      "name": "upd_sh",
+      "name": "firein",
       "unit": "U06b02",
       "src": "src/u_06b02.c",
       "subsystem": "gameplay rules",
@@ -4800,7 +4800,7 @@
     "1:0x7bd5": {
       "start": "0x7bd5",
       "object": 1,
-      "name": "upd_ani",
+      "name": "animate",
       "unit": "U07bd5",
       "src": "src/u_07bd5.c",
       "subsystem": "gameplay rules",
@@ -5015,7 +5015,7 @@
     "1:0x80d8": {
       "start": "0x80d8",
       "object": 1,
-      "name": "rkt_mv",
+      "name": "adjust",
       "unit": "U07f8a",
       "src": "src/u_07f8a.c",
       "subsystem": "gameplay rules",
@@ -5162,7 +5162,7 @@
     "1:0x843a": {
       "start": "0x843a",
       "object": 1,
-      "name": "set_pg",
+      "name": "set_page",
       "unit": "U082cc",
       "src": "src/u_082cc.c",
       "subsystem": "frame and sprite scheduling",
@@ -5200,7 +5200,7 @@
     "1:0x84a0": {
       "start": "0x84a0",
       "object": 1,
-      "name": "wait_input",
+      "name": "await_input",
       "unit": "U082cc",
       "src": "src/u_082cc.c",
       "subsystem": "frame and sprite scheduling",
@@ -5252,7 +5252,7 @@
     "1:0x8585": {
       "start": "0x8585",
       "object": 1,
-      "name": "upd_bl",
+      "name": "update",
       "unit": "U08585",
       "src": "src/u_08585.c",
       "subsystem": "gameplay rules",
@@ -5511,7 +5511,7 @@
     "1:0x9640": {
       "start": "0x9640",
       "object": 1,
-      "name": "set_pal",
+      "name": "apply_palette_gradients",
       "unit": "U09640",
       "src": "src/u_09640.c",
       "subsystem": "indexed video and presentation",
@@ -5563,7 +5563,7 @@
     "1:0x9960": {
       "start": "0x9960",
       "object": 1,
-      "name": "f_9960",
+      "name": "noop_callback",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5579,7 +5579,7 @@
     "1:0x9974": {
       "start": "0x9974",
       "object": 1,
-      "name": "f_9974",
+      "name": "verify_timer",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5605,7 +5605,7 @@
     "1:0x9ac4": {
       "start": "0x9ac4",
       "object": 1,
-      "name": "f_9ac4",
+      "name": "install_timer_irq",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5633,7 +5633,7 @@
     "1:0x9afc": {
       "start": "0x9afc",
       "object": 1,
-      "name": "f_9afc",
+      "name": "reset_timer",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5667,7 +5667,7 @@
     "1:0x9b44": {
       "start": "0x9b44",
       "object": 1,
-      "name": "f_9b44",
+      "name": "start_timer",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5717,7 +5717,7 @@
     "1:0x9c90": {
       "start": "0x9c90",
       "object": 1,
-      "name": "f_9c90",
+      "name": "timer_noop",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5733,7 +5733,7 @@
     "1:0x9ca4": {
       "start": "0x9ca4",
       "object": 1,
-      "name": "f_9ca4",
+      "name": "read_pit_counter",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5763,7 +5763,7 @@
     "1:0x9d40": {
       "start": "0x9d40",
       "object": 1,
-      "name": "f_9d40",
+      "name": "wait_for_tick",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5805,7 +5805,7 @@
     "1:0x9e10": {
       "start": "0x9e10",
       "object": 1,
-      "name": "f_9e10",
+      "name": "wait_for_vsync",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5833,7 +5833,7 @@
     "1:0x9e54": {
       "start": "0x9e54",
       "object": 1,
-      "name": "f_9e54",
+      "name": "process_timer_events",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5861,7 +5861,7 @@
     "1:0x9eec": {
       "start": "0x9eec",
       "object": 1,
-      "name": "f_9eec",
+      "name": "schedule_timer_event",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5884,7 +5884,7 @@
     "1:0x9f48": {
       "start": "0x9f48",
       "object": 1,
-      "name": "f_9f48",
+      "name": "clear_timer_events",
       "unit": "T06",
       "src": "src/t06.c",
       "subsystem": "timing",
@@ -5982,7 +5982,7 @@
     "1:0xa0e0": {
       "start": "0xa0e0",
       "object": 1,
-      "name": "f_a0e0",
+      "name": "decode_pcx_image",
       "unit": "T07",
       "src": "src/t07.c",
       "subsystem": "assets and decoders",
@@ -6076,7 +6076,7 @@
     "1:0xa520": {
       "start": "0xa520",
       "object": 1,
-      "name": "f_a520",
+      "name": "load_picture",
       "unit": "T08",
       "src": "src/t08.c",
       "subsystem": "assets and decoders",
@@ -6103,7 +6103,7 @@
     "1:0xa574": {
       "start": "0xa574",
       "object": 1,
-      "name": "f_a574_wrvhrpegbz",
+      "name": "load_picture_keep",
       "unit": "T08",
       "src": "src/t08.c",
       "subsystem": "assets and decoders",
@@ -6148,7 +6148,7 @@
     "1:0xa658": {
       "start": "0xa658",
       "object": 1,
-      "name": "f_a658",
+      "name": "decode_picture",
       "unit": "T08",
       "src": "src/t08.c",
       "subsystem": "assets and decoders",
@@ -7354,7 +7354,7 @@
     "1:0xc685": {
       "start": "0xc685",
       "object": 1,
-      "name": "f_c685",
+      "name": "decode_game_bitmap",
       "unit": "T10",
       "src": "src/t10.c",
       "subsystem": "assets and decoders",
@@ -7385,7 +7385,7 @@
     "1:0xc826": {
       "start": "0xc826",
       "object": 1,
-      "name": "f_c826",
+      "name": "decode_gif_with_workspace",
       "unit": "T10",
       "src": "src/t10.c",
       "subsystem": "assets and decoders",
@@ -7995,7 +7995,7 @@
     "1:0xd656": {
       "start": "0xd656",
       "object": 1,
-      "name": "f_d656",
+      "name": "save_irq",
       "unit": "U0d4ba",
       "src": "src/u_0d4ba.c",
       "subsystem": "system and memory",
@@ -8026,7 +8026,7 @@
     "1:0xd7b8": {
       "start": "0xd7b8",
       "object": 1,
-      "name": "f_d7b8",
+      "name": "restore",
       "unit": "U0d4ba",
       "src": "src/u_0d4ba.c",
       "subsystem": "system and memory",
@@ -8058,7 +8058,7 @@
     "1:0xda01": {
       "start": "0xda01",
       "object": 1,
-      "name": "f_da01",
+      "name": "install",
       "unit": "U0d4ba",
       "src": "src/u_0d4ba.c",
       "subsystem": "system and memory",
@@ -10514,7 +10514,7 @@
     "1:0x1065b": {
       "start": "0x1065b",
       "object": 1,
-      "name": "f_1065b",
+      "name": "read_file_with_decoder",
       "unit": "T18",
       "src": "src/t18_file.c",
       "subsystem": "file I/O and persistence",
