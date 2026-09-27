@@ -85,6 +85,12 @@ def main(argv):
         print(first)
         if p.returncode != 0:
             errors.append("whole image not identical: " + first)
+        rep = ROOT / "build" / "image" / "canonical" / "report.json"
+        if rep.exists():
+            acc = json.loads(rep.read_text()).get("accounting", {}).get("total", {})
+            print(f"image accounting: {acc}")
+            if acc.get("raw", 0):  # the build is complete from sources: raw debt must never come back
+                errors.append(f"whole image uses {acc['raw']} bytes of raw debt")
     return 0 if not errors else 1
 
 
