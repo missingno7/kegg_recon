@@ -48,20 +48,7 @@ _ke_asm_irq_object2:
     .set _irq_110, _ke_asm_irq_object2 + 0x110
     .fill 0x149, 1, 0
 
-/* m_0982c_0995c.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_0982c_0995c_data:
-    .globl _g_asset_checksum
-_g_asset_checksum:
-    .short 0
-    .globl _g_asset_trailer_size
-_g_asset_trailer_size:
-    .long 0
-    .globl _g_asset_encoding
-_g_asset_encoding:
-    .short 0
-/* m_0982c_0995c _DATA: 0x8 bytes */
+/* m_0982c_0995c: owned by port/asm/m_0982c_0995c.c */
 
 /* m_09f64_0a0d2.asm _DATA */
     .data
@@ -75,29 +62,9 @@ _g_pit_elapsed_ticks:
     .long 0
 /* m_09f64_0a0d2 _DATA: 0x8 bytes */
 
-/* m_0a284_0a51f.asm _DATA */
-    .data
-    .balign 4
-_ke_asm_m_0a284_0a51f_data:
-    .globl _g_iff_error
-_g_iff_error:
-    .long 0
-    .globl _g_iff_file
-_g_iff_file:
-    .long 0
-    .globl _g_iff_pixels
-_g_iff_pixels:
-    .long 0
-    .globl _g_iff_pixel_count
-_g_iff_pixel_count:
-    .long 0
-    .globl _g_iff_palette_bytes
-_g_iff_palette_bytes:
-    .long 0
-    .globl _g_iff_decoder_workspace
-_g_iff_decoder_workspace:
-    .fill 5, 4, 0
-/* m_0a284_0a51f _DATA: 0x28 bytes */
+/* m_0a284_0a51f: owned by port/asm/m_0a284_0a51f.c */
+
+/* m_0a958_0a966: owned by port/asm/m_0a958_0a966.c */
 
 /* m_11258_11494.asm _DATA */
     .data
@@ -382,6 +349,10 @@ _gif_global_color_table_source:
     .byte 0
     .byte 0
 /* m_11df8_12288 _DATA: 0x4c bytes */
+
+/* m_12680_12683: owned by port/asm/m_12680_12683.c */
+
+/* m_12970_12973: owned by port/asm/m_12970_12973.c */
 
 /* m_12a9c_12f30.asm _DATA */
     .data
