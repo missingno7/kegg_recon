@@ -4,9 +4,9 @@ extern short audio_stream_stop_flag;
 extern int file_error_state;
 extern unsigned g_7c0c;
 extern int (*decode_hook)();
-extern unsigned char h_ab40_jbfxrqns[];
-extern unsigned char g_bf40_whznxcth[];
-extern unsigned char g_d340_schtgisj[];
+extern unsigned char frnt_pg_upd_buf[];
+extern unsigned char back_pg_upd_buf[];
+extern unsigned char sprite_commands[];
 extern unsigned char *g_e4d0_wfmxdlyju;
 extern int decode_and_verify_asset(void);
 extern int sys_report(int, int, unsigned);
@@ -38,7 +38,7 @@ void main(void)
     decode_hook = (int)decode_and_verify_asset;
     audio_stream_stop_flag = -1;
     /* Register the arena and load the protected-mode game support code. */
-    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     run_main_menu();
     fatal_exit(0, 0);
     exit(0);

@@ -10,7 +10,7 @@ int enemy_max_health;
 int enemy_health_current;
 int enemy_pattern;
 
-extern unsigned char g_67b4[];
+extern unsigned char bolt_impact_animation_frames[];
 extern short audio_stream_flag;
 extern short image_buffer_error_code;
 extern short disp_idx;
@@ -19,12 +19,12 @@ extern short flip_src;
 extern short flip_dst;
 extern short hook_flags_word;
 extern int file_error_state;
-extern unsigned char h_ab40_jbfxrqns[];
-extern unsigned char g_bf40_whznxcth[];
-extern unsigned char g_d340_schtgisj[];
+extern unsigned char frnt_pg_upd_buf[];
+extern unsigned char back_pg_upd_buf[];
+extern unsigned char sprite_commands[];
 extern int vga_buffer_base;
 extern int sprite_memory_base;
-extern unsigned char *game_sprite_data_base_j;
+extern unsigned char *game_sprite_base;
 struct DisplayModeInfo { short state; unsigned char plane_addresses[16]; int page_offsets[4]; int page_adjustments[4]; unsigned char page_mode_classes[4]; int buffer_size; int row_stride_bytes; int resolution_height; int width; int height; int left; int top; int right; int bottom; unsigned char mode_flags; unsigned char e37f; unsigned char e380; unsigned char video_mode_low; unsigned char e382; unsigned char e383; unsigned char e384; unsigned char e385; unsigned char e386; unsigned char tail; };
 extern struct DisplayModeInfo vga_state;
 void save_bios(void);
@@ -46,7 +46,7 @@ extern void prep_brick(void);
 extern void restore_gameplay_display_mode(void);
 extern int fade_level_to_white(void);
 extern int award_level_completion_bonus(void);
-extern void scan_l(void);
+extern void scan(void);
 extern void clr_bc(void);
 extern void clr_sp(void);
 extern void set_lc(void);
@@ -75,11 +75,11 @@ extern int rand_rng(int, int);
 extern void fade_pal(void *, int, int, int);
 extern void show_page(void);
 extern int fade_delay;
-extern int g_8e1c;
-extern int g_8e20;
+extern int work_value;
+extern int temp;
 extern void write_pal(void *);
-extern unsigned char g_e13e;
-extern unsigned char g_e13b;
+extern unsigned char difficulty_tier_index;
+extern unsigned char arcade;
 extern unsigned char g_e46b;
 extern void *racket_state;
 void restore_bios(void);
@@ -99,10 +99,10 @@ extern short mouse_sensitivity_y_axis;
 extern void query_mouse_sensitivity(void);
 extern void restore_mouse_driver_sensitivity(void);
 void rkt_mv(void);
-void f_843a(void);
+void set_pg(void);
 extern unsigned char read_vga_pixel_entry(int, int);
 extern int sprite_instance_count;
-extern int g_dd88;
+extern int sprite_removal_index;
 extern int current_ball_count;
 extern int game_ball_slot;
 extern char *sprite_current;
@@ -126,14 +126,14 @@ extern short history_mouse_x_0;
 extern short mouse_y_sample_0;
 extern int fill_clipped_vga_rectangle(int, int, int, int, int, int);
 extern void write_dac_palette(void *, int, int, int);
-extern int g_68f4;
+extern int player_shot_button_latch;
 extern unsigned char *image_buffer_cursor;
-extern unsigned char g_6864[];
+extern unsigned char player_projectile_animation_frames[];
 extern void spawn_auxiliary_projectile(int, int, int, int, int, int, int);
 extern int next_packed_table_value(void *, void *);
 extern int frames_intersect_inset(S18, int, int, S18, int, int, int, int, int, int);
 void *memcpy(void *, const void *, size_t);
-extern unsigned char g_687c[];
+extern unsigned char enemy_projectile_animation_frames[];
 
 /* file names of the game data */
 /* _DATA [0x68f8,0x6984) */
@@ -184,7 +184,7 @@ int run_level(void)
     load_monster_art();
     prep_brick();
     *(unsigned char *)&hook_flags_word &= 0xf8;
-    set_img_buffers((int)g_d340_schtgisj, 0x100, 4, (int)h_ab40_jbfxrqns, (int)g_bf40_whznxcth);
+    set_img_buffers((int)sprite_commands, 0x100, 4, (int)frnt_pg_upd_buf, (int)back_pg_upd_buf);
     initialize_level_hud();
     clr_bc();
     clr_sp();
@@ -195,7 +195,7 @@ int run_level(void)
     copy_screen_span_entry(page2, 0, flip_src, 0, vga_state.buffer_size);
     copy_screen_span_entry(page2, 0, flip_dst, 0, vga_state.buffer_size);
     disp_idx = page2;
-    scan_l();
+    scan();
     update_enemy_attack_cycle();
     upd_sh();
     fade_pal((void *)vga_buffer_base, 0x3f, 0, 1);
@@ -221,14 +221,14 @@ int run_level(void)
                         submit_audio_request(0x6b);
                     }
                     for (enemy_shot_countdown = 0; enemy_shot_countdown < 2; ++enemy_shot_countdown) {
-                        spawn_animated_sprite(rand_rng(-0x1e, 0x1e) + 0x106, rand_rng(-0x1e, 0x1e) + 0x56, 0, 0, (int)game_sprite_data_base_j, (int)g_67b4, 1);
+                        spawn_animated_sprite(rand_rng(-0x1e, 0x1e) + 0x106, rand_rng(-0x1e, 0x1e) + 0x56, 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                     }
                     enemy_shot_countdown = 8;
                 } else {
                     if (!audio_stream_flag) {
                         submit_audio_request(0x6a);
                     }
-                    spawn_animated_sprite(rand_rng(-0x10, 0x10) + (mouse_x_average_recent + 4), (mouse_y_mean_recent + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)game_sprite_data_base_j, (int)g_67b4, 1);
+                    spawn_animated_sprite(rand_rng(-0x10, 0x10) + (mouse_x_average_recent + 4), (mouse_y_mean_recent + 8) + rand_rng(-0x10, 0x10), 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                     enemy_shot_countdown = 0x19;
                 }
             }
@@ -248,10 +248,10 @@ int fade_level_to_white(void)
 {
     submit_audio_request(0xb);
     fade_delay = 2;
-    for (g_8e1c = 0; g_8e1c < 0x3f; ++g_8e1c) {
-        for (g_8e20 = 0; g_8e20 < 0x300; g_8e20 += 3) {
-            if (++*(unsigned char *)(unsigned char *)(vga_buffer_base + g_8e20) > 0x3f)
-                *(unsigned char *)(unsigned char *)(vga_buffer_base + g_8e20) = 0x3f;
+    for (work_value = 0; work_value < 0x3f; ++work_value) {
+        for (temp = 0; temp < 0x300; temp += 3) {
+            if (++*(unsigned char *)(unsigned char *)(vga_buffer_base + temp) > 0x3f)
+                *(unsigned char *)(unsigned char *)(vga_buffer_base + temp) = 0x3f;
         }
         write_pal((void *)vga_buffer_base);
         f_9d40(3);
@@ -263,7 +263,7 @@ int fade_level_to_white(void)
 int award_level_completion_bonus(void)
 {
     submit_audio_request(0x26);
-    if (g_e13b == 0)
+    if (arcade == 0)
         *(int *)((unsigned char *)racket_state + 20) += (5000 / total_level_time) * remaining_level_time + 5000;
     fade_delay = 3;
     fade_pal(vga_buffer_base, 0, -63, -1);
@@ -271,7 +271,7 @@ int award_level_completion_bonus(void)
     return 1;
 }
 
-void scan_l(void)
+void scan(void)
 {
     int screen_x;
     int screen_y;
@@ -301,13 +301,13 @@ void clr_sp(void) { sprite_instance_count = 0; }
 
 void set_lc(void)
 {
-    enemy_max_health = *(int *)(gameplay_tuning_by_stage + (g_e13e << 4));
+    enemy_max_health = *(int *)(gameplay_tuning_by_stage + (difficulty_tier_index << 4));
     enemy_health_current = enemy_max_health;
     last_displayed_enemy_health = enemy_health_current;
-    enemy_pattern = *(int *)(gameplay_tuning_by_stage + 4 + ((g_e13e << 2) << 2));
-    enemy_attack_interval = *(int *)(gameplay_tuning_by_stage + 8 + ((g_e13e << 2) << 2));
+    enemy_pattern = *(int *)(gameplay_tuning_by_stage + 4 + ((difficulty_tier_index << 2) << 2));
+    enemy_attack_interval = *(int *)(gameplay_tuning_by_stage + 8 + ((difficulty_tier_index << 2) << 2));
     attack_cooldown = enemy_attack_interval;
-    attack_delay = *(int *)(gameplay_tuning_by_stage + 12 + ((g_e13e << 2) << 2));
+    attack_delay = *(int *)(gameplay_tuning_by_stage + 12 + ((difficulty_tier_index << 2) << 2));
     enemy_attack_timer = 0;
     attack_frame_count = 7;
     enemy_fire_acceleration = 0xf;
@@ -317,7 +317,7 @@ void initialize_level_hud(void)
 {
     set_mouse_bounds(4, 16, 4, 0x95);
     move_mouse_to(4, 0x52);
-    for (g_8e20 = 0; g_8e20 < 4; ++g_8e20)
+    for (temp = 0; temp < 4; ++temp)
         update_mouse();
     total_level_time = 100;
     remaining_level_time = total_level_time;
@@ -336,9 +336,9 @@ void update_level_hud(void)
         fill_clipped_vga_rectangle(draw_idx, ((remaining_level_time * 0x6f) / total_level_time) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
         fill_clipped_vga_rectangle(disp_idx, ((remaining_level_time * 0x6f) / total_level_time) + 0x1c, 0xb3, 0x8b, 0xb9, 0);
         vga_state.bottom = 0xa6;
-        for (g_8e20 = 0; g_8e20 < 0x300; g_8e20 += 3) {
-            if ((*(unsigned char *)(unsigned char *)(vga_buffer_base + g_8e20) += 3) > 0x3f) {
-                *(unsigned char *)(unsigned char *)(vga_buffer_base + g_8e20) = 0x3f;
+        for (temp = 0; temp < 0x300; temp += 3) {
+            if ((*(unsigned char *)(unsigned char *)(vga_buffer_base + temp) += 3) > 0x3f) {
+                *(unsigned char *)(unsigned char *)(vga_buffer_base + temp) = 0x3f;
             }
         }
         hud_flash_ticks = 1;
@@ -366,24 +366,24 @@ void update_level_hud(void)
 void upd_sh(void)
 {
     if (remaining_level_time > 0) {
-        if (!g_68f4 && mouse_btn != 3) {
+        if (!player_shot_button_latch && mouse_btn != 3) {
             if (mouse_btn != mouse_btn_old && (mouse_btn & 1) == 1) {
                 submit_audio_request(0x66);
-                spawn_auxiliary_projectile(0, 4, mouse_x_average_recent, mouse_y_mean_recent, 0x40, 0, (int)g_6864);
+                spawn_auxiliary_projectile(0, 4, mouse_x_average_recent, mouse_y_mean_recent, 0x40, 0, (int)player_projectile_animation_frames);
                 history_mouse_x_0 -= 7;
-                g_68f4 = 1;
+                player_shot_button_latch = 1;
             } else if (mouse_btn != mouse_btn_old && mouse_btn & 2) {
                 submit_audio_request(0x66);
-                spawn_auxiliary_projectile(0, 1, mouse_x_average_recent, mouse_y_mean_recent, 0x60, 0x18, (int)g_6864);
-                spawn_auxiliary_projectile(0, 1, mouse_x_average_recent, mouse_y_mean_recent, 0x60, -0x18, (int)g_6864);
+                spawn_auxiliary_projectile(0, 1, mouse_x_average_recent, mouse_y_mean_recent, 0x60, 0x18, (int)player_projectile_animation_frames);
+                spawn_auxiliary_projectile(0, 1, mouse_x_average_recent, mouse_y_mean_recent, 0x60, -0x18, (int)player_projectile_animation_frames);
                 history_mouse_x_0 -= 7;
-                g_68f4 = 1;
+                player_shot_button_latch = 1;
             }
         } else {
-            g_68f4 = 0;
+            player_shot_button_latch = 0;
         }
     }
-    *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + 0x35d6);
+    *(int *)image_buffer_cursor = (int)(game_sprite_base + 0x35d6);
     *(short *)(image_buffer_cursor + 4) = mouse_x_average_recent;
     *(short *)(image_buffer_cursor + 6) = mouse_y_mean_recent;
     *(short *)(image_buffer_cursor + 8) = 0;
@@ -408,26 +408,26 @@ void move_auxiliary_projectiles(void)
             continue;
         }
         if (!bolt_cursor->target_type) {
-            target_bounds = (S18 *)(game_sprite_data_base_j + 0x395c);
+            target_bounds = (S18 *)(game_sprite_base + 0x395c);
             if (frames_intersect_inset(*target_bounds, 0xf6, 0x46, *shot_frame_info, bolt_cursor->x >> 4, bolt_cursor->y >> 4, 0xa, 0, 0xa, 0) == -1) {
                 enemy_health_current -= bolt_cursor->damage;
-                spawn_animated_sprite(bolt_cursor->x >> 4, bolt_cursor->y >> 4, bolt_cursor->velocity_x >> 6, bolt_cursor->velocity_y >> 6, (int)game_sprite_data_base_j, (int)g_67b4, 1);
+                spawn_animated_sprite(bolt_cursor->x >> 4, bolt_cursor->y >> 4, bolt_cursor->velocity_x >> 6, bolt_cursor->velocity_y >> 6, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                 remove_auxiliary_projectile();
                 continue;
             }
             if (((bolt_cursor->x >> 4) + 5) > *(int *)(open_brick_x_by_row + ((bolt_cursor->y >> 4) << 2))) {
                 submit_audio_request(0x57);
-                spawn_animated_sprite(bolt_cursor->x >> 4, bolt_cursor->y >> 4, 0, 0, (int)game_sprite_data_base_j, (int)g_67b4, 1);
+                spawn_animated_sprite(bolt_cursor->x >> 4, bolt_cursor->y >> 4, 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                 remove_auxiliary_projectile();
                 continue;
             }
         } else {
-            target_bounds = (S18 *)(game_sprite_data_base_j + 0x35d6);
+            target_bounds = (S18 *)(game_sprite_base + 0x35d6);
             if (frames_intersect_inset(*target_bounds, mouse_x_average_recent, mouse_y_mean_recent, *shot_frame_info, (bolt_cursor->x >> 4) + 8, bolt_cursor->y >> 4, 4, 4, 4, 4) == -1) {
                 if (remaining_level_time > 0) {
                     remaining_level_time -= bolt_cursor->damage;
                 }
-                spawn_animated_sprite(bolt_cursor->x >> 4, bolt_cursor->y >> 4, 0, 0, (int)game_sprite_data_base_j, (int)g_67b4, 1);
+                spawn_animated_sprite(bolt_cursor->x >> 4, bolt_cursor->y >> 4, 0, 0, (int)game_sprite_base, (int)bolt_impact_animation_frames, 1);
                 remove_auxiliary_projectile();
                 continue;
             }
@@ -462,7 +462,7 @@ void spawn_auxiliary_projectile(int kind, int damage, int x, int y, int velocity
         bolt_cursor->velocity_y = velocity_y;
         bolt_cursor->frame_info = 0;
         bolt_cursor->frame_offset = (unsigned char *)(sprite_offset - 8);
-        bolt_cursor->sprite_data = game_sprite_data_base_j;
+        bolt_cursor->sprite_data = game_sprite_base;
         ++enemy_projectile_count;
     }
 }
@@ -480,7 +480,7 @@ void update_enemy_attack_cycle(void)
     if (enemy_health_current > 0) {
         --enemy_attack_timer;
         if (enemy_attack_timer <= 0) {
-            *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + 0x43b6);
+            *(int *)image_buffer_cursor = (int)(game_sprite_base + 0x43b6);
             *(short *)(image_buffer_cursor + 4) = 0xf6;
             *(short *)(image_buffer_cursor + 6) = 0x46;
             *(short *)(image_buffer_cursor + 8) = 0;
@@ -491,7 +491,7 @@ void update_enemy_attack_cycle(void)
                 attack_frame_count = 7;
                 projectile_dx = ((mouse_x_average_recent - monster_x) << 4) / 0x28;
                 projectile_dy = ((rand_rng(-0x1e, 0x1e) + (mouse_y_mean_recent - monster_y)) << 4) / 0x28;
-                spawn_auxiliary_projectile(1, enemy_pattern, monster_x, monster_y, projectile_dx, projectile_dy, (int)g_687c);
+                spawn_auxiliary_projectile(1, enemy_pattern, monster_x, monster_y, projectile_dx, projectile_dy, (int)enemy_projectile_animation_frames);
                 if (remaining_level_time > 0) {
                     submit_audio_request(0x58);
                 }
@@ -510,13 +510,13 @@ void update_enemy_attack_cycle(void)
         }
         if (!emitted_effect) {
             if (enemy_attack_timer < 0xf || (attack_delay - 0x14) < enemy_attack_timer) {
-                *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + 0x3e70);
+                *(int *)image_buffer_cursor = (int)(game_sprite_base + 0x3e70);
                 *(short *)(image_buffer_cursor + 4) = 0xf6;
                 *(short *)(image_buffer_cursor + 6) = 0x46;
                 *(short *)(image_buffer_cursor + 8) = 0;
                 image_buffer_cursor += 0xa;
             } else {
-                *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + 0x395c);
+                *(int *)image_buffer_cursor = (int)(game_sprite_base + 0x395c);
                 *(short *)(image_buffer_cursor + 4) = 0xf6;
                 *(short *)(image_buffer_cursor + 6) = 0x46;
                 *(short *)(image_buffer_cursor + 8) = 0;
@@ -525,7 +525,7 @@ void update_enemy_attack_cycle(void)
         }
         return;
     }
-    *(int *)image_buffer_cursor = (int)(game_sprite_data_base_j + 0x43b6);
+    *(int *)image_buffer_cursor = (int)(game_sprite_base + 0x43b6);
     *(short *)(image_buffer_cursor + 4) = 0xf6;
     *(short *)(image_buffer_cursor + 6) = 0x46;
     *(short *)(image_buffer_cursor + 8) = 0;

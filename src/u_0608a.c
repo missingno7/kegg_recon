@@ -33,11 +33,11 @@ extern unsigned char *image_buffer_cursor;
 extern unsigned char *player_key_flags;
 extern int game_ball_slot;
 extern int current_ball_count;
-extern int g_dDb8;
+extern int motion_dir;
 extern int g_e4d0_wfmxdlyju;
-extern int g_67b0;
+extern int previous_level_art_base;
 extern int audio_request_entries;
-extern int g_df3c;
+extern int level_art_load_base;
 extern int g_e4c8;
 extern int vga_buffer_base;
 extern int brick_art_start;
@@ -45,12 +45,12 @@ extern unsigned char *spell_art_base;
 extern unsigned char *enemy_picture;
 extern int monster_art;
 extern int sprite_memory_base;
-extern int game_sprite_data_base_j;
+extern int game_sprite_base;
 extern int player_shot_total;
 extern short sound_blaster_detected;
 extern unsigned short mouse_btn_old;
 extern unsigned short mouse_btn;
-extern LevelLayoutRow g_6cbb[];
+extern LevelLayoutRow level_layout_records[];
 extern int main_palette_fn;
 extern int brick_sprite_fn;
 extern int spell_sprite_fn;
@@ -62,14 +62,14 @@ extern int monster_anim_fname;
 extern int main_screen_data_filename;
 extern Rec12 *current_ball_pointer;
 extern Rec12 game_balls[];
-extern int g_8e1c;
-extern int g_8e20;
-extern int g_8e24;
-extern int g_8dc8;
-extern int g_8ddc;
-extern int (*g_8db8)(void);
+extern int work_value;
+extern int temp;
+extern int frames;
+extern int sprite_frame_offset_scratch;
+extern int result;
+extern int (*current_spell_effect_handler)(void);
 extern int (*spell_effect_handlers[])(void);
-extern void *g_ddd4_eoraaik;
+extern void *palette_base;
 extern int moving_target_number;
 extern int moving_target_count;
 extern struct MovingTargetRecord *moving_target_cursor;
@@ -82,30 +82,30 @@ extern void spawn_animated_sprite(int, int, int, int, int, int, int);
 extern int next_random_value();
 extern void spawn_enemy_projectile(int, int, int, int);
 extern void move_enemy_projectiles(void);
-extern int b_DF40_omuefnnbqp;
-extern unsigned char g_e142_baun;
-extern unsigned char g_e143_eayxx;
-extern int g_dd78;
-extern int g_ddd0;
-extern int g_ddb0;
-extern int g_dd9c;
-extern int g_8e04;
-extern int g_8e10;
+extern int file_mark;
+extern unsigned char bonus_index;
+extern unsigned char level_number;
+extern int remaining_brick_count;
+extern int enemy_timer;
+extern int enemy_spawn_wait_time;
+extern int enemy_cursor;
+extern int scratch;
+extern int ptrbuf;
 extern int bonus_animations_by_type[];
-extern unsigned char q_A988[];
+extern unsigned char spell_slots[];
 extern PlayerScoreRecord *racket_state;
 extern unsigned char collision_animation_frames[];
-extern unsigned char g_5e68[];
-extern unsigned char g_6098[];
-extern int g_8db4;
+extern unsigned char racket_spell_animation_frames[];
+extern unsigned char spell_impact_animation_frames[];
+extern int sprite_frame_pointer;
 extern struct PlayerShot player_shot_records[];
 extern unsigned char brick_code_map[];
-extern unsigned g_dd50;
-extern int g_dd60;
-extern int g_dd64;
-extern int g_dD68;
-extern int b_DD70;
-extern S2 *g_dd80;
+extern unsigned current_brick_code;
+extern int portal_start_x;
+extern int portal_y_source;
+extern int portal_exit_xpos;
+extern int portal_destination_y;
+extern S2 *cell_cursor;
 extern struct PlayerShot *player_shot_cursor;
 extern int player_shot_index;
 extern unsigned char collision_box_b_left[];
@@ -125,7 +125,7 @@ extern void play_audio_request_at(int, int);
 void *memcpy(void *, const void *, size_t);
 
 void load_palette(void) {
-    g_ddd4_eoraaik = (void *)g_e4d0_wfmxdlyju;
+    palette_base = (void *)g_e4d0_wfmxdlyju;
     vga_buffer_base = g_e4d0_wfmxdlyju;
     load_next_file(main_palette_fn);
     g_e4d0_wfmxdlyju -= g_e4c8 - 0x300;
@@ -148,23 +148,23 @@ void load_monster_art(void) {
     sprite_memory_base = g_e4d0_wfmxdlyju;
     vga_buffer_base = sprite_memory_base + 0xfa00;
     f_a574_wrvhrpegbz(monster_anim_fname);
-    game_sprite_data_base_j = g_e4d0_wfmxdlyju;
+    game_sprite_base = g_e4d0_wfmxdlyju;
     load_next_file(monster_sprite_filename);
 }
 
 void prep_brick(void) {
-    b_DF40_omuefnnbqp = g_e4d0_wfmxdlyju;
-    audio_request_entries = (int)g_6cbb;
+    file_mark = g_e4d0_wfmxdlyju;
+    audio_request_entries = (int)level_layout_records;
     stop_audio_stream();
-    for (g_8e20 = 0; g_8e20 < 0x6e; ++g_8e20)
-        g_6cbb[g_8e20].graphics_offset -= g_67b0;
-    g_df3c = g_e4d0_wfmxdlyju;
-    level_art_base = g_df3c;
+    for (temp = 0; temp < 0x6e; ++temp)
+        level_layout_records[temp].graphics_offset -= previous_level_art_base;
+    level_art_load_base = g_e4d0_wfmxdlyju;
+    level_art_base = level_art_load_base;
     if (sound_blaster_detected == -1) load_next_file(main_screen_data_filename);
-    for (g_8e20 = 0; g_8e20 < 0x6e; ++g_8e20)
-        g_6cbb[g_8e20].graphics_offset += level_art_base;
-    g_67b0 = level_art_base;
-    g_e4d0_wfmxdlyju = b_DF40_omuefnnbqp;
+    for (temp = 0; temp < 0x6e; ++temp)
+        level_layout_records[temp].graphics_offset += level_art_base;
+    previous_level_art_base = level_art_base;
+    g_e4d0_wfmxdlyju = file_mark;
 }
 
 void shot_cd(void) {
@@ -193,16 +193,16 @@ void update_player_shots(void)
     player_shot_cursor = player_shot_records;
     for (player_shot_index = 0; player_shot_index < player_shot_total; ++player_shot_index) {
         player_shot_cursor->y += player_shot_cursor->vertical_speed;
-        g_8db4 = player_shot_cursor->sprite_offset;
+        sprite_frame_pointer = player_shot_cursor->sprite_offset;
         *(int *)collision_box_a_left = player_shot_cursor->x;
         collision_box_a_top = player_shot_cursor->y;
-        get_sprite_bounds(collision_box_a_left, (void *)g_8db4);
+        get_sprite_bounds(collision_box_a_left, (void *)sprite_frame_pointer);
         if (sprite_rect_a_right > 0x140 || *(int *)collision_box_a_left < 0 || sprite_bounds_a_bottom > 0xdc || collision_box_a_top < 0x14) {
             if ((player_shot_cursor->flags & 3) == 2) {
                 spawn_animated_sprite((*(int *)collision_box_a_left + sprite_rect_a_right) >> 1, (collision_box_a_top + sprite_bounds_a_bottom) >> 1, 0, 0, (int)enemy_picture, (int)collision_animation_frames, 1);
                 submit_audio_request(0x57);
             } else {
-                spawn_animated_sprite((*(int *)collision_box_a_left + sprite_rect_a_right) >> 1, 0x18, 0, 0, (int)spell_art_base, (int)g_6098, 1);
+                spawn_animated_sprite((*(int *)collision_box_a_left + sprite_rect_a_right) >> 1, 0x18, 0, 0, (int)spell_art_base, (int)spell_impact_animation_frames, 1);
             }
             remove_player_shot();
             continue;
@@ -225,7 +225,7 @@ void update_player_shots(void)
                     moving_target_cursor->velocity_y += player_shot_cursor->vertical_speed >> 1;
                 }
                 if ((player_shot_cursor->flags & 3) != 2) {
-                    spawn_animated_sprite((*(int *)collision_box_a_left + sprite_rect_a_right) >> 1, (collision_box_a_top + sprite_bounds_a_bottom) >> 1, 0, 0, (int)spell_art_base, (int)g_5e68, 1);
+                    spawn_animated_sprite((*(int *)collision_box_a_left + sprite_rect_a_right) >> 1, (collision_box_a_top + sprite_bounds_a_bottom) >> 1, 0, 0, (int)spell_art_base, (int)racket_spell_animation_frames, 1);
                     remove_player_shot();
                     goto L_69c3;
                 }
@@ -236,7 +236,7 @@ void update_player_shots(void)
         row_y = (collision_box_a_top + sprite_bounds_a_bottom) >> 1;
         if (row_y >= 0x18 && row_y <= 0x98) {
             if (sprite_rect_a_right < 0x10 || *(int *)collision_box_a_left > 0x130) goto L_6975;
-            g_dd80 = (S2 *)brick_code_map;
+            cell_cursor = (S2 *)brick_code_map;
             first_column = (*(int *)collision_box_a_left - 0x10) >> 4;
             last_column = (sprite_rect_a_right - 0x10) >> 4;
             row_offset = ((row_y - 0x18) >> 3) * 0x12;
@@ -249,51 +249,51 @@ void update_player_shots(void)
             if (row_offset > 0x10e) {
                 row_offset = 0x10e;
             }
-            g_dd80 += row_offset;
+            cell_cursor += row_offset;
             for (row_y = first_column; row_y <= last_column; row_y++) {
-                g_dd50 = *(unsigned char *)(((unsigned char *)g_dd80) + ((row_y * 2) + 1));
-                if (g_dd50 == 0xf8) {
-                    player_shot_cursor->x += g_dD68 - g_dd60;
-                    player_shot_cursor->y += (b_DD70 - g_dd64) - 8;
+                current_brick_code = *(unsigned char *)(((unsigned char *)cell_cursor) + ((row_y * 2) + 1));
+                if (current_brick_code == 0xf8) {
+                    player_shot_cursor->x += portal_exit_xpos - portal_start_x;
+                    player_shot_cursor->y += (portal_destination_y - portal_y_source) - 8;
                     row_y = last_column;
-                } else if (g_dd50 == 0xf9) {
-                    player_shot_cursor->x += g_dd60 - g_dD68;
-                    player_shot_cursor->y += (g_dd64 - b_DD70) - 8;
+                } else if (current_brick_code == 0xf9) {
+                    player_shot_cursor->x += portal_start_x - portal_exit_xpos;
+                    player_shot_cursor->y += (portal_y_source - portal_destination_y) - 8;
                     row_y = last_column;
-                } else if (g_dd50 && (player_shot_cursor->flags & 3) == 2) {
+                } else if (current_brick_code && (player_shot_cursor->flags & 3) == 2) {
                     process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
                 } else {
-                    if (g_dd50 >= 1 && g_dd50 <= 0x90) {
-                        if ((g_dd50 >= 1 && g_dd50 <= 0x10) || (g_dd50 >= 0x31 && g_dd50 <= 0x40) || (g_dd50 >= 0x61 && g_dd50 <= 0x70)) {
+                    if (current_brick_code >= 1 && current_brick_code <= 0x90) {
+                        if ((current_brick_code >= 1 && current_brick_code <= 0x10) || (current_brick_code >= 0x31 && current_brick_code <= 0x40) || (current_brick_code >= 0x61 && current_brick_code <= 0x70)) {
                             process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
                         } else {
-                            g_dd50 -= 0x10;
-                            *(unsigned char *)(((unsigned char *)g_dd80) + ((row_y * 2) + 1)) = *(unsigned char *)&g_dd50;
-                            draw_level_tile_on_pages(row_y, row_offset, g_dd50);
+                            current_brick_code -= 0x10;
+                            *(unsigned char *)(((unsigned char *)cell_cursor) + ((row_y * 2) + 1)) = *(unsigned char *)&current_brick_code;
+                            draw_level_tile_on_pages(row_y, row_offset, current_brick_code);
                         }
                         play_audio_request_at(0xc, 0x19);
-                        g_8e10 = (int)g_5e68;
+                        ptrbuf = (int)racket_spell_animation_frames;
                     } else {
-                        if (g_dd50 < 0x91 || g_dd50 > 0x100) goto L_6963;
-                        if (g_dd50 >= 0xf5 && g_dd50 <= 0xf7) {
+                        if (current_brick_code < 0x91 || current_brick_code > 0x100) goto L_6963;
+                        if (current_brick_code >= 0xf5 && current_brick_code <= 0xf7) {
                             play_audio_request_at(0x2e, 0x32);
-                            g_dDb8 = -1;
+                            motion_dir = -1;
                             resize_racket();
-                            g_8e10 = (int)g_6098;
-                        } else if (g_dd50 >= 0xfa && g_dd50 <= 0x100) {
+                            ptrbuf = (int)spell_impact_animation_frames;
+                        } else if (current_brick_code >= 0xfa && current_brick_code <= 0x100) {
                             play_audio_request_at(1, 9);
-                            if (!--((BF1_2_6 *)(((unsigned char *)g_dd80) + (row_y * 2)))->f) {
+                            if (!--((BF1_2_6 *)(((unsigned char *)cell_cursor) + (row_y * 2)))->f) {
                                 racket_state->score += 2 << racket_object->reward_level;
-                                queue_timed_level_change(g_dd50, row_y + row_offset);
+                                queue_timed_level_change(current_brick_code, row_y + row_offset);
                                 process_brick_hit(row_y, row_offset, 0, player_shot_cursor->vertical_speed);
                             }
-                            g_8e10 = (int)g_5e68;
+                            ptrbuf = (int)racket_spell_animation_frames;
                         } else {
                             play_audio_request_at(0x2a, 0x2d);
-                            g_8e10 = (int)g_6098;
+                            ptrbuf = (int)spell_impact_animation_frames;
                         }
                     }
-                    spawn_animated_sprite((row_y << 4) + 0x18, ((row_offset / 0x12) << 3) + 0x1c, 0, 0, (int)spell_art_base, g_8e10, 1);
+                    spawn_animated_sprite((row_y << 4) + 0x18, ((row_offset / 0x12) << 3) + 0x1c, 0, 0, (int)spell_art_base, ptrbuf, 1);
                     tile_hit = -1;
                     continue;
                 }
@@ -332,18 +332,18 @@ void spawn_player_shot(unsigned char shot_kind, int vertical_speed, int start_x,
         player_shot_cursor->vertical_speed = vertical_speed;
         switch (shot_kind) {
         case 0:
-            g_8e20 = 0x21e6;
+            temp = 0x21e6;
             submit_audio_request(0x5a);
             break;
         case 1:
-            g_8e20 = 0x2280;
+            temp = 0x2280;
             submit_audio_request(0x58);
             break;
         case 2:
-            g_8e20 = 0x2342;
+            temp = 0x2342;
             submit_audio_request(0x66);
         }
-        player_shot_cursor->sprite_offset = (int)(spell_art_base + g_8e20);
+        player_shot_cursor->sprite_offset = (int)(spell_art_base + temp);
         ((BF4_0_2 *)&player_shot_cursor->flags)->f = shot_kind;
         ++player_shot_total;
     }
