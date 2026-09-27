@@ -45,8 +45,7 @@ KE_ASM_STUB(program_sound_dma_channel, "m_11494_11530")
 KE_ASM_STUB(load_protracker_module, "m_11530_11df8")
 KE_ASM_STUB(stop_protracker_module, "m_11530_11df8")
 
-KE_ASM_STUB(decode_gif_image_entry, "m_11df8_12288")
-KE_ASM_STUB(decode_gif_image, "m_11df8_12288")
+/* m_11df8_12288: owned by port/asm/m_11df8_12288.c */
 
 KE_ASM_STUB(render_sprite_record_kind_5_entry, "m_12288_12680")
 KE_ASM_STUB(render_sprite_record_kind_5_draw, "m_12288_12680")
