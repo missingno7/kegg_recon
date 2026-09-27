@@ -3,3 +3,4 @@
 *.obj binary
 *.cmd text eol=crlf
 src/t08.c -text
+src/t06.c -text

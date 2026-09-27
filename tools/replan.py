@@ -103,7 +103,9 @@ def main(argv):
             s0, e0 = rng(u)
             dest = ROOT / u["dest"]
             dest.parent.mkdir(exist_ok=True)
-            dest.write_bytes(lf((ROOT / u["file"]).read_bytes()))
+            data = (ROOT / u["file"]).read_bytes()
+            pinned = bool(P.dosrun.config()["profiles"].get(u.get("profile", "game-c"), {}).get("host"))
+            dest.write_bytes(data if pinned else lf(data))  # host-pinned profiles: exact bytes (CRLF) matter
             h = sha(dest)
             members = [f for f in man["functions"] if f.get("object", 1) == 1 and s0 <= int(f["start"], 16) < e0]
             for f in members:

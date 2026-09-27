@@ -3,7 +3,7 @@ EXTRN f_9e10:NEAR
 EXTRN f_9e54:NEAR
 EXTRN g_73a8:DWORD
 EXTRN g_73d8:DWORD
-EXTRN g_e1b4:DWORD
+EXTRN g_e1b4_35:DWORD
 _DATA SEGMENT DWORD PUBLIC USE32 'DATA'
 _DATA ENDS
 DGROUP GROUP _DATA
@@ -210,7 +210,7 @@ L_A0B2:
         mov     al,ah
         out     40h,al
         pushad
-        inc     dword ptr g_e1b4
+        inc     dword ptr g_e1b4_35
         call    f_9e54
         popad
         mov     al,20h

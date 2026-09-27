@@ -1813,9 +1813,10 @@
    "end": "0x9971",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9960.c",
-   "src_sha256": "a3eb980477c846a5723a7194e73d463c051740126ea41888fba0452c8fd9850f"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9974",
@@ -1823,9 +1824,10 @@
    "end": "0x9ac2",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9974.c",
-   "src_sha256": "fbeedf21503179849aebe0538baf3f7b7c421149f3442797232a062eabb3c408"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9ac4",
@@ -1833,9 +1835,10 @@
    "end": "0x9afa",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9ac4.c",
-   "src_sha256": "fcf0bf4dd389d677c76f2507cc5c62fc45f5b6fa0f9931508f649c9dfb4852bb"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9afc",
@@ -1843,9 +1846,10 @@
    "end": "0x9b43",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9afc.c",
-   "src_sha256": "c493b75a9d74607258d830c04a9f5bf9c0e47ab1f33db7faaa8c4bfc1f68df4a"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9b44",
@@ -1853,9 +1857,10 @@
    "end": "0x9c90",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9b44.c",
-   "src_sha256": "2b1334c6e56486dc2629e568045316a1397ab16d81f01b6bb6dc227574717a2c"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9c90",
@@ -1863,9 +1868,10 @@
    "end": "0x9ca1",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9c90.c",
-   "src_sha256": "27931f6a0be9cebd95273aa7dbd79b69e68911d5996568ad797102dcfcfe00e5"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9ca4",
@@ -1873,9 +1879,10 @@
    "end": "0x9d3e",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9ca4.c",
-   "src_sha256": "4b218838662ec6cf909830f577fcd44d0accd9753456da366708c40ab973a715"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9d40",
@@ -1883,9 +1890,10 @@
    "end": "0x9e0d",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9d40.c",
-   "src_sha256": "fa766cc4df5c4a8d081ea0a3b1f4566047753dbf55bea0b7d75dcef29c971d91"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9e10",
@@ -1893,9 +1901,10 @@
    "end": "0x9e53",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9e10.c",
-   "src_sha256": "03d005b5beb6ce9fa1875cbda4213298dd1b2123852b3cd1167d68039f058103"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9e54",
@@ -1903,9 +1912,10 @@
    "end": "0x9eec",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9e54.c",
-   "src_sha256": "7e6979cd0af5cd353a4af13b7e2af252bfd2a2b1f2404feef60df5516566b870"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9eec",
@@ -1913,9 +1923,10 @@
    "end": "0x9f48",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9eec.c",
-   "src_sha256": "65d92b6e4a435ee0072f39fceb4d3eb204d5772a76b91d72416dc16c6c4c79b5"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "f_9f48",
@@ -1923,9 +1934,10 @@
    "end": "0x9f62",
    "kind": "c",
    "status": "matching",
-   "profile": "game-c-ot",
-   "src": "src/f_9f48.c",
-   "src_sha256": "51dfc920a385cf693e590004bc9caae3cf206abf6516167b6dcd33c51e9091cc"
+   "profile": "game-c-ot-dos",
+   "src": "src/t06.c",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "unit": "T06"
   },
   {
    "name": "a_9f64",
@@ -1935,7 +1947,7 @@
    "profile": "game-asm",
    "status": "matching",
    "src": "asm/m_09f64_0a0d2.asm",
-   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "src_sha256": "e39a0f1de88c50f65d4be4dc6521fa32c78c732ff8496588ac3be7e5a84a5ff0",
    "unit": "M_09f64"
   },
   {
@@ -1946,7 +1958,7 @@
    "profile": "game-asm",
    "status": "matching",
    "src": "asm/m_09f64_0a0d2.asm",
-   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "src_sha256": "e39a0f1de88c50f65d4be4dc6521fa32c78c732ff8496588ac3be7e5a84a5ff0",
    "unit": "M_09f64"
   },
   {
@@ -1957,7 +1969,7 @@
    "profile": "game-asm",
    "status": "matching",
    "src": "asm/m_09f64_0a0d2.asm",
-   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "src_sha256": "e39a0f1de88c50f65d4be4dc6521fa32c78c732ff8496588ac3be7e5a84a5ff0",
    "unit": "M_09f64"
   },
   {
@@ -4854,17 +4866,10 @@
   "g_e15e": "3:e15e",
   "g_e160": "3:e160",
   "g_e162": "3:e162",
-  "g_e164": "3:e164",
-  "g_e168": "3:e168",
   "g_e16c": "3:e16c",
   "g_e170": "3:e170",
-  "g_e1a8": "3:e1a8",
-  "g_e1ac": "3:e1ac",
-  "g_e1b0": "3:e1b0",
-  "g_e1b4": "3:e1b4",
   "g_e1b8": "3:e1b8",
   "g_e1bc": "3:e1bc",
-  "g_e1be": "3:e1be",
   "g_e1c0": "3:e1c0",
   "g_e1c4": "3:e1c4",
   "g_e1d4": "3:e1d4",
@@ -5177,7 +5182,15 @@
   "kbd_irq_hook": "3:73b8",
   "kbd_poll_hook": "3:73bc",
   "mouse_update_hook": "3:73c0",
-  "sprite_update_hook": "3:73c4"
+  "sprite_update_hook": "3:73c4",
+  "g_e164_6": "3:e164",
+  "g_e168_j": "3:e168",
+  "g_e1a8_jn": "3:e1a8",
+  "g_e1ac_j": "3:e1ac",
+  "g_e1b0_2": "3:e1b0",
+  "g_e1b4_35": "3:e1b4",
+  "g_e1be_9": "3:e1be",
+  "g_e1a4_g": "3:e1a4"
  },
  "runtime": {
   "note": "Watcom 10.0 GA library members in obj1 0x13B9C..0x1BCD1 (fixup-masked byte equality; strict fixup binding pending). Source: build/workers/crtdiff/runtime-ga.json",
@@ -6159,12 +6172,24 @@
    "note": "MASM module; accepted by the whole-image link (image.py)"
   },
   {
+   "id": "T06",
+   "src": "src/t06.c",
+   "start": "0x9960",
+   "end": "0x9f62",
+   "profile": "game-c-ot-dos",
+   "src_sha256": "705e665ee436897c90e9640bf59462d4c568c31b58b19cf7254d4e19c50bdd20",
+   "place": [
+    "CONST=0x11bc"
+   ],
+   "note": "-ot object; plain _BSS declarations (bssorder names); CONST literal padding reproduced via CP437 comment banners positioned for the DOS-host source buffer (positions reconstructed from leaked bytes); CRLF bytes significant"
+  },
+  {
    "id": "M_09f64",
    "src": "asm/m_09f64_0a0d2.asm",
    "start": "0x09f64",
    "end": "0x0a0d2",
    "profile": "game-asm",
-   "src_sha256": "baa0a453694afdc444a090066c01a80cf8add80b774486961a84d718feec128d",
+   "src_sha256": "e39a0f1de88c50f65d4be4dc6521fa32c78c732ff8496588ac3be7e5a84a5ff0",
    "data": [],
    "note": "MASM module; accepted by the whole-image link (image.py)"
   },
