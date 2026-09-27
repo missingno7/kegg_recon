@@ -8,11 +8,9 @@ noop_sprite_callbacks_12970 PROC NEAR
         ret
         PUBLIC noop_sprite_callback_12971
 noop_sprite_callback_12971 LABEL NEAR
-L_12971:
         ret
         PUBLIC noop_sprite_callback_12972
 noop_sprite_callback_12972 LABEL NEAR
-L_12972:
         ret
 noop_sprite_callbacks_12970 ENDP
 _TEXT ENDS

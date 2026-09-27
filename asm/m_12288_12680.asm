@@ -1,4 +1,22 @@
 .386
+; Sprite records are 20-byte clipped draws queued for the renderer.
+SPRITE_RECORD STRUC
+record_kind          DW ?
+record_height_rows    DW ?
+record_width_pixels   DW ?
+record_source_stream  DD ?
+record_page_offset    DD ?
+record_clip_left      DW ?
+record_clip_width     DW ?
+record_clip_top_rows  DW ?
+SPRITE_RECORD ENDS
+SPRITE_RECORD_BYTES EQU 14h
+SPRITE_KIND_VGA_PLANAR EQU 5
+VGA_SEQUENCER_INDEX_PORT EQU 3C4h
+VGA_SEQUENCER_MAP_MASK_INDEX EQU 2
+VGA_STATE_ROW_STRIDE_OFFSET EQU 3Ah
+VGA_PLANE_COUNT EQU 4
+
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN sprite_record_cursor:BYTE
@@ -23,711 +41,413 @@ _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
 render_sprite_record_kind_5_entry LABEL NEAR
 render_sprite_record_kind_5 PROC NEAR
         mov edx, dword ptr [sprite_record_cursor]
-L_1228E:
-        add dword ptr [sprite_record_cursor], 14h
-L_12295:
-        mov word ptr [edx], 5
-L_1229A:
-        mov word ptr [edx + 4], bx
-L_1229E:
-        mov word ptr [edx + 2], bp
-L_122A2:
+        add dword ptr [sprite_record_cursor], SPRITE_RECORD_BYTES
+        mov word ptr [edx].SPRITE_RECORD.record_kind, SPRITE_KIND_VGA_PLANAR
+        mov word ptr [edx].SPRITE_RECORD.record_width_pixels, bx
+        mov word ptr [edx].SPRITE_RECORD.record_height_rows, bp
         movzx eax, word ptr [esi - 2]
-L_122A6:
         add eax, esi
-L_122A8:
-        mov dword ptr [edx + 6], eax
-L_122AB:
+        mov dword ptr [edx].SPRITE_RECORD.record_source_stream, eax
         mov eax, edi
-L_122AD:
         sub eax, dword ptr [render_page_base]
-L_122B3:
-        mov dword ptr [edx + 0Ah], eax
-L_122B6:
+        mov dword ptr [edx].SPRITE_RECORD.record_page_offset, eax
         mov eax, dword ptr [sprite_clip_left]
-L_122BB:
-        mov word ptr [edx + 0Eh], ax
-L_122BF:
+        mov word ptr [edx].SPRITE_RECORD.record_clip_left, ax
         mov eax, dword ptr [visible_sprite_width]
-L_122C4:
-        mov word ptr [edx + 10h], ax
-L_122C8:
+        mov word ptr [edx].SPRITE_RECORD.record_clip_width, ax
         mov eax, dword ptr [sprite_clip_top]
-L_122CD:
-        mov word ptr [edx + 12h], ax
+        mov word ptr [edx].SPRITE_RECORD.record_clip_top_rows, ax
         ; Shared kind 5 drawing entry used by the mode dispatch table.
         PUBLIC render_sprite_record_kind_5_draw
 render_sprite_record_kind_5_draw LABEL NEAR
-L_122D1:
         mov ecx, edi
-L_122D3:
         shr edi, 2
-L_122D6:
         and cl, 3
-L_122D9:
         mov ch, 11h
-L_122DB:
         rol ch, cl
-L_122DD:
         mov byte ptr [current_vga_plane_mask], ch
-L_122E3:
         mov byte ptr [first_vga_plane_mask], ch
-L_122E9:
         neg ebp
-L_122EB:
         cmp dword ptr [sprite_clip_left], 0
-L_122F2:
-        jne near ptr L_123B9
-L_122F8:
+        jne near ptr draw_kind5_left_clipped
         cmp dword ptr [visible_sprite_width], 0
-L_122FF:
-        jne near ptr L_124B8
-L_12305:
+        jne near ptr draw_kind5_right_clipped
         mov word ptr [sprite_source_column], 0Ah
-L_1230E:
+kind5_unclipped_plane_start:
         push ebx
-L_1230F:
         push ebp
-L_12310:
         push esi
-L_12311:
         push edi
-L_12312:
-        mov al, 2
-L_12314:
+        mov al, VGA_SEQUENCER_MAP_MASK_INDEX
         mov ah, byte ptr [current_vga_plane_mask]
-L_1231A:
-        mov dx, 3C4h
-L_1231E:
+        mov dx, VGA_SEQUENCER_INDEX_PORT
+        ; Select VGA sequencer map-mask register 2 for the current plane.
         out dx, ax
-L_12320:
         movzx eax, word ptr [sprite_source_column]
-L_12327:
         sub esi, eax
-L_12329:
         add ax, word ptr [esi]
-L_1232C:
         add esi, eax
-L_1232E:
         add word ptr [sprite_source_column], -2
-L_12336:
         sub eax, eax
-L_12338:
         mov ecx, dword ptr [sprite_clip_top]
-L_1233E:
-        jcxz L_12351
-L_12341:
+        jcxz kind5_rows_after_top_clip
+kind5_skip_top_rows:
         mov dl, byte ptr [esi]
-L_12343:
         inc esi
-L_12344:
+kind5_top_skip_run_data:
         lodsb
-L_12345:
         or al, al
-L_12347:
-        jl short L_1234B
-L_12349:
+        jl short kind5_top_skip_run_end
         add esi, eax
-L_1234B:
+kind5_top_skip_run_end:
         dec dl
-L_1234D:
-        jne short L_12344
-L_1234F:
-        loop L_12341
-L_12351:
-        mov edx, dword ptr [vga_state+3Ah]
-L_12357:
+        jne short kind5_top_skip_run_data
+        loop kind5_skip_top_rows
+kind5_rows_after_top_clip:
+        mov edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         sub edx, ebx
-L_12359:
         shr edx, 2
-L_1235C:
         mov dword ptr [vga_row_advance], edx
-L_12362:
+kind5_decode_row:
         mov bh, byte ptr [esi]
-L_12364:
         neg bh
-L_12366:
         inc esi
-L_12367:
+kind5_decode_run:
         mov cl, byte ptr [esi]
-L_12369:
         inc esi
-L_1236A:
         or cl, cl
-L_1236C:
-        jl short L_1238B
-L_1236E:
+        jl short kind5_skip_transparent_run
         test edi, 1
-L_12374:
-        je short L_12378
-L_12376:
+        je short kind5_copy_words
         movsb
-L_12377:
         dec ecx
-L_12378:
+kind5_copy_words:
         shr ecx, 1
-L_1237A:
         rep movsw
-L_1237D:
-        jae short L_12380
-L_1237F:
+        jae short kind5_copy_final_byte
         movsb
-L_12380:
+kind5_copy_final_byte:
         inc bh
-L_12382:
-        jne short L_12367
-L_12384:
+        jne short kind5_decode_run
         add edi, edx
-L_12386:
         inc ebp
-L_12387:
-        jne short L_12362
-L_12389:
-        jmp short L_12398
-L_1238B:
+        jne short kind5_decode_row
+        jmp short kind5_plane_done
+kind5_skip_transparent_run:
         neg cl
-L_1238D:
         add edi, ecx
-L_1238F:
         inc bh
-L_12391:
-        jne short L_12367
-L_12393:
+        jne short kind5_decode_run
         add edi, edx
-L_12395:
         inc ebp
-L_12396:
-        jne short L_12362
-L_12398:
+        jne short kind5_decode_row
+kind5_plane_done:
         pop edi
-L_12399:
         pop esi
-L_1239A:
         pop ebp
-L_1239B:
         pop ebx
-L_1239C:
         dec ebx
-L_1239D:
         rol byte ptr [current_vga_plane_mask], 1
-L_123A3:
         adc edi, 0
-L_123A6:
         mov dl, byte ptr [current_vga_plane_mask]
-L_123AC:
         cmp dl, byte ptr [first_vga_plane_mask]
-L_123B2:
-        jne near ptr L_1230E
-L_123B8:
+        jne near ptr kind5_unclipped_plane_start
         ret
-L_123B9:
+draw_kind5_left_clipped:
         mov edx, dword ptr [sprite_clip_left]
-L_123BF:
         and edx, 3
-L_123C2:
         mov dword ptr [vga_plane_index], edx
-L_123C8:
         sar dword ptr [sprite_clip_left], 2
-L_123CF:
-        mov edx, dword ptr [vga_state+3Ah]
-L_123D5:
+        mov edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         shr edx, 2
-L_123D8:
         mov dword ptr [vga_row_advance], edx
-L_123DE:
+kind5_left_plane_start:
         push ebx
-L_123DF:
         push ebp
-L_123E0:
         push esi
-L_123E1:
         push edi
-L_123E2:
-        mov al, 2
-L_123E4:
+        mov al, VGA_SEQUENCER_MAP_MASK_INDEX
         mov ah, byte ptr [current_vga_plane_mask]
-L_123EA:
-        mov dx, 3C4h
-L_123EE:
+        mov dx, VGA_SEQUENCER_INDEX_PORT
+        ; Select VGA sequencer map-mask register 2 for the current plane.
         out dx, ax
-L_123F0:
         mov edx, 0FFFFFFFBh
-L_123F5:
         add edx, dword ptr [vga_plane_index]
-L_123FB:
         add edx, edx
-L_123FD:
         movzx edx, word ptr [esi + edx]
-L_12401:
         add esi, edx
-L_12403:
         sub eax, eax
-L_12405:
         mov ecx, dword ptr [sprite_clip_top]
-L_1240B:
-        jcxz L_1241E
-L_1240E:
+        jcxz kind5_left_rows_after_top_clip
+kind5_left_skip_top_rows:
         mov dl, byte ptr [esi]
-L_12410:
         inc esi
-L_12411:
+kind5_left_top_skip_run_data:
         lodsb
-L_12412:
         or al, al
-L_12414:
-        jl short L_12418
-L_12416:
+        jl short kind5_left_top_skip_run_end
         add esi, eax
-L_12418:
+kind5_left_top_skip_run_end:
         dec dl
-L_1241A:
-        jne short L_12411
-L_1241C:
-        loop L_1240E
-L_1241E:
+        jne short kind5_left_top_skip_run_data
+        loop kind5_left_skip_top_rows
+kind5_left_rows_after_top_clip:
         mov edx, edi
-L_12420:
+kind5_left_row_start:
         mov edi, edx
-L_12422:
         mov ebx, dword ptr [sprite_clip_left]
-L_12428:
         sub edi, ebx
-L_1242A:
         mov bh, byte ptr [esi]
-L_1242C:
         neg bh
-L_1242E:
         inc esi
-L_1242F:
+kind5_left_decode_run:
         mov cl, byte ptr [esi]
-L_12431:
         inc esi
-L_12432:
         or cl, cl
-L_12434:
-        jl short L_12468
-L_12436:
+        jl short kind5_left_skip_transparent_run
         mov eax, edi
-L_12438:
         sub eax, edx
-L_1243A:
-        jge short L_1244E
-L_1243C:
+        jge short kind5_left_copy_visible_run
         add eax, ecx
-L_1243E:
-        jg short L_12446
-L_12440:
+        jg short kind5_left_run_crosses_clip_edge
         add esi, ecx
-L_12442:
         add edi, ecx
-L_12444:
-        jmp short L_12460
-L_12446:
+        jmp short kind5_left_empty_copy
+kind5_left_run_crosses_clip_edge:
         sub ecx, eax
-L_12448:
         add esi, ecx
-L_1244A:
         add edi, ecx
-L_1244C:
         mov ecx, eax
-L_1244E:
+kind5_left_copy_visible_run:
         test edi, 1
-L_12454:
-        je short L_12458
-L_12456:
+        je short kind5_left_copy_words
         movsb
-L_12457:
         dec ecx
-L_12458:
+kind5_left_copy_words:
         shr ecx, 1
-L_1245A:
         rep movsw
-L_1245D:
-        jae short L_12460
-L_1245F:
+        jae short kind5_left_empty_copy
         movsb
-L_12460:
+kind5_left_empty_copy:
         sub eax, eax
-L_12462:
         inc bh
-L_12464:
-        jne short L_1242F
-L_12466:
-        jmp short L_12470
-L_12468:
+        jne short kind5_left_decode_run
+        jmp short kind5_left_next_row
+kind5_left_skip_transparent_run:
         neg cl
-L_1246A:
         add edi, ecx
-L_1246C:
         inc bh
-L_1246E:
-        jne short L_1242F
-L_12470:
+        jne short kind5_left_decode_run
+kind5_left_next_row:
         add edx, dword ptr [vga_row_advance]
-L_12476:
         inc ebp
-L_12477:
-        jne short L_12420
-L_12479:
+        jne short kind5_left_row_start
         inc dword ptr [vga_plane_index]
-L_1247F:
-        cmp dword ptr [vga_plane_index], 4
-L_12486:
-        jne short L_12498
-L_12488:
+        cmp dword ptr [vga_plane_index], VGA_PLANE_COUNT
+        jne short kind5_left_plane_done
         mov dword ptr [vga_plane_index], 0
-L_12492:
         inc dword ptr [sprite_clip_left]
-L_12498:
+kind5_left_plane_done:
         pop edi
-L_12499:
         pop esi
-L_1249A:
         pop ebp
-L_1249B:
         pop ebx
-L_1249C:
         rol byte ptr [current_vga_plane_mask], 1
-L_124A2:
         adc edi, 0
-L_124A5:
         mov dl, byte ptr [current_vga_plane_mask]
-L_124AB:
         cmp dl, byte ptr [first_vga_plane_mask]
-L_124B1:
-        jne near ptr L_123DE
-L_124B7:
+        jne near ptr kind5_left_plane_start
         ret
-L_124B8:
+draw_kind5_right_clipped:
         mov word ptr [sprite_source_column], 0Ah
-L_124C1:
         mov edx, dword ptr [visible_sprite_width]
-L_124C7:
         mov dword ptr [sprite_row_width_remaining], edx
-L_124CD:
-        mov edx, dword ptr [vga_state+3Ah]
-L_124D3:
+        mov edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         shr edx, 2
-L_124D6:
         mov dword ptr [vga_row_advance], edx
-L_124DC:
+kind5_right_plane_start:
         push ebx
-L_124DD:
         push ebp
-L_124DE:
         push esi
-L_124DF:
         push edi
-L_124E0:
-        mov al, 2
-L_124E2:
+        mov al, VGA_SEQUENCER_MAP_MASK_INDEX
         mov ah, byte ptr [current_vga_plane_mask]
-L_124E8:
-        mov dx, 3C4h
-L_124EC:
+        mov dx, VGA_SEQUENCER_INDEX_PORT
+        ; Select VGA sequencer map-mask register 2 for the current plane.
         out dx, ax
-L_124EE:
         movzx eax, word ptr [sprite_source_column]
-L_124F5:
         sub esi, eax
-L_124F7:
         add ax, word ptr [esi]
-L_124FA:
         add esi, eax
-L_124FC:
         add word ptr [sprite_source_column], -2
-L_12504:
         sub eax, eax
-L_12506:
         mov ecx, dword ptr [sprite_clip_top]
-L_1250C:
-        jcxz L_1251F
-L_1250F:
+        jcxz kind5_right_rows_after_top_clip
+kind5_right_skip_top_rows:
         mov dl, byte ptr [esi]
-L_12511:
         inc esi
-L_12512:
+kind5_right_top_skip_run_data:
         lodsb
-L_12513:
         or al, al
-L_12515:
-        jl short L_12519
-L_12517:
+        jl short kind5_right_top_skip_run_end
         add esi, eax
-L_12519:
+kind5_right_top_skip_run_end:
         dec dl
-L_1251B:
-        jne short L_12512
-L_1251D:
-        loop L_1250F
-L_1251F:
+        jne short kind5_right_top_skip_run_data
+        loop kind5_right_skip_top_rows
+kind5_right_rows_after_top_clip:
         mov edx, dword ptr [sprite_row_width_remaining]
-L_12525:
         add edx, 3
-L_12528:
         sar edx, 2
-L_1252B:
         mov dword ptr [visible_sprite_width], edx
-L_12531:
         dec dword ptr [sprite_row_width_remaining]
-L_12537:
         mov edx, edi
-L_12539:
+kind5_right_row_start:
         mov edi, edx
-L_1253B:
         mov bh, byte ptr [esi]
-L_1253D:
         neg bh
-L_1253F:
         inc esi
-L_12540:
+kind5_right_decode_run:
         mov cl, byte ptr [esi]
-L_12542:
         inc esi
-L_12543:
         or cl, cl
-L_12545:
-        jl short L_1257D
-L_12547:
+        jl short kind5_right_skip_transparent_run
         mov eax, edi
-L_12549:
         sub eax, edx
-L_1254B:
         sub eax, dword ptr [visible_sprite_width]
-L_12551:
-        jge short L_1255B
-L_12553:
+        jge short kind5_right_run_starts_beyond_clip
         add eax, ecx
-L_12555:
-        jl short L_1255F
-L_12557:
+        jl short kind5_right_run_ends_before_clip
         sub ecx, eax
-L_12559:
-        jmp short L_12561
-L_1255B:
+        jmp short kind5_right_copy_visible_run
+kind5_right_run_starts_beyond_clip:
         add esi, ecx
-L_1255D:
-        jmp short L_12575
-L_1255F:
+        jmp short kind5_right_run_done
+kind5_right_run_ends_before_clip:
         sub eax, eax
-L_12561:
+kind5_right_copy_visible_run:
         test edi, 1
-L_12567:
-        je short L_1256B
-L_12569:
+        je short kind5_right_copy_words
         movsb
-L_1256A:
         dec ecx
-L_1256B:
+kind5_right_copy_words:
         shr ecx, 1
-L_1256D:
         rep movsw
-L_12570:
-        jae short L_12573
-L_12572:
+        jae short kind5_right_skip_source_remainder
         movsb
-L_12573:
+kind5_right_skip_source_remainder:
         add esi, eax
-L_12575:
+kind5_right_run_done:
         sub eax, eax
-L_12577:
         inc bh
-L_12579:
-        jne short L_12540
-L_1257B:
-        jmp short L_12585
-L_1257D:
+        jne short kind5_right_decode_run
+        jmp short kind5_right_next_row
+kind5_right_skip_transparent_run:
         neg cl
-L_1257F:
         add edi, ecx
-L_12581:
         inc bh
-L_12583:
-        jne short L_12540
-L_12585:
+        jne short kind5_right_decode_run
+kind5_right_next_row:
         add edx, dword ptr [vga_row_advance]
-L_1258B:
         inc ebp
-L_1258C:
-        jne short L_12539
-L_1258E:
+        jne short kind5_right_row_start
         pop edi
-L_1258F:
         pop esi
-L_12590:
         pop ebp
-L_12591:
         pop ebx
-L_12592:
         rol byte ptr [current_vga_plane_mask], 1
-L_12598:
         adc edi, 0
-L_1259B:
         mov dl, byte ptr [current_vga_plane_mask]
-L_125A1:
         cmp dl, byte ptr [first_vga_plane_mask]
-L_125A7:
-        jne near ptr L_124DC
-L_125AD:
+        jne near ptr kind5_right_plane_start
         ret
         ; Restore a saved rectangle or replay its encoded source, according to record flags.
         PUBLIC restore_sprite_background_record
 restore_sprite_background_record LABEL NEAR
-L_125AE:
-        mov cx, word ptr [ebx + 0Eh]
-L_125B2:
-        or cx, word ptr [ebx + 10h]
-L_125B6:
-        jcxz L_125FF
-L_125B9:
+        mov cx, word ptr [ebx].SPRITE_RECORD.record_clip_left
+        or cx, word ptr [ebx].SPRITE_RECORD.record_clip_width
+        jcxz kind5_restore_encoded_background
         mov esi, dword ptr [screen_page_base]
-L_125BF:
         mov edi, dword ptr [render_page_base]
-L_125C5:
-        mov eax, dword ptr [ebx + 0Ah]
-L_125C8:
+        mov eax, dword ptr [ebx].SPRITE_RECORD.record_page_offset
         add esi, eax
-L_125CA:
         add edi, eax
-L_125CC:
         mov edx, edi
-L_125CE:
         and edx, 3
-L_125D1:
-        movzx eax, word ptr [ebx + 4]
-L_125D5:
+        movzx eax, word ptr [ebx].SPRITE_RECORD.record_width_pixels
         add edx, eax
-L_125D7:
         add edx, 3
-L_125DA:
         shr edx, 2
-L_125DD:
-        mov eax, dword ptr [vga_state+3Ah]
-L_125E2:
+        mov eax, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         shr eax, 2
-L_125E5:
         sub eax, edx
-L_125E7:
         shr esi, 2
-L_125EA:
         shr edi, 2
-L_125ED:
-        movzx ebp, word ptr [ebx + 2]
-L_125F1:
+        movzx ebp, word ptr [ebx].SPRITE_RECORD.record_height_rows
         neg ebp
-L_125F3:
+kind5_restore_saved_rectangle_row:
         mov ecx, edx
-L_125F5:
         rep movsb
-L_125F7:
         add esi, eax
-L_125F9:
         add edi, eax
-L_125FB:
         inc ebp
-L_125FC:
-        jne short L_125F3
-L_125FE:
+        jne short kind5_restore_saved_rectangle_row
         ret
-L_125FF:
+kind5_restore_encoded_background:
         mov eax, dword ptr [render_page_base]
-L_12604:
         mov edi, dword ptr [screen_page_base]
-L_1260A:
         sub edi, eax
-L_1260C:
         mov dword ptr [background_plane_delta], edi
-L_12612:
-        mov ebp, dword ptr [ebx + 0Ah]
-L_12615:
+        mov ebp, dword ptr [ebx].SPRITE_RECORD.record_page_offset
         add ebp, eax
-L_12617:
-        mov dx, word ptr [ebx + 2]
-L_1261B:
+        mov dx, word ptr [ebx].SPRITE_RECORD.record_height_rows
         neg dl
-L_1261D:
         sub eax, eax
-L_1261F:
-        mov esi, dword ptr [ebx + 6]
-L_12622:
-        movzx ecx, word ptr [ebx + 12h]
-L_12626:
-        jcxz L_1262E
-L_12629:
+        mov esi, dword ptr [ebx].SPRITE_RECORD.record_source_stream
+        movzx ecx, word ptr [ebx].SPRITE_RECORD.record_clip_top_rows
+        jcxz kind5_restore_encoded_row
+kind5_restore_skip_top_row:
         lodsb
-L_1262A:
         add esi, eax
-L_1262C:
-        loop L_12629
-L_1262E:
+        loop kind5_restore_skip_top_row
+kind5_restore_encoded_row:
         mov ebx, esi
-L_12630:
+kind5_restore_row_start:
         mov ecx, ebp
-L_12632:
         mov dh, byte ptr [ebx]
-L_12634:
         neg dh
-L_12636:
         inc ebx
-L_12637:
+kind5_restore_decode_run:
         mov al, byte ptr [ebx]
-L_12639:
         inc ebx
-L_1263A:
         or al, al
-L_1263C:
-        jl short L_1266D
-L_1263E:
+        jl short kind5_restore_skip_transparent_run
         mov edi, ecx
-L_12640:
         and ecx, 3
-L_12643:
         add ecx, eax
-L_12645:
         add ecx, 3
-L_12648:
         shr ecx, 2
-L_1264B:
         add eax, edi
-L_1264D:
         mov esi, dword ptr [background_plane_delta]
-L_12653:
         add esi, edi
-L_12655:
         shr esi, 2
-L_12658:
         shr edi, 2
-L_1265B:
         rep movsb
-L_1265D:
         xchg eax, ecx
-L_1265E:
         inc dh
-L_12660:
-        jne short L_12637
-L_12662:
-        add ebp, dword ptr [vga_state+3Ah]
-L_12668:
+        jne short kind5_restore_decode_run
+        add ebp, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc dl
-L_1266A:
-        jne short L_12630
-L_1266C:
+        jne short kind5_restore_row_start
         ret
-L_1266D:
+kind5_restore_skip_transparent_run:
         neg al
-L_1266F:
         add ecx, eax
-L_12671:
         inc dh
-L_12673:
-        jne short L_12637
-L_12675:
-        add ebp, dword ptr [vga_state+3Ah]
-L_1267B:
+        jne short kind5_restore_decode_run
+        add ebp, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc dl
-L_1267D:
-        jne short L_12630
-L_1267F:
+        jne short kind5_restore_row_start
         ret
 render_sprite_record_kind_5 ENDP
 _TEXT ENDS

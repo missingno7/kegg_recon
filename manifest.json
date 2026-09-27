@@ -3874,7 +3874,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_12288_12680.asm",
    "unit": "M_12288",
-   "src_sha256": "7c3df4af64fe295eeac9e249e8c6f49f38cf2d69117ec18ef2a88b540582c6d9"
+   "src_sha256": "fc425373f269dcf99b2b73017b0a01e8d2caa682d7ed660176b9d24cba6957cb"
   },
   {
    "name": "noop_sprite_callbacks_12680",
@@ -3885,7 +3885,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_12680_12683.asm",
    "unit": "M_12680",
-   "src_sha256": "ef481108abca530ee33391c93e07a10eb9a7a351864186a8167b89dab6d47178"
+   "src_sha256": "e03ca2c909a46f80cfa71f65ea66d6bd0002bd115fb35c50e57b5979eacb741d"
   },
   {
    "name": "render_sprite_record_kind_3",
@@ -3896,7 +3896,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_12684_1296e.asm",
    "unit": "M_12684",
-   "src_sha256": "59afe25971ada92ed75b254e480b1e05178ea0f8ab10a738f621850361060540"
+   "src_sha256": "319a66151f70ae7aa6056c9a53b6f6fe038a39eab5c34bddf2e131e1a253e160"
   },
   {
    "name": "noop_sprite_callbacks_12970",
@@ -3907,7 +3907,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_12970_12973.asm",
    "unit": "M_12970",
-   "src_sha256": "680762768972796d60a81d7e5432fa5ef90a622c42a840b38c3e31b334bb4e01"
+   "src_sha256": "4b99c4c0c9fb5c16bcd277b5bd3b2bbcab874a32db53d986e74942ea617c0ddd"
   },
   {
    "name": "render_transparent_sprite_record",
@@ -3918,7 +3918,7 @@
    "profile": "game-asm-tasm31",
    "src": "asm/m_12974_12a9c.asm",
    "unit": "M_12974",
-   "src_sha256": "2c8c3ff21b6123d1cbc8083b4008c62fcd13e327d1ff588d001847dea04c3af9"
+   "src_sha256": "34148c8efdf1319346c3c49e50f699dd0a47dab3c3b42642322db0bd963a5034"
   },
   {
    "name": "process_sprite_update_list",
@@ -6678,8 +6678,8 @@
    "start": "0x12288",
    "end": "0x12680",
    "profile": "game-asm-tasm31",
-   "src_sha256": "7c3df4af64fe295eeac9e249e8c6f49f38cf2d69117ec18ef2a88b540582c6d9",
-   "note": "readability pass: names and explanatory comments"
+   "src_sha256": "fc425373f269dcf99b2b73017b0a01e8d2caa682d7ed660176b9d24cba6957cb",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12680",
@@ -6687,8 +6687,8 @@
    "start": "0x12680",
    "end": "0x12683",
    "profile": "game-asm-tasm31",
-   "src_sha256": "ef481108abca530ee33391c93e07a10eb9a7a351864186a8167b89dab6d47178",
-   "note": "readability pass: names and explanatory comments"
+   "src_sha256": "e03ca2c909a46f80cfa71f65ea66d6bd0002bd115fb35c50e57b5979eacb741d",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12684",
@@ -6696,8 +6696,8 @@
    "start": "0x12684",
    "end": "0x1296e",
    "profile": "game-asm-tasm31",
-   "src_sha256": "59afe25971ada92ed75b254e480b1e05178ea0f8ab10a738f621850361060540",
-   "note": "readability pass: names and explanatory comments"
+   "src_sha256": "319a66151f70ae7aa6056c9a53b6f6fe038a39eab5c34bddf2e131e1a253e160",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12970",
@@ -6705,8 +6705,8 @@
    "start": "0x12970",
    "end": "0x12973",
    "profile": "game-asm-tasm31",
-   "src_sha256": "680762768972796d60a81d7e5432fa5ef90a622c42a840b38c3e31b334bb4e01",
-   "note": "readability pass: names and explanatory comments"
+   "src_sha256": "4b99c4c0c9fb5c16bcd277b5bd3b2bbcab874a32db53d986e74942ea617c0ddd",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12974",
@@ -6714,8 +6714,8 @@
    "start": "0x12974",
    "end": "0x12a9c",
    "profile": "game-asm-tasm31",
-   "src_sha256": "2c8c3ff21b6123d1cbc8083b4008c62fcd13e327d1ff588d001847dea04c3af9",
-   "note": "readability pass: names and explanatory comments"
+   "src_sha256": "34148c8efdf1319346c3c49e50f699dd0a47dab3c3b42642322db0bd963a5034",
+   "note": "object plan (build/workers/objects)"
   },
   {
    "id": "M_12a9c",

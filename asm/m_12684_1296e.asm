@@ -1,4 +1,19 @@
 .386
+; Sprite records are 20-byte clipped draws queued for the renderer.
+SPRITE_RECORD STRUC
+record_kind          DW ?
+record_height_rows    DW ?
+record_width_pixels   DW ?
+record_source_stream  DD ?
+record_page_offset    DD ?
+record_clip_left      DW ?
+record_clip_width     DW ?
+record_clip_top_rows  DW ?
+SPRITE_RECORD ENDS
+SPRITE_RECORD_BYTES EQU 14h
+SPRITE_KIND_RUN_LENGTH EQU 3
+VGA_STATE_ROW_STRIDE_OFFSET EQU 3Ah
+
 DGROUP GROUP _DATA
 _DATA SEGMENT BYTE PUBLIC USE32 'DATA'
 EXTRN sprite_record_cursor:BYTE
@@ -19,622 +34,374 @@ _TEXT SEGMENT DWORD PUBLIC USE32 'CODE'
 render_sprite_record_kind_3_entry LABEL NEAR
 render_sprite_record_kind_3 PROC NEAR
         sub eax, eax
-L_12686:
         mov ecx, dword ptr [sprite_clip_top]
-L_1268C:
-        jcxz L_1269F
-L_1268F:
+        jcxz kind3_record_after_top_clip
+kind3_skip_top_rows:
         mov dl, byte ptr [esi]
-L_12691:
         inc esi
-L_12692:
+kind3_top_skip_run_data:
         lodsb
-L_12693:
         or al, al
-L_12695:
-        jl short L_12699
-L_12697:
+        jl short kind3_top_skip_run_end
         add esi, eax
-L_12699:
+kind3_top_skip_run_end:
         dec dl
-L_1269B:
-        jne short L_12692
-L_1269D:
-        loop L_1268F
-L_1269F:
+        jne short kind3_top_skip_run_data
+        loop kind3_skip_top_rows
+kind3_record_after_top_clip:
         mov edx, dword ptr [sprite_record_cursor]
-L_126A5:
-        add dword ptr [sprite_record_cursor], 14h
-L_126AC:
-        mov word ptr [edx], 3
-L_126B1:
-        mov word ptr [edx + 4], bx
-L_126B5:
-        mov word ptr [edx + 2], bp
-L_126B9:
-        mov dword ptr [edx + 6], esi
-L_126BC:
+        add dword ptr [sprite_record_cursor], SPRITE_RECORD_BYTES
+        mov word ptr [edx].SPRITE_RECORD.record_kind, SPRITE_KIND_RUN_LENGTH
+        mov word ptr [edx].SPRITE_RECORD.record_width_pixels, bx
+        mov word ptr [edx].SPRITE_RECORD.record_height_rows, bp
+        mov dword ptr [edx].SPRITE_RECORD.record_source_stream, esi
         mov eax, edi
-L_126BE:
         sub eax, dword ptr [render_page_base]
-L_126C4:
-        mov dword ptr [edx + 0Ah], eax
-L_126C7:
+        mov dword ptr [edx].SPRITE_RECORD.record_page_offset, eax
         mov eax, dword ptr [sprite_clip_left]
-L_126CC:
-        mov word ptr [edx + 0Eh], ax
-L_126D0:
+        mov word ptr [edx].SPRITE_RECORD.record_clip_left, ax
         mov eax, dword ptr [visible_sprite_width]
-L_126D5:
-        mov word ptr [edx + 10h], ax
-L_126D9:
-        jmp short L_126F6
+        mov word ptr [edx].SPRITE_RECORD.record_clip_width, ax
+        jmp short kind3_draw_after_top_clip
         ; Kind 3 draw entry shared with the sprite mode dispatch table.
         PUBLIC render_sprite_record_kind_3_draw
 render_sprite_record_kind_3_draw LABEL NEAR
-L_126DB:
         sub eax, eax
-L_126DD:
         mov ecx, dword ptr [sprite_clip_top]
-L_126E3:
-        jcxz L_126F6
-L_126E6:
+        jcxz kind3_draw_after_top_clip
+kind3_draw_skip_top_rows:
         mov dl, byte ptr [esi]
-L_126E8:
         inc esi
-L_126E9:
+kind3_draw_top_skip_run_data:
         lodsb
-L_126EA:
         or al, al
-L_126EC:
-        jl short L_126F0
-L_126EE:
+        jl short kind3_draw_top_skip_run_end
         add esi, eax
-L_126F0:
+kind3_draw_top_skip_run_end:
         dec dl
-L_126F2:
-        jne short L_126E9
-L_126F4:
-        loop L_126E6
-L_126F6:
-        mov edx, dword ptr [vga_state+3Ah]
-L_126FC:
+        jne short kind3_draw_top_skip_run_data
+        loop kind3_draw_skip_top_rows
+kind3_draw_after_top_clip:
+        mov edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         sub edx, ebx
-L_126FE:
         mov dword ptr [vga_row_advance], edx
-L_12704:
         neg ebp
-L_12706:
         cmp dword ptr [sprite_clip_left], 0
-L_1270D:
-        jne short L_12756
-L_1270F:
+        jne short kind3_draw_left_clipped
         cmp dword ptr [sprite_clip_right], 0
-L_12716:
-        jne near ptr L_127B2
-L_1271C:
+        jne near ptr kind3_draw_right_clipped
         nop
-L_1271D:
         nop
-L_1271E:
+kind3_draw_row:
         mov bl, byte ptr [esi]
-L_12720:
         neg bl
-L_12722:
         inc esi
-L_12723:
+kind3_draw_decode_run:
         mov cl, byte ptr [esi]
-L_12725:
         inc esi
-L_12726:
         or cl, cl
-L_12728:
-        jl short L_12748
-L_1272A:
+        jl short kind3_draw_skip_transparent_run
         test edi, 1
-L_12730:
-        je short L_12734
-L_12732:
+        je short kind3_draw_copy_words
         movsb
-L_12733:
         dec ecx
-L_12734:
+kind3_draw_copy_words:
         shr ecx, 1
-L_12736:
         rep movsw
-L_12739:
-        jae short L_1273C
-L_1273B:
+        jae short kind3_draw_copy_final_byte
         movsb
-L_1273C:
+kind3_draw_copy_final_byte:
         inc bl
-L_1273E:
-        jne short L_12723
-L_12740:
+        jne short kind3_draw_decode_run
         add edi, edx
-L_12742:
         inc ebp
-L_12743:
-        jne short L_1271E
-L_12745:
+        jne short kind3_draw_row
         ret
         ALIGN 4
-L_12748:
+kind3_draw_skip_transparent_run:
         neg cl
-L_1274A:
         add edi, ecx
-L_1274C:
         inc bl
-L_1274E:
-        jne short L_12723
-L_12750:
+        jne short kind3_draw_decode_run
         add edi, edx
-L_12752:
         inc ebp
-L_12753:
-        jne short L_1271E
-L_12755:
+        jne short kind3_draw_row
         ret
-L_12756:
+kind3_draw_left_clipped:
         mov edx, edi
-L_12758:
+kind3_left_row_start:
         mov edi, edx
-L_1275A:
         mov ebx, dword ptr [sprite_clip_left]
-L_12760:
         sub edi, ebx
-L_12762:
         mov bh, byte ptr [esi]
-L_12764:
         neg bh
-L_12766:
         inc esi
-L_12767:
+kind3_left_decode_run:
         mov cl, byte ptr [esi]
-L_12769:
         inc esi
-L_1276A:
         or cl, cl
-L_1276C:
-        jl short L_127A0
-L_1276E:
+        jl short kind3_left_skip_transparent_run
         mov eax, edi
-L_12770:
         sub eax, edx
-L_12772:
-        jge short L_12786
-L_12774:
+        jge short kind3_left_copy_visible_run
         add eax, ecx
-L_12776:
-        jg short L_1277E
-L_12778:
+        jg short kind3_left_run_crosses_clip_edge
         add esi, ecx
-L_1277A:
         add edi, ecx
-L_1277C:
-        jmp short L_12798
-L_1277E:
+        jmp short kind3_left_run_done
+kind3_left_run_crosses_clip_edge:
         sub ecx, eax
-L_12780:
         add esi, ecx
-L_12782:
         add edi, ecx
-L_12784:
         mov ecx, eax
-L_12786:
+kind3_left_copy_visible_run:
         test edi, 1
-L_1278C:
-        je short L_12790
-L_1278E:
+        je short kind3_left_copy_words
         movsb
-L_1278F:
         dec ecx
-L_12790:
+kind3_left_copy_words:
         shr ecx, 1
-L_12792:
         rep movsw
-L_12795:
-        jae short L_12798
-L_12797:
+        jae short kind3_left_run_done
         movsb
-L_12798:
+kind3_left_run_done:
         sub eax, eax
-L_1279A:
         inc bh
-L_1279C:
-        jne short L_12767
-L_1279E:
-        jmp short L_127A8
-L_127A0:
+        jne short kind3_left_decode_run
+        jmp short kind3_left_next_row
+kind3_left_skip_transparent_run:
         neg cl
-L_127A2:
         add edi, ecx
-L_127A4:
         inc bh
-L_127A6:
-        jne short L_12767
-L_127A8:
-        add edx, dword ptr [vga_state+3Ah]
-L_127AE:
+        jne short kind3_left_decode_run
+kind3_left_next_row:
+        add edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc ebp
-L_127AF:
-        jne short L_12758
-L_127B1:
+        jne short kind3_left_row_start
         ret
-L_127B2:
+kind3_draw_right_clipped:
         mov edx, edi
-L_127B4:
+kind3_right_row_start:
         mov edi, edx
-L_127B6:
         mov bh, byte ptr [esi]
-L_127B8:
         neg bh
-L_127BA:
         inc esi
-L_127BB:
+kind3_right_decode_run:
         mov cl, byte ptr [esi]
-L_127BD:
         inc esi
-L_127BE:
         or cl, cl
-L_127C0:
-        jl short L_127F8
-L_127C2:
+        jl short kind3_right_skip_transparent_run
         mov eax, edi
-L_127C4:
         sub eax, edx
-L_127C6:
         sub eax, dword ptr [visible_sprite_width]
-L_127CC:
-        jge short L_127D6
-L_127CE:
+        jge short kind3_right_run_starts_beyond_clip
         add eax, ecx
-L_127D0:
-        jl short L_127DA
-L_127D2:
+        jl short kind3_right_run_ends_before_clip
         sub ecx, eax
-L_127D4:
-        jmp short L_127DC
-L_127D6:
+        jmp short kind3_right_copy_visible_run
+kind3_right_run_starts_beyond_clip:
         add esi, ecx
-L_127D8:
-        jmp short L_127F0
-L_127DA:
+        jmp short kind3_right_run_done
+kind3_right_run_ends_before_clip:
         sub eax, eax
-L_127DC:
+kind3_right_copy_visible_run:
         test edi, 1
-L_127E2:
-        je short L_127E6
-L_127E4:
+        je short kind3_right_copy_words
         movsb
-L_127E5:
         dec ecx
-L_127E6:
+kind3_right_copy_words:
         shr ecx, 1
-L_127E8:
         rep movsw
-L_127EB:
-        jae short L_127EE
-L_127ED:
+        jae short kind3_right_after_copy_words
         movsb
-L_127EE:
+kind3_right_after_copy_words:
         add esi, eax
-L_127F0:
+kind3_right_run_done:
         sub eax, eax
-L_127F2:
         inc bh
-L_127F4:
-        jne short L_127BB
-L_127F6:
-        jmp short L_12800
-L_127F8:
+        jne short kind3_right_decode_run
+        jmp short kind3_right_next_row
+kind3_right_skip_transparent_run:
         neg cl
-L_127FA:
         add edi, ecx
-L_127FC:
         inc bh
-L_127FE:
-        jne short L_127BB
-L_12800:
-        add edx, dword ptr [vga_state+3Ah]
-L_12806:
+        jne short kind3_right_decode_run
+kind3_right_next_row:
+        add edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc ebp
-L_12807:
-        jne short L_127B4
-L_12809:
+        jne short kind3_right_row_start
         ret
         ; Restore a saved sprite rectangle from the backing image.
         PUBLIC restore_sprite_background_from_record
 restore_sprite_background_from_record LABEL NEAR
-L_1280A:
-        movzx eax, word ptr [ebx + 0Eh]
-L_1280E:
+        movzx eax, word ptr [ebx].SPRITE_RECORD.record_clip_left
         mov dword ptr [sprite_clip_left], eax
-L_12813:
-        movzx eax, word ptr [ebx + 10h]
-L_12817:
+        movzx eax, word ptr [ebx].SPRITE_RECORD.record_clip_width
         mov dword ptr [sprite_clip_right], eax
-L_1281C:
-        mov esi, dword ptr [ebx + 6]
-L_1281F:
+        mov esi, dword ptr [ebx].SPRITE_RECORD.record_source_stream
         mov edi, dword ptr [render_page_base]
-L_12825:
         mov eax, dword ptr [screen_page_base]
-L_1282A:
         sub eax, edi
-L_1282C:
         mov dword ptr [background_plane_delta], eax
-L_12831:
-        add edi, dword ptr [ebx + 0Ah]
-L_12834:
-        movzx ebp, word ptr [ebx + 2]
-L_12838:
+        add edi, dword ptr [ebx].SPRITE_RECORD.record_page_offset
+        movzx ebp, word ptr [ebx].SPRITE_RECORD.record_height_rows
         neg ebp
-L_1283A:
         sub eax, eax
-L_1283C:
         sub ecx, ecx
-L_1283E:
         cmp dword ptr [sprite_clip_left], 0
-L_12845:
-        jne short L_128A0
-L_12847:
+        jne short restore_kind3_left_clipped
         cmp dword ptr [sprite_clip_right], 0
-L_1284E:
-        jne near ptr L_12906
-L_12854:
-        mov edx, dword ptr [vga_state+3Ah]
-L_1285A:
-        sub dx, word ptr [ebx + 4]
-L_1285E:
+        jne near ptr restore_kind3_right_clipped
+        mov edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
+        sub dx, word ptr [ebx].SPRITE_RECORD.record_width_pixels
         mov eax, esi
-L_12860:
+restore_kind3_row:
         mov bh, byte ptr [eax]
-L_12862:
         neg bh
-L_12864:
         inc eax
-L_12865:
+restore_kind3_decode_run:
         mov cl, byte ptr [eax]
-L_12867:
         inc eax
-L_12868:
         or cl, cl
-L_1286A:
-        jl short L_12892
-L_1286C:
+        jl short restore_kind3_skip_transparent_run
         add eax, ecx
-L_1286E:
         mov esi, dword ptr [background_plane_delta]
-L_12874:
         add esi, edi
-L_12876:
         test edi, 1
-L_1287C:
-        je short L_12880
-L_1287E:
+        je short restore_kind3_copy_words
         movsb
-L_1287F:
         dec ecx
-L_12880:
+restore_kind3_copy_words:
         shr ecx, 1
-L_12882:
         rep movsw
-L_12885:
-        jae short L_12888
-L_12887:
+        jae short restore_kind3_copy_final_byte
         movsb
-L_12888:
+restore_kind3_copy_final_byte:
         inc bh
-L_1288A:
-        jne short L_12865
-L_1288C:
+        jne short restore_kind3_decode_run
         add edi, edx
-L_1288E:
         inc ebp
-L_1288F:
-        jne short L_12860
-L_12891:
+        jne short restore_kind3_row
         ret
-L_12892:
+restore_kind3_skip_transparent_run:
         neg cl
-L_12894:
         add edi, ecx
-L_12896:
         inc bh
-L_12898:
-        jne short L_12865
-L_1289A:
+        jne short restore_kind3_decode_run
         add edi, edx
-L_1289C:
         inc ebp
-L_1289D:
-        jne short L_12860
-L_1289F:
+        jne short restore_kind3_row
         ret
-L_128A0:
+restore_kind3_left_clipped:
         mov edx, edi
-L_128A2:
+restore_kind3_left_row_start:
         mov edi, edx
-L_128A4:
         mov ebx, dword ptr [sprite_clip_left]
-L_128AA:
         sub edi, ebx
-L_128AC:
         mov bh, byte ptr [esi]
-L_128AE:
         neg bh
-L_128B0:
         inc esi
-L_128B1:
+restore_kind3_left_decode_run:
         mov cl, byte ptr [esi]
-L_128B3:
         inc esi
-L_128B4:
         or cl, cl
-L_128B6:
-        jl short L_128F4
-L_128B8:
+        jl short restore_kind3_left_skip_transparent_run
         add esi, ecx
-L_128BA:
         mov eax, edi
-L_128BC:
         sub eax, edx
-L_128BE:
-        jge short L_128CE
-L_128C0:
+        jge short restore_kind3_left_copy_visible_run
         add eax, ecx
-L_128C2:
-        jg short L_128C8
-L_128C4:
+        jg short restore_kind3_left_run_crosses_clip_edge
         add edi, ecx
-L_128C6:
-        jmp short L_128EC
-L_128C8:
+        jmp short restore_kind3_left_run_done
+restore_kind3_left_run_crosses_clip_edge:
         sub ecx, eax
-L_128CA:
         add edi, ecx
-L_128CC:
         mov ecx, eax
-L_128CE:
+restore_kind3_left_copy_visible_run:
         mov eax, esi
-L_128D0:
         mov esi, dword ptr [background_plane_delta]
-L_128D6:
         add esi, edi
-L_128D8:
         test edi, 1
-L_128DE:
-        je short L_128E2
-L_128E0:
+        je short restore_kind3_left_copy_words
         movsb
-L_128E1:
         dec ecx
-L_128E2:
+restore_kind3_left_copy_words:
         shr ecx, 1
-L_128E4:
         rep movsw
-L_128E7:
-        jae short L_128EA
-L_128E9:
+        jae short restore_kind3_left_after_copy_words
         movsb
-L_128EA:
+restore_kind3_left_after_copy_words:
         mov esi, eax
-L_128EC:
+restore_kind3_left_run_done:
         sub eax, eax
-L_128EE:
         inc bh
-L_128F0:
-        jne short L_128B1
-L_128F2:
-        jmp short L_128FC
-L_128F4:
+        jne short restore_kind3_left_decode_run
+        jmp short restore_kind3_left_next_row
+restore_kind3_left_skip_transparent_run:
         neg cl
-L_128F6:
         add edi, ecx
-L_128F8:
         inc bh
-L_128FA:
-        jne short L_128B1
-L_128FC:
-        add edx, dword ptr [vga_state+3Ah]
-L_12902:
+        jne short restore_kind3_left_decode_run
+restore_kind3_left_next_row:
+        add edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc ebp
-L_12903:
-        jne short L_128A2
-L_12905:
+        jne short restore_kind3_left_row_start
         ret
-L_12906:
+restore_kind3_right_clipped:
         mov edx, edi
-L_12908:
+restore_kind3_right_row_start:
         mov edi, edx
-L_1290A:
         mov bh, byte ptr [esi]
-L_1290C:
         neg bh
-L_1290E:
         inc esi
-L_1290F:
+restore_kind3_right_decode_run:
         mov cl, byte ptr [esi]
-L_12911:
         inc esi
-L_12912:
         or cl, cl
-L_12914:
-        jl short L_1295C
-L_12916:
+        jl short restore_kind3_right_skip_transparent_run
         add esi, ecx
-L_12918:
         mov eax, edi
-L_1291A:
         sub eax, edx
-L_1291C:
         sub eax, dword ptr [sprite_clip_right]
-L_12922:
-        jge short L_1292C
-L_12924:
+        jge short restore_kind3_right_run_starts_beyond_clip
         add eax, ecx
-L_12926:
-        jl short L_1292E
-L_12928:
+        jl short restore_kind3_right_copy_visible_run
         sub ecx, eax
-L_1292A:
-        jmp short L_1292E
-L_1292C:
-        jmp short L_1294C
-L_1292E:
+        jmp short restore_kind3_right_copy_visible_run
+restore_kind3_right_run_starts_beyond_clip:
+        jmp short restore_kind3_right_run_done
+restore_kind3_right_copy_visible_run:
         mov eax, esi
-L_12930:
         mov esi, dword ptr [background_plane_delta]
-L_12936:
         add esi, edi
-L_12938:
         test edi, 1
-L_1293E:
-        je short L_12942
-L_12940:
+        je short restore_kind3_right_copy_words
         movsb
-L_12941:
         dec ecx
-L_12942:
+restore_kind3_right_copy_words:
         shr ecx, 1
-L_12944:
         rep movsw
-L_12947:
-        jae short L_1294A
-L_12949:
+        jae short restore_kind3_right_after_copy_words
         movsb
-L_1294A:
+restore_kind3_right_after_copy_words:
         mov esi, eax
-L_1294C:
+restore_kind3_right_run_done:
         sub eax, eax
-L_1294E:
         inc bh
-L_12950:
-        jne short L_1290F
-L_12952:
-        add edx, dword ptr [vga_state+3Ah]
-L_12958:
+        jne short restore_kind3_right_decode_run
+        add edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc ebp
-L_12959:
-        jne short L_12908
-L_1295B:
+        jne short restore_kind3_right_row_start
         ret
-L_1295C:
+restore_kind3_right_skip_transparent_run:
         neg cl
-L_1295E:
         add edi, ecx
-L_12960:
         inc bh
-L_12962:
-        jne short L_1290F
-L_12964:
-        add edx, dword ptr [vga_state+3Ah]
-L_1296A:
+        jne short restore_kind3_right_decode_run
+        add edx, dword ptr [vga_state+VGA_STATE_ROW_STRIDE_OFFSET]
         inc ebp
-L_1296B:
-        jne short L_12908
-L_1296D:
+        jne short restore_kind3_right_row_start
         ret
 render_sprite_record_kind_3 ENDP
 _TEXT ENDS
