@@ -75,13 +75,14 @@ static void restore_if(int was_enabled)
     vhw_leave();
 }
 
-/* The Watcom C wait helper leaves its last IN result in AL. Re-read status immediately
- * after it returns so the literal C translation preserves that command byte (08h or 09h)
- * for the following PIT latch write. */
+/* The Watcom C wait helper leaves its last IN result in AL (the first 3DAh read with the
+ * retrace bit set, 08h or 09h); the original then writes that AL to the PIT command port.
+ * Take that value from the virtual CPU's record of the last inp() instead of reading the
+ * port again: an extra read shifts the latch by one I/O cycle (docs/port/lockstep.md, L1). */
 static uint8_t wait_for_vsync_al(void)
 {
     wait_for_vsync();
-    return (uint8_t)inp(0x3da);
+    return (uint8_t)vhw_last_inp_value;
 }
 
 int measure_pit_channel0(void)

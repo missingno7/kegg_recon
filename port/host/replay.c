@@ -149,10 +149,17 @@ void ke_replay_report(void)
            replay_complete ? " (complete)" : " (incomplete)");
 }
 
+/* Lockstep runner (port/oracle/lockstep.c): replaces the input step at frame entry; it takes
+ * its state snapshot, then calls ke_replay_frame_entry() itself. */
+void (*ke_frame_entry_hook)(void);
+
 void __wrap_wait_for_tick(short wait_flags)
 {
     InterlockedIncrement(&wait_for_tick_count);
-    ke_replay_frame_entry();
+    if (ke_frame_entry_hook)
+        ke_frame_entry_hook();
+    else
+        ke_replay_frame_entry();
     __real_wait_for_tick(wait_flags);
 }
 

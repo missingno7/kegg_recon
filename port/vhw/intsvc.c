@@ -208,6 +208,8 @@ static void int31(union REGS *r, struct SREGS *s)
 int vhw_int(int intno, union REGS *in, union REGS *out, struct SREGS *s)
 {
     union REGS r = *in;
+    if (vhw_io_trace_hook)
+        vhw_io_trace_hook('N', (uint16_t)intno, r.w.ax);
     ke_log(KE_LOG_TRACE, "int", "INT %02Xh AX=%04X BX=%04X CX=%04X DX=%04X", intno, r.w.ax,
            r.w.bx, r.w.cx, r.w.dx);
     switch (intno) {

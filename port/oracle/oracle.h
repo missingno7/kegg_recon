@@ -77,4 +77,14 @@ const OracleEvent *oracle_trace(void);
 /* Record an event from translated code (port side) into the same format. */
 void oracle_trace_add(uint8_t kind, uint16_t port, uint32_t value, int size);
 
+/* Whole-program runs (lockstep.c). Offsets are LE object 1 offsets. */
+int oracle_breakpoint(uint32_t offset, const uint8_t *expect, int expect_len, int len,
+                      void (*fn)(void));
+int oracle_patch_jump(uint32_t offset, void *target);
+int oracle_emulate_flags_instruction(uint32_t offset);
+uint32_t oracle_breakpoint_esp(void);        /* ESP at the last function breakpoint hit     */ /* PUSHFD/POPFD with the virtual IF  */
+void oracle_set_irq_redirect(int on);
+void oracle_set_lowmem_emulation(int on);    /* addresses < 64 KiB -> ke_lowmem_shadow   */        /* deliver pending IRQs after emulated events */
+void oracle_call_iret_handler(uint32_t offset); /* call an IRETD-terminated original handler */
+
 #endif

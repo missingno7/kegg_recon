@@ -188,28 +188,39 @@ static void invoke_sprite(const uint8_t *record, int32_t x, int32_t y)
     bottom = *(int32_t *)(void *)(vga_state + 0x56);
     sprite_clip_top = sprite_clip_bottom = sprite_clip_left = sprite_clip_right = 0;
     visible_sprite_width = 0;
+    /* clip_sprite_record, literally (docs/port/lockstep.md, L5): CX holds the height and
+     * the high word of ECX the width; each edge is `sub cx,ax; jle fully_clipped` (16-bit
+     * signed) and its clip global is stored only after that test; a left-clipped sprite
+     * skips the right-edge test (jmp clip_sprite_finish_bounds). */
     if (y < top) {
-        sprite_clip_top = (uint32_t)(top - y);
-        height -= sprite_clip_top;
+        uint32_t cut = (uint32_t)(top - y);
+        int16_t rest = (int16_t)(height - cut);
+        if (rest <= 0) return;
         y = top;
-        if ((int32_t)height <= 0) return;
+        sprite_clip_top = cut;
+        height = (uint16_t)rest;
     }
-    if ((int64_t)y + height - 1 > bottom) {
-        sprite_clip_bottom = (uint32_t)((int64_t)y + height - 1 - bottom);
-        height -= sprite_clip_bottom;
-        if ((int32_t)height <= 0) return;
+    if ((int32_t)((int16_t)height) + y - 1 > bottom) {
+        uint32_t over = (uint32_t)((int32_t)((int16_t)height) + y - 1 - bottom);
+        int16_t rest = (int16_t)(height - over);
+        if (rest <= 0) return;
+        sprite_clip_bottom = over;
+        height = (uint16_t)rest;
     }
     if (x < left) {
-        sprite_clip_left = (uint32_t)(left - x);
-        width -= sprite_clip_left;
+        uint32_t cut = (uint32_t)(left - x);
+        int16_t rest = (int16_t)(width - cut);
+        if (rest <= 0) return;
+        sprite_clip_left = cut;
+        width = (uint16_t)rest;
         x = left;
-        if ((int32_t)width <= 0) return;
-    }
-    if ((int64_t)x + width - 1 > right) {
-        sprite_clip_right = (uint32_t)((int64_t)x + width - 1 - right);
-        width -= sprite_clip_right;
-        if ((int32_t)width <= 0) return;
-        visible_sprite_width = width;
+    } else if ((int32_t)width + x - 1 > right) {
+        uint32_t over = (uint32_t)((int32_t)width + x - 1 - right);
+        int16_t rest = (int16_t)(width - over);
+        if (rest <= 0) return;
+        sprite_clip_right = over;
+        width = (uint16_t)rest;
+        visible_sprite_width = (uint32_t)(int32_t)rest;
     }
     visible_w = width;
     visible_h = height;
@@ -258,6 +269,9 @@ void process_sprite_update_list(int32_t x, int32_t y, uint8_t *commands, uint8_t
         int16_t cx, cy;
         uint16_t flags;
         command_cursor += 10;
+        /* update_list_next_command: `add dword ptr [sprite_command_cursor], 0Ah` keeps the
+         * public cursor at the next command (docs/port/lockstep.md, L3). */
+        memcpy(sprite_command_cursor, &command_cursor, sizeof command_cursor);
         sprite = (uint8_t *)(uintptr_t)*(uint32_t *)(void *)(command_cursor - 10);
         if (!sprite)
             break;

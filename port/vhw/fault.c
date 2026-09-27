@@ -54,5 +54,7 @@ static LONG CALLBACK fault_handler(EXCEPTION_POINTERS *ep)
 
 void vhw_fault_init(void)
 {
-    AddVectoredExceptionHandler(1, fault_handler);
+    /* Lockstep runs original machine code whose emulation VEH (port/oracle) must see
+     * privileged instructions first: this diagnostic handler goes last there. */
+    AddVectoredExceptionHandler(vhw_lockstep ? 0 : 1, fault_handler);
 }

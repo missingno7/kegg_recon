@@ -121,6 +121,20 @@ int ke_game_thread_start(void)
     return 0;
 }
 
+/* Lockstep runner: run `entry` (the port's or the original's main) on the calling thread
+ * with the same exit()/atexit() unwinding as the game thread. Returns the exit code. */
+int ke_game_run_here(void (*entry)(void))
+{
+    ke_game_thread_adopt();
+    if (setjmp(exit_jump) == 0) {
+        ke_log(KE_LOG_INFO, "game", "entering main() on the lockstep thread");
+        entry();
+        ke_exit(0);
+    }
+    InterlockedExchange(&finished, 1);
+    return exit_code;
+}
+
 /* Tests (ke_oracle): make the calling thread the "game thread" without running main(). */
 void ke_game_thread_adopt(void)
 {

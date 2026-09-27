@@ -31,6 +31,23 @@ static __thread uint64_t irq_wall_ns;
 static __thread int irq_clock_active;
 static __thread unsigned poll_yield_count;
 
+/* ---- lockstep mode (docs/port/lockstep.md) ---------------------------------------------
+ * A single-threaded, host-time-free machine: the clock advances only by fixed costs of
+ * emulated events (port I/O, memory-poll iterations, idle waits), the PIT raises IRQ0 when
+ * the clock crosses its next edge (no PIT/IRQ threads), and interrupts are delivered
+ * synchronously at instruction boundaries (vhw_leave, STI, poll yields). Both the port and
+ * the original KE.EXE machine code (port/oracle/lockstep.c) run on it, so two runs with the
+ * same input schedule see the same device timeline. */
+int vhw_lockstep;
+uint64_t vhw_lockstep_ns;
+void (*vhw_lockstep_idle_hook)(void);
+
+void vhw_lockstep_advance(uint64_t ns)
+{
+    vhw_lockstep_ns += ns;
+    vpit_lockstep_update();
+}
+
 /* One monotonic machine clock feeds both the PIT and VGA raster. A calibration entered by
  * programming channel 0 in mode 2 while IF=0 gets a per-CPU clock: device-time observations
  * advance by fixed steps, so host preemption cannot change a 3DA/PIT poll. Outside calibration
@@ -60,8 +77,12 @@ static void machine_clock_sync_wall(uint64_t now)
 
 uint64_t vhw_clock_now_ns(void)
 {
-    uint64_t now = ke_now_ns(), result;
-    DWORD tid = GetCurrentThreadId();
+    uint64_t now, result;
+    DWORD tid;
+    if (vhw_lockstep)
+        return vhw_lockstep_ns;
+    now = ke_now_ns();
+    tid = GetCurrentThreadId();
     if (irq_clock_active)
         return now >= irq_wall_ns ? irq_clock_ns + (now - irq_wall_ns) : irq_clock_ns;
 
@@ -181,6 +202,18 @@ void vcpu_sti(void)
 /* The original wait_for_tick path polls a memory flag without entering the vhw. */
 void vhw_cpu_poll_yield(void)
 {
+    if (vhw_lockstep) {
+        /* One loop iteration of a pure memory poll: jump to the next device event (at
+         * least VHW_LOCKSTEP_POLL_NS), then take pending interrupts at this boundary. */
+        uint64_t next = vpit_lockstep_next_edge();
+        uint64_t step = next > vhw_lockstep_ns ? next - vhw_lockstep_ns : 0;
+        if (step < VHW_LOCKSTEP_POLL_NS || step > VHW_LOCKSTEP_POLL_MAX_NS)
+            step = step < VHW_LOCKSTEP_POLL_NS ? VHW_LOCKSTEP_POLL_NS : VHW_LOCKSTEP_POLL_MAX_NS;
+        vhw_lockstep_advance(step);
+        if (vcpu_if_flag && !vhw_in_isr && vpic_has_deliverable())
+            vpic_deliver_pending();
+        return;
+    }
     if (GetCurrentThreadId() == game_tid && !(++poll_yield_count & 0x0fffu)) {
         LARGE_INTEGER due;
         if (ke_quit_requested())
@@ -218,6 +251,14 @@ void _enable(void)
 /* Called by blocking BIOS services on the game thread: deliver interrupts, sleep a little. */
 void vhw_idle(uint64_t max_ns)
 {
+    if (vhw_lockstep) {
+        if (vhw_lockstep_idle_hook)
+            vhw_lockstep_idle_hook();
+        vhw_lockstep_advance(max_ns);
+        if (vcpu_if_flag && !vhw_in_isr && vpic_has_deliverable())
+            vpic_deliver_pending();
+        return;
+    }
     if (vhw_on_irq_thread()) {
         ke_sleep_ns(max_ns);
         return;

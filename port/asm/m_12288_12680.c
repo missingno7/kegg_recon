@@ -158,12 +158,16 @@ void render_sprite_record_kind_5_draw(const uint8_t *esi, uint32_t ebx,
     vga_row_advance = stride >> 2;
     if (!sprite_clip_left && !sprite_clip_right) {
         uint32_t base = pixel_to_planar_address(edi);
-        uint32_t row_advance = (stride - ebx) >> 2;
         for (pass = 0; pass < 4; pass++) {
             unsigned plane = (first_plane + pass) & 3u;
             unsigned wraps = first_plane + pass >= 4u;
             uint8_t *stream = (uint8_t *)(uintptr_t)(table + 10u +
                                       get16(table + pass * 2u));
+            /* kind5_rows_after_top_clip: EDX = (row stride - EBX) >> 2, and kind5_plane_done
+             * decrements EBX after every plane, so plane N advances by
+             * (stride - (width - N)) >> 2 per row (docs/port/lockstep.md, L2). */
+            uint32_t row_advance = (stride - (ebx - pass)) >> 2;
+            vga_row_advance = row_advance;
             select_plane(plane);
             draw_unclipped_plane_stream(stream, ebx, edx,
                                         base + wraps, row_advance);
@@ -173,21 +177,26 @@ void render_sprite_record_kind_5_draw(const uint8_t *esi, uint32_t ebx,
         return;
     }
     if (sprite_clip_left) {
-        uint32_t clipped_columns = sprite_clip_left >> 2;
-        unsigned first_stream = sprite_clip_left & 3u;
-        vga_plane_index = first_stream;
+        /* draw_kind5_left_clipped, literally (docs/port/lockstep.md, L6): the global clip is
+         * turned into planar columns (`sar [sprite_clip_left],2`), and whenever the stream
+         * index wraps from plane 3 to 0 the remaining planes start one column later
+         * (`inc dword ptr [sprite_clip_left]`). */
+        vga_plane_index = sprite_clip_left & 3u;
+        sprite_clip_left = (uint32_t)((int32_t)sprite_clip_left >> 2);
         vga_row_advance = stride >> 2;
         for (pass = 0; pass < 4; pass++) {
             unsigned plane = (first_plane + pass) & 3u;
-            unsigned stream_index = (first_stream + pass) & 3u;
             uint32_t wraps = first_plane + pass >= 4u;
             uint8_t *stream = (uint8_t *)(uintptr_t)(table + 10u +
-                                      get16(table + stream_index * 2u));
+                                      get16(table + vga_plane_index * 2u));
             select_plane(plane);
             draw_left_clipped_plane_stream(stream, edx,
                                            pixel_to_planar_address(edi) + wraps,
-                                           clipped_columns, stride >> 2);
-            vga_plane_index++;
+                                           sprite_clip_left, stride >> 2);
+            if (++vga_plane_index == 4u) {
+                vga_plane_index = 0;
+                sprite_clip_left++;
+            }
         }
         current_vga_plane_mask = first_vga_plane_mask;
         return;
@@ -223,16 +232,16 @@ void render_sprite_record_kind_5_entry(const uint8_t *esi, uint32_t ebx,
 
 void restore_sprite_background_record(SpriteUpdateRecord *record)
 {
-    uint32_t source_pixel = (uint32_t)screen_page_base + record->page_offset;
-    uint32_t dest_pixel = (uint32_t)render_page_base + record->page_offset;
     uint32_t stride = *(uint32_t *)(void *)(vga_state + 0x3a);
-    uint32_t bytes = ((source_pixel & 3u) + record->width_pixels + 3u) >> 2;
-    uint32_t y, x;
-    background_plane_delta = (uint32_t)screen_page_base - (uint32_t)render_page_base;
     if (record->clip_left || record->clip_width) {
+        /* Clipped record: copy the saved rectangle from the screen page (latch copies). */
+        uint32_t source_pixel = (uint32_t)screen_page_base + record->page_offset;
+        uint32_t dest_pixel = (uint32_t)render_page_base + record->page_offset;
+        uint32_t bytes = ((dest_pixel & 3u) + record->width_pixels + 3u) >> 2;
+        uint32_t y, x;
         for (y = 0; y < record->height_rows; y++) {
-            uint32_t src = pixel_to_planar_address(source_pixel + y * stride) & ~0u;
-            uint32_t dst = pixel_to_planar_address(dest_pixel + y * stride) & ~0u;
+            uint32_t src = pixel_to_planar_address(source_pixel + y * stride);
+            uint32_t dst = pixel_to_planar_address(dest_pixel + y * stride);
             for (x = 0; x < bytes; x++) {
                 uint8_t value = sprite_vga_read_linear(src + x);
                 sprite_vga_write_linear(dst + x, value);
@@ -240,28 +249,46 @@ void restore_sprite_background_record(SpriteUpdateRecord *record)
         }
         return;
     }
-    /* Unclipped records retain the planar run stream for sparse background restoration. */
+    /* kind5_restore_encoded_background, literally (docs/port/lockstep.md, L4): the record's
+     * stream is the sprite's pixel-run stream (run lengths only, no pixel bytes). Skip the
+     * clipped top rows (`lodsb; add esi,eax`), then per row copy every opaque run's planar
+     * bytes ((x & 3) + run + 3) >> 2 from the screen page to the render page. */
     {
-        const uint8_t *source = (const uint8_t *)(uintptr_t)record->source_stream;
-        uint32_t row;
-        for (row = 0; row < record->height_rows; row++) {
-            unsigned runs = *source++;
-            uint32_t pos = 0;
-            while (runs--) {
-                int8_t run = (int8_t)*source++;
-                uint32_t count = run < 0 ? (uint32_t)(-(int)run) : (uint32_t)run;
-                if (run > 0) {
-                    uint32_t n;
-                    for (n = 0; n < count; n++) {
-                        uint32_t src = pixel_to_planar_address(source_pixel + row * stride + (pos + n) * 4u);
-                        uint32_t dst = pixel_to_planar_address(dest_pixel + row * stride + (pos + n) * 4u);
-                        uint8_t value = sprite_vga_read_linear(src);
-                        sprite_vga_write_linear(dst, value);
-                    }
-                    source += count;
-                }
-                pos += count;
-            }
+        uint32_t delta = (uint32_t)screen_page_base - (uint32_t)render_page_base;
+        uint32_t ebp = record->page_offset + (uint32_t)render_page_base;
+        uint8_t dl = (uint8_t)-(uint8_t)record->height_rows;
+        const uint8_t *esi = (const uint8_t *)(uintptr_t)record->source_stream;
+        const uint8_t *ebx;
+        uint32_t eax = 0, ecx = record->clip_top_rows;
+        background_plane_delta = delta;
+        while (ecx) {                              /* lodsb; add esi,eax; loop */
+            eax = *esi++;
+            esi += eax;
+            ecx--;
         }
+        ebx = esi;
+        do {                                       /* kind5_restore_row_start */
+            uint8_t dh = (uint8_t)-*ebx++;
+            ecx = ebp;
+            do {                                   /* kind5_restore_decode_run */
+                uint8_t al = *ebx++;
+                eax = (eax & ~0xffu) | al;
+                if ((int8_t)al < 0) {
+                    eax = (eax & ~0xffu) | (uint8_t)-al;
+                    ecx += eax;
+                } else {
+                    uint32_t edi = ecx, src, n;
+                    ecx = ((ecx & 3u) + eax + 3u) >> 2;
+                    eax += edi;
+                    src = pixel_to_planar_address(delta + edi);
+                    edi = pixel_to_planar_address(edi);
+                    for (n = 0; n < ecx; n++)       /* rep movsb (write mode 1: latches) */
+                        sprite_vga_write_linear(edi + n, sprite_vga_read_linear(src + n));
+                    ecx = eax;                     /* xchg eax,ecx after rep: ECX = 0 */
+                    eax = 0;
+                }
+            } while (++dh);
+            ebp += stride;
+        } while (++dl);
     }
 }

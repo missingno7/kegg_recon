@@ -51,7 +51,9 @@ void vhw_set_port_override(vhw_in_fn in, vhw_out_fn out, void *ctx)
     port_override_ctx = ctx;
 }
 
-uint32_t vhw_port_in(uint16_t port, int size)
+void (*vhw_io_trace_hook)(char kind, uint16_t port, uint32_t value);
+
+static uint32_t port_in_dispatch(uint16_t port, int size)
 {
     int d = port_map[port];
     if (port_override_in)
@@ -63,9 +65,24 @@ uint32_t vhw_port_in(uint16_t port, int size)
     return size == 1 ? 0xff : 0xffff;
 }
 
+uint32_t vhw_port_in(uint16_t port, int size)
+{
+    uint32_t v;
+    if (vhw_lockstep)
+        vhw_lockstep_advance(VHW_LOCKSTEP_IO_NS);
+    v = port_in_dispatch(port, size);
+    if (vhw_io_trace_hook)
+        vhw_io_trace_hook('I', port, v);
+    return v;
+}
+
 void vhw_port_out(uint16_t port, uint32_t value, int size)
 {
     int d = port_map[port];
+    if (vhw_lockstep)
+        vhw_lockstep_advance(VHW_LOCKSTEP_IO_NS);
+    if (vhw_io_trace_hook)
+        vhw_io_trace_hook('O', port, value);
     if (port_override_out) {
         port_override_out(port_override_ctx, port, value, size);
         return;
@@ -79,11 +96,17 @@ void vhw_port_out(uint16_t port, uint32_t value, int size)
 }
 
 /* ---- Watcom clib (conio.h) ------------------------------------------------------------- */
+/* EAX as left by the last Watcom inp() call (its IN AL,DX result). Assembly that calls a C
+ * routine and then uses AL (measure_pit_channel0 after wait_for_vsync) reads it here instead
+ * of performing another port read; interrupt entry saves and restores it (pic.c). */
+volatile uint32_t vhw_last_inp_value;
+
 int inp(int port)
 {
     uint32_t v;
     vhw_enter();
     v = vhw_port_in((uint16_t)port, 1) & 0xff;
+    vhw_last_inp_value = v;
     vhw_leave();
     return (int)v;
 }

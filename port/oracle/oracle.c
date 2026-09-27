@@ -37,6 +37,14 @@ void oracle_trace_add(uint8_t kind, uint16_t port, uint32_t value, int size)
     }
 }
 
+static int lowmem_emulation_on;
+/* Whole-program runs: real-mode IVT/BDA addresses (< 64 KiB) reach the virtual PC's shadow
+ * array, as KE_LOWMEM() does for the port's historical source. */
+static int is_lowmem_address(uint32_t address)
+{
+    return lowmem_emulation_on && address < 0x10000u;
+}
+
 static int is_vga_address(uint32_t address)
 {
     uintptr_t base = (uintptr_t)vga_guard;
@@ -294,7 +302,8 @@ static uint32_t read_memory_width(uint32_t address, int size)
     int i;
     for (i = 0; i < size; i++) {
         uint32_t a = address + (uint32_t)i;
-        uint8_t b = is_vga_address(a) ? vga_mem_read8(canonical_vga_address(a))
+        uint8_t b = is_lowmem_address(a) ? ke_lowmem_shadow[a] :
+                    is_vga_address(a) ? vga_mem_read8(canonical_vga_address(a))
                                       : *(volatile uint8_t *)(uintptr_t)a;
         value |= (uint32_t)b << (i * 8);
     }
@@ -307,7 +316,9 @@ static void write_memory_width(uint32_t address, uint32_t value, int size)
     for (i = 0; i < size; i++) {
         uint32_t a = address + (uint32_t)i;
         uint8_t b = (uint8_t)(value >> (i * 8));
-        if (is_vga_address(a))
+        if (is_lowmem_address(a))
+            ke_lowmem_shadow[a] = b;
+        else if (is_vga_address(a))
             vga_mem_write8(canonical_vga_address(a), b);
         else
             *(volatile uint8_t *)(uintptr_t)a = b;
@@ -336,6 +347,20 @@ static void set_logic_flags(CONTEXT *c, uint32_t result, int size)
     if (!result) f |= 0x40u;
     if (result & sign) f |= 0x80u;
     c->EFlags = f;
+}
+
+/* CMP/SUB flags: CF borrow, OF signed overflow, AF, SF, ZF, PF. */
+static void set_sub_flags(CONTEXT *c, uint32_t left, uint32_t right, int size)
+{
+    uint32_t mask = width_mask(size), sign = size == 1 ? 0x80u : size == 2 ? 0x8000u : 0x80000000u;
+    uint32_t result;
+    left &= mask;
+    right &= mask;
+    result = (left - right) & mask;
+    set_logic_flags(c, result, size);
+    if (left < right) c->EFlags |= 0x01u;
+    if (((left ^ right) & (left ^ result)) & sign) c->EFlags |= 0x800u;
+    if (((left ^ right ^ result) & 0x10u)) c->EFlags |= 0x10u;
 }
 
 static uint32_t logic_result(int operation, uint32_t left, uint32_t right)
@@ -373,8 +398,10 @@ static int oracle_emulate_vga_memory(EXCEPTION_POINTERS *ep)
         ep->ExceptionRecord->ExceptionInformation[0] == 8)
         return 0;
     fault = ep->ExceptionRecord->ExceptionInformation[1];
-    if (!is_vga_address((uint32_t)fault) || IsBadReadPtr(p, 15))
+    if ((!is_vga_address((uint32_t)fault) && !is_lowmem_address((uint32_t)fault)) ||
+        IsBadReadPtr(p, 15))
         return 0;
+    vga_trace_caller = c->Eip;
     for (;;) {
         switch (*p) {
         case 0x66: operand16 = 1; break;
@@ -489,7 +516,7 @@ prefixes_done:
         uint32_t immediate, left, result;
         int size = opcode == 0x80 ? 1 : width;
         if (decode_modrm(p, c, address16, &m) != 0 || !m.memory ||
-            (m.reg != 1 && m.reg != 4 && m.reg != 6))
+            (m.reg != 1 && m.reg != 4 && m.reg != 6 && m.reg != 7))
             return 0;
         p += m.length;
         if (opcode == 0x80 || opcode == 0x83) {
@@ -502,10 +529,33 @@ prefixes_done:
             immediate = read_u32(p); p += 4;
         }
         left = read_memory_width(m.address, size);
+        if (m.reg == 7) {                                /* CMP r/m, imm */
+            set_sub_flags(c, left, immediate, size);
+            break;
+        }
         result = logic_result(m.reg == 1 ? 4 : m.reg == 4 ? 1 : 6, left,
                               immediate & width_mask(size));
         write_memory_width(m.address, result, size);
         set_logic_flags(c, result, size);
+        break;
+    }
+    case 0x38: case 0x39: case 0x3a: case 0x3b:         /* CMP r/m,r and r,r/m */
+    case 0x84: case 0x85: {                              /* TEST r/m,r */
+        OracleModrm m;
+        uint32_t mem, reg;
+        int byteop = !(opcode & 1);
+        if (decode_modrm(p, c, address16, &m) != 0 || !m.memory)
+            return 0;
+        p += m.length;
+        width = byteop ? 1 : width;
+        mem = read_memory_width(m.address, width);
+        reg = get_reg_part(c, m.reg, width);
+        if (opcode == 0x84 || opcode == 0x85)
+            set_logic_flags(c, mem & reg, width);
+        else if (opcode & 2)
+            set_sub_flags(c, reg, mem, width);
+        else
+            set_sub_flags(c, mem, reg, width);
         break;
     }
     case 0x08: case 0x09: case 0x0a: case 0x0b:
@@ -538,6 +588,7 @@ prefixes_done:
     }
     len = (int)(p - start);
     c->Eip += (DWORD)len;
+    vga_trace_caller = 0;
     return 1;
 }
 
@@ -586,12 +637,215 @@ static int oracle_emulate_int(CONTEXT *c, const uint8_t *p, int prefix_len)
     return 1;
 }
 
+/* ---- code patches for whole-program runs (port/oracle/lockstep.c) -------------------
+ * Breakpoints: INT3 at an original instruction boundary. The VEH redirects the thread to
+ * oracle_bp_thunk, which calls the registered function as ordinary code (not in exception
+ * context) and returns into a trampoline that executes the displaced instruction bytes and
+ * jumps back. The same thunk delivers pending virtual interrupts after emulated
+ * IN/OUT/STI/INT when IRQ redirection is on (a CPU takes them at that boundary). */
+typedef struct OracleBreakpoint {
+    uint8_t *site;
+    uint8_t *trampoline;
+    void (*fn)(void);
+    uint8_t emulate;       /* 9Ch PUSHFD / 9Dh POPFD emulated in the VEH, else 0 */
+} OracleBreakpoint;
+static OracleBreakpoint breakpoints[64];
+static int breakpoint_count;
+static uint8_t *trampoline_pool;
+static int trampoline_used;
+static int irq_redirect;
+static uint32_t breakpoint_esp;
+uint32_t oracle_breakpoint_esp(void) { return breakpoint_esp; }
+void oracle_set_lowmem_emulation(int on) { lowmem_emulation_on = on; }
+
+void oracle_bp_dispatch(void (*fn)(void));
+void oracle_bp_thunk(void);
+__asm__(
+    ".text\n"
+    ".globl _oracle_bp_thunk\n"
+    "_oracle_bp_thunk:\n"
+    "    pushfl\n"
+    "    pushal\n"
+    "    cld\n"
+    "    movl 40(%esp), %eax\n"
+    "    pushl %eax\n"
+    "    call _oracle_bp_dispatch\n"
+    "    addl $4, %esp\n"
+    "    popal\n"
+    "    popfl\n"
+    "    ret $4\n"
+    /* void oracle_call_iret_handler(uint32_t offset): IRETD frame for original handlers */
+    ".globl _oracle_call_iret_handler\n"
+    "_oracle_call_iret_handler:\n"
+    "    pushl %ebp\n"
+    "    movl %esp, %ebp\n"
+    "    pushl %ebx\n"
+    "    pushl %esi\n"
+    "    pushl %edi\n"
+    "    movl 8(%ebp), %eax\n"
+    "    pushfl\n"
+    "    pushl %cs\n"
+    "    call *%eax\n"
+    "    cld\n"
+    "    popl %edi\n"
+    "    popl %esi\n"
+    "    popl %ebx\n"
+    "    popl %ebp\n"
+    "    ret\n");
+
+static void oracle_deliver_irqs(void)
+{
+    if (vcpu_if_flag && !vhw_in_isr && vpic_has_deliverable())
+        vpic_deliver_pending();
+}
+
+void oracle_bp_dispatch(void (*fn)(void))
+{
+    fn();
+}
+
+void oracle_set_irq_redirect(int on) { irq_redirect = on; }
+
+static void redirect_call(CONTEXT *c, void (*fn)(void), uint32_t resume)
+{
+    uint32_t *sp = (uint32_t *)(uintptr_t)c->Esp;
+    *--sp = (uint32_t)(uintptr_t)fn;
+    *--sp = resume;
+    c->Esp = (DWORD)(uintptr_t)sp;
+    c->Eip = (DWORD)(uintptr_t)oracle_bp_thunk;
+}
+
+/* After an emulated instruction: take a pending interrupt at this boundary. */
+static void maybe_redirect_irq(CONTEXT *c)
+{
+    if (irq_redirect && vcpu_if_flag && !vhw_in_isr && vpic_has_deliverable())
+        redirect_call(c, oracle_deliver_irqs, c->Eip);
+}
+
+int oracle_breakpoint(uint32_t offset, const uint8_t *expect, int expect_len, int len,
+                      void (*fn)(void))
+{
+    uint8_t *site = object_base[1] + offset, *t;
+    DWORD old;
+    int32_t rel;
+    if (!object_base[1] || breakpoint_count >= 64 || len < 1 || len > 15 ||
+        expect_len > len || memcmp(site, expect, (size_t)expect_len) != 0) {
+        fprintf(stderr, "oracle: breakpoint site obj1+%05lx does not hold the expected bytes\n",
+                (unsigned long)offset);
+        return -1;
+    }
+    if (!trampoline_pool)
+        trampoline_pool = VirtualAlloc(NULL, 4096, MEM_RESERVE | MEM_COMMIT,
+                                       PAGE_EXECUTE_READWRITE);
+    t = trampoline_pool + trampoline_used;
+    trampoline_used += 32;
+    memcpy(t, site, (size_t)len);      /* displaced instruction(s): no relative operands */
+    t[len] = 0xe9;
+    rel = (int32_t)((site + len) - (t + len + 5));
+    memcpy(t + len + 1, &rel, 4);
+    breakpoints[breakpoint_count].site = site;
+    breakpoints[breakpoint_count].trampoline = t;
+    breakpoints[breakpoint_count].fn = fn;
+    breakpoints[breakpoint_count].emulate = 0;
+    breakpoint_count++;
+    VirtualProtect(site, 1, PAGE_EXECUTE_READWRITE, &old);
+    *site = 0xcc;
+    FlushInstructionCache(GetCurrentProcess(), site, 1);
+    return 0;
+}
+
+/* PUSHFD/POPFD do not fault at CPL 3 and IOPL 0: POPFD silently ignores IF and PUSHFD shows
+ * the host's IF/IOPL. Whole-program runs trap them (INT3) and use the virtual IF, with IOPL 3
+ * as DOS/4GW runs its clients (the port's probe_cpu_environment reports 3 as well). */
+int oracle_emulate_flags_instruction(uint32_t offset)
+{
+    uint8_t *site = object_base[1] + offset;
+    DWORD old;
+    if (!object_base[1] || breakpoint_count >= 64 || (*site != 0x9c && *site != 0x9d)) {
+        fprintf(stderr, "oracle: obj1+%05lx is not PUSHFD/POPFD\n", (unsigned long)offset);
+        return -1;
+    }
+    breakpoints[breakpoint_count].site = site;
+    breakpoints[breakpoint_count].trampoline = NULL;
+    breakpoints[breakpoint_count].fn = NULL;
+    breakpoints[breakpoint_count].emulate = *site;
+    breakpoint_count++;
+    VirtualProtect(site, 1, PAGE_EXECUTE_READWRITE, &old);
+    *site = 0xcc;
+    FlushInstructionCache(GetCurrentProcess(), site, 1);
+    return 0;
+}
+
+static void emulate_flags_instruction(CONTEXT *c, const OracleBreakpoint *bp)
+{
+    const DWORD writable = 0x00240dd5u;   /* CF PF AF ZF SF DF OF AC ID */
+    uint32_t *sp = (uint32_t *)(uintptr_t)c->Esp;
+    if (bp->emulate == 0x9c) {
+        uint32_t v = (c->EFlags & ~0x3200u) | (vcpu_if_flag ? 0x200u : 0u) | 0x3000u;
+        *--sp = v;
+        c->Esp -= 4;
+    } else {
+        uint32_t v = *sp;
+        c->Esp += 4;
+        c->EFlags = (c->EFlags & ~writable) | (v & writable);
+        if (v & 0x200u)
+            vcpu_sti();
+        else
+            vcpu_cli();
+    }
+    c->Eip = (DWORD)(uintptr_t)(bp->site + 1);
+    if (bp->emulate == 0x9d)
+        maybe_redirect_irq(c);
+}
+
+/* Replace an original routine's entry with a jump to a host function of the same (cdecl)
+ * signature: used for the Watcom C runtime entries that talk to DOS/DOS4GW. */
+int oracle_patch_jump(uint32_t offset, void *target)
+{
+    uint8_t *site = object_base[1] + offset;
+    int32_t rel = (int32_t)((uint8_t *)target - (site + 5));
+    if (!object_base[1])
+        return -1;
+    site[0] = 0xe9;
+    memcpy(site + 1, &rel, 4);
+    FlushInstructionCache(GetCurrentProcess(), site, 5);
+    return 0;
+}
+
+/* The INT3 address is ExceptionAddress (the context EIP may already point past it). */
+static int handle_breakpoint(CONTEXT *c, const void *address)
+{
+    int i;
+    for (i = 0; i < breakpoint_count; i++)
+        if ((const uint8_t *)address == breakpoints[i].site) {
+            if (breakpoints[i].emulate) {
+                emulate_flags_instruction(c, &breakpoints[i]);
+                return 1;
+            }
+            breakpoint_esp = c->Esp;
+            redirect_call(c, breakpoints[i].fn,
+                          (uint32_t)(uintptr_t)breakpoints[i].trampoline);
+            return 1;
+        }
+    return 0;
+}
+
 static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
 {
     CONTEXT *c = ep->ContextRecord;
     DWORD code = ep->ExceptionRecord->ExceptionCode;
     const uint8_t *p = (const uint8_t *)(uintptr_t)c->Eip;
     int opsize = 4, len = 0;
+    static int debug_veh = -1;
+    if (debug_veh < 0)
+        debug_veh = getenv("KE_ORACLE_DEBUG_VEH") != NULL;
+    if (debug_veh && code != EXCEPTION_PRIV_INSTRUCTION)
+        fprintf(stderr, "veh %08lx eip %08lx esp %08lx addr %08lx\n", (unsigned long)code,
+                (unsigned long)c->Eip, (unsigned long)c->Esp,
+                (unsigned long)(ep->ExceptionRecord->NumberParameters >= 2 ?
+                                ep->ExceptionRecord->ExceptionInformation[1] : 0));
+    if (code == EXCEPTION_BREAKPOINT && handle_breakpoint(c, ep->ExceptionRecord->ExceptionAddress))
+        return EXCEPTION_CONTINUE_EXECUTION;
     if (code == EXCEPTION_ACCESS_VIOLATION) {
         const uint8_t *opcode = p;
         int prefix_len = 0;
@@ -602,6 +856,7 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
         /* Some Windows builds report user-mode INT n as an access violation, not #GP. */
         if (!IsBadReadPtr(opcode, 2) && opcode[0] == 0xcd) {
             oracle_emulate_int(c, opcode + 1, prefix_len);
+            maybe_redirect_irq(c);
             return EXCEPTION_CONTINUE_EXECUTION;
         }
         if (oracle_emulate_vga_memory(ep))
@@ -674,6 +929,7 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
         break;
     case 0xcd: {                                             /* INT nn */
         oracle_emulate_int(c, p + 1, len);
+        maybe_redirect_irq(c);
         return EXCEPTION_CONTINUE_EXECUTION;
     }
     case 0x8e:                                               /* MOV Sreg, r/m16 */
@@ -683,6 +939,7 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
         return EXCEPTION_CONTINUE_SEARCH;
     }
     c->Eip += (DWORD)len;
+    maybe_redirect_irq(c);
     return EXCEPTION_CONTINUE_EXECUTION;
 }
 
@@ -720,7 +977,10 @@ static const OracleVgaPatch vga_patches[] = {
     {1, 0x13832, 0x0b0000}, {1, 0x1383a, 0x0a0000},
     {1, 0x138a7, 0x0b0000}, {1, 0x138af, 0x0a0000},
     {1, 0x138b7, 0x0b0000}, {1, 0x138bf, 0x0a0000},
-    {1, 0x138ed, 0x0b0000}, {1, 0x138f5, 0x0a0000}
+    {1, 0x138ed, 0x0b0000}, {1, 0x138f5, 0x0a0000},
+    /* set_display_mode: VGA_EXTENDED_MEMORY_BASE 280000h = 0A0000h * 4, the "chunky" page
+     * origin of the unchained modes that the renderers shift right by 2. */
+    {1, 0x0e235, 0x280000}
 };
 
 static int relocate_vga_operands(void)
@@ -741,7 +1001,8 @@ static int relocate_vga_operands(void)
                     (unsigned long)patch->expected, (unsigned long)value);
             return -1;
         }
-        relocated = base + patch->expected - 0x0a0000u;
+        relocated = patch->expected == 0x280000u ? base * 4u
+                                                 : base + patch->expected - 0x0a0000u;
         memcpy(object_base[patch->object] + patch->offset, &relocated, sizeof relocated);
     }
     return 0;
