@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -265,9 +266,13 @@ def main() -> int:
         k, v = kv.split("=", 1)
         env[k] = v
 
+    # Keep replay/smoke behavior independent of a user's persistent config.
+    env["KE_MOUSE_MODE"] = "faithful"
     try:
-        r = subprocess.run([str(exe), str(ROOT / "assets")], env=env, capture_output=True,
-                           timeout=a.ms / 1000 + 30)
+        with tempfile.TemporaryDirectory(prefix="ke-smoke-config-") as config_dir:
+            env["KE_CONFIG_DIR"] = config_dir
+            r = subprocess.run([str(exe), str(ROOT / "assets")], env=env, capture_output=True,
+                               timeout=a.ms / 1000 + 30)
     except subprocess.TimeoutExpired:
         print(f"SMOKE FAILED: timed out after {a.ms / 1000 + 30:.1f}s", file=sys.stderr)
         return 1

@@ -55,7 +55,8 @@ python port/tools/gen_asm_stubs.py --check     # generated stubs up to date
 
 Runtime environment: `KE_IRQ=async|sync`, `KE_WINDOWS=1` (answer as a Windows DOS box),
 `KE_SB=1` (attach Sound Blaster 220h/IRQ7/DMA1), `KE_JOY=1` (gameport), `KE_SCALE`,
-`KE_ASPECT=0|1`, `KE_LOG_LEVEL=0..4`, `KE_LOG=path`, `KE_DOSENV="A=b;C=d"`, and for scripted
+`KE_ASPECT=0|1`, `KE_LOG_LEVEL=0..4`, `KE_MOUSE_MODE=faithful|native`,
+`KE_CONFIG_DIR=path`, `KE_LOG=path`, `KE_DOSENV="A=b;C=d"`, and for scripted
 runs `KE_AUTOKEYS="ms:scan,..."`, `KE_SCREENSHOT="ms:file.bmp"`, `KE_EXIT_AFTER_MS`.
 The log (`ke_sdl3.log` next to the exe) lists every stub reached; at quit it prints the game
 thread's call chain (`smoke.py` resolves it with addr2line).

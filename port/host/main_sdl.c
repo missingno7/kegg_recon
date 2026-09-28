@@ -367,19 +367,19 @@ int main(int argc, char **argv)
     if (relaunch_with_low_memory_reserved(&child_exit))
         return child_exit;
 
-    ke_config_load(argc, argv);
     setvbuf(stdout, NULL, _IONBF, 0);   /* DOS console output is unbuffered */
     SetConsoleOutputCP(437);            /* the game's text uses CP437 box characters */
-    parse_auto_keys();
-    parse_timed_mouse("KE_AUTOMOUSE", auto_mouse, &auto_mouse_count);
-    parse_auto_clicks();
-    parse_auto_shots();
     if (getenv("KE_LOG"))
         snprintf(log_path, sizeof log_path, "%s", getenv("KE_LOG"));
     else
         default_log_path(log_path, sizeof log_path);
     ke_log_init(log_path);
+    ke_config_load(argc, argv);
     ke_log(KE_LOG_INFO, "main", "Krypton Egg SDL3 port (historical source + virtual PC)");
+    parse_auto_keys();
+    parse_timed_mouse("KE_AUTOMOUSE", auto_mouse, &auto_mouse_count);
+    parse_auto_clicks();
+    parse_auto_shots();
     if (!ke_config_validate_assets(missing, sizeof missing)) {
         char message[1536];
         snprintf(message, sizeof message,

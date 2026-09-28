@@ -381,6 +381,11 @@ def run_side(mode: str, exe: Path, out: Path, args, replay: Path | None, portmap
     shutil.rmtree(home, ignore_errors=True)
     home.mkdir(parents=True)
     env["LOCALAPPDATA"] = str(home)      # fresh high-score directory per run
+    config_dir = out / f"config-{mode}"
+    shutil.rmtree(config_dir, ignore_errors=True)
+    config_dir.mkdir(parents=True)
+    env["KE_CONFIG_DIR"] = str(config_dir)
+    env["KE_MOUSE_MODE"] = "faithful"
     for k in ("KE_SB", "KE_JOY", "KE_WINDOWS", "KE_IRQ", "KE_DOSENV", "KE_AUDIO_DUMP"):
         env.pop(k, None)
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=args.timeout)
