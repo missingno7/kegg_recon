@@ -367,6 +367,8 @@ def run_side(mode: str, exe: Path, out: Path, args, replay: Path | None, portmap
     cmd = [str(exe), "--mode", mode, "--image", str(ROOT / "build/port/oracle"),
            "--data", str(ROOT / "assets"), "--out", str(dump), "--log", str(log),
            "--frames", str(args.frames), "--idle-keys", args.idle_keys]
+    if args.joystick:
+        cmd.append("--joystick")
     if replay:
         cmd += ["--replay", str(replay)]
     if portmap:
@@ -388,6 +390,8 @@ def run_side(mode: str, exe: Path, out: Path, args, replay: Path | None, portmap
     env["KE_MOUSE_MODE"] = "faithful"
     for k in ("KE_SB", "KE_JOY", "KE_WINDOWS", "KE_IRQ", "KE_DOSENV", "KE_AUDIO_DUMP"):
         env.pop(k, None)
+    if args.joystick:
+        env["KE_JOY"] = "1"
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=args.timeout)
     (out / f"{mode}.stdout").write_text(proc.stdout + proc.stderr, encoding="utf-8")
     bases = {}
@@ -422,7 +426,12 @@ def build_replay(args, out: Path) -> Path | None:
     for seq, spec in enumerate(args.event or []):
         parts = spec.split(":")
         frame, kind = int(parts[0]), parts[1].upper()
+        if frame < 0:
+            raise ValueError("event frame must be nonnegative")
         vals = tuple(int(x, 16) if kind == "K" else int(x) for x in parts[2:])
+        if kind == "J" and (len(vals) != 3 or not -1000 <= vals[0] <= 1000 or
+                             not -1000 <= vals[1] <= 1000 or not 0 <= vals[2] <= 15):
+            raise ValueError("joystick event must be F:J:x:y:buttons with axes -1000..1000 and buttons 0..15")
         events.append((frame, 1000000 + seq, kind, vals))
     if not events:
         return None
@@ -651,7 +660,8 @@ def main() -> int:
     ap.add_argument("--frames", type=int, default=300)
     ap.add_argument("--replay", help="kegg_forged input JSON (portforge-dos-input-script-v1 / replay-v2)")
     ap.add_argument("--replay-offset", type=int, default=0, help="frame offset added to the JSON's occurrences")
-    ap.add_argument("--event", action="append", help="F:M:x:y:buttons (DOS mouse coords) or F:K:hexscan")
+    ap.add_argument("--event", action="append", help="F:M:x:y:buttons (DOS mouse coords), F:K:hexscan, or F:J:x:y:buttons (gamepad axes -1000..1000, buttons 0..15)")
+    ap.add_argument("--joystick", action="store_true", help="attach the deterministic 201h gameport in both lockstep runs")
     ap.add_argument("--click-every", default="", help="FIRST:STEP:X:Y[:END] - left clicks at game raster "
                     "X,Y (held 5 frames) every STEP frames from FIRST until END (default --frames)")
     ap.add_argument("--idle-keys", default="39,b9", help="hex scancodes for blocking BIOS keyboard waits")

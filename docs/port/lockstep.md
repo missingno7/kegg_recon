@@ -26,8 +26,10 @@ The run also captures the original and port payloads at their first two DSP `14h
 Output (`build/port/lockstep/report.txt`): `NO DIVERGENCE in N frames`, or the first differing
 frame with every differing item (machine clock, PIC, PIT, VGA registers/latches/DAC, 1 KiB VGA
 plane blocks, heap, BIOS data area, DGROUP symbols with both values), then the first frame at
-which each further item diverges. Options: `--event F:M:x:y:buttons` / `--event F:K:hexscan`
-(frame-keyed input), `--click-every FIRST:STEP:X:Y[:END]`, `--idle-keys 39,b9` (keys fed to
+which each further item diverges. Options: `--event F:M:x:y:buttons` / `--event F:K:hexscan` /
+`--event F:J:x:y:buttons` (frame-keyed mouse, keyboard, or post-dead-zone joystick input;
+joystick axes are -1000..1000 and buttons are the South/East/West/North mask), `--joystick`
+(attach port 201h), `--click-every FIRST:STEP:X:Y[:END]`, `--idle-keys 39,b9` (keys fed to
 blocking BIOS keyboard waits, default Space for the startup report), `--full-at a,b` (full VGA
 planes in the dump), `--only port|orig`, `--skip-run` (re-compare existing dumps).
 

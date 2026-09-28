@@ -12,7 +12,9 @@ typedef struct PortDevice {
     const char *name;
 } PortDevice;
 
-static PortDevice devices[32];
+/* Oracle fixtures may initialize the virtual PC repeatedly in one process. Keep each
+ * registration valid so later fixtures can attach a test-only device such as 201h. */
+static PortDevice devices[128];
 static int device_count;
 static uint8_t port_map[0x10000];   /* 0 = unclaimed, else device index + 1 */
 static uint8_t port_logged[0x10000 / 8]; /* unclaimed ports already reported */

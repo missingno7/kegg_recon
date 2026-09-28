@@ -317,6 +317,7 @@ static int write_default_config(const char *path)
           "sound_blaster = true\n"
           "volume = 100\n\n"
           "[input]\n"
+          "# SDL gamepad maps to 201h; the frozen game does not poll its joystick hook during play.\n"
           "joystick = false\n"
           "mouse_mode = faithful\n"
           "mouse_sensitivity = 1.0  # reserved; absolute native mode ignores this\n\n"

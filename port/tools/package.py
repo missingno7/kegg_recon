@@ -49,7 +49,12 @@ The game receives the original keyboard controls. In the default faithful mouse 
 click in the window to capture it; press Escape or switch focus to release it. Native
 mouse mode leaves the desktop cursor visible and maps its position through the displayed
 game viewport. Focus loss releases held buttons. F11 or Alt+Enter toggles fullscreen.
-Optional SDL gamepads can be enabled with joystick=on.
+Enable SDL gamepad mapping with `joystick=on` or `[input] joystick = true` in
+`krypton-egg.ini`. The left stick feeds the emulated 201h axes, South/A is button 1,
+and East/B is button 2. Leave the stick centered during startup detection/calibration.
+Detection, calibration, and T15 direction/fire bits are verified without physical hardware;
+the frozen game does not poll its joystick hook during play, so racket control remains on
+the original keyboard/mouse path.
 
 Options
 -------
