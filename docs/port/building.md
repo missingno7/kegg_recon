@@ -171,3 +171,11 @@ python port/tools/package.py
 Use `--sdl3-dir`, `--build-dir`, or `--dist-dir` to override the default paths. The
 script expects `cmake`, Ninja, and MinGW `objdump` on `PATH` so it can discover and
 include any non-system DLL dependencies of the executable and SDL3.
+
+## Note: packaged (MSIX) launchers virtualize AppData
+If the game is started from inside a packaged Windows app (for example an app-store Python, or an agent running in
+the Claude desktop app), Windows redirects its writes under `%APPDATA%` into that package's private folder
+(`%LOCALAPPDATA%\Packages\<package>\LocalCache\Roaming\...`). The generated `krypton-egg.ini` and the high-score file
+then exist only inside that package's view and are invisible to editors outside it. Launch the game normally
+(Explorer, a regular terminal) once to create the real `%APPDATA%\Krypton Egg\krypton-egg.ini`, or set
+`KE_CONFIG_DIR` to an explicit directory.
