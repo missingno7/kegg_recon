@@ -45,18 +45,26 @@ KE_SCORE.LST is optional initial high-score data; saved scores go in the user pr
 
 Controls
 --------
-The game receives the original keyboard controls. Click in the window to capture
-the mouse; press Escape or switch focus to release it. F11 or Alt+Enter toggles
-fullscreen. Optional SDL gamepads can be enabled with joystick=on.
+The game receives the original keyboard controls. In the default faithful mouse mode,
+click in the window to capture it; press Escape or switch focus to release it. Native
+mouse mode leaves the desktop cursor visible and maps its position through the displayed
+game viewport. Focus loss releases held buttons. F11 or Alt+Enter toggles fullscreen.
+Optional SDL gamepads can be enabled with joystick=on.
 
 Options
 -------
 Use --scale N (1..8), --fullscreen/--windowed, --integer-scaling/
 --no-integer-scaling, --aspect 4:3|square, --audio on|off, --joystick on|off,
---volume N (0..100), and --asset-dir PATH. ke_sdl3.ini beside the executable
-accepts asset_dir, window_scale, fullscreen, integer_scaling, aspect, audio,
-joystick and volume. Command-line options override environment and INI settings.
-Sound Blaster audio is enabled by default; set audio=off, --audio off, KE_SB=0,
+--mouse-mode faithful|native, --volume N (0..100), and --asset-dir PATH. On first run,
+the program creates `%APPDATA%/Krypton Egg/krypton-egg.ini` with documented defaults.
+The file includes video, Sound Blaster audio, volume, joystick, mouse mode, asset path,
+IRQ host mode, Windows compatibility, and log level. `KE_CONFIG_DIR` selects another
+config directory. The legacy `ke_sdl3.ini` beside the executable is still read and has
+priority over the per-user file. Precedence is compiled defaults, per-user config,
+legacy INI, `KE_*` environment variables, then command-line options. Native absolute
+mouse input bypasses mickey acceleration and leaves the original smoothing active;
+`mouse_sensitivity` is reserved and ignored. Sound Blaster audio is enabled by default;
+set sound_blaster=false, --audio off, KE_SB=0,
 or KE_AUDIO=off to disable it. Set KE_AUDIO_DUMP=path.wav to capture the samples
 submitted to SDL as unsigned 8-bit mono WAV; path.wav.dsp.log records DSP commands,
 effective rates, and DMA block offsets. Rate changes are listed because WAV has one
