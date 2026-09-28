@@ -10,7 +10,18 @@ python port/tools/le_export.py                # once: ke_image.bin / ke_symbols.
 python port/tools/lockstep.py --frames 1100 --click-every 100:60:150:82:400 \
     --replay D:/Games/DOS/dos_recosystem/kegg_forged/artifacts/replay-inputs/pmrec_20260723_200732.input.json \
     --replay-offset 400
+python port/tools/lockstep.py --frames 1100 --click-every 100:60:150:82:400 --sound
+python port/tools/lockstep.py --frames 6000 --click-every 100:60:150:82:400 \
+    --replay D:/Games/DOS/dos_recosystem/kegg_forged/artifacts/replay-inputs/pmrec_20260723_200732.input.json \
+    --replay-offset 400 --sound
 ```
+
+Pass `--sound` to enable the virtual Sound Blaster and 8237 DMA in both runs. Lockstep has no
+SDL audio device or callback: the SB consumes DMA samples according to emulated machine time,
+retaining the fractional sample count between clock advances. Every frame records DSP/mixer
+state, all four DMA channel registers, and mapped named `audio_*`, `active_audio_*`,
+`queued_audio_*`, and `sound_*` globals.
+The run also captures the original and port payloads at their first two DSP `14h` commands.
 
 Output (`build/port/lockstep/report.txt`): `NO DIVERGENCE in N frames`, or the first differing
 frame with every differing item (machine clock, PIC, PIT, VGA registers/latches/DAC, 1 KiB VGA
@@ -41,7 +52,8 @@ EIP and callers of every write.
   the VGA "far from retrace" poll skip by its computed time. The PIT raises IRQ0 when the clock
   crosses its next channel-0 edge (`vpit_lockstep_update`). Interrupts are delivered
   synchronously where the port already takes them (`vhw_leave`, STI, poll yield); the replay
-  pump runs every emulated millisecond on the same clock (`ke_replay_use_clock`).
+  pump runs every emulated millisecond on the same clock (`ke_replay_use_clock`). With `--sound`,
+  DMA sample consumption and block IRQs advance on this clock too; no SDL audio thread runs.
 - **Same devices, same inputs.** Both runs use the same vhw devices and `port/host/replay.c`
   (KEPORTREPLAY events keyed by the Nth `wait_for_tick` entry; kegg_forged JSON is converted by
   smoke.py's converter). The frame hook is the port's `--wrap=wait_for_tick`; in the original an
@@ -63,8 +75,11 @@ EIP and callers of every write.
   historical units, asm translations and generated data is placed at its object-3 offset
   (manifest symbols; unnamed initialized globals by the nearest named one of the same object;
   internal TASM `_DATA` labels from `gen_asm_stubs.parse_module`; the CONST block by G2's
-  `__ke_original_const3_*` labels). Pointers compare as tokens: object/symbol offsets, function
-  names, VGA addresses (A0000h/280000h vs the relocated alias), heap arena addresses.
+  `__ke_original_const3_*` labels). In sound mode, all mapped named `audio_*`, `active_audio_*`,
+  `queued_audio_*`, and `sound_*` globals are compared, alongside DSP/mixer state and every DMA
+  channel's base/current address/count, page, mode, mask, and terminal-count bit. Pointers
+  compare as tokens: object/symbol offsets, function names, VGA addresses (A0000h/280000h vs
+  the relocated alias), heap arena addresses.
   `KNOWN_TABLES` (asm-internal jump tables with code addresses; never read by C) are skipped.
 
 ## Divergences found and fixed (PROVEN: first differing frame/I/O, fix, rerun identical)
@@ -79,6 +94,7 @@ EIP and callers of every write.
 | L6 | frame 282, VGA planes (left-clipped kind 5) | `sar [sprite_clip_left],2` and the `inc [sprite_clip_left]` when the stream index wraps were missing | literal |
 | L7 | right-clipped kind 5 (found by the added DGROUP coverage of asm labels) | re-derived path: wrong per-plane visible columns / globals | literal `draw_kind5_right_clipped` |
 | L8 | `pit_sample_auxiliary` | the translation stored the sample; the original never writes it | local value |
+| X1 | frame 2892, `sprite_animations[1600].current_frame` | original and port pointers were both eight bytes before `collision_animation_frames`; this is the intentional initial cursor for the pre-increment animation loop | normalize the proven one-record-before cursor to the same object-3 token |
 
 Regression tests: `ke_oracle` "L1 ..." (full I/O sequence of `measure_pit_channel0` on the
 lockstep clock), "L2/L5/L6/L7 ..." (kind-5 widths 5..19, every x phase, left/right/top/bottom
@@ -98,6 +114,17 @@ state before the crash frame was identical and, after the merge, no crash and no
 - 6000 frames (startup report, title, menu, game entry, Level 01, ~90 s of gameplay with a
   click every 60 frames and the pmrec mouse replay from frame 400): **NO DIVERGENCE**
   (clock, PIC, PIT, VGA registers/DAC/planes, heap, BDA, 56 KB of mapped DGROUP).
+- Sound on for both sides, 1100 frames with the click script: **NO DIVERGENCE**; the run takes
+  about 27 seconds on this worker, so it is included in `mergepkg.py`'s gates. The full
+  6000-frame click + pmrec run with sound: **NO DIVERGENCE** (clock, DSP/mixer, DMA, named sound
+  globals and all other lockstep state). The first two 640-byte DSP `14h` DMA payloads match
+  byte-for-byte between original and port. They also match decoded `KE_TIT.DIG` offsets 0 and
+  640 respectively. Block SHA-256 values are
+  `d4c62f709f08716e455dc1ab6400d4073c61105a47b7d5890fb8a452ff94edb6` and
+  `06eeb5bb3302d67327913fc2e8725bd89782e8f417f5bb26fd740bd344457124`; the concatenated SHA-256
+  is `a994498bd17f496cfa0dd77c12048515d093a3597f66b3a099912c49bee6476b`. The first half begins
+  `74 86 5f 78 97 72 85 7c`; these are title PCM samples, not uninitialized memory or `80h`
+  silence.
 - Wall-clock R1 captures after the fixes: first-gameplay 0.82% (was 15.38%), level-01 8.05%
   (was 26.16%; LEVEL text fly-in phase), game-entry sampled a different screen (host timing of
   the capture, not state: the frame-synchronized lockstep is identical).
@@ -109,8 +136,8 @@ state before the crash frame was identical and, after the merge, no crash and no
   edges for 701 retraces, limit 698), with L1 2 of 4 (696/696); the final gate run passed
   (700/701). PROVEN not a regression of L1; the async IRQ0-to-retrace margin belongs to T1/T2.
 
-- Sound Blaster, DMA and gameport are off in lockstep runs (their device threads/timing are
-  not clock-driven yet); audio-driven game state (sound-active flag) is therefore not covered.
+- The gameport remains off in lockstep runs. Sound mode compares virtual SB/DMA consumption and
+  the game's active-stream state; it does not compare output through a host SDL audio device.
 - Not compared: stack, the original's clib data (the port uses the host CRT), BSS globals the
   manifest does not name, CONST bytes outside the game's block, the IVT, DOS memory blocks.
 - IOPL reported by `probe_cpu_environment` is 3 in both runs by construction (HYPOTHESIS for
