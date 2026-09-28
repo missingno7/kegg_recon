@@ -59,6 +59,7 @@ void vhw_lockstep_advance(uint64_t ns)
     uint64_t before = vhw_lockstep_ns;
     vhw_lockstep_ns += ns;
     vpit_lockstep_update();
+    vsb_lockstep_update();
     if (vhw_lockstep_ms_hook && before / 1000000u != vhw_lockstep_ns / 1000000u)
         vhw_lockstep_ms_hook();
 }
