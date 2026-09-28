@@ -118,6 +118,7 @@ static uint64_t lockstep_clock(void) { return vhw_lockstep_ns; }
 
 /* ---- options / dump ----------------------------------------------------------------------- */
 static int mode_orig;
+static int joystick_enabled;
 static const char *out_path, *portmap_path, *replay_path, *log_path;
 static const char *image_dir = "build/port/oracle", *data_dir = "assets";
 static unsigned max_frames = 0xffffffffu;
@@ -504,6 +505,7 @@ int main(int argc, char **argv)
             io_trace_frame_limit = (unsigned)strtoul(v, NULL, 0); i++;
         }
         else if (!strcmp(a, "--frames") && v) { max_frames = (unsigned)strtoul(v, NULL, 0); i++; }
+        else if (!strcmp(a, "--joystick")) { joystick_enabled = 1; }
         else if (!strcmp(a, "--full-at") && v) {
             parse_list(v, full_at, &full_at_count, 64, 10); i++;
         } else if (!strcmp(a, "--idle-keys") && v) {
@@ -542,7 +544,7 @@ int main(int argc, char **argv)
     ke_config_load(1, argv);
     ke_config.irq_async = 0;
     ke_config.sound_blaster = 0;
-    ke_config.joystick = 0;
+    ke_config.joystick = joystick_enabled;
     ke_config.windows_host = 0;
     ke_config.log_level = KE_LOG_INFO;
     ke_log_init(log_path);

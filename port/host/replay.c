@@ -9,8 +9,9 @@
 #include <windows.h>
 #include "ke_port.h"
 #include "replay.h"
+#include "../vhw/vhw.h"
 
-typedef enum ReplayKind { REPLAY_MOUSE, REPLAY_KEY } ReplayKind;
+typedef enum ReplayKind { REPLAY_MOUSE, REPLAY_KEY, REPLAY_JOYSTICK } ReplayKind;
 typedef struct ReplayEvent {
     unsigned occurrence;
     ReplayKind kind;
@@ -61,6 +62,13 @@ static void replay_apply_event(const ReplayEvent *e)
     if (e->kind == REPLAY_MOUSE) {
         ke_input_set_mouse_position(e->a, e->b);
         ke_input_set_mouse_buttons(e->buttons);
+    } else if (e->kind == REPLAY_JOYSTICK) {
+        float x = (float)e->a / 1000.0f;
+        float y = (float)e->b / 1000.0f;
+        vjoy_set(0, x, e->buttons);
+        vjoy_set(1, y, e->buttons);
+        vjoy_set(2, 0.0f, e->buttons);
+        vjoy_set(3, 0.0f, e->buttons);
     } else {
         ke_input_push_scancode((uint8_t)e->a);
     }
@@ -169,6 +177,16 @@ int ke_replay_load(const char *path)
                 free(loaded);
                 fclose(f);
                 ke_log(KE_LOG_ERROR, "replay", "invalid keyboard event %u in %s", i, path);
+                return -1;
+            }
+        } else if (type == 'J') {
+            e->kind = REPLAY_JOYSTICK;
+            if (fscanf(f, "%d %d %d", &e->a, &e->b, &e->buttons) != 3 ||
+                e->a < -1000 || e->a > 1000 || e->b < -1000 || e->b > 1000 ||
+                e->buttons < 0 || e->buttons > 15) {
+                free(loaded);
+                fclose(f);
+                ke_log(KE_LOG_ERROR, "replay", "invalid joystick event %u in %s", i, path);
                 return -1;
             }
         } else {
