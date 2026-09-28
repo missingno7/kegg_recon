@@ -22,6 +22,7 @@ typedef struct KeConfig {
     int windows_host;     /* KE_WINDOWS=1: answer INT 2Fh/1600h as Windows 3.1 enhanced    */
     int sound_blaster;    /* KE_SB=1: attach the virtual Sound Blaster at 220h/IRQ7/DMA1   */
     int joystick;         /* KE_JOY=1: attach the virtual gameport                          */
+    int mouse_native;     /* KE_MOUSE_MODE=native: absolute SDL mouse; default faithful     */
     int scale;            /* KE_SCALE=n: initial window scale (default 3)                   */
     int aspect;           /* KE_ASPECT=1 (default): 4:3 display aspect; 0: square pixels    */
     int log_level;        /* KE_LOG_LEVEL=0..4                                               */
@@ -62,7 +63,10 @@ struct SDL_Window;
 struct SDL_Renderer;
 int ke_present_init(struct SDL_Window *window, struct SDL_Renderer *renderer);
 void ke_present_frame(void);
+int ke_present_map_mouse(float window_x, float window_y, int *game_x, int *game_y);
 void ke_present_shutdown(void);
+void ke_native_mouse_position(float window_x, float window_y);
+void ke_native_mouse_set_game_position(int game_x, int game_y);
 
 /* ---- host time ------------------------------------------------------------------------- */
 uint64_t ke_now_ns(void);                /* monotonic                                       */

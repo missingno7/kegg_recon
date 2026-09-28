@@ -34,6 +34,7 @@ void register_vhw_irq_tests(void);
 void register_vga_tests(void);
 void register_lockstep_tests(void);
 void register_g2_tests(void);
+void register_nm1_tests(void);
 
 static struct { const char *name; oracle_test_fn fn; } tests[128];
 static int test_count;
@@ -142,6 +143,7 @@ int main(int argc, char **argv)
     register_m_11258_tests();
     register_m_11494_tests();
     register_m_11530_tests();
+    register_nm1_tests();
     for (i = 0; i < test_count; i++) {
         int f;
         if (filter && !strstr(tests[i].name, filter))

@@ -124,6 +124,7 @@ int vkbd_bios_getch(void);                /* blocks via vhw_idle                
 void vmouse_init(void);
 void vmouse_motion(float dx, float dy);   /* main thread, relative host motion            */
 void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns); /* SDL event time       */
+void vmouse_set_absolute_position(int x, int y); /* native host position; no mickey changes */
 void vmouse_buttons(int mask);            /* bit0 left, bit1 right, bit2 middle           */
 void vmouse_int33(union REGS *r, struct SREGS *s);
 

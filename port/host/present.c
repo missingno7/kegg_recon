@@ -12,19 +12,22 @@
 #include <string.h>
 #include <SDL3/SDL.h>
 #include "ke_port.h"
+#include "../include/viewport.h"
 #include "../vhw/vhw.h"
 
 #define MAX_W 400
 #define MAX_H 480
 
 static SDL_Renderer *renderer;
+static SDL_Window *present_window;
 static SDL_Texture *texture;
 static uint8_t indexed[MAX_W * MAX_H];
 static uint32_t argb[MAX_W * MAX_H];
+static int game_w, game_h;
 
 int ke_present_init(SDL_Window *window, SDL_Renderer *r)
 {
-    (void)window;
+    present_window = window;
     renderer = r;
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING,
                                 MAX_W, MAX_H);
@@ -37,7 +40,7 @@ int ke_present_init(SDL_Window *window, SDL_Renderer *r)
 void ke_present_frame(void)
 {
     int w = 0, h = 0, out_w, out_h, x, y;
-    float scale, scale_x, scale_y;
+    KeViewport viewport;
     uint8_t pal[256][3];
     uint32_t lut[256];
     SDL_FRect src, dst;
@@ -58,27 +61,33 @@ void ke_present_frame(void)
                 argb[y * MAX_W + x] = lut[indexed[y * MAX_W + x]];
         SDL_UpdateTexture(texture, NULL, argb, MAX_W * 4);
         SDL_GetCurrentRenderOutputSize(renderer, &out_w, &out_h);
+        game_w = w;
+        game_h = h;
         src.x = 0; src.y = 0; src.w = (float)w; src.h = (float)h;
-        if (ke_config.aspect) {
-            /* Display at 4:3; optional whole-number scale preserves source pixels. */
-            scale_x = (float)out_w / (float)w;
-            scale_y = (float)out_h / ((float)w * 3.0f / 4.0f);
-        } else {
-            scale_x = (float)out_w / (float)w;
-            scale_y = (float)out_h / (float)h;
+        if (ke_viewport_calculate(&viewport, w, h, out_w, out_h, ke_config.aspect,
+                                  ke_config_integer_scale())) {
+            dst.x = viewport.x; dst.y = viewport.y;
+            dst.w = viewport.w; dst.h = viewport.h;
+            SDL_RenderTexture(renderer, texture, &src, &dst);
         }
-        scale = scale_x < scale_y ? scale_x : scale_y;
-        if (ke_config_integer_scale())
-            scale = (float)(int)scale;
-        if (scale < 1.0f)
-            scale = 1.0f;
-        dst.w = (float)w * scale;
-        dst.h = ke_config.aspect ? dst.w * 3.0f / 4.0f : (float)h * scale;
-        dst.x = ((float)out_w - dst.w) / 2;
-        dst.y = ((float)out_h - dst.h) / 2;
-        SDL_RenderTexture(renderer, texture, &src, &dst);
     }
     SDL_RenderPresent(renderer);
+}
+
+int ke_present_map_mouse(float window_x, float window_y, int *game_x, int *game_y)
+{
+    KeViewport viewport;
+    int window_w, window_h, output_w, output_h;
+    if (!present_window || !renderer || game_w <= 0 || game_h <= 0)
+        return 0;
+    if (!SDL_GetWindowSize(present_window, &window_w, &window_h) ||
+        !SDL_GetCurrentRenderOutputSize(renderer, &output_w, &output_h))
+        return 0;
+    if (!ke_viewport_calculate(&viewport, game_w, game_h, output_w, output_h,
+                               ke_config.aspect, ke_config_integer_scale()))
+        return 0;
+    return ke_viewport_map_window_point(&viewport, window_w, window_h,
+                                        window_x, window_y, game_x, game_y);
 }
 
 void ke_present_shutdown(void)
@@ -86,6 +95,9 @@ void ke_present_shutdown(void)
     if (texture)
         SDL_DestroyTexture(texture);
     texture = NULL;
+    present_window = NULL;
+    renderer = NULL;
+    game_w = game_h = 0;
 }
 
 /* Save the current scan-out (indexed + DAC palette) as an 8-bit BMP. */
