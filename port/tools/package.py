@@ -47,7 +47,10 @@ Controls
 --------
 The game receives the original keyboard controls. Click in the window to capture
 the mouse; press Escape or switch focus to release it. F11 or Alt+Enter toggles
-fullscreen. Optional SDL gamepads can be enabled with joystick=on.
+fullscreen. Optional SDL gamepads can be enabled with joystick=on. The left stick feeds the
+201h gameport axes, South/A is button 1, and East/B is button 2. Leave the stick centered
+during startup detection/calibration. The frozen game currently does not poll its joystick
+hook in the main gameplay loop, so racket control remains on the original keyboard/mouse path.
 
 Options
 -------

@@ -87,8 +87,33 @@ port writes DSP commands, effective sample rates, and DMA block offsets to
 records each rate alongside the WAV's single header rate.
 
 F11 and Alt+Enter toggle fullscreen. Click the window to capture the mouse; Escape or
-focus loss releases it. The original keyboard controls are sent to the game, and an SDL
-gamepad is exposed as a virtual gameport when joystick support is enabled.
+focus loss releases it. The original keyboard controls are sent to the game. Enable joystick
+support with `--joystick on`, `KE_JOY=1`, or `joystick=on` in `ke_sdl3.ini`; the first
+connected SDL gamepad is exposed through the emulated 201h gameport. The left stick feeds
+the X/Y gameport axes, South/A is joystick button 1, and East/B is button 2. Keep the stick
+centered during startup detection so the game's neutral calibration can run. Detection,
+calibration, and the T15 direction/fire bits are verified without physical hardware. The
+frozen game currently does not poll its joystick hook in the main gameplay loop, so racket
+movement still uses the original keyboard/mouse path; changing that would alter frozen game
+behavior.
+
+The SDL virtual joystick integration test runs without physical controller hardware:
+
+```sh
+build/port/oracle/ke_oracle.exe build/port/oracle joystick
+```
+
+For deterministic in-game input, `lockstep.py` accepts joystick snapshots alongside mouse
+and keyboard events. Each `F:J:X:Y:B` uses frame `F`, post-dead-zone X/Y values from -1000 to
+1000, and a four-bit South/East/West/North button mask:
+
+```sh
+python port/tools/lockstep.py --frames 500 --joystick --click-every 100:200:150:82:400 \
+  --event 130:J:-900:0:0 --event 150:J:900:0:1 --event 155:J:900:0:0
+```
+
+The runner applies identical 201h inputs to the original code and port, compares each
+frame's VGA and named game data, and writes the full dumps under `build/port/lockstep/`.
 
 ## Package
 
