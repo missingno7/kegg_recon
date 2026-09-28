@@ -137,9 +137,18 @@ void vdma_init(void);
 int vdma_read(int channel, uint8_t *dst, int len, int *terminal);
 /* Write `len` copies of a device sample to an 8-bit channel; returns bytes, *terminal at TC. */
 int vdma_write(int channel, uint8_t sample, int len, int *terminal);
+/* Copy upcoming DMA bytes without changing the controller (diagnostics/lockstep capture). */
+int vdma_copy_current(int channel, uint8_t *dst, int len);
 uint32_t vdma_current_linear(int channel);
+void vdma_debug_state(uint8_t out[64]);
 void vsb_init(void);
 void vsb_shutdown(void);
+/* Deterministic audio consumer, called on every lockstep clock advance (no SDL callback). */
+void vsb_lockstep_update(void);
+#define VSB_DEBUG_BYTES 320
+void vsb_debug_state(uint8_t out[VSB_DEBUG_BYTES]);
+typedef void (*vsb_dma_capture_fn)(unsigned block_no, const uint8_t *bytes, uint32_t len);
+void vsb_set_dma_capture_hook(vsb_dma_capture_fn hook);
 
 /* ---- INT services (intsvc.c) ----------------------------------------------------------- */
 int vhw_int(int intno, union REGS *in, union REGS *out, struct SREGS *s);

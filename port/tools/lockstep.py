@@ -30,6 +30,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 DG_SIZE = 0xE610
 VGA_REGS = 108
 PLANE_BLOCKS = 256
+SB_DEBUG_BYTES = 320
+DMA_DEBUG_BYTES = 64
+SOUND_STATE_BYTES = SB_DEBUG_BYTES + DMA_DEBUG_BYTES
 REC_HEAD = struct.Struct("<4sIQI10s2x16I")
 REGS_NAMES = (["SEQ%02X" % i for i in range(8)] + ["GC%02X" % i for i in range(16)] +
               ["CRTC%02X" % i for i in range(32)] + ["ATTR%02X" % i for i in range(32)] +
@@ -234,8 +237,17 @@ class Normalizer:
     def __init__(self, syms: Symbols, bases: dict[int, int], sizes: dict[int, int],
                  spans: list[tuple[int, int, int, str]]):
         self.syms, self.bases, self.sizes = syms, bases, sizes
-        self.port_spans = sorted((addr, off, ln) for off, ln, addr, _ in spans)
-        self.port_span_addrs = [a for a, _, _ in self.port_spans]
+        self.port_spans = sorted((addr, off, ln, name) for off, ln, addr, name in spans)
+        self.port_span_addrs = [a for a, _, _, _ in self.port_spans]
+        # SpriteFrame cursors deliberately start one record before the first frame and
+        # pre-increment before dereferencing (src/u_07bd5.c, SPRITE_FRAME_BYTES == 8).
+        # That cursor can point just outside the mapped global's span while still having
+        # the same object-3-relative token as the original LE pointer.
+        self.port_preincrement_cursors = {
+            addr - 8: off - 8
+            for off, _ln, addr, name in spans
+            if name == "collision_animation_frames" and off >= 8
+        }
         # port text symbol -> original object 1 offset by name
         self.orig_funcs = {name: off for off, name in syms.orig_by_obj[1]}
         self.orig_o2 = {name: off for off, name in syms.orig_by_obj.get(2, [])}
@@ -283,9 +295,11 @@ class Normalizer:
             return ("vga", v)
         if self.o2_base is not None and self.o2_base <= v <= self.o2_base + 0x149:
             return (2, v - self.o2_base)
+        if v in self.port_preincrement_cursors:
+            return (3, self.port_preincrement_cursors[v])
         i = bisect.bisect_right(self.port_span_addrs, v) - 1
         if i >= 0:
-            addr, off, ln = self.port_spans[i]
+            addr, off, ln, _name = self.port_spans[i]
             if v <= addr + ln:
                 return (3, off + (v - addr))
         if v in self.port_fn_names:
@@ -309,11 +323,19 @@ def tokens_equal(a, b) -> bool:
 
 def read_dump(path: Path):
     data = path.read_bytes()
-    if data[:4] != b"LSD1":
+    if data[:4] not in (b"LSD1", b"LSD2"):
         raise SystemExit(f"{path}: not a lockstep dump")
     size = struct.unpack_from("<I", data, 4)[0]
-    mask = data[8:8 + size]
-    pos = 8 + size
+    if data[:4] == b"LSD2":
+        sound_size = struct.unpack_from("<I", data, 8)[0]
+        if sound_size != SOUND_STATE_BYTES:
+            raise SystemExit(f"{path}: unsupported sound state size {sound_size}")
+        mask = data[12:12 + size]
+        pos = 12 + size
+    else:
+        sound_size = 0
+        mask = data[8:8 + size]
+        pos = 8 + size
     frames = []
     while pos + REC_HEAD.size <= len(data):
         head = REC_HEAD.unpack_from(data, pos)
@@ -331,6 +353,7 @@ def read_dump(path: Path):
         if full:
             rec["planes"] = data[p:p + 0x40000]; p += 0x40000
         rec["dg"] = data[p:p + size]; p += size
+        rec["sound"] = data[p:p + sound_size]; p += sound_size
         if p > len(data):
             break
         frames.append(rec)
@@ -348,6 +371,9 @@ def run_side(mode: str, exe: Path, out: Path, args, replay: Path | None, portmap
         cmd += ["--replay", str(replay)]
     if portmap:
         cmd += ["--portmap", str(portmap)]
+    capture = out / f"dma-capture-{mode}.bin"
+    if args.sound:
+        cmd += ["--sound", "--dma-capture", str(capture)]
     if args.full_at:
         cmd += ["--full-at", args.full_at]
     env = dict(os.environ)
@@ -355,7 +381,7 @@ def run_side(mode: str, exe: Path, out: Path, args, replay: Path | None, portmap
     shutil.rmtree(home, ignore_errors=True)
     home.mkdir(parents=True)
     env["LOCALAPPDATA"] = str(home)      # fresh high-score directory per run
-    for k in ("KE_SB", "KE_JOY", "KE_WINDOWS", "KE_IRQ", "KE_DOSENV"):
+    for k in ("KE_SB", "KE_JOY", "KE_WINDOWS", "KE_IRQ", "KE_DOSENV", "KE_AUDIO_DUMP"):
         env.pop(k, None)
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=args.timeout)
     (out / f"{mode}.stdout").write_text(proc.stdout + proc.stderr, encoding="utf-8")
@@ -420,6 +446,52 @@ def value_repr(b: bytes) -> str:
         v = struct.unpack("<I", b)[0]
         return f"{v:#010x} ({struct.unpack('<i', b)[0]})"
     return fmt_bytes(b)
+
+
+def sound_diffs(a: bytes, b: bytes) -> list[tuple[str, str]]:
+    """Name changed SB DSP/mixer fields and 8237 channel registers in an LSD2 record."""
+    if len(a) != SOUND_STATE_BYTES or len(b) != SOUND_STATE_BYTES:
+        return [("sound.state", f"port {len(a)} bytes, orig {len(b)} bytes")]
+    fields = [
+        (0, 1, "DSP.command"), (1, 5, "DSP.arguments"), (5, 6, "DSP.command_length"),
+        (6, 7, "DSP.arguments_received"), (7, 8, "DSP.reset"), (8, 9, "DSP.time_constant"),
+        (9, 10, "DSP.direct_sample"), (10, 14, "DSP.block_length"),
+        (14, 18, "DSP.block_remaining"), (18, 22, "DSP.timed_irq_remaining"),
+        (22, 23, "DSP.flags"), (23, 24, "DSP.irq_pending"), (24, 25, "mixer.index"),
+        (25, 281, "mixer.registers"), (281, 285, "DSP.sample_rate"),
+        (285, 293, "DSP.sample_offset"), (293, 301, "DSP.sample_fraction"),
+        (301, 309, "DSP.audio_clock"), (309, 313, "DSP.block_number"),
+    ]
+    dma_base = SB_DEBUG_BYTES
+    fields.append((dma_base, dma_base + 1, "DMA.flipflop"))
+    dma_names = ("base_address", "base_count", "current_address", "current_count")
+    for channel in range(4):
+        start = dma_base + 1 + channel * 12
+        for i, name in enumerate(dma_names):
+            fields.append((start + i * 2, start + i * 2 + 2, f"DMA{channel}.{name}"))
+        for i, name in enumerate(("page", "mode", "masked", "terminal_count")):
+            fields.append((start + 8 + i, start + 9 + i, f"DMA{channel}.{name}"))
+    out = []
+    for start, end, name in fields:
+        if a[start:end] != b[start:end]:
+            out.append(("sound." + name,
+                        f"port {fmt_bytes(a[start:end])} | orig {fmt_bytes(b[start:end])}"))
+    return out
+
+
+def read_dma_capture(path: Path):
+    data = path.read_bytes()
+    if data[:4] != b"SDC1":
+        raise SystemExit(f"{path}: not an SDC1 DMA capture")
+    records, pos = [], 4
+    while pos + 8 <= len(data):
+        block, length = struct.unpack_from("<II", data, pos)
+        pos += 8
+        if pos + length > len(data):
+            raise SystemExit(f"{path}: incomplete DMA capture block {block}")
+        records.append((block, data[pos:pos + length]))
+        pos += length
+    return records
 
 
 # Translation-internal tables: the assembly modules' jump/dispatch tables and the unused
@@ -502,6 +574,8 @@ def compare(args, syms: Symbols, spans, port_dump: Path, orig_dump: Path, bases_
         if p["bda"] != o["bda"]:
             j = next(k for k in range(256) if p["bda"][k] != o["bda"][k])
             items.append(("bios_data_area", f"first at {0x400 + j:#x}: port {p['bda'][j]:#04x} orig {o['bda'][j]:#04x}"))
+        if p["sound"] != o["sound"]:
+            items.extend(sound_diffs(p["sound"], o["sound"]))
         for off, ln, name, left, pa, ob in dg_diffs(syms, spans, mask_p, p["dg"], o["dg"], norm_p, norm_o):
             first = left[0]
             if ln <= 4:
@@ -523,8 +597,39 @@ def compare(args, syms: Symbols, spans, port_dump: Path, orig_dump: Path, bases_
             base = key.split("[")[0]
             if base not in first_seen:
                 first_seen[base] = (p["frame"], val)
-    if first_frame is None:
+    capture_difference = False
+    if args.sound:
+        port_capture = read_dma_capture(Path(args.out) / "dma-capture-port.bin")
+        orig_capture = read_dma_capture(Path(args.out) / "dma-capture-orig.bin")
+        if port_capture == orig_capture:
+            if port_capture:
+                report_lines.append("DMA capture: matching first %d DSP 14h blocks (%s bytes)" %
+                                    (len(port_capture), sum(len(x[1]) for x in port_capture)))
+            else:
+                report_lines.append("DMA capture: no DSP 14h blocks in either run")
+        else:
+            capture_difference = True
+            report_lines.append("DMA capture differs: port %d blocks / %d bytes, orig %d blocks / %d bytes" %
+                                (len(port_capture), sum(len(x[1]) for x in port_capture),
+                                 len(orig_capture), sum(len(x[1]) for x in orig_capture)))
+            for j in range(max(len(port_capture), len(orig_capture))):
+                if j >= len(port_capture) or j >= len(orig_capture):
+                    report_lines.append(f"  block {j}: present in only one run")
+                    break
+                pn, pb = port_capture[j]
+                on, ob = orig_capture[j]
+                if pn != on or pb != ob:
+                    limit = min(len(pb), len(ob))
+                    at = next((k for k in range(limit) if pb[k] != ob[k]), limit)
+                    report_lines.append(f"  block {j}: port #{pn} {len(pb)} bytes; orig #{on} {len(ob)} bytes; "
+                                        f"first byte difference at +{at:#x} "
+                                        f"(port {pb[at:at+16].hex(' ') if at < len(pb) else '<end>'}; "
+                                        f"orig {ob[at:at+16].hex(' ') if at < len(ob) else '<end>'})")
+                    break
+    if first_frame is None and not capture_difference:
         report_lines.append(f"NO DIVERGENCE in {n} frames")
+    elif first_frame is None:
+        report_lines.append(f"NO FRAME-STATE DIVERGENCE in {n} frames")
     else:
         report_lines.append("")
         report_lines.append("first frame of each diverging item (in order):")
@@ -533,7 +638,7 @@ def compare(args, syms: Symbols, spans, port_dump: Path, orig_dump: Path, bases_
     text = "\n".join(report_lines)
     print(text)
     (Path(args.out) / "report.txt").write_text(text + "\n", encoding="utf-8")
-    return 0 if first_frame is None else 1
+    return 0 if first_frame is None and not capture_difference else 1
 
 
 def main() -> int:
@@ -546,6 +651,7 @@ def main() -> int:
                     "X,Y (held 5 frames) every STEP frames from FIRST until END (default --frames)")
     ap.add_argument("--idle-keys", default="39,b9", help="hex scancodes for blocking BIOS keyboard waits")
     ap.add_argument("--full-at", default="", help="frames whose full VGA planes are dumped")
+    ap.add_argument("--sound", action="store_true", help="attach the virtual SB and consume DMA from lockstep time")
     ap.add_argument("--out", default=str(ROOT / "build/port/lockstep"))
     ap.add_argument("--exe", default=str(ROOT / "build/port/oracle/ke_lockstep.exe"))
     ap.add_argument("--max-report", type=int, default=40)
@@ -559,6 +665,18 @@ def main() -> int:
     exe = Path(args.exe)
     syms = Symbols(ROOT / "build/port/oracle", exe)
     spans = syms.portmap()
+    if args.sound:
+        mapped_sound_globals = {name for _off, _length, _addr, name in spans
+                                if name.startswith(("audio_", "sound_", "active_audio_", "queued_audio_"))}
+        required_sound_globals = {
+            "audio_stream_flag", "audio_stream_stop_flag", "active_audio_bytes_remaining",
+            "audio_dma_half_bytes", "audio_transfer_mode", "sound_dma_buffer_address",
+            "sound_dma_transfer_count", "sound_dma_mode_bits", "sound_dma_channel",
+            "audio_dma_memory", "audio_request_entries",
+        }
+        missing = required_sound_globals - mapped_sound_globals
+        if missing:
+            raise SystemExit("lockstep: sound globals are not mapped for comparison: " + ", ".join(sorted(missing)))
     portmap = out / "portmap.txt"
     portmap.write_text("".join(f"{o:x} {l:x} {a:x} {n}\n" for o, l, a, n in spans))
     replay = build_replay(args, out)

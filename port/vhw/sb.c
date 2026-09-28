@@ -48,11 +48,15 @@ static FILE *audio_dump_log;
 static char audio_dump_path[MAX_PATH];
 static char audio_dump_log_path[MAX_PATH * 2];
 static uint64_t audio_sample_offset;
+static uint64_t lockstep_audio_clock_ns;
+static uint64_t lockstep_sample_remainder;
 static uint32_t audio_dump_bytes;
 static uint32_t audio_dump_rate = 7936;
 static uint64_t dma_block_start_offset;
 static unsigned dma_block_number;
 static int audio_dump_failed;
+static unsigned dma_capture_count;
+static vsb_dma_capture_fn dma_capture_hook;
 
 static void mixer_reset_state(void)
 {
@@ -196,6 +200,109 @@ static void raise_irq(void)
 
 static int rate_from_tc(uint8_t tc) { return 1000000 / (256 - tc); }
 
+/* The lockstep runner has no SDL audio device or callback. Consume the same DMA stream at
+ * the DSP's emulated sample rate whenever virtual machine time advances. IRQs are raised
+ * at block completion and delivered by the existing vhw instruction-boundary rules. */
+void vsb_lockstep_update(void)
+{
+    static uint8_t discard[4096];
+    uint64_t now, elapsed, scaled, samples, remaining;
+    uint32_t rate;
+    if (!vhw_lockstep || !lock_initialized || !ke_config.sound_blaster)
+        return;
+    now = vhw_lockstep_ns;
+    EnterCriticalSection(&sb_lock);
+    if (now <= lockstep_audio_clock_ns) {
+        LeaveCriticalSection(&sb_lock);
+        return;
+    }
+    elapsed = now - lockstep_audio_clock_ns;
+    lockstep_audio_clock_ns = now;
+    rate = (uint32_t)rate_from_tc(time_constant);
+    scaled = (elapsed % 1000000000ull) * rate + lockstep_sample_remainder;
+    samples = (elapsed / 1000000000ull) * rate + scaled / 1000000000ull;
+    lockstep_sample_remainder = scaled % 1000000000ull;
+    audio_sample_offset += samples;
+    if (timed_irq_samples) {
+        if (samples >= timed_irq_samples) {
+            timed_irq_samples = 0;
+            raise_irq();
+        } else {
+            timed_irq_samples -= (uint32_t)samples;
+        }
+    }
+    remaining = samples;
+    while (remaining && dma_active && !dma_paused) {
+        uint32_t chunk = remaining > block_left ? block_left : (uint32_t)remaining;
+        int terminal = 0;
+        int got;
+        if (chunk > sizeof discard)
+            chunk = sizeof discard;
+        got = dma_input ? vdma_write(SB_DMA, 0x80, (int)chunk, &terminal)
+                        : vdma_read(SB_DMA, discard, (int)chunk, &terminal);
+        if (got <= 0)
+            break;
+        remaining -= (uint32_t)got;
+        block_left -= (uint32_t)got;
+        if (block_left == 0) {
+            raise_irq();
+            if (dma_auto) {
+                block_left = block_len;
+            } else {
+                dma_active = 0;
+                dma_input = high_speed = 0;
+            }
+        }
+    }
+    LeaveCriticalSection(&sb_lock);
+}
+
+static void state_u32(uint8_t *p, uint32_t value) { memcpy(p, &value, 4); }
+static void state_u64(uint8_t *p, uint64_t value) { memcpy(p, &value, 8); }
+
+/* Side-effect-free 320-byte DSP state record for lockstep. Byte offsets are intentionally
+ * fixed so Python's dump reader can name a differing register without C struct padding. */
+void vsb_debug_state(uint8_t out[VSB_DEBUG_BYTES])
+{
+    uint8_t flags = 0;
+    memset(out, 0, VSB_DEBUG_BYTES);
+    if (!lock_initialized)
+        return;
+    EnterCriticalSection(&sb_lock);
+    out[0] = cmd;
+    memcpy(out + 1, cmd_args, sizeof cmd_args);
+    out[5] = (uint8_t)cmd_need;
+    out[6] = (uint8_t)cmd_have;
+    out[7] = reset_latch;
+    out[8] = time_constant;
+    out[9] = direct_sample;
+    state_u32(out + 10, block_len);
+    state_u32(out + 14, block_left);
+    state_u32(out + 18, timed_irq_samples);
+    flags |= (uint8_t)(dma_active ? 1 : 0);
+    flags |= (uint8_t)(dma_auto ? 2 : 0);
+    flags |= (uint8_t)(dma_input ? 4 : 0);
+    flags |= (uint8_t)(dma_paused ? 8 : 0);
+    flags |= (uint8_t)(high_speed ? 16 : 0);
+    flags |= (uint8_t)(speaker ? 32 : 0);
+    flags |= (uint8_t)(direct_active ? 64 : 0);
+    out[22] = flags;
+    out[23] = irq_pending;
+    out[24] = mixer_index;
+    memcpy(out + 25, mixer, sizeof mixer);
+    state_u32(out + 281, (uint32_t)rate_from_tc(time_constant));
+    state_u64(out + 285, audio_sample_offset);
+    state_u64(out + 293, lockstep_sample_remainder);
+    state_u64(out + 301, lockstep_audio_clock_ns);
+    state_u32(out + 309, dma_block_number);
+    LeaveCriticalSection(&sb_lock);
+}
+
+void vsb_set_dma_capture_hook(vsb_dma_capture_fn hook)
+{
+    dma_capture_hook = hook;
+}
+
 static void dump_dma_prefix(void)
 {
     uint32_t linear;
@@ -320,6 +427,12 @@ static void dsp_command_complete(void)
     if (cmd == 0x14 || cmd == 0x1c || cmd == 0x90 || cmd == 0x91) {
         if (!dma_block_number)
             audio_dump_rate = (uint32_t)rate_from_tc(time_constant);
+        if (cmd == 0x14 && dma_capture_hook && dma_capture_count < 2) {
+            static uint8_t capture[0x10000];
+            uint32_t count = block_len > sizeof capture ? (uint32_t)sizeof capture : block_len;
+            vdma_copy_current(SB_DMA, capture, (int)count);
+            dma_capture_hook(dma_capture_count++, capture, count);
+        }
         dump_dma_prefix();
         dma_block_start_offset = audio_sample_offset;
         ++dma_block_number;
@@ -555,9 +668,15 @@ void vsb_init(void)
         return;
     }
     mixer_reset_state();
-    audio_dump_open();
     vhw_register_ports(SB_BASE, SB_BASE + 0xf, sb_in, sb_out, NULL, "sound-blaster");
     stream_rate = rate_from_tc(time_constant);
+    lockstep_audio_clock_ns = vhw_lockstep_ns;
+    if (vhw_lockstep) {
+        ke_log(KE_LOG_INFO, "sb", "lockstep Sound Blaster Pro at 220h IRQ %d DMA %d (clock-driven)",
+               SB_IRQ, SB_DMA);
+        return;
+    }
+    audio_dump_open();
     spec.format = SDL_AUDIO_U8;
     spec.channels = 1;
     spec.freq = stream_rate;
