@@ -830,6 +830,75 @@ static int handle_breakpoint(CONTEXT *c, const void *address)
     return 0;
 }
 
+/* Windows can report a segment-register memory move from an original protected-mode ISR as
+ * an AV at FFFFFFFF even though its effective DGROUP operand is committed and writable. The
+ * host uses flat selectors, so replay the exact 16-bit selector load/store when the operand
+ * itself is in an accessible page. This keeps the original instruction semantics without
+ * swallowing a genuinely unmapped memory access. */
+static DWORD *segment_slot(CONTEXT *c, int reg)
+{
+    switch (reg) {
+    case 0: return &c->SegEs;
+    case 1: return &c->SegCs;
+    case 2: return &c->SegSs;
+    case 3: return &c->SegDs;
+    case 4: return &c->SegFs;
+    case 5: return &c->SegGs;
+    default: return NULL;
+    }
+}
+
+static int segment_operand_accessible(uint32_t address, int write)
+{
+    MEMORY_BASIC_INFORMATION mbi;
+    DWORD protection;
+    uintptr_t start, end;
+    if (address > 0xfffffffdu || !VirtualQuery((void *)(uintptr_t)address, &mbi, sizeof mbi) ||
+        mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)))
+        return 0;
+    start = (uintptr_t)mbi.BaseAddress;
+    end = start + mbi.RegionSize;
+    if ((uintptr_t)address < start || (uintptr_t)address + 2 > end)
+        return 0;
+    protection = mbi.Protect & 0xff;
+    if (write)
+        return protection == PAGE_READWRITE || protection == PAGE_WRITECOPY ||
+               protection == PAGE_EXECUTE_READWRITE || protection == PAGE_EXECUTE_WRITECOPY;
+    return protection == PAGE_READONLY || protection == PAGE_READWRITE ||
+           protection == PAGE_WRITECOPY || protection == PAGE_EXECUTE_READ ||
+           protection == PAGE_EXECUTE_READWRITE || protection == PAGE_EXECUTE_WRITECOPY;
+}
+
+static int oracle_emulate_segment_memory_move(EXCEPTION_POINTERS *ep)
+{
+    CONTEXT *c = ep->ContextRecord;
+    const uint8_t *p = (const uint8_t *)(uintptr_t)c->Eip;
+    OracleModrm m;
+    DWORD *slot;
+    int address16 = 0, prefix_len = 0, opcode;
+    while (prefix_len < 14 && (p[prefix_len] == 0x66 || p[prefix_len] == 0x67)) {
+        if (p[prefix_len] == 0x67)
+            address16 = 1;
+        prefix_len++;
+    }
+    if (prefix_len >= 14 || IsBadReadPtr(p, prefix_len + 2))
+        return 0;
+    opcode = p[prefix_len];
+    if ((opcode != 0x8c && opcode != 0x8e) ||
+        decode_modrm(p + prefix_len + 1, c, address16, &m) != 0 || !m.memory)
+        return 0;
+    slot = segment_slot(c, m.reg);
+    if (!slot || (opcode == 0x8e && m.reg == 1) ||
+        !segment_operand_accessible(m.address, opcode == 0x8c))
+        return 0;
+    if (opcode == 0x8c)
+        write_memory_width(m.address, *slot, 2);
+    else
+        *slot = read_memory_width(m.address, 2);
+    c->Eip += (DWORD)(prefix_len + 1 + m.length);
+    return 1;
+}
+
 static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
 {
     CONTEXT *c = ep->ContextRecord;
@@ -859,6 +928,8 @@ static LONG CALLBACK oracle_veh(EXCEPTION_POINTERS *ep)
             maybe_redirect_irq(c);
             return EXCEPTION_CONTINUE_EXECUTION;
         }
+        if (oracle_emulate_segment_memory_move(ep))
+            return EXCEPTION_CONTINUE_EXECUTION;
         if (oracle_emulate_vga_memory(ep))
             return EXCEPTION_CONTINUE_EXECUTION;
         if (ep->ExceptionRecord->NumberParameters >= 2) {

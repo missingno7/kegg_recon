@@ -36,6 +36,7 @@
 #define PLANE_BLOCKS (0x40000u / PLANE_BLOCK)
 #define LS_HEAP_BASE 0x20000000u
 #define LS_HEAP_SIZE (96u << 20)
+#define SOUND_STATE_BYTES (VSB_DEBUG_BYTES + 64u)
 
 /* ---- deterministic heap (identical addresses in both runs) ------------------------------ */
 static uint8_t *heap;
@@ -130,10 +131,23 @@ static unsigned idle_calls_without_input;
 static FILE *dump, *io_trace;
 static uint32_t io_trace_frame_limit = 0xffffffffu, io_trace_frame_first;
 static unsigned frame_no;
+static int sound_enabled;
+static const char *dma_capture_path;
+static FILE *dma_capture;
 static uint8_t dg[DG_SIZE], dg_mask[DG_SIZE];
 static uint8_t planes[0x40000];
 static struct { uint32_t orig_off, len; uint32_t port_addr; } spans[4096];
 static int span_count;
+
+static void capture_dma_block(unsigned block_no, const uint8_t *bytes, uint32_t len)
+{
+    if (!dma_capture)
+        return;
+    fwrite(&block_no, 4, 1, dma_capture);
+    fwrite(&len, 4, 1, dma_capture);
+    fwrite(bytes, 1, len, dma_capture);
+    fflush(dma_capture);
+}
 
 static int load_portmap(const char *path)
 {
@@ -179,10 +193,11 @@ static void capture_dgroup(void)
  *   "LSF1" u32 frame u64 clock_ns u32 wait_for_tick_count u8 pic[10] u8 pad[2] u32 pit[16]
  *   u8 vga_regs[VGA_DEBUG_REGS] u8 dac[768] u32 plane_hash[256] u32 heap_top u32 heap_hash
  *   u8 lowmem_bda[0x100] (0x400..0x4FF) u8 full u8 pad[3] [planes 4x64K when full]
- *   u8 dgroup[DG_SIZE] */
+ *   u8 dgroup[DG_SIZE] u8 sound_state[SOUND_STATE_BYTES] (DSP/mixer + 8237 channels) */
 static void write_frame(void)
 {
     uint8_t pic[10], pad[3] = {0, 0, 0}, regs[VGA_DEBUG_REGS], dac[768];
+    uint8_t sound_state[SOUND_STATE_BYTES];
     uint32_t pit[16], hashes[PLANE_BLOCKS], v;
     uint64_t clock = vhw_lockstep_ns;
     unsigned i;
@@ -195,6 +210,8 @@ static void write_frame(void)
     vpic_debug_state(pic);
     vpit_debug_state(pit);
     vga_debug_state(planes, regs, dac);
+    vsb_debug_state(sound_state);
+    vdma_debug_state(sound_state + VSB_DEBUG_BYTES);
     for (i = 0; i < PLANE_BLOCKS; i++)
         hashes[i] = fnv1a(planes + i * PLANE_BLOCK, PLANE_BLOCK);
     capture_dgroup();
@@ -218,6 +235,7 @@ static void write_frame(void)
     if (full)
         fwrite(planes, 1, sizeof planes, dump);
     fwrite(dg, 1, DG_SIZE, dump);
+    fwrite(sound_state, 1, sizeof sound_state, dump);
 }
 
 static void finish(const char *why)
@@ -229,6 +247,10 @@ static void finish(const char *why)
     if (dump) {
         fclose(dump);
         dump = NULL;
+    }
+    if (dma_capture) {
+        fclose(dma_capture);
+        dma_capture = NULL;
     }
     printf("lockstep: %s mode stopped after %u frame entries (%s), clock %.6f s\n",
            mode_orig ? "orig" : "port", frame_no, why, (double)vhw_lockstep_ns / 1e9);
@@ -506,6 +528,8 @@ int main(int argc, char **argv)
         }
         else if (!strcmp(a, "--frames") && v) { max_frames = (unsigned)strtoul(v, NULL, 0); i++; }
         else if (!strcmp(a, "--joystick")) { joystick_enabled = 1; }
+        else if (!strcmp(a, "--sound")) { sound_enabled = 1; }
+        else if (!strcmp(a, "--dma-capture") && v) { dma_capture_path = v; i++; }
         else if (!strcmp(a, "--full-at") && v) {
             parse_list(v, full_at, &full_at_count, 64, 10); i++;
         } else if (!strcmp(a, "--idle-keys") && v) {
@@ -543,13 +567,23 @@ int main(int argc, char **argv)
     }
     ke_config_load(1, argv);
     ke_config.irq_async = 0;
-    ke_config.sound_blaster = 0;
+    ke_config.sound_blaster = sound_enabled;
     ke_config.joystick = joystick_enabled;
     ke_config.windows_host = 0;
     ke_config.log_level = KE_LOG_INFO;
     ke_log_init(log_path);
     if (vhw_init() != 0)
         return 2;
+    vsb_init(); /* clock-driven in lockstep; it never opens an SDL audio device here */
+    if (dma_capture_path) {
+        dma_capture = fopen(dma_capture_path, "wb");
+        if (!dma_capture) {
+            fprintf(stderr, "ke_lockstep: cannot write DMA capture %s\n", dma_capture_path);
+            return 2;
+        }
+        fwrite("SDC1", 1, 4, dma_capture);
+        vsb_set_dma_capture_hook(capture_dma_block);
+    }
     if (!SetCurrentDirectoryA(data_dir)) {
         fprintf(stderr, "ke_lockstep: cannot enter data directory %s\n", data_dir);
         return 2;
@@ -566,13 +600,15 @@ int main(int argc, char **argv)
     }
     if (out_path) {
         uint32_t size = DG_SIZE;
+        uint32_t sound_size = SOUND_STATE_BYTES;
         dump = fopen(out_path, "wb");
         if (!dump) {
             fprintf(stderr, "ke_lockstep: cannot write %s\n", out_path);
             return 2;
         }
-        fwrite("LSD1", 1, 4, dump);
+        fwrite("LSD2", 1, 4, dump);
         fwrite(&size, 4, 1, dump);
+        fwrite(&sound_size, 4, 1, dump);
         fwrite(dg_mask, 1, DG_SIZE, dump);
     }
     if (replay_path && ke_replay_load(replay_path) != 0)

@@ -86,6 +86,15 @@ void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns)
     LeaveCriticalSection(&mouse_lock);
 }
 
+void vmouse_set_absolute_position(int x, int y)
+{
+    EnterCriticalSection(&mouse_lock);
+    pos_x = x;
+    pos_y = y;
+    clamp();
+    LeaveCriticalSection(&mouse_lock);
+}
+
 void vmouse_buttons(int mask)
 {
     EnterCriticalSection(&mouse_lock);

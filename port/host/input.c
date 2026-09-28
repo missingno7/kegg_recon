@@ -352,7 +352,10 @@ void ke_input_event(const SDL_Event *e)
         vmouse_buttons(0);
         break;
     case SDL_EVENT_MOUSE_MOTION:
-        vmouse_motion_at(e->motion.xrel, e->motion.yrel, e->motion.timestamp);
+        if (ke_config.mouse_native)
+            ke_native_mouse_position(e->motion.x, e->motion.y);
+        else
+            vmouse_motion_at(e->motion.xrel, e->motion.yrel, e->motion.timestamp);
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP: {
@@ -360,7 +363,10 @@ void ke_input_event(const SDL_Event *e)
                          e->button.button == SDL_BUTTON_RIGHT ? 2 :
                          e->button.button == SDL_BUTTON_MIDDLE ? 4 : 0;
         set_window_from_id(e->button.windowID);
-        if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT)
+        if (ke_config.mouse_native)
+            ke_native_mouse_position(e->button.x, e->button.y);
+        if (!ke_config.mouse_native && e->type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            e->button.button == SDL_BUTTON_LEFT)
             set_mouse_capture(1);
         if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             mouse_button_bits |= button_bit;

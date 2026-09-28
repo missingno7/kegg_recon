@@ -68,19 +68,59 @@ pages. `KE_SCORE.LST` is optional initial high-score data; updated scores are st
 the user's profile.
 
 `KE.EXE` is not opened by the SDL port. If required files are missing, startup shows a
-message box naming the missing files. The optional `ke_sdl3.ini` beside the executable
-can set `asset_dir`, `window_scale`, `fullscreen`, `integer_scaling`, `aspect` (`4:3`
-or `square`), `audio`, `joystick`, and `volume` (0..100). Command-line options override
-INI and environment values:
+message box naming the missing files. On first run the port creates a readable
+`%APPDATA%/Krypton Egg/krypton-egg.ini` with the current defaults, then loads it on
+later runs. `KE_CONFIG_DIR` can point to another config directory, which is useful for
+portable runs and automated checks. The older `ke_sdl3.ini` beside the executable is
+still read and overrides the per-user file. Precedence is compiled defaults, the
+per-user file, legacy `ke_sdl3.ini`, `KE_*` environment variables, then command-line
+options:
 
 ```sh
 build/port/ke_sdl3.exe [DATA_DIR] [--scale 1..8] [--fullscreen|--windowed]
   [--integer-scaling|--no-integer-scaling] [--aspect 4:3|square]
-  [--audio on|off] [--joystick on|off] [--volume 0..100] [--asset-dir DIR]
+  [--audio on|off] [--joystick on|off] [--mouse-mode faithful|native]
+  [--volume 0..100] [--asset-dir DIR]
 ```
 
-Sound Blaster audio is on by default at 220h/IRQ7/DMA1. Disable it with `audio=off`
-in `ke_sdl3.ini`, `--audio off`, `KE_SB=0`, or `KE_AUDIO=off`. To record the
+The generated file has these defaults:
+
+```ini
+[video]
+fullscreen = false
+scale = 3
+aspect = true
+integer_scale = true
+
+[audio]
+sound_blaster = true
+volume = 100
+
+[input]
+# SDL gamepad maps to 201h; the frozen game does not poll its joystick hook during play.
+joystick = false
+mouse_mode = faithful
+mouse_sensitivity = 1.0  # reserved; absolute native mode ignores this
+
+[paths]
+asset_dir =  # blank selects the usual executable/assets search
+
+[system]
+irq = async
+windows_host = false
+
+[debug]
+log_level = 2
+```
+
+Sound Blaster audio is on by default at 220h/IRQ7/DMA1. Disable it with
+`sound_blaster=false` in the new config, `audio=off` in the legacy INI, `--audio off`,
+`KE_SB=0`, or `KE_AUDIO=off`. `mouse_mode=faithful` keeps the existing captured,
+relative DOS mouse emulation. `mouse_mode=native` keeps the desktop cursor visible and
+maps its position through the displayed game viewport into the game's absolute INT 33h
+position; clicks outside the viewport clamp to its nearest edge. The original game's
+4/8-sample smoothing remains active. `mouse_sensitivity` is reserved and has no effect
+on absolute native input. `KE_MOUSE_MODE=faithful|native` overrides the file. To record the
 unsigned 8-bit mono samples submitted to SDL, set `KE_AUDIO_DUMP=path.wav`; the
 port writes DSP commands, effective sample rates, and DMA block offsets to
 `path.wav.dsp.log`. Since DSP time constants change the rate during play, the log
@@ -88,8 +128,9 @@ records each rate alongside the WAV's single header rate.
 
 F11 and Alt+Enter toggle fullscreen. Click the window to capture the mouse; Escape or
 focus loss releases it. The original keyboard controls are sent to the game. Enable joystick
-support with `--joystick on`, `KE_JOY=1`, or `joystick=on` in `ke_sdl3.ini`; the first
-connected SDL gamepad is exposed through the emulated 201h gameport. The left stick feeds
+support with `--joystick on`, `KE_JOY=1`, `joystick = true` under `[input]` in
+`krypton-egg.ini`, or `joystick=on` in legacy `ke_sdl3.ini`; the first connected SDL gamepad
+is exposed through the emulated 201h gameport. The left stick feeds
 the X/Y gameport axes, South/A is joystick button 1, and East/B is button 2. Keep the stick
 centered during startup detection so the game's neutral calibration can run. Detection,
 calibration, and the T15 direction/fire bits are verified without physical hardware. The

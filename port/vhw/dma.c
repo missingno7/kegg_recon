@@ -133,6 +133,22 @@ int vdma_read(int channel, uint8_t *dst, int len, int *terminal)
     return n;
 }
 
+/* Diagnostic view used to identify the actual bytes the original asks the card to play.
+ * This deliberately leaves the 8237 address/count/terminal-count state untouched. */
+int vdma_copy_current(int channel, uint8_t *dst, int len)
+{
+    DmaChannel *c = &dch[channel & 3];
+    int n;
+    EnterCriticalSection(&dma_lock);
+    for (n = 0; n < len; n++) {
+        uint32_t linear = ((uint32_t)c->page << 16) | (uint16_t)(c->cur_addr + n);
+        dst[n] = (linear >= LOWMEM_BASE && linear < LOWMEM_END)
+                   ? *(const uint8_t *)(uintptr_t)linear : 0x80;
+    }
+    LeaveCriticalSection(&dma_lock);
+    return n;
+}
+
 uint32_t vdma_current_linear(int channel)
 {
     DmaChannel *c = &dch[channel & 3];
@@ -141,6 +157,29 @@ uint32_t vdma_current_linear(int channel)
     linear = ((uint32_t)c->page << 16) | c->cur_addr;
     LeaveCriticalSection(&dma_lock);
     return linear;
+}
+
+/* Side-effect-free, 64-byte lockstep record: flip-flop, then four 12-byte channel records
+ * (base address/count, current address/count, page, mode, mask, terminal count). */
+void vdma_debug_state(uint8_t out[64])
+{
+    int i;
+    memset(out, 0, 64);
+    EnterCriticalSection(&dma_lock);
+    out[0] = (uint8_t)flipflop;
+    for (i = 0; i < 4; i++) {
+        const DmaChannel *c = &dch[i];
+        uint8_t *p = out + 1 + i * 12;
+        memcpy(p, &c->base_addr, 2);
+        memcpy(p + 2, &c->base_count, 2);
+        memcpy(p + 4, &c->cur_addr, 2);
+        memcpy(p + 6, &c->cur_count, 2);
+        p[8] = c->page;
+        p[9] = c->mode;
+        p[10] = c->masked;
+        p[11] = c->tc;
+    }
+    LeaveCriticalSection(&dma_lock);
 }
 
 /* Device-to-memory data path. The virtual card has no microphone input; unsigned midpoint
