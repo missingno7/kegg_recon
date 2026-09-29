@@ -129,6 +129,9 @@ are the same, and 53 struct definitions match `docs/types.md`.
   passes variadic arguments on the stack in 4-byte slots): `printf`/`spawnlp` are compiled
   inside the ILP32 world (`ke32_clib.c`) and pass a finished buffer. The build fails if an
   ILP32 object references anything outside this allow-list.
+- The ILP32 code generator assumes naturally aligned globals, but the Watcom layout packs them:
+  AArch64 scaled `ldr/str [x, :lo12:sym]` accesses are rewritten to `add` + unscaled access
+  through a temporary register the function does not use (x86 needs nothing).
 - Calls from the host into the ILP32 world are `void (void)` (historical `main`, ISRs from
   the PIC vector table, atexit handlers).
 - Floating point: the heightfield generator (u_0acdd.c) evaluates `int * float * float`
@@ -151,6 +154,15 @@ are the same, and 53 struct definitions match `docs/types.md`.
 point at, including `ke_lowmem_shadow`). It links `libSDL3.so` normally; SDL's own objects
 may live anywhere. All symbols are hidden (`-fvisibility=hidden`) except the entry point, so
 PC-relative references never need a GOT.
+
+### Behavioural proof
+`port/android/tools/lockstep64.py` runs the Android build and the Windows i686 port on the
+same deterministic lockstep machine with the same inputs and compares every frame (clock,
+PIC, PIT, VGA registers/DAC/planes, heap, BIOS data area, SB/DMA state, the game's globals with
+pointers compared as tokens). PROVEN: NO DIVERGENCE in 6000 frames (clicks + mouse replay +
+sound) for x86_64 and for arm64-v8a (the arm64 code run under the emulator's ARM translation,
+inside the app). One known, excluded field: `saved_ds` (copy_ds_to_es stores the host DS
+selector on i386, the virtual flat selector 0170h on 64-bit; never read by the game).
 
 ## 4. Platform abstraction
 
