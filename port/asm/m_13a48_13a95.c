@@ -56,7 +56,15 @@ void write_dac_palette_entry(void *rgb_source, int start_index, int color_count,
 void copy_ds_to_es(void)
 {
     uint16_t ds;
+#if defined(__i386__)
     __asm__ volatile("mov %%ds, %0" : "=r"(ds));
     ((uint16_t *)&saved_ds)[0] = ds;
     __asm__ volatile("mov %0, %%es" : : "r"(ds));
+#else
+    /* 64-bit hosts (the ILP32 game world on Android) have no usable data segment: record
+     * the virtual PC's flat selector, the value FP_SEG() reports (watcom/i86.h). The game
+     * never reads saved_ds back, and ES is meaningless in the flat model. */
+    ds = 0x0170;
+    ((uint16_t *)&saved_ds)[0] = ds;
+#endif
 }

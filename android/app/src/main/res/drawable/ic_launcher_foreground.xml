@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An egg (the same motif as the desktop window icon) on the 108dp adaptive-icon canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFAE2A9" android:strokeColor="#FF693E16" android:strokeWidth="2"
+        android:pathData="M54,26 C66,26 76,46 76,60 C76,74 66,82 54,82 C42,82 32,74 32,60 C32,46 42,26 54,26 Z" />
+    <path android:fillColor="#FFEB9D2A"
+        android:pathData="M54,56 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0" />
+    <path android:fillColor="#FFFFF8DA"
+        android:pathData="M45,40 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+</vector>

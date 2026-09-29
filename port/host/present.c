@@ -24,6 +24,11 @@ static SDL_Texture *texture;
 static uint8_t indexed[MAX_W * MAX_H];
 static uint32_t argb[MAX_W * MAX_H];
 static int game_w, game_h;
+static KeViewport last_viewport;
+static int last_viewport_valid;
+/* Host overlay (Android touch controls): drawn over the frame, never into the VGA image. */
+void (*ke_present_overlay)(SDL_Renderer *renderer, const KeViewport *viewport, int output_w,
+                           int output_h);
 
 int ke_present_init(SDL_Window *window, SDL_Renderer *r)
 {
@@ -69,9 +74,25 @@ void ke_present_frame(void)
             dst.x = viewport.x; dst.y = viewport.y;
             dst.w = viewport.w; dst.h = viewport.h;
             SDL_RenderTexture(renderer, texture, &src, &dst);
+            last_viewport = viewport;
+            last_viewport_valid = 1;
         }
     }
+    if (ke_present_overlay) {
+        int ow = 0, oh = 0;
+        SDL_GetCurrentRenderOutputSize(renderer, &ow, &oh);
+        ke_present_overlay(renderer, last_viewport_valid ? &last_viewport : NULL, ow, oh);
+    }
     SDL_RenderPresent(renderer);
+}
+
+/* The destination of the last presented frame and its scan-out size (0 before the first). */
+int ke_present_last_viewport(KeViewport *out)
+{
+    if (!last_viewport_valid)
+        return 0;
+    *out = last_viewport;
+    return 1;
 }
 
 int ke_present_map_mouse(float window_x, float window_y, int *game_x, int *game_y)

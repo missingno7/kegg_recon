@@ -1,0 +1,4 @@
+// Krypton Egg for Android (docs/android/building.md). AGP 8.7.3, Gradle 8.12, JDK 17 or 21.
+plugins {
+    id 'com.android.application' version '8.7.3' apply false
+}

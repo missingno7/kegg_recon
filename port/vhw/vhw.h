@@ -130,6 +130,8 @@ void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns); /* SDL event t
 void vmouse_set_absolute_position(int x, int y); /* native host position; no mickey changes */
 void vmouse_buttons(int mask);            /* bit0 left, bit1 right, bit2 middle           */
 void vmouse_int33(union REGS *r, struct SREGS *s);
+void vmouse_get_ranges(int *x_min, int *x_max, int *y_min, int *y_max);
+uint32_t vmouse_position_reads(void);   /* INT 33h function 03 calls so far             */
 
 /* ---- gameport (joy.c) ------------------------------------------------------------------ */
 void vjoy_init(void);

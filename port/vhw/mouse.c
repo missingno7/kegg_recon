@@ -24,6 +24,7 @@ static int ratio_x = 8, ratio_y = 16;    /* mickeys per 8 pixels */
 static int sens_x = 50, sens_y = 50, sens_threshold = 50;
 static uint64_t last_motion_timestamp_ns;
 static int motion_clock_valid;
+static uint32_t position_reads;          /* INT 33h function 03 calls (touch press hold) */
 
 static int mouse_accelerate(float dx, float dy, uint64_t timestamp_ns)
 {
@@ -115,6 +116,7 @@ void vmouse_int33(union REGS *r, struct SREGS *s)
         motion_clock_valid = 0;
         break;
     case 0x03:
+        position_reads++;
         r->w.bx = (unsigned short)buttons;
         r->w.cx = (unsigned short)(int)pos_x;
         r->w.dx = (unsigned short)(int)pos_y;
@@ -165,6 +167,27 @@ void vmouse_int33(union REGS *r, struct SREGS *s)
         break;
     }
     ke_mutex_unlock(&mouse_lock);
+}
+
+/* Host input queries (Android touch): the driver's current ranges (functions 07h/08h) and
+ * the number of function 03h reads so far. Neither changes driver state. */
+void vmouse_get_ranges(int *x_min, int *x_max, int *y_min, int *y_max)
+{
+    ke_mutex_lock(&mouse_lock);
+    *x_min = min_x;
+    *x_max = max_x;
+    *y_min = min_y;
+    *y_max = max_y;
+    ke_mutex_unlock(&mouse_lock);
+}
+
+uint32_t vmouse_position_reads(void)
+{
+    uint32_t reads;
+    ke_mutex_lock(&mouse_lock);
+    reads = position_reads;
+    ke_mutex_unlock(&mouse_lock);
+    return reads;
 }
 
 void vmouse_init(void)

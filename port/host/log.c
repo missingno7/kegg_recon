@@ -4,6 +4,9 @@
 #include <string.h>
 #include "../platform/ke_platform.h"
 #include "ke_port.h"
+#if defined(__ANDROID__)
+#include <android/log.h>
+#endif
 
 static FILE *log_file;
 static KeMutex log_lock;
@@ -31,7 +34,15 @@ void ke_vlog(int level, const char *subsystem, const char *fmt, va_list ap)
     vsnprintf(line + n, sizeof line - n, fmt, ap);
     if (log_ready)
         ke_mutex_lock(&log_lock);
+#if defined(__ANDROID__)
+    {
+        static const int priority[] = {ANDROID_LOG_ERROR, ANDROID_LOG_WARN, ANDROID_LOG_INFO,
+                                       ANDROID_LOG_DEBUG, ANDROID_LOG_VERBOSE};
+        __android_log_print(priority[level], "KryptonEgg", "%s %s", subsystem, line + n);
+    }
+#else
     fprintf(stderr, "%s\n", line);
+#endif
     if (log_file) {
         fprintf(log_file, "%s\n", line);
         fflush(log_file);

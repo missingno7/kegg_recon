@@ -1,0 +1,68 @@
+// Krypton Egg Android app: SDL3 Java glue + launcher/import activity + the native game.
+plugins {
+    id 'com.android.application'
+}
+
+def sdl3Dir = (project.findProperty('sdl3.dir') ?: 'C:/tools/download/sdl3/SDL3-3.4.16').toString()
+def cmakeArgs = ["-DKE_SDL3_SOURCE_DIR=${sdl3Dir}", "-DANDROID_STL=c++_static"]
+if (project.findProperty('ke.python')) {
+    cmakeArgs += "-DPython3_EXECUTABLE=${project.findProperty('ke.python')}"
+}
+
+android {
+    namespace 'org.kryptonegg.port'
+    compileSdk 35
+    ndkVersion '28.2.13676358'
+
+    defaultConfig {
+        applicationId 'org.kryptonegg.port'
+        // 29: ELF TLS in the dlopen'ed game library, MAP_FIXED_NOREPLACE-capable kernels.
+        minSdk 29
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+        externalNativeBuild {
+            cmake {
+                arguments(*cmakeArgs)
+                abiFilters 'arm64-v8a', 'x86_64'
+                targets 'main', 'kegame', 'SDL3-shared'
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path 'jni/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+    sourceSets {
+        main {
+            // SDL's Java side, used unmodified from the SDL source tree it was built from.
+            java.srcDirs += ["${sdl3Dir}/android-project/app/src/main/java"]
+        }
+    }
+    buildTypes {
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+    packaging {
+        jniLibs {
+            // Keep libraries uncompressed in the APK; the loader opens libkegame.so by name.
+            useLegacyPackaging false
+            keepDebugSymbols += ['**/libkegame.so']
+        }
+    }
+    lint {
+        abortOnError false
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

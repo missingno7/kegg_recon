@@ -2,6 +2,7 @@
 #ifndef KE_PORT_H
 #define KE_PORT_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
 

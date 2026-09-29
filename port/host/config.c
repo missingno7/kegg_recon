@@ -8,6 +8,24 @@
 
 #define CONFIG_PATH_CAP KE_MAX_PATH
 
+/* Platform defaults: a phone is full screen, scales to fill (non-integer) and its touch
+ * input is absolute (docs/android/architecture.md, "Touch UX"). */
+#if defined(__ANDROID__)
+#define KE_DEFAULT_FULLSCREEN 1
+#define KE_DEFAULT_INTEGER_SCALE 0
+#define KE_DEFAULT_MOUSE_NATIVE 1
+#define KE_DEFAULT_FULLSCREEN_TEXT "true"
+#define KE_DEFAULT_INTEGER_SCALE_TEXT "false"
+#define KE_DEFAULT_MOUSE_MODE_TEXT "native"
+#else
+#define KE_DEFAULT_FULLSCREEN 0
+#define KE_DEFAULT_INTEGER_SCALE 1
+#define KE_DEFAULT_MOUSE_NATIVE 0
+#define KE_DEFAULT_FULLSCREEN_TEXT "false"
+#define KE_DEFAULT_INTEGER_SCALE_TEXT "true"
+#define KE_DEFAULT_MOUSE_MODE_TEXT "faithful"
+#endif
+
 KeConfig ke_config;
 
 static int fullscreen;
@@ -80,7 +98,7 @@ static int path_join(char *out, size_t cap, const char *dir, const char *leaf)
         return 0;
     n = strlen(dir);
     written = snprintf(out, cap, "%s%s%s", dir,
-                       n && dir[n - 1] != '\\' && dir[n - 1] != '/' ? "\\" : "", leaf);
+                       n && dir[n - 1] != '\\' && dir[n - 1] != '/' ? KE_PATH_SEP_STR : "", leaf);
     return written >= 0 && (size_t)written < cap;
 }
 
@@ -277,17 +295,17 @@ static int write_default_config(const char *path)
     fputs("# Krypton Egg SDL3 settings. Edit values, then restart the game.\n"
           "# Precedence: these defaults, this file, legacy ke_sdl3.ini, KE_* variables, CLI.\n"
           "[video]\n"
-          "fullscreen = false\n"
+          "fullscreen = " KE_DEFAULT_FULLSCREEN_TEXT "\n"
           "scale = 3\n"
           "aspect = true\n"
-          "integer_scale = true\n\n"
+          "integer_scale = " KE_DEFAULT_INTEGER_SCALE_TEXT "\n\n"
           "[audio]\n"
           "sound_blaster = true\n"
           "volume = 100\n\n"
           "[input]\n"
           "# SDL gamepad maps to 201h; the frozen game does not poll its joystick hook during play.\n"
           "joystick = false\n"
-          "mouse_mode = faithful\n"
+          "mouse_mode = " KE_DEFAULT_MOUSE_MODE_TEXT "\n"
           "mouse_sensitivity = 1.0  # reserved; absolute native mode ignores this\n\n"
           "[paths]\n"
           "asset_dir =  # blank selects the usual executable/assets search\n\n"
@@ -486,8 +504,9 @@ void ke_config_load(int argc, char **argv)
     ke_config.scale = 3;
     ke_config.aspect = 1;
     ke_config.log_level = KE_LOG_INFO;
-    fullscreen = 0;
-    integer_scale = 1;
+    fullscreen = KE_DEFAULT_FULLSCREEN;
+    integer_scale = KE_DEFAULT_INTEGER_SCALE;
+    ke_config.mouse_native = KE_DEFAULT_MOUSE_NATIVE;
     volume = 100;
     explicit_data_dir = 0;
     find_exe_dir();
