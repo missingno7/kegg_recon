@@ -100,7 +100,8 @@ static void *reserve_low(size_t size)
     return NULL;
 }
 
-__attribute__((visibility("default"))) int SDL_main(int argc, char *argv[])
+/* Map `library` below 2 GB with the heap/stack regions and call its `entry`. */
+static int load_and_run(const char *library, const char *entry_name, int argc, char *argv[])
 {
     uint8_t *window;
     android_dlextinfo ext;
@@ -118,9 +119,9 @@ __attribute__((visibility("default"))) int SDL_main(int argc, char *argv[])
     ext.flags = ANDROID_DLEXT_RESERVED_ADDRESS;
     ext.reserved_addr = window;
     ext.reserved_size = IMAGE_SIZE;
-    game = android_dlopen_ext("libkegame.so", RTLD_NOW | RTLD_LOCAL, &ext);
+    game = android_dlopen_ext(library, RTLD_NOW | RTLD_LOCAL, &ext);
     if (!game) {
-        ERR("android_dlopen_ext(libkegame.so) at %p failed: %s", (void *)window, dlerror());
+        ERR("android_dlopen_ext(%s) at %p failed: %s", library, (void *)window, dlerror());
         return 2;
     }
     regions.image = window;
@@ -136,12 +137,32 @@ __attribute__((visibility("default"))) int SDL_main(int argc, char *argv[])
         ERR("cannot map the game heap/stack: %s", strerror(errno));
         return 2;
     }
-    entry = (KeAndroidMain)dlsym(game, "ke_android_main");
+    entry = (KeAndroidMain)dlsym(game, entry_name);
     if (!entry) {
-        ERR("libkegame.so has no ke_android_main: %s", dlerror());
+        ERR("%s has no %s: %s", library, entry_name, dlerror());
         return 2;
     }
     LOG("game library at %p, heap %p (%u MiB), stack %p (%u MiB)", (void *)window,
         (void *)regions.heap, HEAP_SIZE / MB, (void *)regions.stack, STACK_SIZE / MB);
     return entry(argc, argv, &regions);
 }
+
+#if defined(KE_LOCKSTEP_LOADER)
+/* ke_lockstep_loader: command-line runner of the deterministic lockstep machine
+ * (port/android/lockstep, docs/android/building.md "64-bit lockstep"). */
+int main(int argc, char *argv[])
+{
+    return load_and_run("libkelockstep.so", "ke_lockstep_main", argc, argv);
+}
+#else
+__attribute__((visibility("default"))) int SDL_main(int argc, char *argv[])
+{
+    /* Test hook: `am start ... --esa ke.args --lockstep,...` runs the lockstep runner inside
+     * the app process (the way to exercise arm64 code under an emulator's ARM translation). */
+    if (argc > 1 && strcmp(argv[1], "--lockstep") == 0) {
+        argv[1] = argv[0];
+        return load_and_run("libkelockstep.so", "ke_lockstep_main", argc - 1, argv + 1);
+    }
+    return load_and_run("libkegame.so", "ke_android_main", argc, argv);
+}
+#endif

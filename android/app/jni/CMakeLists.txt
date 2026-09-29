@@ -41,28 +41,39 @@ file(GLOB KE_ASM_SOURCES CONFIGURE_DEPENDS "${KE_ROOT}/port/asm/*.c")
 set(KE_ILP32_OBJECTS)
 set(KE_ILP32_DIR "${CMAKE_CURRENT_BINARY_DIR}/ilp32")
 
-function(ke_ilp32_object kind src name)
-  set(obj "${KE_ILP32_DIR}/${name}.o")
-  add_custom_command(OUTPUT "${obj}"
-    COMMAND "${Python3_EXECUTABLE}" "${KE_ILP32_TOOL}" --abi ${ANDROID_ABI}
-            --clang "${CMAKE_C_COMPILER}" --api ${ANDROID_PLATFORM_LEVEL}
-            --kind ${kind} --src "${src}" --out "${obj}"
-    DEPENDS "${src}" ${KE_ILP32_DEPS} ${KE_ILP32_HEADERS}
-    COMMENT "ILP32 world: ${name}"
-    VERBATIM)
-  set(KE_ILP32_OBJECTS ${KE_ILP32_OBJECTS} "${obj}" PARENT_SCOPE)
+# ke_ilp32_world(<list var> <output dir> [extra tool args...]): every object of the world.
+function(ke_ilp32_world var dir)
+  set(objects)
+  set(jobs)
+  foreach(src ${KE_GAME_SOURCES})
+    get_filename_component(name "${src}" NAME_WE)
+    list(APPEND jobs "game|${src}|${name}")
+  endforeach()
+  foreach(src ${KE_ASM_SOURCES})
+    get_filename_component(name "${src}" NAME_WE)
+    list(APPEND jobs "asm|${src}|asm_${name}")
+  endforeach()
+  list(APPEND jobs "data|${KE_ROOT}/port/stubs/asm_data.S|asm_data"
+                   "clib|${KE_ROOT}/port/android/ilp32/ke32_clib.c|ke32_clib")
+  foreach(job ${jobs})
+    string(REPLACE "|" ";" parts "${job}")
+    list(GET parts 0 kind)
+    list(GET parts 1 src)
+    list(GET parts 2 name)
+    set(obj "${dir}/${name}.o")
+    add_custom_command(OUTPUT "${obj}"
+      COMMAND "${Python3_EXECUTABLE}" "${KE_ILP32_TOOL}" --abi ${ANDROID_ABI}
+              --clang "${CMAKE_C_COMPILER}" --api ${ANDROID_PLATFORM_LEVEL}
+              --kind ${kind} --src "${src}" --out "${obj}" ${ARGN}
+      DEPENDS "${src}" ${KE_ILP32_DEPS} ${KE_ILP32_HEADERS}
+      COMMENT "ILP32 world: ${name}"
+      VERBATIM)
+    list(APPEND objects "${obj}")
+  endforeach()
+  set(${var} ${objects} PARENT_SCOPE)
 endfunction()
 
-foreach(src ${KE_GAME_SOURCES})
-  get_filename_component(name "${src}" NAME_WE)
-  ke_ilp32_object(game "${src}" "${name}")
-endforeach()
-foreach(src ${KE_ASM_SOURCES})
-  get_filename_component(name "${src}" NAME_WE)
-  ke_ilp32_object(asm "${src}" "asm_${name}")
-endforeach()
-ke_ilp32_object(data "${KE_ROOT}/port/stubs/asm_data.S" "asm_data")
-ke_ilp32_object(clib "${KE_ROOT}/port/android/ilp32/ke32_clib.c" "ke32_clib")
+ke_ilp32_world(KE_ILP32_OBJECTS "${KE_ILP32_DIR}")
 
 # The world may call the host only through 32-bit-scalar entry points (build fails otherwise).
 set(KE_BOUNDARY_STAMP "${KE_ILP32_DIR}/boundary.stamp")
@@ -100,6 +111,28 @@ target_compile_options(kegame PRIVATE -std=gnu11 -O2 -g -Wall -Wno-unused-functi
 target_link_libraries(kegame PRIVATE SDL3::SDL3-shared log android m dl)
 target_link_options(kegame PRIVATE -Wl,--no-undefined -Wl,-z,max-page-size=16384
   -Wl,-Bsymbolic)
+
+# ---- 64-bit lockstep runner (-DKE_LOCKSTEP=ON; docs/android/building.md) ---------------
+option(KE_LOCKSTEP "build ke_lockstep_loader + libkelockstep.so" OFF)
+if(KE_LOCKSTEP)
+  ke_ilp32_world(KE_LS_OBJECTS "${CMAKE_CURRENT_BINARY_DIR}/ilp32_lockstep" --wrap wait_for_tick)
+  set_source_files_properties(${KE_LS_OBJECTS} PROPERTIES EXTERNAL_OBJECT TRUE GENERATED TRUE)
+  set(KE_LS_SOURCES ${KE_LP64_SOURCES})
+  list(REMOVE_ITEM KE_LS_SOURCES ${KE_ROOT}/port/android/main_android.c ${KE_ROOT}/port/android/touch.c)
+  list(APPEND KE_LS_SOURCES ${KE_ROOT}/port/host/replay.c ${KE_ROOT}/port/android/lockstep/lockstep_android.c)
+  add_library(kelockstep SHARED ${KE_LS_SOURCES} ${KE_LS_OBJECTS})
+  target_include_directories(kelockstep PRIVATE "${KE_ROOT}/port/include" "${KE_ROOT}/port/android")
+  target_compile_definitions(kelockstep PRIVATE KE_GAME_ILP32=1)
+  target_compile_options(kelockstep PRIVATE -std=gnu11 -O2 -g -Wall -Wno-unused-function
+    -fno-strict-aliasing -fno-omit-frame-pointer -fvisibility=hidden)
+  target_link_libraries(kelockstep PRIVATE SDL3::SDL3-shared log android m dl)
+  target_link_options(kelockstep PRIVATE -Wl,--no-undefined -Wl,-z,max-page-size=16384 -Wl,-Bsymbolic)
+  add_executable(ke_lockstep_loader ${KE_ROOT}/port/android/loader.c)
+  target_compile_definitions(ke_lockstep_loader PRIVATE KE_ANDROID_LOADER=1 KE_LOCKSTEP_LOADER=1)
+  target_include_directories(ke_lockstep_loader PRIVATE "${KE_ROOT}/port/android")
+  target_link_libraries(ke_lockstep_loader PRIVATE log dl)
+  add_dependencies(ke_lockstep_loader kelockstep)
+endif()
 
 # ---- libmain.so (loader) --------------------------------------------------------------------
 add_library(main SHARED ${KE_ROOT}/port/android/loader.c)

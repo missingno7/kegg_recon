@@ -15,6 +15,12 @@ public class GameActivity extends SDLActivity {
 
     @Override
     protected String[] getArguments() {
+        // Development hook (docs/android/building.md): extra "ke.args" replaces the arguments,
+        // e.g. the in-app lockstep runner of debug builds made with -Pke.lockstep=1.
+        String[] extra = getIntent() != null ? getIntent().getStringArrayExtra("ke.args") : null;
+        if (extra != null && BuildConfig.DEBUG) {
+            return extra;
+        }
         return new String[] { GameData.dir(this).getAbsolutePath() };
     }
 }

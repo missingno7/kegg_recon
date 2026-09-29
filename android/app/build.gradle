@@ -5,6 +5,9 @@ plugins {
 
 def sdl3Dir = (project.findProperty('sdl3.dir') ?: 'C:/tools/download/sdl3/SDL3-3.4.16').toString()
 def cmakeArgs = ["-DKE_SDL3_SOURCE_DIR=${sdl3Dir}", "-DANDROID_STL=c++_static"]
+if (project.findProperty('ke.lockstep')) {
+    cmakeArgs += "-DKE_LOCKSTEP=ON"
+}
 if (project.findProperty('ke.python')) {
     cmakeArgs += "-DPython3_EXECUTABLE=${project.findProperty('ke.python')}"
 }
@@ -24,8 +27,10 @@ android {
         externalNativeBuild {
             cmake {
                 arguments(*cmakeArgs)
-                abiFilters 'arm64-v8a', 'x86_64'
-                targets 'main', 'kegame', 'SDL3-shared'
+                abiFilters(*((project.findProperty('ke.abis') ?: 'arm64-v8a,x86_64').toString().split(',')))
+                targets(*(project.findProperty('ke.lockstep') ?
+                          ['main', 'kegame', 'SDL3-shared', 'kelockstep', 'ke_lockstep_loader'] :
+                          ['main', 'kegame', 'SDL3-shared']))
             }
         }
     }
@@ -57,6 +62,9 @@ android {
             useLegacyPackaging false
             keepDebugSymbols += ['**/libkegame.so']
         }
+    }
+    buildFeatures {
+        buildConfig true
     }
     lint {
         abortOnError false

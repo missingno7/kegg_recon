@@ -52,6 +52,7 @@ static Rect buttons[BTN_COUNT];
 static int button_visible[BTN_COUNT];
 static int gameplay_mode;
 static int text_input_on;
+static int keyboard_seen;          /* the soft keyboard appeared since text input started */
 static PacedKey key_queue[64];
 static int key_head, key_tail;
 static int key_phase;                            /* 0 idle, 1 make sent, 2 break sent   */
@@ -263,9 +264,20 @@ static void set_text_input(int on)
     if (on == text_input_on)
         return;
     text_input_on = on;
-    if (on)
-        SDL_StartTextInput(touch_window);
-    else
+    keyboard_seen = 0;
+    if (on) {
+        /* Plain characters, committed one by one: no word composition or autocorrect (the
+         * game wants single key presses), upper case like the game's own table. */
+        SDL_PropertiesID props = SDL_CreateProperties();
+        SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER,
+                              SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE);
+        SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER,
+                              SDL_CAPITALIZE_LETTERS);
+        SDL_SetBooleanProperty(props, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, false);
+        SDL_SetBooleanProperty(props, SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN, false);
+        SDL_StartTextInputWithProperties(touch_window, props);
+        SDL_DestroyProperties(props);
+    } else
         SDL_StopTextInput(touch_window);
 }
 
@@ -340,8 +352,9 @@ int ke_touch_event(const SDL_Event *e)
             /* Back: pause/resume during play, Esc (skip, leave, quit on the menu) elsewhere. */
             if (e->type == SDL_EVENT_KEY_DOWN && !e->key.repeat) {
                 if (text_input_on)
-                    set_text_input(0);
-                queue_key(gameplay_mode ? XT_P : XT_ESC);
+                    set_text_input(0);      /* first Back only closes the soft keyboard */
+                else
+                    queue_key(gameplay_mode ? XT_P : XT_ESC);
             }
             return 1;
         }
@@ -398,6 +411,14 @@ void ke_touch_update(void)
         if (gameplay_mode)
             set_text_input(0);
         ke_log(KE_LOG_INFO, "touch", "%s controls", gameplay_mode ? "gameplay" : "menu");
+    }
+    /* The system hides the soft keyboard itself (Back, swipe): end text input with it. */
+    if (text_input_on) {
+        int shown = SDL_ScreenKeyboardShown(touch_window);
+        if (shown)
+            keyboard_seen = 1;
+        else if (keyboard_seen)
+            set_text_input(0);
     }
     update_held();
     update_keys();

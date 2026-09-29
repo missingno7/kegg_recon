@@ -65,6 +65,7 @@ DIRECT_OK = {
     "kbhit", "getch", "getche", "ke_exit", "vhw_enter", "vhw_leave", "vhw_cpu_poll_yield",
     "vga_mem_read8", "vga_mem_write8", "ke32_host_write", "ke32_spawn_refused",
     "vcpu_cli", "vcpu_sti", "vcpu_interrupts_enabled",
+    "__wrap_wait_for_tick",     # lockstep runner frame hook (short argument, int-promoted)
     # 32-bit data shared with the virtual PC (same size and layout in both worlds)
     "ke_lowmem_shadow", "vhw_last_inp_value",
 }
@@ -452,7 +453,7 @@ def source_order(text: str, ast_text: str) -> str:
 
 # ---- 4. finalize --------------------------------------------------------------------------
 
-def finalize(text: str, abi: str, unit: str):
+def finalize(text: str, abi: str, unit: str, wraps=()):
     progbits = "%progbits" if abi == "arm64-v8a" else "@progbits"
     nobits = "%nobits" if abi == "arm64-v8a" else "@nobits"
     out, relocs, globals_ = [], [], set()
@@ -517,7 +518,7 @@ def finalize(text: str, abi: str, unit: str):
                     else:
                         out.append(f"\t{long_dir}\t{item}")
                 continue
-        out.append(rename_calls(line, abi))
+        out.append(rename_calls(line, abi, {w: '__wrap_' + w for w in wraps if w not in defined}))
     out.append(f"\t.section .note.GNU-stack,\"\",{progbits}")
     if relocs:
         out.append(f"\t.section ke32_relocs,\"aw\",{progbits}")
@@ -595,11 +596,12 @@ def rename_target(expr: str) -> str:
                   lambda m: RENAME.get(m.group(1), m.group(1)), expr)
 
 
-def rename_calls(line: str, abi: str) -> str:
+def rename_calls(line: str, abi: str, extra=None) -> str:
     s = line.strip()
     if not s or s.startswith((".", "#")) or s.endswith(":"):
         return line
-    return map_symbols(line, lambda m: RENAME.get(m.group(1), m.group(1)))
+    table = dict(RENAME, **(extra or {}))
+    return map_symbols(line, lambda m: table.get(m.group(1), m.group(1)))
 
 
 # ---- 5. assemble + boundary check --------------------------------------------------------
@@ -627,6 +629,8 @@ def main(argv):
     ap.add_argument("--src", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--world-symbols", help="file listing symbols defined by the ILP32 world")
+    ap.add_argument("--wrap", action="append", default=[],
+                    help="like ld --wrap: calls to SYM from other units go to __wrap_SYM")
     ap.add_argument("extra", nargs="*")
     args = ap.parse_args(argv)
     out = Path(args.out)
@@ -641,7 +645,7 @@ def main(argv):
         text = Path(args.src).read_text()
         text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
         text = re.sub(r"(?<![\w.$])_([A-Za-z_]\w*)", r"\1", text)
-        final.write_text(finalize(text, args.abi, unit))
+        final.write_text(finalize(text, args.abi, unit, args.wrap))
         assemble(args, final, out)
         return 0
     compile_unit(args, args.extra, raw)
@@ -656,7 +660,7 @@ def main(argv):
     else:
         norm.write_text(text)
     packed.write_text(text)
-    text = finalize(text, args.abi, unit)
+    text = finalize(text, args.abi, unit, args.wrap)
     if args.abi == "arm64-v8a":
         text = unaligned_lo12(text)
     final.write_text(text)

@@ -66,11 +66,17 @@ static Block *next_block(Block *b)
     return next + sizeof(Block) <= heap_end ? (Block *)next : NULL;
 }
 
+/* Lockstep runner (port/android/lockstep): its deterministic arena replaces this one. */
+uint32_t (*ke32_malloc_hook)(uint32_t size);
+void (*ke32_free_hook)(uint32_t p);
+
 uint32_t ke32_malloc(uint32_t size)
 {
     Block *b;
     uint32_t need;
     void *result = NULL;
+    if (ke32_malloc_hook)
+        return ke32_malloc_hook(size);
     if (!heap_ready || size == 0 || size > 0x7fff0000u)
         return 0;
     need = (size + 15u) & ~15u;
@@ -105,6 +111,10 @@ uint32_t ke32_malloc(uint32_t size)
 void ke32_free(uint32_t p)
 {
     Block *b, *next, *prev;
+    if (ke32_free_hook) {
+        ke32_free_hook(p);
+        return;
+    }
     if (!p || !heap_ready)
         return;
     b = (Block *)P(p) - 1;
