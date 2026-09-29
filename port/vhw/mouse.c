@@ -10,11 +10,11 @@
  * side supplies relative motion while its window is captured (port/host/input.c).
  */
 #include <stdio.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
-static CRITICAL_SECTION mouse_lock;
+static KeMutex mouse_lock;
 static double pos_x, pos_y;
 static int min_x, max_x = 639, min_y, max_y = 199;
 static int buttons;
@@ -22,7 +22,6 @@ static int mickey_x, mickey_y;           /* motion counters for function 0Bh */
 static double mickey_fraction_x, mickey_fraction_y;
 static int ratio_x = 8, ratio_y = 16;    /* mickeys per 8 pixels */
 static int sens_x = 50, sens_y = 50, sens_threshold = 50;
-static LARGE_INTEGER motion_clock_frequency;
 static uint64_t last_motion_timestamp_ns;
 static int motion_clock_valid;
 
@@ -55,12 +54,7 @@ static void clamp(void)
 
 void vmouse_motion(float dx, float dy)
 {
-    LARGE_INTEGER now;
-    uint64_t timestamp_ns = 0;
-    if (motion_clock_frequency.QuadPart > 0 && QueryPerformanceCounter(&now))
-        timestamp_ns = (uint64_t)((double)now.QuadPart * 1000000000.0 /
-                                  (double)motion_clock_frequency.QuadPart);
-    vmouse_motion_at(dx, dy, timestamp_ns);
+    vmouse_motion_at(dx, dy, ke_monotonic_raw_ns());
 }
 
 void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns)
@@ -68,7 +62,7 @@ void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns)
     int accelerated;
     double whole_x, whole_y;
 
-    EnterCriticalSection(&mouse_lock);
+    ke_mutex_lock(&mouse_lock);
     accelerated = mouse_accelerate(dx, dy, timestamp_ns);
     whole_x = dx + mickey_fraction_x;
     whole_y = dy + mickey_fraction_y;
@@ -83,30 +77,30 @@ void vmouse_motion_at(float dx, float dy, uint64_t timestamp_ns)
     pos_x += dx * 8.0 / ratio_x * (sens_x / 50.0);
     pos_y += dy * 8.0 / ratio_y * (sens_y / 50.0);
     clamp();
-    LeaveCriticalSection(&mouse_lock);
+    ke_mutex_unlock(&mouse_lock);
 }
 
 void vmouse_set_absolute_position(int x, int y)
 {
-    EnterCriticalSection(&mouse_lock);
+    ke_mutex_lock(&mouse_lock);
     pos_x = x;
     pos_y = y;
     clamp();
-    LeaveCriticalSection(&mouse_lock);
+    ke_mutex_unlock(&mouse_lock);
 }
 
 void vmouse_buttons(int mask)
 {
-    EnterCriticalSection(&mouse_lock);
+    ke_mutex_lock(&mouse_lock);
     buttons = mask;
-    LeaveCriticalSection(&mouse_lock);
+    ke_mutex_unlock(&mouse_lock);
 }
 
 void vmouse_int33(union REGS *r, struct SREGS *s)
 {
     char key[32];
     (void)s;
-    EnterCriticalSection(&mouse_lock);
+    ke_mutex_lock(&mouse_lock);
     switch (r->w.ax) {
     case 0x00:
         r->w.ax = 0xffff;
@@ -170,11 +164,10 @@ void vmouse_int33(union REGS *r, struct SREGS *s)
         ke_log_once(key, KE_LOG_WARN, "mouse", "INT 33h AX=%04Xh not implemented", r->w.ax);
         break;
     }
-    LeaveCriticalSection(&mouse_lock);
+    ke_mutex_unlock(&mouse_lock);
 }
 
 void vmouse_init(void)
 {
-    InitializeCriticalSection(&mouse_lock);
-    QueryPerformanceFrequency(&motion_clock_frequency);
+    ke_mutex_init(&mouse_lock);
 }

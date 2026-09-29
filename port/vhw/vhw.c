@@ -1,6 +1,5 @@
 /* vhw.c - virtual PC assembly: device initialisation order and shutdown. */
-#include <windows.h>
-#include <timeapi.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
@@ -9,7 +8,7 @@ void vpit_start(void);
 int vhw_init(void)
 {
     if (!vhw_lockstep)
-        timeBeginPeriod(1);        /* 1 ms scheduler granularity for device threads */
+        ke_timer_resolution_begin(); /* 1 ms scheduler granularity for device threads */
     vhw_fault_init();
     if (lowmem_init() != 0)
         return -1;

@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "ke_port.h"
 #include "../vhw/vhw.h"
 
@@ -21,18 +21,20 @@ extern int timer_enabled09;
 static void (*atexit_fns[MAX_ATEXIT])(void);
 static int atexit_count;
 static jmp_buf exit_jump;
-static volatile LONG finished;
-static volatile LONG quit_requested;
+static ke_atomic_t finished;
+static ke_atomic_t quit_requested;
 static int exit_code;
-static HANDLE game_thread;
-static DWORD game_thread_id;
-static volatile LONG exiting;
+static KeThread *game_thread;
+static ke_thread_id game_thread_id;
+static ke_atomic_t exiting;
+static ke_atomic_t pause_requested, pause_parked;
+static KeEvent *pause_wake;
 
-int ke_on_game_thread(void) { return GetCurrentThreadId() == game_thread_id; }
-void *ke_game_thread_handle(void) { return game_thread; }
+int ke_on_game_thread(void) { return ke_thread_current_id() == game_thread_id; }
+KeThread *ke_game_thread_handle(void) { return game_thread; }
 int ke_game_thread_finished(void) { return finished; }
 int ke_game_exit_code(void) { return exit_code; }
-void ke_request_quit(void) { InterlockedExchange(&quit_requested, 1); }
+void ke_request_quit(void) { ke_atomic_exchange(&quit_requested, 1); }
 int ke_quit_requested(void) { return quit_requested; }
 
 int ke_atexit(void (*fn)(void))
@@ -50,9 +52,12 @@ static void ke_exit_impl(int code, int log_exit, int run_atexit)
     if (!ke_on_game_thread()) {
         /* exit() reached from an ISR running on the IRQ thread: make the game thread exit. */
         vpic_isr_exit_redirect(code);
+    } else {
+        /* exit() inside an ISR delivered on the game thread itself (POSIX signal) */
+        vpic_isr_exit_on_game_thread();
     }
     vhw_reset_nesting();
-    if (InterlockedExchange(&exiting, 1) == 0) {
+    if (ke_atomic_exchange(&exiting, 1) == 0) {
         exit_code = code;
         if (log_exit)
             ke_log(KE_LOG_INFO, "game", "exit(%d) called; running %d atexit handlers", code,
@@ -87,11 +92,46 @@ void ke_stop_game_from_fault(const char *why)
 {
     ke_log(KE_LOG_ERROR, "game", "game thread stopped: %s", why);
     exit_code = 3;
-    InterlockedExchange(&exiting, 1); /* no atexit handlers after a fault */
+    ke_atomic_exchange(&exiting, 1); /* no atexit handlers after a fault */
     longjmp(exit_jump, 2);
 }
 
-static DWORD WINAPI game_thread_main(LPVOID unused)
+/* ---- emulation pause (Android backgrounding) ------------------------------------------
+ * The host asks for a pause; the game thread parks at its next virtual-PC boundary
+ * (vhw_leave, the memory-poll yield or a blocking BIOS wait: never inside a device lock
+ * or an interrupt handler) until the host resumes it. Virtual time is frozen separately by
+ * ke_time_pause() so no emulated time passes while the app is in the background. */
+void ke_pause_game(void)
+{
+    if (!pause_wake)
+        pause_wake = ke_event_create();
+    ke_atomic_exchange(&pause_requested, 1);
+}
+
+void ke_resume_game(void)
+{
+    ke_atomic_exchange(&pause_requested, 0);
+    if (pause_wake)
+        ke_event_set(pause_wake);
+}
+
+int ke_game_paused(void) { return (int)ke_atomic_load(&pause_parked); }
+
+void ke_check_pause(void)
+{
+    if (!pause_requested || !ke_on_game_thread() || exiting)
+        return;
+    ke_atomic_exchange(&pause_parked, 1);
+    ke_log(KE_LOG_INFO, "game", "emulation paused");
+    while (ke_atomic_load(&pause_requested) && !quit_requested)
+        ke_event_wait_ms(pause_wake, 100);
+    ke_atomic_exchange(&pause_parked, 0);
+    ke_log(KE_LOG_INFO, "game", "emulation resumed");
+    if (quit_requested)
+        ke_check_quit();
+}
+
+static unsigned game_thread_main(void *unused)
 {
     (void)unused;
     vhw_bind_game_thread();
@@ -105,19 +145,26 @@ static DWORD WINAPI game_thread_main(LPVOID unused)
         ke_log(KE_LOG_INFO, "timer", "timer diagnostic: timer_ok=%d timer_delta=%u timer_enabled09=%d",
                timer_ok, timer_delta, timer_enabled09);
     ke_log(KE_LOG_INFO, "game", "game thread finished (exit code %d)", exit_code);
-    InterlockedExchange(&finished, 1);
+    ke_atomic_exchange(&finished, 1);
     return 0;
+}
+
+static unsigned game_thread_entry(void *unused)
+{
+    game_thread_id = ke_thread_current_id();
+    return game_thread_main(unused);
 }
 
 int ke_game_thread_start(void)
 {
-    /* 4 MiB stack; DOS/4GW gave the game far less, deep recursion is not expected. */
-    game_thread = CreateThread(NULL, 4u << 20, game_thread_main, NULL, CREATE_SUSPENDED,
-                               &game_thread_id);
+    /* 4 MiB stack; DOS/4GW gave the game far less, deep recursion is not expected. On
+     * Android the stack comes from the low game region (ke_platform_set_game_stack). */
+    game_thread = ke_thread_create(game_thread_entry, NULL, 4u << 20,
+                                   KE_THREAD_HELD | KE_THREAD_GAME_STACK);
     if (!game_thread)
         return -1;
     vhw_start_devices();
-    ResumeThread(game_thread);
+    ke_thread_start(game_thread);
     return 0;
 }
 
@@ -131,54 +178,23 @@ int ke_game_run_here(void (*entry)(void))
         entry();
         ke_exit(0);
     }
-    InterlockedExchange(&finished, 1);
+    ke_atomic_exchange(&finished, 1);
     return exit_code;
 }
 
 /* Tests (ke_oracle): make the calling thread the "game thread" without running main(). */
 void ke_game_thread_adopt(void)
 {
-    DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &game_thread,
-                    0, FALSE, DUPLICATE_SAME_ACCESS);
-    game_thread_id = GetCurrentThreadId();
+    game_thread = ke_thread_adopt_current();
+    game_thread_id = ke_thread_current_id();
     vhw_bind_game_thread();
 }
 
-/* Diagnostics: log the game thread's EIP and EBP-chain return addresses (game code is built
- * with -O0, so frame pointers are intact). Resolve with `addr2line -f -e ke_sdl3.exe ADDR`. */
+/* Diagnostics: log the game thread's program counter and frame chain (Win32: EBP chain,
+ * resolve with `addr2line -f -e ke_sdl3.exe ADDR`). */
 void ke_log_game_backtrace(const char *why)
 {
-    CONTEXT ctx;
-    uint32_t ebp, frames[12];
-    int n = 0, i;
-    char text[256];
-    int len;
     if (!game_thread || finished)
         return;
-    if (SuspendThread(game_thread) == (DWORD)-1)
-        return;
-    memset(&ctx, 0, sizeof ctx);
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    if (GetThreadContext(game_thread, &ctx)) {
-        frames[n++] = ctx.Eip;
-        ebp = ctx.Ebp;
-        while (n < 12 && ebp && !IsBadReadPtr((void *)(uintptr_t)ebp, 8)) {
-            uint32_t next = ((uint32_t *)(uintptr_t)ebp)[0];
-            frames[n++] = ((uint32_t *)(uintptr_t)ebp)[1];
-            if (next <= ebp)
-                break;
-            ebp = next;
-        }
-    }
-    ResumeThread(game_thread);
-    /* print link-time addresses so addr2line works despite ASLR */
-    {
-        uintptr_t base = (uintptr_t)GetModuleHandleW(NULL);
-        IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + ((IMAGE_DOS_HEADER *)base)->e_lfanew);
-        uint32_t delta = (uint32_t)(base - nt->OptionalHeader.ImageBase);
-        len = snprintf(text, sizeof text, "game thread (%s), link addresses:", why);
-        for (i = 0; i < n && len < (int)sizeof text - 12; i++)
-            len += snprintf(text + len, sizeof text - (size_t)len, " %08X", frames[i] - delta);
-    }
-    ke_log(KE_LOG_INFO, "game", "%s", text);
+    ke_platform_log_thread_backtrace(game_thread, why);
 }

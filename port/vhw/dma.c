@@ -6,7 +6,7 @@
  * neutral sample for device->memory transfers used by its startup DMA probe.
  */
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
@@ -17,7 +17,7 @@ typedef struct DmaChannel {
 
 static DmaChannel dch[4];
 static int flipflop;
-static CRITICAL_SECTION dma_lock;
+static KeMutex dma_lock;
 static const uint16_t page_ports[4] = {0x87, 0x83, 0x81, 0x82};
 
 static void advance_channel(DmaChannel *c)
@@ -41,7 +41,7 @@ static uint32_t dma_in(void *ctx, uint16_t port, int size)
 {
     uint32_t v = 0xff;
     (void)ctx; (void)size;
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     if (port < 8) {
         DmaChannel *c = &dch[port >> 1];
         uint16_t w = (port & 1) ? c->cur_count : c->cur_addr;
@@ -60,7 +60,7 @@ static uint32_t dma_in(void *ctx, uint16_t port, int size)
             if (port == page_ports[i])
                 v = dch[i].page;
     }
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
     return v;
 }
 
@@ -69,7 +69,7 @@ static void dma_out(void *ctx, uint16_t port, uint32_t value, int size)
     int i;
     (void)ctx; (void)size;
     value &= 0xff;
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     if (port < 8) {
         DmaChannel *c = &dch[port >> 1];
         uint16_t *base = (port & 1) ? &c->base_count : &c->base_addr;
@@ -104,7 +104,7 @@ static void dma_out(void *ctx, uint16_t port, uint32_t value, int size)
             if (port == page_ports[i])
                 dch[i].page = (uint8_t)value;
     }
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
 }
 
 int vdma_read(int channel, uint8_t *dst, int len, int *terminal)
@@ -112,7 +112,7 @@ int vdma_read(int channel, uint8_t *dst, int len, int *terminal)
     DmaChannel *c = &dch[channel & 3];
     int n = 0;
     *terminal = 0;
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     if (!c->masked && ((c->mode >> 2) & 3) == 2) { /* read: memory to I/O */
         while (n < len) {
             uint32_t linear = ((uint32_t)c->page << 16) | c->cur_addr;
@@ -129,7 +129,7 @@ int vdma_read(int channel, uint8_t *dst, int len, int *terminal)
                     "channel %d playback request blocked (masked=%u mode=%02X count=%04X)",
                     channel & 3, c->masked, c->mode, c->cur_count);
     }
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
     return n;
 }
 
@@ -139,13 +139,13 @@ int vdma_copy_current(int channel, uint8_t *dst, int len)
 {
     DmaChannel *c = &dch[channel & 3];
     int n;
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     for (n = 0; n < len; n++) {
         uint32_t linear = ((uint32_t)c->page << 16) | (uint16_t)(c->cur_addr + n);
         dst[n] = (linear >= LOWMEM_BASE && linear < LOWMEM_END)
                    ? *(const uint8_t *)(uintptr_t)linear : 0x80;
     }
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
     return n;
 }
 
@@ -153,9 +153,9 @@ uint32_t vdma_current_linear(int channel)
 {
     DmaChannel *c = &dch[channel & 3];
     uint32_t linear;
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     linear = ((uint32_t)c->page << 16) | c->cur_addr;
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
     return linear;
 }
 
@@ -165,7 +165,7 @@ void vdma_debug_state(uint8_t out[64])
 {
     int i;
     memset(out, 0, 64);
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     out[0] = (uint8_t)flipflop;
     for (i = 0; i < 4; i++) {
         const DmaChannel *c = &dch[i];
@@ -179,7 +179,7 @@ void vdma_debug_state(uint8_t out[64])
         p[10] = c->masked;
         p[11] = c->tc;
     }
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
 }
 
 /* Device-to-memory data path. The virtual card has no microphone input; unsigned midpoint
@@ -190,7 +190,7 @@ int vdma_write(int channel, uint8_t sample, int len, int *terminal)
     DmaChannel *c = &dch[channel & 3];
     int n = 0;
     *terminal = 0;
-    EnterCriticalSection(&dma_lock);
+    ke_mutex_lock(&dma_lock);
     if (!c->masked && ((c->mode >> 2) & 3) == 1) { /* write: I/O to memory */
         while (n < len) {
             uint32_t linear = ((uint32_t)c->page << 16) | c->cur_addr;
@@ -204,14 +204,14 @@ int vdma_write(int channel, uint8_t sample, int len, int *terminal)
             }
         }
     }
-    LeaveCriticalSection(&dma_lock);
+    ke_mutex_unlock(&dma_lock);
     return n;
 }
 
 void vdma_init(void)
 {
     int i;
-    InitializeCriticalSection(&dma_lock);
+    ke_mutex_init(&dma_lock);
     for (i = 0; i < 4; i++)
         dch[i].masked = 1;
     vhw_register_ports(0x00, 0x0f, dma_in, dma_out, NULL, "dma8");

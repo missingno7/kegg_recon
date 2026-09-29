@@ -40,7 +40,9 @@ void vhw_clock_begin_calibration(uint64_t start_ns);
 int vhw_clock_calibration_active(void);
 void vhw_bind_game_thread(void);
 void vhw_bind_irq_thread(void);
-int vhw_on_irq_thread(void);
+int vhw_on_irq_thread(void);   /* IRQ thread, or an async handler on the game thread (POSIX) */
+void vhw_set_async_isr_context(int active);
+int vhw_in_async_isr_context(void);
 void vhw_reset_nesting(void);   /* after ke_exit() abandons service/ISR frames          */
 extern volatile long vcpu_if_flag, vhw_game_depth, vhw_in_isr;
 extern volatile long vhw_cpu_poll_waiting; /* game thread is at the scheduler's safe wait point */
@@ -86,6 +88,7 @@ int vpic_has_deliverable(void);
 void virq_thread_start(void);             /* async delivery thread (KE_IRQ=async)          */
 void virq_thread_stop(void);
 void vpic_isr_exit_redirect(int code);    /* ke_exit() called inside an ISR on IRQ thread  */
+void vpic_isr_exit_on_game_thread(void);  /* ke_exit() inside an async ISR on the game thread */
 
 /* ---- 8253 PIT (pit.c) ------------------------------------------------------------------ */
 void vpit_init(void);

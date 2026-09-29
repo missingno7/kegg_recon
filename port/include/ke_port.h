@@ -47,7 +47,13 @@ void ke_check_quit(void);                /* called by vhw on the game thread    
 int ke_on_game_thread(void);
 void ke_game_thread_adopt(void);        /* tests: calling thread becomes the game thread  */
 int ke_game_run_here(void (*entry)(void)); /* lockstep: main() on this thread, exit code  */
-void *ke_game_thread_handle(void);       /* HANDLE                                          */
+struct KeThread *ke_game_thread_handle(void); /* port/platform thread handle                */
+/* Emulation pause (app backgrounding): the game thread parks at its next virtual-PC
+ * boundary and virtual time stands still until ke_resume_game(). */
+void ke_pause_game(void);
+void ke_resume_game(void);
+int ke_game_paused(void);
+void ke_check_pause(void);             /* called by vhw on the game thread               */
 /* Watcom exit()/atexit() replacements (watcom_compat.h maps the names). */
 void ke_exit(int code) __attribute__((noreturn));
 int ke_atexit(void (*fn)(void));

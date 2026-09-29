@@ -2,17 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "ke_port.h"
 
 static FILE *log_file;
-static CRITICAL_SECTION log_lock;
+static KeMutex log_lock;
 static int log_ready;
 static const char *level_name[] = {"ERROR", "WARN", "INFO", "DEBUG", "TRACE"};
 
 void ke_log_init(const char *path)
 {
-    InitializeCriticalSection(&log_lock);
+    ke_mutex_init(&log_lock);
     log_ready = 1;
     if (path)
         log_file = fopen(path, "w");
@@ -30,14 +30,14 @@ void ke_vlog(int level, const char *subsystem, const char *fmt, va_list ap)
                  level_name[level], subsystem);
     vsnprintf(line + n, sizeof line - n, fmt, ap);
     if (log_ready)
-        EnterCriticalSection(&log_lock);
+        ke_mutex_lock(&log_lock);
     fprintf(stderr, "%s\n", line);
     if (log_file) {
         fprintf(log_file, "%s\n", line);
         fflush(log_file);
     }
     if (log_ready)
-        LeaveCriticalSection(&log_lock);
+        ke_mutex_unlock(&log_lock);
 }
 
 void ke_log(int level, const char *subsystem, const char *fmt, ...)
@@ -60,11 +60,11 @@ static int once_first(const char *key)
     for (p = key; *p; p++)
         h = h * 33 + (unsigned char)*p;
     if (log_ready)
-        EnterCriticalSection(&log_lock);
+        ke_mutex_lock(&log_lock);
     for (i = 0; i < ONCE_SLOTS; i++) {
         unsigned slot = (h + i) % ONCE_SLOTS;
         if (!once_keys[slot]) {
-            once_keys[slot] = _strdup(key);
+            once_keys[slot] = ke_strdup(key);
             first = 1;
             break;
         }
@@ -72,7 +72,7 @@ static int once_first(const char *key)
             break;
     }
     if (log_ready)
-        LeaveCriticalSection(&log_lock);
+        ke_mutex_unlock(&log_lock);
     return first;
 }
 
@@ -97,7 +97,7 @@ void ke_stub_hit(const char *name, const char *owner)
 {
     int i;
     if (log_ready)
-        EnterCriticalSection(&log_lock);
+        ke_mutex_lock(&log_lock);
     for (i = 0; i < stub_count; i++)
         if (stub_names[i] == name)
             break;
@@ -109,7 +109,7 @@ void ke_stub_hit(const char *name, const char *owner)
     if (i < MAX_STUBS)
         stub_calls[i]++;
     if (log_ready)
-        LeaveCriticalSection(&log_lock);
+        ke_mutex_unlock(&log_lock);
     if (i < MAX_STUBS && stub_calls[i] == 1)
         ke_log(KE_LOG_WARN, "stub", "STUB %s (%s) reached; returns 0", name, owner);
 }
@@ -123,36 +123,4 @@ void ke_stub_report(void)
                stub_calls[i]);
 }
 
-/* ---- time ------------------------------------------------------------------------------ */
-uint64_t ke_now_ns(void)
-{
-    static LARGE_INTEGER freq, origin;
-    LARGE_INTEGER now;
-    if (!freq.QuadPart) {
-        QueryPerformanceFrequency(&freq);
-        QueryPerformanceCounter(&origin);
-    }
-    QueryPerformanceCounter(&now);
-    return (uint64_t)((double)(now.QuadPart - origin.QuadPart) * 1e9 / (double)freq.QuadPart);
-}
-
-void ke_sleep_ns(uint64_t ns)
-{
-    static __thread HANDLE timer; /* one waitable timer per thread */
-    LARGE_INTEGER due;
-    uint64_t end = ke_now_ns() + ns;
-    if (ns >= 1500000) {
-        if (!timer)
-            timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                                           TIMER_ALL_ACCESS);
-        if (timer) {
-            due.QuadPart = -(LONGLONG)((ns - 500000) / 100);
-            SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE);
-            WaitForSingleObject(timer, INFINITE);
-        } else {
-            Sleep((DWORD)(ns / 1000000));
-        }
-    }
-    while (ke_now_ns() < end)
-        YieldProcessor();
-}
+/* ---- time: port/platform (ke_now_ns, ke_sleep_ns) ------------------------------------ */

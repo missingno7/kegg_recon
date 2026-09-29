@@ -6,25 +6,27 @@
  * returns (vhw_leave), which is where a real CPU would take them after the IN/OUT/INT
  * instruction completes.
  */
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
-volatile LONG vcpu_if_flag = 1;      /* IF: 1 = interrupts enabled                            */
-volatile LONG vhw_game_depth;        /* nesting of vhw services on the game thread            */
-volatile LONG vhw_in_isr;            /* an interrupt handler is running (either thread)       */
-static DWORD game_tid;
-static DWORD irq_tid;
-static __thread HANDLE poll_timer;
-volatile LONG vhw_cpu_poll_waiting;
-static INIT_ONCE machine_clock_once = INIT_ONCE_STATIC_INIT;
-static CRITICAL_SECTION machine_clock_lock;
+ke_atomic_t vcpu_if_flag = 1;      /* IF: 1 = interrupts enabled                            */
+ke_atomic_t vhw_game_depth;        /* nesting of vhw services on the game thread            */
+ke_atomic_t vhw_in_isr;            /* an interrupt handler is running (either thread)       */
+static ke_thread_id game_tid;
+static ke_thread_id irq_tid;
+/* POSIX: an asynchronously delivered handler runs on the game thread itself (inside the
+ * interrupt signal); it then counts as "the IRQ thread" for every IRQ-context decision. */
+static volatile int async_isr_context;
+ke_atomic_t vhw_cpu_poll_waiting;
+static KeOnce machine_clock_once = KE_ONCE_INIT;
+static KeMutex machine_clock_lock;
 static uint64_t machine_clock_ns;
 static uint64_t machine_wall_ns;
 static int calibration_clock_active;
-static DWORD calibration_clock_owner;
+static ke_thread_id calibration_clock_owner;
 static uint64_t calibration_clock_ns;
-static volatile LONG if_owner_tid;
+static ke_atomic_t if_owner_tid;
 #define CALIBRATION_CLOCK_STEP_NS 5000ull
 /* A deliverable IRQ0 freezes the shared PIT/VGA clock at its scheduled edge until the
  * handler starts. Host delivery delay is accumulated as clock debt and repaid at a bounded
@@ -69,20 +71,16 @@ void vhw_lockstep_advance(uint64_t ns)
  * advance by fixed steps, so host preemption cannot change a 3DA/PIT poll. Outside calibration
  * the clock follows wall time. A deliverable IRQ0 holds time at its PIT edge until delivery;
  * its edge-time scope advances through the ISR and delivery delay is smoothed back in. */
-static BOOL CALLBACK machine_clock_init(PINIT_ONCE once, PVOID parameter, PVOID *context)
+static void machine_clock_init(void)
 {
-    (void)once;
-    (void)parameter;
-    (void)context;
-    InitializeCriticalSection(&machine_clock_lock);
+    ke_mutex_init(&machine_clock_lock);
     machine_clock_ns = ke_now_ns();
     machine_wall_ns = machine_clock_ns;
-    return TRUE;
 }
 
 static void ensure_machine_clock(void)
 {
-    InitOnceExecuteOnce(&machine_clock_once, machine_clock_init, NULL, NULL);
+    ke_once(&machine_clock_once, machine_clock_init);
 }
 
 static void machine_clock_sync_wall(uint64_t now, int smooth_catchup)
@@ -132,13 +130,13 @@ static uint64_t irq_clock_advance_to(uint64_t now)
 uint64_t vhw_clock_now_ns(void)
 {
     uint64_t now, result;
-    DWORD tid;
+    ke_thread_id tid;
     if (vhw_lockstep)
         return vhw_lockstep_ns;
     now = ke_now_ns();
-    tid = GetCurrentThreadId();
+    tid = ke_thread_current_id();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (irq_clock_active) {
         result = irq_clock_advance_to(now);
     } else if (irq0_hold_active) {
@@ -150,7 +148,7 @@ uint64_t vhw_clock_now_ns(void)
         machine_clock_sync_wall(now, 1);
         result = machine_clock_ns;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
     return result;
 }
 
@@ -162,33 +160,33 @@ uint64_t vhw_clock_wall_delay_ns(uint64_t clock_delta_ns)
     if (vhw_lockstep || !clock_delta_ns)
         return clock_delta_ns;
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (clock_catchup_debt_ns) {
         extra = (clock_delta_ns / denominator) * CLOCK_CATCHUP_PPM +
                 ((clock_delta_ns % denominator) * CLOCK_CATCHUP_PPM) / denominator;
         if (extra > clock_catchup_debt_ns)
             extra = clock_catchup_debt_ns;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
     return clock_delta_ns - extra;
 }
 
 void vhw_clock_begin_calibration(uint64_t start_ns)
 {
-    DWORD tid = GetCurrentThreadId();
+    ke_thread_id tid = ke_thread_current_id();
     uint64_t now;
     if (vhw_lockstep)
         return;                 /* the lockstep clock is already per-event deterministic */
     now = ke_now_ns();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
-    if (!vcpu_if_flag && tid == (DWORD)InterlockedCompareExchange(&if_owner_tid, 0, 0)) {
+    ke_mutex_lock(&machine_clock_lock);
+    if (!vcpu_if_flag && tid == (ke_thread_id)ke_atomic_load(&if_owner_tid)) {
         machine_clock_sync_wall(now, 0);
         calibration_clock_ns = start_ns;
         calibration_clock_owner = tid;
         calibration_clock_active = 1;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
 }
 
 int vhw_clock_calibration_active(void)
@@ -197,18 +195,18 @@ int vhw_clock_calibration_active(void)
     if (vhw_lockstep)
         return 0;
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
-    active = calibration_clock_active && GetCurrentThreadId() == calibration_clock_owner &&
+    ke_mutex_lock(&machine_clock_lock);
+    active = calibration_clock_active && ke_thread_current_id() == calibration_clock_owner &&
              !vcpu_if_flag;
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
     return active;
 }
 
-static void vhw_clock_end_calibration(DWORD tid)
+static void vhw_clock_end_calibration(ke_thread_id tid)
 {
     uint64_t now = ke_now_ns();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (calibration_clock_active && calibration_clock_owner == tid) {
         machine_clock_sync_wall(now, 0);
         if (calibration_clock_ns > machine_clock_ns)
@@ -217,7 +215,7 @@ static void vhw_clock_end_calibration(DWORD tid)
         calibration_clock_owner = 0;
         machine_wall_ns = now;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
 }
 
 void vhw_clock_irq0_pending(uint64_t edge_ns)
@@ -227,7 +225,7 @@ void vhw_clock_irq0_pending(uint64_t edge_ns)
         return;
     now = ke_now_ns();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (!irq0_hold_active && !irq_clock_active) {
         machine_clock_sync_wall(now, 1);
         if (edge_ns && edge_ns < machine_clock_ns) {
@@ -241,7 +239,7 @@ void vhw_clock_irq0_pending(uint64_t edge_ns)
         machine_wall_ns = now;
         irq0_hold_active = 1;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
 }
 
 int vhw_clock_irq0_held(void)
@@ -250,9 +248,9 @@ int vhw_clock_irq0_held(void)
     if (vhw_lockstep)
         return 0;
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     held = irq0_hold_active;
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
     return held;
 }
 
@@ -264,7 +262,7 @@ void vhw_clock_irq0_release(void)
         return;
     now = ke_now_ns();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (irq0_hold_active && !irq_clock_active) {
         if (now > irq0_hold_wall_ns)
             clock_add_catchup_debt(now - irq0_hold_wall_ns);
@@ -273,7 +271,7 @@ void vhw_clock_irq0_release(void)
         irq0_hold_active = 0;
         released = 1;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
     if (released)
         vpit_clock_changed();
 }
@@ -285,7 +283,7 @@ void vhw_clock_irq0_enter(uint64_t edge_ns)
         return;
     now = ke_now_ns();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (irq0_hold_active && !irq_clock_active) {
         irq_clock_ns = edge_ns > irq0_hold_ns ? edge_ns : irq0_hold_ns;
         irq_wall_ns = now;
@@ -293,7 +291,7 @@ void vhw_clock_irq0_enter(uint64_t edge_ns)
             clock_add_catchup_debt(now - irq0_hold_wall_ns);
         irq_clock_active = 1;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
 }
 
 void vhw_clock_irq0_leave(void)
@@ -303,7 +301,7 @@ void vhw_clock_irq0_leave(void)
         return;
     now = ke_now_ns();
     ensure_machine_clock();
-    EnterCriticalSection(&machine_clock_lock);
+    ke_mutex_lock(&machine_clock_lock);
     if (irq_clock_active) {
         machine_clock_ns = irq_clock_advance_to(now);
         machine_wall_ns = now;
@@ -311,54 +309,61 @@ void vhw_clock_irq0_leave(void)
         irq0_hold_wall_ns = now;
         irq_clock_active = 0;
     }
-    LeaveCriticalSection(&machine_clock_lock);
+    ke_mutex_unlock(&machine_clock_lock);
 }
 
-void vhw_bind_game_thread(void) { game_tid = GetCurrentThreadId(); }
-void vhw_bind_irq_thread(void) { irq_tid = GetCurrentThreadId(); }
-int vhw_on_irq_thread(void) { return irq_tid && GetCurrentThreadId() == irq_tid; }
+void vhw_bind_game_thread(void) { game_tid = ke_thread_current_id(); }
+void vhw_bind_irq_thread(void) { irq_tid = ke_thread_current_id(); }
+int vhw_on_irq_thread(void)
+{
+    return (irq_tid && ke_thread_current_id() == irq_tid) || async_isr_context;
+}
+void vhw_set_async_isr_context(int active) { async_isr_context = active; }
+int vhw_in_async_isr_context(void) { return async_isr_context; }
 int vcpu_interrupts_enabled(void) { return vcpu_if_flag != 0; }
 
 void vhw_enter(void)
 {
-    if (GetCurrentThreadId() == game_tid)
-        InterlockedIncrement(&vhw_game_depth);
+    if (ke_thread_current_id() == game_tid)
+        ke_atomic_increment(&vhw_game_depth);
 }
 
 void vhw_leave(void)
 {
-    if (GetCurrentThreadId() != game_tid)
+    if (ke_thread_current_id() != game_tid)
         return;
     if (vhw_game_depth == 1 && !vhw_in_isr) {
         if (vcpu_if_flag && vpic_has_deliverable())
             vpic_deliver_pending();
         if (ke_quit_requested())
             ke_check_quit();
+        ke_check_pause();
     }
-    InterlockedDecrement(&vhw_game_depth);
+    ke_atomic_decrement(&vhw_game_depth);
 }
 
 /* Forget service/ISR nesting abandoned by ke_exit()'s longjmp. */
 void vhw_reset_nesting(void)
 {
-    InterlockedExchange(&vhw_game_depth, 0);
-    InterlockedExchange(&vhw_in_isr, 0);
+    ke_atomic_exchange(&vhw_game_depth, 0);
+    ke_atomic_exchange(&vhw_in_isr, 0);
+    async_isr_context = 0;
 }
 
 void vcpu_cli(void)
 {
-    DWORD tid = GetCurrentThreadId();
-    InterlockedExchange(&if_owner_tid, (LONG)tid);
-    InterlockedExchange(&vcpu_if_flag, 0);
+    ke_thread_id tid = ke_thread_current_id();
+    ke_atomic_exchange(&if_owner_tid, (ke_atomic_value)tid);
+    ke_atomic_exchange(&vcpu_if_flag, 0);
     vhw_clock_irq0_release();
 }
 
 void vcpu_sti(void)
 {
-    DWORD tid = GetCurrentThreadId();
+    ke_thread_id tid = ke_thread_current_id();
     vhw_clock_end_calibration(tid);
-    InterlockedExchange(&if_owner_tid, 0);
-    InterlockedExchange(&vcpu_if_flag, 1);
+    ke_atomic_exchange(&if_owner_tid, 0);
+    ke_atomic_exchange(&vcpu_if_flag, 1);
 }
 
 /* The original wait_for_tick path polls a memory flag without entering the vhw. */
@@ -376,22 +381,15 @@ void vhw_cpu_poll_yield(void)
             vpic_deliver_pending();
         return;
     }
-    if (GetCurrentThreadId() == game_tid && !(++poll_yield_count & 0x0fffu)) {
-        LARGE_INTEGER due;
+    if (ke_thread_current_id() == game_tid && !(++poll_yield_count & 0x0fffu)) {
         if (ke_quit_requested())
             ke_check_quit();
+        ke_check_pause();
         /* This is a safe game-code boundary: the PIC may run an IRQ handler while this
          * host wait is in progress. Device edges keep their original scheduled timestamps. */
-        if (!poll_timer)
-            poll_timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                                                TIMER_ALL_ACCESS);
-        InterlockedExchange(&vhw_cpu_poll_waiting, 1);
-        due.QuadPart = -1000;           /* wait 100 us once per 4096 polls */
-        if (poll_timer && SetWaitableTimer(poll_timer, &due, 0, NULL, NULL, FALSE))
-            WaitForSingleObject(poll_timer, INFINITE);
-        else
-            Sleep(1);                   /* bounded safe-point wait if high-res timers fail */
-        InterlockedExchange(&vhw_cpu_poll_waiting, 0);
+        ke_atomic_exchange(&vhw_cpu_poll_waiting, 1);
+        ke_poll_wait_100us();       /* wait 100 us once per 4096 polls */
+        ke_atomic_exchange(&vhw_cpu_poll_waiting, 0);
     }
 }
 
@@ -429,5 +427,7 @@ void vhw_idle(uint64_t max_ns)
         vpic_deliver_pending();
     if (ke_quit_requested() && !vhw_in_isr)
         ke_check_quit();
+    if (!vhw_in_isr)
+        ke_check_pause();
     ke_sleep_ns(max_ns);
 }

@@ -12,6 +12,9 @@
  * host logger and oracle use fopen too; ke_fopen passes absolute/non-game paths through. */
 FILE *ke_fopen(const char *path, const char *mode);
 
+#if !defined(KE_GAME_ILP32)
+/* On 64-bit hosts the game world calls ke32_fopen/ke32_spawn_refused instead
+ * (port/android/ilp32); the host's own fopen stays the C library's. */
 FILE *fopen(const char *path, const char *mode)
 {
     return ke_fopen(path, mode);
@@ -25,6 +28,7 @@ int spawnlp(int mode, const char *path, const char *arg0, ...)
            path ? path : "");
     return -1;
 }
+#endif
 
 void delay(unsigned int milliseconds)
 {

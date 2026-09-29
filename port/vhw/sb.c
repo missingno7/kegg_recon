@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include <SDL3/SDL.h>
 #include "vhw.h"
 #include "../include/ke_port.h"
@@ -26,7 +26,7 @@
 #define SB_IRQ 7
 #define SB_DMA 1
 
-static CRITICAL_SECTION sb_lock;
+static KeMutex sb_lock;
 static uint8_t out_fifo[16];
 static int out_count;
 static uint8_t cmd, cmd_args[4];
@@ -45,8 +45,8 @@ static SDL_AudioStream *stream;
 static int stream_rate;
 static FILE *audio_dump;
 static FILE *audio_dump_log;
-static char audio_dump_path[MAX_PATH];
-static char audio_dump_log_path[MAX_PATH * 2];
+static char audio_dump_path[KE_MAX_PATH];
+static char audio_dump_log_path[KE_MAX_PATH * 2];
 static uint64_t audio_sample_offset;
 static uint64_t lockstep_audio_clock_ns;
 static uint64_t lockstep_sample_remainder;
@@ -211,9 +211,9 @@ void vsb_lockstep_update(void)
     if (!vhw_lockstep || !lock_initialized || !ke_config.sound_blaster)
         return;
     now = vhw_lockstep_ns;
-    EnterCriticalSection(&sb_lock);
+    ke_mutex_lock(&sb_lock);
     if (now <= lockstep_audio_clock_ns) {
-        LeaveCriticalSection(&sb_lock);
+        ke_mutex_unlock(&sb_lock);
         return;
     }
     elapsed = now - lockstep_audio_clock_ns;
@@ -254,7 +254,7 @@ void vsb_lockstep_update(void)
             }
         }
     }
-    LeaveCriticalSection(&sb_lock);
+    ke_mutex_unlock(&sb_lock);
 }
 
 static void state_u32(uint8_t *p, uint32_t value) { memcpy(p, &value, 4); }
@@ -268,7 +268,7 @@ void vsb_debug_state(uint8_t out[VSB_DEBUG_BYTES])
     memset(out, 0, VSB_DEBUG_BYTES);
     if (!lock_initialized)
         return;
-    EnterCriticalSection(&sb_lock);
+    ke_mutex_lock(&sb_lock);
     out[0] = cmd;
     memcpy(out + 1, cmd_args, sizeof cmd_args);
     out[5] = (uint8_t)cmd_need;
@@ -295,7 +295,7 @@ void vsb_debug_state(uint8_t out[VSB_DEBUG_BYTES])
     state_u64(out + 293, lockstep_sample_remainder);
     state_u64(out + 301, lockstep_audio_clock_ns);
     state_u32(out + 309, dma_block_number);
-    LeaveCriticalSection(&sb_lock);
+    ke_mutex_unlock(&sb_lock);
 }
 
 void vsb_set_dma_capture_hook(vsb_dma_capture_fn hook)
@@ -346,12 +346,12 @@ static int wait_for_dma_rearm(void)
     uint64_t deadline = ke_now_ns() + 5000000ull;
     do {
         int ready;
-        EnterCriticalSection(&sb_lock);
+        ke_mutex_lock(&sb_lock);
         ready = dma_active && block_left && !dma_paused;
-        LeaveCriticalSection(&sb_lock);
+        ke_mutex_unlock(&sb_lock);
         if (ready)
             return 1;
-        SwitchToThread();
+        ke_thread_yield();
     } while (ke_now_ns() < deadline);
     return 0;
 }
@@ -455,7 +455,7 @@ static uint32_t sb_in(void *ctx, uint16_t port, int size)
 {
     uint32_t v = 0xff;
     (void)ctx; (void)size;
-    EnterCriticalSection(&sb_lock);
+    ke_mutex_lock(&sb_lock);
     switch (port - SB_BASE) {
     case 0x5: v = mixer[mixer_index]; break;
     case 0xa:
@@ -481,7 +481,7 @@ static uint32_t sb_in(void *ctx, uint16_t port, int size)
         break;
     default: break;
     }
-    LeaveCriticalSection(&sb_lock);
+    ke_mutex_unlock(&sb_lock);
     return v;
 }
 
@@ -489,7 +489,7 @@ static void sb_out(void *ctx, uint16_t port, uint32_t value, int size)
 {
     uint8_t v = (uint8_t)value;
     (void)ctx; (void)size;
-    EnterCriticalSection(&sb_lock);
+    ke_mutex_lock(&sb_lock);
     switch (port - SB_BASE) {
     case 0x4:
         mixer_index = v;
@@ -546,7 +546,7 @@ static void sb_out(void *ctx, uint16_t port, uint32_t value, int size)
         break;
     default: break;
     }
-    LeaveCriticalSection(&sb_lock);
+    ke_mutex_unlock(&sb_lock);
 }
 
 /* SDL audio thread: produce `additional` bytes of U8 mono at the current DSP rate. */
@@ -562,7 +562,7 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
         uint16_t gain;
         uint64_t chunk_base;
         memset(buf, 0x80, (size_t)want);
-        EnterCriticalSection(&sb_lock);
+        ke_mutex_lock(&sb_lock);
         chunk_base = audio_sample_offset;
         rate = update_stream_rate(s);
         gain = mixer_voice_gain();
@@ -596,10 +596,10 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
                         dma_input = high_speed = 0;
                         audio_sample_offset += (uint32_t)(n - committed);
                         committed = n;
-                        LeaveCriticalSection(&sb_lock);
+                        ke_mutex_unlock(&sb_lock);
                         if (n < want && !wait_for_dma_rearm())
                             rearm_timeout = 1;
-                        EnterCriticalSection(&sb_lock);
+                        ke_mutex_lock(&sb_lock);
                         if (rearm_timeout)
                             break;
                         if (n < want) {
@@ -625,7 +625,7 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
         starved = !dma_input && n < want && dma_active && !dma_paused;
         diagnostic_left = block_left;
         audio_sample_offset += (uint32_t)(want - committed);
-        LeaveCriticalSection(&sb_lock);
+        ke_mutex_unlock(&sb_lock);
         if (n < want) {
             memset(buf + n, fill, (size_t)(want - n));
         }
@@ -661,7 +661,7 @@ static void SDLCALL sb_audio_callback(void *userdata, SDL_AudioStream *s, int ad
 void vsb_init(void)
 {
     SDL_AudioSpec spec;
-    InitializeCriticalSection(&sb_lock);
+    ke_mutex_init(&sb_lock);
     lock_initialized = 1;
     if (!ke_config.sound_blaster) {
         ke_log(KE_LOG_INFO, "sb", "no Sound Blaster attached (KE_SB=1 attaches one at 220h/IRQ7/DMA1)");
@@ -704,7 +704,7 @@ void vsb_shutdown(void)
         stream = NULL;
     }
     if (lock_initialized) {
-        DeleteCriticalSection(&sb_lock);
+        ke_mutex_destroy(&sb_lock);
         lock_initialized = 0;
     }
     audio_dump_close();

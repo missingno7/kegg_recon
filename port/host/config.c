@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
 #include "ke_port.h"
+#include "../platform/ke_platform.h"
 
-#define CONFIG_PATH_CAP MAX_PATH
+#define CONFIG_PATH_CAP KE_MAX_PATH
 
 KeConfig ke_config;
 
@@ -87,37 +87,22 @@ static int path_join(char *out, size_t cap, const char *dir, const char *leaf)
 static int full_path(char *out, size_t cap, const char *path, const char *base)
 {
     char joined[CONFIG_PATH_CAP * 2];
-    DWORD n;
     const char *source = path;
     if (!path || !*path)
         return 0;
-    if (!(strlen(path) > 2 && path[1] == ':' && (path[2] == '\\' || path[2] == '/')) &&
-        path[0] != '\\' && path[0] != '/') {
+    if (!ke_platform_is_absolute(path)) {
         if (base) {
             if (!path_join(joined, sizeof joined, base, path))
                 return 0;
             source = joined;
         }
     }
-    n = GetFullPathNameA(source, (DWORD)cap, out, NULL);
-    return n != 0 && n < cap;
+    return ke_platform_full_path(source, out, cap);
 }
 
 static void find_exe_dir(void)
 {
-    char path[CONFIG_PATH_CAP];
-    char *slash;
-    DWORD n = GetModuleFileNameA(NULL, path, sizeof path);
-    if (!n || n >= sizeof path) {
-        GetCurrentDirectoryA(sizeof exe_dir, exe_dir);
-        return;
-    }
-    slash = strrchr(path, '\\');
-    if (!slash)
-        slash = strrchr(path, '/');
-    if (slash)
-        *slash = '\0';
-    snprintf(exe_dir, sizeof exe_dir, "%s", path);
+    ke_platform_exe_dir(exe_dir, sizeof exe_dir);
 }
 
 static void assign_data_dir(const char *path, const char *base)
@@ -249,26 +234,16 @@ static int config_file_path(char *path, size_t cap)
 {
     char base[CONFIG_PATH_CAP], directory[CONFIG_PATH_CAP];
     const char *override = getenv("KE_CONFIG_DIR");
-    DWORD n;
 #if defined(KE_ORACLE)
     if (!override || !*override)
-        return path_join(path, cap, exe_dir, "nm1-test-config\\krypton-egg.ini");
+        return path_join(path, cap, exe_dir, "nm1-test-config" KE_PATH_SEP_STR "krypton-egg.ini");
 #endif
     if (override && *override) {
         if (!full_path(directory, sizeof directory, override, NULL))
             return 0;
     } else {
-        n = GetEnvironmentVariableA("APPDATA", base, sizeof base);
-        if (!n || n >= sizeof base) {
-            n = GetEnvironmentVariableA("LOCALAPPDATA", base, sizeof base);
-            if (!n || n >= sizeof base) {
-                n = GetEnvironmentVariableA("USERPROFILE", base, sizeof base);
-                if (!n || n >= sizeof base || !path_join(directory, sizeof directory,
-                                                          base, "AppData\\Roaming"))
-                    return 0;
-                snprintf(base, sizeof base, "%s", directory);
-            }
-        }
+        if (!ke_platform_config_base(base, sizeof base))
+            return 0;
         if (!path_join(directory, sizeof directory, base, "Krypton Egg"))
             return 0;
     }
@@ -281,7 +256,6 @@ static int ensure_config_directory(const char *path)
 {
     char directory[CONFIG_PATH_CAP];
     char *slash;
-    DWORD attrs;
     snprintf(directory, sizeof directory, "%s", path);
     slash = strrchr(directory, '\\');
     if (!slash)
@@ -289,13 +263,7 @@ static int ensure_config_directory(const char *path)
     if (!slash)
         return 0;
     *slash = '\0';
-    attrs = GetFileAttributesA(directory);
-    if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY))
-        return 1;
-    if (CreateDirectoryA(directory, NULL))
-        return 1;
-    attrs = GetFileAttributesA(directory);
-    return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY);
+    return ke_platform_mkdir(directory);
 }
 
 static int write_default_config(const char *path)
@@ -377,7 +345,7 @@ static void load_user_and_legacy_ini(void)
     if (config_file_path(user_config_path, sizeof user_config_path)) {
         if (read_ini_file(user_config_path)) {
             ke_log(KE_LOG_INFO, "config", "loaded %s", user_config_path);
-        } else if (GetFileAttributesA(user_config_path) == INVALID_FILE_ATTRIBUTES) {
+        } else if (!ke_platform_path_exists(user_config_path)) {
             if (write_default_config(user_config_path) && read_ini_file(user_config_path)) {
                 ke_log(KE_LOG_INFO, "config", "created default configuration at %s",
                        user_config_path);
@@ -466,13 +434,11 @@ static int missing_assets(const char *dir, char *missing, size_t missing_size)
     if (missing && missing_size)
         missing[0] = '\0';
     for (i = 0; i < sizeof required_assets / sizeof required_assets[0]; i++) {
-        DWORD attrs;
         if (!path_join(path, sizeof path, dir, required_assets[i])) {
             count++;
             continue;
         }
-        attrs = GetFileAttributesA(path);
-        if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+        if (!ke_platform_path_exists(path) || ke_platform_is_dir(path)) {
             count++;
             if (missing && missing_size && used < missing_size - 1) {
                 int n = snprintf(missing + used, missing_size - used, "%s%s",
@@ -500,7 +466,7 @@ static int select_default_data_dir(void)
         snprintf(selected_data_dir, sizeof selected_data_dir, "%s", candidate);
         return 1;
     }
-    if (GetCurrentDirectoryA(sizeof cwd, cwd) &&
+    if (ke_platform_cwd(cwd, sizeof cwd) &&
         path_join(candidate, sizeof candidate, cwd, "assets") &&
         !missing_assets(candidate, NULL, 0)) {
         snprintf(selected_data_dir, sizeof selected_data_dir, "%s", candidate);

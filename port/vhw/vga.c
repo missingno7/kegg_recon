@@ -17,7 +17,7 @@
  * panning/split scan-out and the game's packed/planar graphics modes. Text mode is not drawn.
  */
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
@@ -36,7 +36,7 @@ static uint64_t timing_origin;
 static uint64_t timing_frame_base;
 static uint64_t timing_last_retrace;
 static uint16_t display_start_latched;
-static CRITICAL_SECTION dac_lock;
+static KeMutex dac_lock;
 
 /* ---- register helpers ---------------------------------------------------------------- */
 static int chain4(void) { return (seq[4] & 0x08) != 0; }
@@ -329,13 +329,13 @@ static uint32_t vga_in(void *ctx, uint16_t port, int size)
     case 0x3c7: v = 0x03; break;                          /* DAC state: read mode */
     case 0x3c8: v = dac_write_index; break;
     case 0x3c9:
-        EnterCriticalSection(&dac_lock);
+        ke_mutex_lock(&dac_lock);
         v = dac[dac_read_index][dac_read_component];
         if (++dac_read_component == 3) {
             dac_read_component = 0;
             dac_read_index++;
         }
-        LeaveCriticalSection(&dac_lock);
+        ke_mutex_unlock(&dac_lock);
         break;
     case 0x3cc: v = misc_output; break;
     case 0x3ce: v = gc_index; break;
@@ -386,13 +386,13 @@ static void vga_out(void *ctx, uint16_t port, uint32_t value, int size)
     case 0x3c7: dac_read_index = v; dac_read_component = 0; break;
     case 0x3c8: dac_write_index = v; dac_component = 0; break;
     case 0x3c9:
-        EnterCriticalSection(&dac_lock);
+        ke_mutex_lock(&dac_lock);
         dac[dac_write_index][dac_component] = v & 0x3f;
         if (++dac_component == 3) {
             dac_component = 0;
             dac_write_index++;
         }
-        LeaveCriticalSection(&dac_lock);
+        ke_mutex_unlock(&dac_lock);
         break;
     case 0x3ce: gc_index = v; break;
     case 0x3cf: gc[gc_index & 15] = v; break;
@@ -466,11 +466,11 @@ int vga_bios_mode(void) { return bios_mode; }
 void vga_palette_rgb888(uint8_t rgb[256][3])
 {
     int i, c;
-    EnterCriticalSection(&dac_lock);
+    ke_mutex_lock(&dac_lock);
     for (i = 0; i < 256; i++)
         for (c = 0; c < 3; c++)
             rgb[i][c] = (uint8_t)((dac[i][c] << 2) | (dac[i][c] >> 4));
-    LeaveCriticalSection(&dac_lock);
+    ke_mutex_unlock(&dac_lock);
 }
 
 /* ---- scan-out ------------------------------------------------------------------------ */
@@ -577,7 +577,7 @@ void vga_oracle_load_snapshot(const uint8_t *plane_bytes, const uint8_t *crtc_by
 
 void vga_init(void)
 {
-    InitializeCriticalSection(&dac_lock);
+    ke_mutex_init(&dac_lock);
     timing_origin = vhw_clock_now_ns();
     timing_frame_base = 0;
     timing_last_retrace = 0;

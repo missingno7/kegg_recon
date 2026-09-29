@@ -19,6 +19,7 @@
 #include "ke_port.h"
 #include "replay.h"
 #include "../vhw/vhw.h"
+#include "../platform/ke_platform.h"
 
 void ke_input_event(const SDL_Event *e);
 int ke_present_save_bmp(const char *path);
@@ -483,8 +484,7 @@ int main(int argc, char **argv)
         else if (quit_requested && ke_now_ns() - close_requested_at >= 100000000ull) {
             ke_log(KE_LOG_WARN, "main", "game thread did not reach a service boundary within 100 ms; "
                    "terminating it without game atexit handlers");
-            TerminateThread((HANDLE)ke_game_thread_handle(), 4);
-            WaitForSingleObject((HANDLE)ke_game_thread_handle(), INFINITE);
+            ke_thread_terminate(ke_game_thread_handle());
             game_terminated = 1;
             result = 4;
             running = 0;
@@ -519,19 +519,18 @@ int main(int argc, char **argv)
 
 cleanup:
     if (game_started) {
-        HANDLE thread = (HANDLE)ke_game_thread_handle();
+        KeThread *thread = ke_game_thread_handle();
         if (thread) {
             if (!game_terminated && !ke_game_thread_finished()) {
                 ke_request_quit();
-                if (WaitForSingleObject(thread, 100) == WAIT_TIMEOUT) {
-                    TerminateThread(thread, 4);
-                    WaitForSingleObject(thread, INFINITE);
+                if (!ke_thread_join_ms(thread, 100)) {
+                    ke_thread_terminate(thread);
                     game_terminated = 1;
                 }
             } else {
-                WaitForSingleObject(thread, INFINITE);
+                ke_thread_join_ms(thread, KE_WAIT_INFINITE);
             }
-            CloseHandle(thread);
+            ke_thread_close(thread);
         }
     }
     if (vhw_ready)

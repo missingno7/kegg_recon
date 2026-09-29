@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "ke_port.h"
 #include "replay.h"
 #include "../vhw/vhw.h"
@@ -21,12 +21,12 @@ typedef struct ReplayEvent {
 static ReplayEvent *events;
 static size_t event_count, next_event;
 static unsigned frame_occurrence, replay_frame_count;
-static volatile LONG wait_for_tick_count;
+static ke_atomic_t wait_for_tick_count;
 static int replay_loaded, replay_started, replay_complete, replay_reported;
 static uint64_t last_frame_entry_ns;
 static uint64_t last_key_event_ns;
 static uint64_t frame_period_ns = 1000000000ull / 70;
-static CRITICAL_SECTION replay_lock;
+static KeMutex replay_lock;
 static int replay_lock_initialized, replay_pump_stop;
 /* Lockstep runs (port/oracle/lockstep.c) replace host time with the virtual machine clock
  * and call ke_replay_pump() themselves instead of the pump thread. */
@@ -95,16 +95,16 @@ static void replay_apply_through(unsigned occurrence, uint64_t now)
 static int replay_pump_step(void)
 {
     uint64_t now;
-    EnterCriticalSection(&replay_lock);
+    ke_mutex_lock(&replay_lock);
     if (replay_pump_stop || replay_complete) {
-        LeaveCriticalSection(&replay_lock);
+        ke_mutex_unlock(&replay_lock);
         return 0;
     }
     now = replay_clock();
     replay_apply_through(replay_time_occurrence(now), now);
     if (frame_occurrence >= replay_frame_count && next_event >= event_count)
         replay_complete = 1;
-    LeaveCriticalSection(&replay_lock);
+    ke_mutex_unlock(&replay_lock);
     return 1;
 }
 
@@ -114,11 +114,11 @@ void ke_replay_pump(void)
         replay_pump_step();
 }
 
-static DWORD WINAPI replay_pump_thread(LPVOID unused)
+static unsigned replay_pump_thread(void *unused)
 {
     (void)unused;
     for (;;) {
-        Sleep(1);
+        ke_sleep_ms(1);
         if (!replay_pump_step())
             break;
     }
@@ -221,16 +221,16 @@ int ke_replay_load(const char *path)
 
 void ke_replay_start(void)
 {
-    HANDLE thread;
+    KeThread *thread;
     if (!replay_loaded || replay_started)
         return;
-    InitializeCriticalSection(&replay_lock);
+    ke_mutex_init(&replay_lock);
     replay_lock_initialized = 1;
     replay_pump_stop = 0;
     replay_started = 1;
-    thread = replay_external_pump ? NULL : CreateThread(NULL, 0, replay_pump_thread, NULL, 0, NULL);
+    thread = replay_external_pump ? NULL : ke_thread_create(replay_pump_thread, NULL, 0, 0);
     if (thread)
-        CloseHandle(thread);
+        ke_thread_close(thread);
     else if (!replay_external_pump)
         ke_log(KE_LOG_ERROR, "replay", "could not start replay input pump");
     ke_log(KE_LOG_INFO, "replay", "started at wait_for_tick occurrence 0");
@@ -241,9 +241,9 @@ void ke_replay_frame_entry(void)
     uint64_t now, delta;
     if (!replay_lock_initialized)
         return;
-    EnterCriticalSection(&replay_lock);
+    ke_mutex_lock(&replay_lock);
     if (!replay_started || replay_complete) {
-        LeaveCriticalSection(&replay_lock);
+        ke_mutex_unlock(&replay_lock);
         return;
     }
     now = replay_clock();
@@ -265,7 +265,7 @@ void ke_replay_frame_entry(void)
                frame_occurrence, replay_frame_count);
     if (frame_occurrence >= replay_frame_count && next_event >= event_count)
         replay_complete = 1;
-    LeaveCriticalSection(&replay_lock);
+    ke_mutex_unlock(&replay_lock);
 }
 
 void ke_replay_report(void)
@@ -273,7 +273,7 @@ void ke_replay_report(void)
     if (!replay_loaded || replay_reported)
         return;
     if (replay_lock_initialized) {
-        EnterCriticalSection(&replay_lock);
+        ke_mutex_lock(&replay_lock);
         replay_pump_stop = 1;
     }
     replay_reported = 1;
@@ -281,7 +281,7 @@ void ke_replay_report(void)
            frame_occurrence, (unsigned)next_event, (unsigned)event_count,
            replay_complete ? " (complete)" : " (incomplete)");
     if (replay_lock_initialized)
-        LeaveCriticalSection(&replay_lock);
+        ke_mutex_unlock(&replay_lock);
 }
 
 /* Lockstep runner (port/oracle/lockstep.c): replaces the input step at frame entry; it takes
@@ -290,7 +290,7 @@ void (*ke_frame_entry_hook)(void);
 
 void __wrap_wait_for_tick(short wait_flags)
 {
-    InterlockedIncrement(&wait_for_tick_count);
+    ke_atomic_increment(&wait_for_tick_count);
     if (ke_frame_entry_hook)
         ke_frame_entry_hook();
     else
@@ -300,5 +300,5 @@ void __wrap_wait_for_tick(short wait_flags)
 
 uint32_t ke_wait_for_tick_count(void)
 {
-    return (uint32_t)InterlockedCompareExchange(&wait_for_tick_count, 0, 0);
+    return (uint32_t)ke_atomic_load(&wait_for_tick_count);
 }

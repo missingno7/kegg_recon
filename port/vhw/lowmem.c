@@ -20,7 +20,7 @@
  *                    (asm translations); direct C dereferences are a porting bug.
  */
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
@@ -36,26 +36,11 @@ static int mapped;
 
 int lowmem_init(void)
 {
-    /* Commit the range the parent reserved for us (main_sdl.c), or try to reserve it now. */
-    uint8_t *p = (uint8_t *)VirtualAlloc((void *)LOWMEM_BASE, LOWMEM_END - LOWMEM_BASE,
-                                         MEM_COMMIT, PAGE_READWRITE);
-    if (p != (uint8_t *)LOWMEM_BASE)
-        p = (uint8_t *)VirtualAlloc((void *)LOWMEM_BASE, LOWMEM_END - LOWMEM_BASE,
-                                    MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    if (p != (uint8_t *)LOWMEM_BASE) {
-        MEMORY_BASIC_INFORMATION mbi;
-        uintptr_t a = 0;
-        while (a < 0x200000 && VirtualQuery((void *)a, &mbi, sizeof mbi)) {
-            ke_log(KE_LOG_ERROR, "lowmem", "  %08lX +%08lX state=%lX type=%lX",
-                   (unsigned long)(uintptr_t)mbi.BaseAddress, (unsigned long)mbi.RegionSize,
-                   mbi.State, mbi.Type);
-            a = (uintptr_t)mbi.BaseAddress + mbi.RegionSize;
-        }
-        ke_log(KE_LOG_ERROR, "lowmem", "cannot map linear %05X..%06X (got %p): the range is in "
-               "use (started without the relaunch, e.g. KE_CHILD set?)", LOWMEM_BASE,
-               LOWMEM_END - 1, (void *)p);
+    /* Win32: commit the range the parent reserved for us (main_sdl.c), or try to reserve it
+     * now. POSIX: map it at its fixed address (Android: the game library's loader checked
+     * that the range is free, docs/android/architecture.md "Memory"). */
+    if (ke_platform_map_fixed(LOWMEM_BASE, LOWMEM_END - LOWMEM_BASE) != 0)
         return -1;
-    }
     mapped = 1;
     memset((void *)0xFF000, 0xCF, 0x1000);                     /* IRET everywhere */
     memcpy((void *)0xFFFF5, "01/01/94", 8);                   /* BIOS date       */

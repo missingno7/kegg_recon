@@ -8,13 +8,9 @@
  * game stopped.
  */
 #include <stdio.h>
-#include <windows.h>
 #include "vhw.h"
 #include "../include/ke_port.h"
-
-static char fault_text[256];
-
-static void fault_trampoline(void) { ke_stop_game_from_fault(fault_text); }
+#include "../platform/ke_platform.h"
 
 static const char *classify(uintptr_t a)
 {
@@ -25,36 +21,17 @@ static const char *classify(uintptr_t a)
     return "host memory";
 }
 
-static LONG CALLBACK fault_handler(EXCEPTION_POINTERS *ep)
+/* Text of an access fault; is_write < 0 when the host does not say which. */
+static void describe_access(char *out, size_t cap, int is_write, uintptr_t address, uintptr_t pc)
 {
-    DWORD code = ep->ExceptionRecord->ExceptionCode;
-    uintptr_t eip = (uintptr_t)ep->ContextRecord->Eip;
-    if (code != EXCEPTION_ACCESS_VIOLATION && code != EXCEPTION_PRIV_INSTRUCTION &&
-        code != EXCEPTION_ILLEGAL_INSTRUCTION && code != EXCEPTION_INT_DIVIDE_BY_ZERO)
-        return EXCEPTION_CONTINUE_SEARCH;
-    if (code == EXCEPTION_ACCESS_VIOLATION) {
-        ULONG_PTR rw = ep->ExceptionRecord->ExceptionInformation[0];
-        ULONG_PTR a = ep->ExceptionRecord->ExceptionInformation[1];
-        snprintf(fault_text, sizeof fault_text,
-                 "access violation (%s %08lX: %s) at EIP %08lX", rw ? "write" : "read",
-                 (unsigned long)a, classify(a), (unsigned long)eip);
-    } else {
-        snprintf(fault_text, sizeof fault_text, "exception %08lX at EIP %08lX",
-                 (unsigned long)code, (unsigned long)eip);
-    }
-    ke_log(KE_LOG_ERROR, "fault", "%s thread: %s", ke_on_game_thread() ? "game" : "other",
-           fault_text);
-    if (!ke_on_game_thread())
-        return EXCEPTION_CONTINUE_SEARCH;
-    ep->ContextRecord->Esp = (ep->ContextRecord->Esp - 64) & ~15u;
-    *(DWORD *)(uintptr_t)ep->ContextRecord->Esp = 0;          /* fake return address */
-    ep->ContextRecord->Eip = (DWORD)(uintptr_t)fault_trampoline;
-    return EXCEPTION_CONTINUE_EXECUTION;
+    snprintf(out, cap, "access violation (%s %08lX: %s) at EIP %08lX",
+             is_write < 0 ? "access" : is_write ? "write" : "read", (unsigned long)address,
+             classify(address), (unsigned long)pc);
 }
 
 void vhw_fault_init(void)
 {
     /* Lockstep runs original machine code whose emulation VEH (port/oracle) must see
      * privileged instructions first: this diagnostic handler goes last there. */
-    AddVectoredExceptionHandler(vhw_lockstep ? 0 : 1, fault_handler);
+    ke_platform_fault_init(!vhw_lockstep, describe_access);
 }

@@ -1,5 +1,5 @@
 /* pit.c - 8253/8254 programmable interval timer, channel 0 -> IRQ0. */
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include <string.h>
 #include "vhw.h"
 #include "../include/ke_port.h"
@@ -18,12 +18,13 @@ typedef struct PitChannel {
 
 static PitChannel ch[3];
 static uint8_t port61;
-static CRITICAL_SECTION pit_lock;
-static HANDLE pit_thread, pit_wake;
-static volatile LONG pit_stop;
+static KeMutex pit_lock;
+static KeThread *pit_thread;
+static KeEvent *pit_wake;
+static ke_atomic_t pit_stop;
 static int pit_initialized;
 #ifdef KE_ORACLE
-volatile LONG vpit_oracle_irq_count;
+ke_atomic_t vpit_oracle_irq_count;
 uint64_t vpit_oracle_irq_times[4096];
 uint32_t vpit_oracle_irq_reload[4096];
 #endif
@@ -132,7 +133,7 @@ static uint64_t irq_deadline(const PitChannel *c, uint64_t now)
 static void wake_pit_thread(void)
 {
     if (pit_wake)
-        SetEvent(pit_wake);
+        ke_event_set(pit_wake);
 }
 
 void vpit_clock_changed(void)
@@ -183,7 +184,7 @@ static uint32_t pit_in(void *ctx, uint16_t port, int size)
     (void)ctx; (void)size;
     if (port == 0x43)
         return 0xff;                /* reading the control port is not defined */
-    EnterCriticalSection(&pit_lock);
+    ke_mutex_lock(&pit_lock);
     now = vhw_clock_now_ns();
     if (port == 0x61) {
         result = (uint32_t)((port61 & 0x0f) | (output_now(&ch[2], now) ? 0x20 : 0));
@@ -211,7 +212,7 @@ static uint32_t pit_in(void *ctx, uint16_t port, int size)
             c->count_latched = 0;
         }
     }
-    LeaveCriticalSection(&pit_lock);
+    ke_mutex_unlock(&pit_lock);
     return result;
 }
 
@@ -262,7 +263,7 @@ static void pit_out(void *ctx, uint16_t port, uint32_t value, int size)
     uint8_t old_gate;
     (void)ctx; (void)size;
     value &= 0xff;
-    EnterCriticalSection(&pit_lock);
+    ke_mutex_lock(&pit_lock);
     now = vhw_clock_now_ns();
     if (port == 0x61) {
         old_gate = port61 & 1;
@@ -301,61 +302,49 @@ static void pit_out(void *ctx, uint16_t port, uint32_t value, int size)
             pit_reprogram(c, c->write_lo | (value << 8));
         }
     }
-    LeaveCriticalSection(&pit_lock);
+    ke_mutex_unlock(&pit_lock);
 }
 
-static void wait_pit_deadline(HANDLE timer, uint64_t deadline)
+static void wait_pit_deadline(KeTimer *timer, uint64_t deadline)
 {
-    HANDLE waits[2] = { pit_wake, timer };
     for (;;) {
         uint64_t now = vhw_clock_now_ns();
         uint64_t remain;
-        LARGE_INTEGER due;
         if (pit_stop || now >= deadline)
             return;
         remain = vhw_clock_wall_delay_ns(deadline - now);
         if (remain > 100000) {
-            DWORD wait_result;
-            due.QuadPart = -(LONGLONG)((remain - 50000) / 100);
-            if (due.QuadPart == 0)
-                due.QuadPart = -1;
-            SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE);
-            wait_result = WaitForMultipleObjects(2, waits, FALSE, INFINITE);
-            CancelWaitableTimer(timer);
-            if (wait_result == WAIT_OBJECT_0)
+            if (ke_event_wait_timer_ns(pit_wake, timer, remain - 50000))
                 return;             /* a PIT write changed the next edge; recompute it */
         } else {
-            if (WaitForSingleObject(pit_wake, 0) == WAIT_OBJECT_0)
+            if (ke_event_wait_ms(pit_wake, 0))
                 return;
-            YieldProcessor();
+            ke_cpu_relax();
         }
     }
 }
 
-static DWORD WINAPI pit_thread_main(LPVOID unused)
+static unsigned pit_thread_main(void *unused)
 {
-    HANDLE timer;
+    KeTimer *timer;
     (void)unused;
-    timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                                   TIMER_ALL_ACCESS);
-    if (!timer)
-        timer = CreateWaitableTimerW(NULL, FALSE, NULL);
-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+    timer = ke_timer_create();
+    ke_thread_set_time_critical();
     while (!pit_stop) {
         uint64_t now = vhw_clock_now_ns(), deadline;
         uint32_t generation;
 #ifdef KE_ORACLE
         uint32_t event_reload;
 #endif
-        EnterCriticalSection(&pit_lock);
+        ke_mutex_lock(&pit_lock);
         deadline = irq_deadline(&ch[0], now);
         generation = ch[0].generation;
 #ifdef KE_ORACLE
         event_reload = ch[0].reload;
 #endif
-        LeaveCriticalSection(&pit_lock);
+        ke_mutex_unlock(&pit_lock);
         if (!deadline) {
-            WaitForSingleObject(pit_wake, 50);
+            ke_event_wait_ms(pit_wake, 50);
             continue;
         }
         wait_pit_deadline(timer, deadline);
@@ -364,16 +353,16 @@ static DWORD WINAPI pit_thread_main(LPVOID unused)
         now = vhw_clock_now_ns();
         if (now < deadline)
             continue;               /* the timer woke because the channel was reprogrammed */
-        EnterCriticalSection(&pit_lock);
+        ke_mutex_lock(&pit_lock);
         if (generation == ch[0].generation && !ch[0].null_count) {
             uint32_t mode = mode_number(&ch[0]);
             if (mode == 0 || mode == 1 || mode == 4 || mode == 5)
                 ch[0].irq_fired = 1;
-            LeaveCriticalSection(&pit_lock);
+            ke_mutex_unlock(&pit_lock);
 #ifdef KE_ORACLE
             {
-                LONG n = InterlockedIncrement(&vpit_oracle_irq_count);
-                if (n > 0 && n <= (LONG)(sizeof vpit_oracle_irq_times /
+                ke_atomic_value n = ke_atomic_increment(&vpit_oracle_irq_count);
+                if (n > 0 && n <= (ke_atomic_value)(sizeof vpit_oracle_irq_times /
                                           sizeof vpit_oracle_irq_times[0])) {
                     vpit_oracle_irq_times[n - 1] = ke_now_ns();
                     vpit_oracle_irq_reload[n - 1] = event_reload;
@@ -382,11 +371,10 @@ static DWORD WINAPI pit_thread_main(LPVOID unused)
 #endif
             vpic_raise_irq_at(0, deadline);
         } else {
-            LeaveCriticalSection(&pit_lock);
+            ke_mutex_unlock(&pit_lock);
         }
     }
-    if (timer)
-        CloseHandle(timer);
+    ke_timer_destroy(timer);
     return 0;
 }
 
@@ -411,7 +399,7 @@ void vpit_lockstep_update(void)
     uint64_t now = vhw_lockstep_ns, edge = 0;
     if (!pit_initialized)
         return;
-    EnterCriticalSection(&pit_lock);
+    ke_mutex_lock(&pit_lock);
     ls_refresh_locked(now);
     if (ls_next && now >= ls_next && !ch[0].null_count) {
         uint32_t mode = mode_number(&ch[0]);
@@ -423,7 +411,7 @@ void vpit_lockstep_update(void)
             ls_next = irq_deadline(&ch[0], now);  /* missed edges coalesce in the IRR */
         }
     }
-    LeaveCriticalSection(&pit_lock);
+    ke_mutex_unlock(&pit_lock);
     if (edge)
         vpic_raise_irq_at(0, edge);
 }
@@ -433,10 +421,10 @@ uint64_t vpit_lockstep_next_edge(void)
     uint64_t next;
     if (!pit_initialized)
         return UINT64_MAX;
-    EnterCriticalSection(&pit_lock);
+    ke_mutex_lock(&pit_lock);
     ls_refresh_locked(vhw_lockstep_ns);
     next = ls_next ? ls_next : UINT64_MAX;
-    LeaveCriticalSection(&pit_lock);
+    ke_mutex_unlock(&pit_lock);
     return next;
 }
 
@@ -446,7 +434,7 @@ void vpit_debug_state(uint32_t out[16])
 {
     int i;
     uint64_t now = vhw_clock_now_ns();
-    EnterCriticalSection(&pit_lock);
+    ke_mutex_lock(&pit_lock);
     for (i = 0; i < 3; i++) {
         out[i * 4 + 0] = ch[i].reload;
         out[i * 4 + 1] = (uint32_t)ch[i].mode | ((uint32_t)ch[i].access << 8) |
@@ -458,21 +446,21 @@ void vpit_debug_state(uint32_t out[16])
     out[12] = port61;
     out[13] = ls_next > now ? (uint32_t)(ls_next - now) : 0;
     out[14] = out[15] = 0;
-    LeaveCriticalSection(&pit_lock);
+    ke_mutex_unlock(&pit_lock);
 }
 
 void vpit_init(void)
 {
     int i;
     if (!pit_initialized) {
-        InitializeCriticalSection(&pit_lock);
+        ke_mutex_init(&pit_lock);
         pit_initialized = 1;
         vhw_register_ports(0x40, 0x43, pit_in, pit_out, NULL, "pit");
         vhw_register_ports(0x61, 0x61, pit_in, pit_out, NULL, "port61");
     }
-    EnterCriticalSection(&pit_lock);
+    ke_mutex_lock(&pit_lock);
 #ifdef KE_ORACLE
-    InterlockedExchange(&vpit_oracle_irq_count, 0);
+    ke_atomic_exchange(&vpit_oracle_irq_count, 0);
     memset(vpit_oracle_irq_times, 0, sizeof vpit_oracle_irq_times);
     memset(vpit_oracle_irq_reload, 0, sizeof vpit_oracle_irq_reload);
 #endif
@@ -485,7 +473,7 @@ void vpit_init(void)
         ch[i].gate = (uint8_t)(i != 2);
         ch[i].origin_ns = vhw_clock_now_ns();
     }
-    LeaveCriticalSection(&pit_lock);
+    ke_mutex_unlock(&pit_lock);
     wake_pit_thread();
 }
 
@@ -496,18 +484,18 @@ void vpit_start(void)
     if (pit_thread)
         return;
     if (!pit_wake)
-        pit_wake = CreateEventW(NULL, FALSE, FALSE, NULL);
-    InterlockedExchange(&pit_stop, 0);
-    pit_thread = CreateThread(NULL, 64u << 10, pit_thread_main, NULL, 0, NULL);
+        pit_wake = ke_event_create();
+    ke_atomic_exchange(&pit_stop, 0);
+    pit_thread = ke_thread_create(pit_thread_main, NULL, 64u << 10, 0);
 }
 
 void vpit_shutdown(void)
 {
-    InterlockedExchange(&pit_stop, 1);
+    ke_atomic_exchange(&pit_stop, 1);
     wake_pit_thread();
     if (pit_thread) {
-        WaitForSingleObject(pit_thread, 1000);
-        CloseHandle(pit_thread);
+        ke_thread_join_ms(pit_thread, 1000);
+        ke_thread_close(pit_thread);
         pit_thread = NULL;
     }
 }

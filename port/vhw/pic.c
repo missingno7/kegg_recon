@@ -16,7 +16,7 @@
  */
 #include <setjmp.h>
 #include <string.h>
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
@@ -28,15 +28,16 @@ typedef struct Pic {
 } Pic;
 
 static Pic pics[2];
-static CRITICAL_SECTION pic_lock;
+static KeMutex pic_lock;
 static struct { uint16_t sel; uint32_t off; } pm_vectors[256];
 static struct { uint16_t seg, off; } rm_vectors[256];
-static HANDLE irq_event, irq_thread;
-static volatile LONG irq_stop;
-static uint32_t text_lo, text_hi;           /* game thread interruptible EIP range     */
+static KeEvent *irq_event;
+static KeThread *irq_thread;
+static ke_atomic_t irq_stop;
+static uintptr_t text_lo, text_hi;          /* game thread interruptible PC range      */
 static uint64_t irq_edge_ns[16];            /* original device edge for pending IRQs     */
 static jmp_buf isr_abandon;                 /* IRQ thread: leave a handler that exited  */
-static volatile LONG isr_exit_code = -1;
+static ke_atomic_t isr_exit_code = -1;
 static long stats_async, stats_sync, stats_blocked;
 /* Lockstep oracle (port/oracle/lockstep.c): original KE.EXE handlers end in IRETD and were
  * installed with the host's real code selector (FP_SEG of a near function = CS). */
@@ -89,7 +90,7 @@ void vpic_raise_irq(int irq)
 {
     if (irq < 0 || irq >= 16)
         return;
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     if (irq < 8) {
         if (!(pics[0].irr & (uint8_t)(1u << irq)))
             irq_edge_ns[irq] = 0;
@@ -100,16 +101,16 @@ void vpic_raise_irq(int irq)
         pics[1].irr |= (uint8_t)(1u << (irq - 8));
         update_cascade_locked();
     }
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     if (irq_event)
-        SetEvent(irq_event);
+        ke_event_set(irq_event);
 }
 
 void vpic_raise_irq_at(int irq, uint64_t edge_ns)
 {
     if (irq < 0 || irq >= 16)
         return;
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     if (irq < 8) {
         if (!(pics[0].irr & (uint8_t)(1u << irq)))
             irq_edge_ns[irq] = edge_ns;
@@ -122,16 +123,16 @@ void vpic_raise_irq_at(int irq, uint64_t edge_ns)
     }
     if (irq == 0 && edge_ns && vcpu_if_flag && pick_locked() == 0)
         vhw_clock_irq0_pending(edge_ns);
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     if (irq_event)
-        SetEvent(irq_event);
+        ke_event_set(irq_event);
 }
 
 void vpic_lower_irq(int irq)
 {
     if (irq < 0 || irq >= 16)
         return;
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     if (irq < 8)
         pics[0].irr &= (uint8_t)~(1u << irq);
     else {
@@ -141,15 +142,15 @@ void vpic_lower_irq(int irq)
     irq_edge_ns[irq] = 0;
     if (irq == 0)
         vhw_clock_irq0_release();
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
 }
 
 int vpic_has_deliverable(void)
 {
     int r;
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     r = pick_locked();
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     return r >= 0;
 }
 
@@ -196,9 +197,9 @@ static uint32_t pic_in(void *ctx, uint16_t port, int size)
     Pic *p = &pics[(port & 0x80) ? 1 : 0];
     uint32_t v;
     (void)ctx; (void)size;
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     v = (port & 1) ? p->imr : (p->read_isr ? p->isr : p->irr);
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     return v;
 }
 
@@ -208,7 +209,7 @@ static void pic_out(void *ctx, uint16_t port, uint32_t value, int size)
     int changed_mask = 0;
     (void)ctx; (void)size;
     value &= 0xff;
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     if (port & 1) {
         if (p->icw_step == 1) {           /* ICW2: vector base */
             p->base = (uint8_t)(value & 0xf8);
@@ -236,9 +237,9 @@ static void pic_out(void *ctx, uint16_t port, uint32_t value, int size)
     }
     update_cascade_locked();
     release_irq0_clock_if_unavailable_locked();
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     if (irq_event && (changed_mask || !(port & 1)))
-        SetEvent(irq_event);
+        ke_event_set(irq_event);
 }
 
 /* ---- default (unhooked) handlers ---------------------------------------------------- */
@@ -266,12 +267,12 @@ static int deliver_one(void)
     int clock_scoped;
     uint32_t off;
     uint64_t edge_ns;
-    LONG saved_if;
+    ke_atomic_value saved_if;
     uint32_t saved_inp = vhw_last_inp_value;   /* handler registers are restored by IRET */
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     irq = pick_locked();
     if (irq < 0) {
-        LeaveCriticalSection(&pic_lock);
+        ke_mutex_unlock(&pic_lock);
         return 0;
     }
     edge_ns = irq_edge_ns[irq];
@@ -287,10 +288,10 @@ static int deliver_one(void)
         pics[0].isr |= (uint8_t)(1u << irq);
         vector = pics[0].base + irq;
     }
-    InterlockedExchange(&vhw_in_isr, 1);
-    LeaveCriticalSection(&pic_lock);
+    ke_atomic_exchange(&vhw_in_isr, 1);
+    ke_mutex_unlock(&pic_lock);
 
-    saved_if = InterlockedExchange(&vcpu_if_flag, 0);   /* INT clears IF, IRET restores */
+    saved_if = ke_atomic_exchange(&vcpu_if_flag, 0);   /* INT clears IF, IRET restores */
     clock_scoped = irq == 0 && edge_ns && vhw_clock_irq0_held();
     if (clock_scoped)
         vhw_clock_irq0_enter(edge_ns);
@@ -308,8 +309,8 @@ static int deliver_one(void)
         default_handler(irq);
     if (clock_scoped)
         vhw_clock_irq0_leave();
-    InterlockedExchange(&vcpu_if_flag, saved_if);
-    InterlockedExchange(&vhw_in_isr, 0);
+    ke_atomic_exchange(&vcpu_if_flag, saved_if);
+    ke_atomic_exchange(&vhw_in_isr, 0);
     vhw_last_inp_value = saved_inp;
     return 1;
 }
@@ -321,107 +322,112 @@ int vpic_deliver_pending(void)
         n++;
         stats_sync++;
     }
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     release_irq0_clock_if_unavailable_locked();
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     return n;
 }
 
 static void release_irq0_clock_if_unavailable(void)
 {
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     release_irq0_clock_if_unavailable_locked();
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
 }
 
 /* ---- asynchronous delivery thread --------------------------------------------------- */
 static void find_text_range(void)
 {
-    uint8_t *base = (uint8_t *)GetModuleHandleW(NULL);
-    IMAGE_DOS_HEADER *dos = (IMAGE_DOS_HEADER *)base;
-    IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + dos->e_lfanew);
-    IMAGE_SECTION_HEADER *sec = IMAGE_FIRST_SECTION(nt);
-    int i;
-    for (i = 0; i < nt->FileHeader.NumberOfSections; i++, sec++)
-        if (memcmp(sec->Name, ".text", 5) == 0) {
-            text_lo = (uint32_t)(uintptr_t)(base + sec->VirtualAddress);
-            text_hi = text_lo + sec->Misc.VirtualSize;
-        }
+    ke_platform_code_range(&text_lo, &text_hi);
 }
 
 /* ke_exit() inside a handler on the IRQ thread: redirect the frozen game thread into
  * ke_exit(code) and abandon the handler. */
 void vpic_isr_exit_redirect(int code)
 {
-    if (!vhw_on_irq_thread())
+    if (!vhw_on_irq_thread() || ke_thread_interrupt_runs_on_target())
         return;
-    InterlockedExchange(&isr_exit_code, code);
+    ke_atomic_exchange(&isr_exit_code, code);
     longjmp(isr_abandon, 1);
 }
 
-static void redirect_game_to_exit(HANDLE game, int code)
+/* ke_exit() inside a handler delivered asynchronously on the game thread itself (POSIX):
+ * the game thread performs the exit directly; undo the interrupt entry first, as the Win32
+ * redirect does, and release the interrupter. */
+void vpic_isr_exit_on_game_thread(void)
 {
-    CONTEXT ctx;
-    uint32_t *sp;
-    memset(&ctx, 0, sizeof ctx);
-    ctx.ContextFlags = CONTEXT_CONTROL;
-    GetThreadContext(game, &ctx);
-    sp = (uint32_t *)(uintptr_t)(ctx.Esp - 8);
-    sp[0] = 0;                 /* return address: ke_exit never returns */
-    sp[1] = (uint32_t)code;
-    ctx.Esp -= 8;
-    ctx.Eip = (DWORD)(uintptr_t)ke_exit;
-    SetThreadContext(game, &ctx);
+    if (!vhw_in_async_isr_context())
+        return;
+    ke_atomic_exchange(&vcpu_if_flag, 1);
+    ke_atomic_exchange(&vhw_in_isr, 0);
+    vhw_clock_irq0_leave();
+    vhw_clock_irq0_release();
+    vhw_set_async_isr_context(0);
+    ke_thread_interrupt_leaving();
 }
 
-static DWORD WINAPI irq_thread_main(LPVOID unused)
+static void redirect_exit_target(int code) { ke_exit(code); }
+
+/* Runs while the game thread is stopped at an instruction boundary: on the IRQ thread with
+ * the game thread suspended (Win32), or on the game thread inside the interrupt signal
+ * (POSIX). Delivers one interrupt if the game is interruptible at `pc`. */
+static int async_deliver(uintptr_t pc, void *arg, KeRedirect *redirect)
 {
-    HANDLE game = (HANDLE)ke_game_thread_handle();
+    int delivered = 0;
+    (void)arg;
+    if (pc != UINTPTR_MAX && vcpu_if_flag && !vhw_game_depth && !vhw_in_isr &&
+        ((pc >= text_lo && pc < text_hi) || vhw_cpu_poll_waiting)) {
+        if (ke_thread_interrupt_runs_on_target()) {
+            vhw_set_async_isr_context(1);
+            delivered = deliver_one();
+            vhw_set_async_isr_context(0);
+        } else if (setjmp(isr_abandon) == 0) {
+            delivered = deliver_one();
+        } else {
+            /* the handler called exit(): the game thread performs it */
+            ke_atomic_exchange(&vcpu_if_flag, 1);
+            ke_atomic_exchange(&vhw_in_isr, 0);
+            vhw_clock_irq0_leave();
+            vhw_clock_irq0_release();
+            redirect->fn = redirect_exit_target;
+            redirect->arg = (int)isr_exit_code;
+            return -2;
+        }
+        stats_async += delivered;
+    } else {
+        stats_blocked++;
+    }
+    if (delivered) {
+        release_irq0_clock_if_unavailable();
+    }
+    return delivered;
+}
+
+static unsigned irq_thread_main(void *unused)
+{
+    KeThread *game = ke_game_thread_handle();
     (void)unused;
     vhw_bind_irq_thread();
-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+    ke_thread_set_time_critical();
     while (!irq_stop) {
         int pending = vpic_has_deliverable();
-        WaitForSingleObject(irq_event, pending ? 1 : 20);
+        ke_event_wait_ms(irq_event, pending ? 1 : 20);
         if (irq_stop || ke_game_thread_finished())
             break;
         int retries = 0;
         while (vpic_has_deliverable() && !irq_stop) {
-            CONTEXT ctx;
-            int delivered = 0;
+            int delivered;
             if (!vcpu_if_flag || vhw_game_depth || vhw_in_isr) {
                 stats_blocked++;
                 if (!vcpu_if_flag)
                     release_irq0_clock_if_unavailable();
                 break;             /* sync delivery at vhw_leave/STI will handle it */
             }
-            if (SuspendThread(game) == (DWORD)-1)
+            delivered = ke_thread_interrupt(game, async_deliver, NULL);
+            if (delivered == -2)
+                return 0;          /* the game thread was redirected into exit() */
+            if (delivered < 0)
                 break;
-            memset(&ctx, 0, sizeof ctx);
-            ctx.ContextFlags = CONTEXT_CONTROL;
-            if (GetThreadContext(game, &ctx) && vcpu_if_flag && !vhw_game_depth &&
-                !vhw_in_isr &&
-                ((ctx.Eip >= text_lo && ctx.Eip < text_hi) || vhw_cpu_poll_waiting)) {
-                if (setjmp(isr_abandon) == 0) {
-                    delivered = deliver_one();
-                } else {
-                    /* the handler called exit(): the game thread performs it */
-                    InterlockedExchange(&vcpu_if_flag, 1);
-                    InterlockedExchange(&vhw_in_isr, 0);
-                    vhw_clock_irq0_leave();
-                    vhw_clock_irq0_release();
-                    redirect_game_to_exit(game, (int)isr_exit_code);
-                    ResumeThread(game);
-                    return 0;
-                }
-                stats_async += delivered;
-            } else {
-                stats_blocked++;
-            }
-            if (delivered) {
-                release_irq0_clock_if_unavailable();
-            }
-            ResumeThread(game);
             if (!delivered) {
                 /* Game thread momentarily in a DLL or a vhw service: retry for ~2 ms in
                  * 20 us steps before falling back to the event wait (the sync path at
@@ -430,7 +436,7 @@ static DWORD WINAPI irq_thread_main(LPVOID unused)
                 if (++retries > 100)
                     break;
                 while (ke_now_ns() < until)
-                    YieldProcessor();
+                    ke_cpu_relax();
                 continue;
             }
             retries = 0;
@@ -446,19 +452,19 @@ void virq_thread_start(void)
         ke_log(KE_LOG_INFO, "pic", "interrupt delivery: synchronous only (KE_IRQ=sync)");
         return;
     }
-    irq_thread = CreateThread(NULL, 256u << 10, irq_thread_main, NULL, 0, NULL);
+    irq_thread = ke_thread_create(irq_thread_main, NULL, 256u << 10, 0);
     ke_log(KE_LOG_INFO, "pic", "interrupt delivery: asynchronous IRQ thread + sync at vhw_leave; "
-           "interruptible .text %08X..%08X", text_lo, text_hi);
+           "interruptible code %08lX..%08lX", (unsigned long)text_lo, (unsigned long)text_hi);
 }
 
 void virq_thread_stop(void)
 {
-    InterlockedExchange(&irq_stop, 1);
+    ke_atomic_exchange(&irq_stop, 1);
     if (irq_event)
-        SetEvent(irq_event);
+        ke_event_set(irq_event);
     if (irq_thread) {
-        WaitForSingleObject(irq_thread, 2000);
-        CloseHandle(irq_thread);
+        ke_thread_join_ms(irq_thread, 2000);
+        ke_thread_close(irq_thread);
         irq_thread = NULL;
     }
     ke_log(KE_LOG_INFO, "pic", "interrupts delivered: async=%ld sync=%ld (blocked attempts %ld)",
@@ -468,10 +474,10 @@ void virq_thread_stop(void)
 /* Side-effect-free PIC state for lockstep dumps: IRR/ISR/IMR/base per controller + IF. */
 void vpic_debug_state(uint8_t out[10])
 {
-    EnterCriticalSection(&pic_lock);
+    ke_mutex_lock(&pic_lock);
     out[0] = pics[0].irr; out[1] = pics[0].isr; out[2] = pics[0].imr; out[3] = pics[0].base;
     out[4] = pics[1].irr; out[5] = pics[1].isr; out[6] = pics[1].imr; out[7] = pics[1].base;
-    LeaveCriticalSection(&pic_lock);
+    ke_mutex_unlock(&pic_lock);
     out[8] = (uint8_t)vcpu_if_flag;
     out[9] = (uint8_t)vhw_in_isr;
 }
@@ -479,9 +485,9 @@ void vpic_debug_state(uint8_t out[10])
 void vpic_init(void)
 {
     int v;
-    InitializeCriticalSection(&pic_lock);
+    ke_mutex_init(&pic_lock);
     memset(irq_edge_ns, 0, sizeof irq_edge_ns);
-    irq_event = CreateEventW(NULL, FALSE, FALSE, NULL);
+    irq_event = ke_event_create();
     memset(pics, 0, sizeof pics);
     pics[0].base = 0x08;       /* as reported by DOS/4GW (DPMI 0400h DH/DL) */
     pics[1].base = 0x70;

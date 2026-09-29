@@ -10,16 +10,16 @@
  * SDL gamepad axes/buttons are published through vjoy_set() by host/input.c. Centered axes
  * use a finite timing count so the real game detects the port and can calibrate it.
  */
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
 #define READS_MIN 24
 #define READS_RANGE 1000
 
-static volatile LONG axis_reads[4] = {READS_MIN + READS_RANGE / 2, READS_MIN + READS_RANGE / 2,
+static ke_atomic_t axis_reads[4] = {READS_MIN + READS_RANGE / 2, READS_MIN + READS_RANGE / 2,
                                       READS_MIN + READS_RANGE / 2, READS_MIN + READS_RANGE / 2};
-static volatile LONG button_bits;        /* 1 = pressed, bits 0..3 = buttons 1..4 */
+static ke_atomic_t button_bits;        /* 1 = pressed, bits 0..3 = buttons 1..4 */
 static int remaining[4];
 
 void vjoy_set(int axis, float value, int buttons)
@@ -27,15 +27,15 @@ void vjoy_set(int axis, float value, int buttons)
     if (axis >= 0 && axis < 4) {
         if (value < -1.0f) value = -1.0f;
         if (value > 1.0f) value = 1.0f;
-        InterlockedExchange(&axis_reads[axis], READS_MIN + (LONG)((value + 1.0f) * 0.5f * READS_RANGE));
+        ke_atomic_exchange(&axis_reads[axis], READS_MIN + (ke_atomic_value)((value + 1.0f) * 0.5f * READS_RANGE));
     }
     if (buttons >= 0)
-        InterlockedExchange(&button_bits, buttons & 0x0f);
+        ke_atomic_exchange(&button_bits, buttons & 0x0f);
 }
 
 static uint32_t joy_in(void *ctx, uint16_t port, int size)
 {
-    LONG pressed = InterlockedCompareExchange(&button_bits, 0, 0);
+    ke_atomic_value pressed = ke_atomic_load(&button_bits);
     uint8_t v = (uint8_t)(0xf0 & ~((uint32_t)pressed << 4));
     int i;
     (void)ctx; (void)port; (void)size;
@@ -52,7 +52,7 @@ static void joy_out(void *ctx, uint16_t port, uint32_t value, int size)
     int i;
     (void)ctx; (void)port; (void)value; (void)size;
     for (i = 0; i < 4; i++)
-        remaining[i] = (int)InterlockedCompareExchange(&axis_reads[i], 0, 0);
+        remaining[i] = (int)ke_atomic_load(&axis_reads[i]);
 }
 
 void vjoy_init(void)

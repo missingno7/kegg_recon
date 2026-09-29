@@ -69,7 +69,8 @@ set(KE_STUB_SOURCES
 # ---- virtual PC + host ----------------------------------------------------------------
 set(KE_VHW_SOURCES
   vhw/vhw.c vhw/cpu.c vhw/portio.c vhw/pic.c vhw/pit.c vhw/vga.c vhw/kbd.c vhw/mouse.c
-  vhw/joy.c vhw/dma.c vhw/sb.c vhw/intsvc.c vhw/lowmem.c vhw/fault.c)
+  vhw/joy.c vhw/dma.c vhw/sb.c vhw/intsvc.c vhw/lowmem.c vhw/fault.c
+  platform/platform_win32.c)
 set(KE_HOST_SOURCES
   host/main_sdl.c host/gamethread.c host/log.c host/config.c host/input.c host/mouse_native.c
   host/viewport.c host/present.c host/clib.c

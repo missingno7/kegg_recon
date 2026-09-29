@@ -7,7 +7,7 @@
  * updates the virtual lock LEDs. When IRQ1 is not hooked, the BIOS handler translates make
  * codes into (scan << 8 | ASCII) words in the BIOS ring used by kbhit()/getch().
  */
-#include <windows.h>
+#include "../platform/ke_platform.h"
 #include "vhw.h"
 #include "../include/ke_port.h"
 
@@ -20,7 +20,7 @@ extern uint8_t ke_lowmem_shadow[0x10000];
 static uint8_t queue[QUEUE];
 static unsigned q_head, q_tail;
 static uint8_t out_buffer, out_full, led_pending, led_state;
-static CRITICAL_SECTION kbd_lock;
+static KeMutex kbd_lock;
 static uint16_t bios_ring[BIOS_RING_SIZE];
 static unsigned bios_head, bios_tail;
 static uint8_t bios_down[2][128];
@@ -59,17 +59,17 @@ static void enqueue_locked(uint8_t code)
 
 void vkbd_push_scancode(uint8_t code)
 {
-    EnterCriticalSection(&kbd_lock);
+    ke_mutex_lock(&kbd_lock);
     enqueue_locked(code);
     refill_locked();
-    LeaveCriticalSection(&kbd_lock);
+    ke_mutex_unlock(&kbd_lock);
 }
 
 static uint32_t kbd_in(void *ctx, uint16_t port, int size)
 {
     uint8_t v;
     (void)ctx; (void)size;
-    EnterCriticalSection(&kbd_lock);
+    ke_mutex_lock(&kbd_lock);
     if (port == 0x60) {
         v = out_buffer;         /* reading an empty buffer returns the last byte again */
         if (out_full) {
@@ -79,7 +79,7 @@ static uint32_t kbd_in(void *ctx, uint16_t port, int size)
     } else {                    /* 64h status: bit0 output full, bit2 system */
         v = (uint8_t)(0x14 | (out_full ? 1 : 0));
     }
-    LeaveCriticalSection(&kbd_lock);
+    ke_mutex_unlock(&kbd_lock);
     return v;
 }
 
@@ -89,7 +89,7 @@ static void kbd_out(void *ctx, uint16_t port, uint32_t value, int size)
     (void)ctx; (void)size;
     if (port != 0x60)
         return;
-    EnterCriticalSection(&kbd_lock);
+    ke_mutex_lock(&kbd_lock);
     if (led_pending) {
         led_pending = 0;
         led_state = byte & 7;
@@ -99,7 +99,7 @@ static void kbd_out(void *ctx, uint16_t port, uint32_t value, int size)
     }
     enqueue_locked(0xfa);       /* ACK */
     refill_locked();
-    LeaveCriticalSection(&kbd_lock);
+    ke_mutex_unlock(&kbd_lock);
 }
 
 static void bios_update_shift_flags_locked(void)
@@ -159,27 +159,27 @@ void vkbd_bios_irq1(void)
     uint8_t scan;
     uint8_t flags;
     int release, extended, was_down, ascii;
-    EnterCriticalSection(&kbd_lock);
+    ke_mutex_lock(&kbd_lock);
     if (e1_bytes_left) {
         e1_bytes_left--;
         e0_prefix = 0;
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         return;
     }
     if (code == 0xe1) {
         e0_prefix = 0;
         e1_bytes_left = 5;       /* remaining bytes of E1 1D 45 E1 9D C5 */
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         return;
     }
     if (code == 0xe0) {
         e0_prefix = 1;
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         return;
     }
     if (code == 0xfa || code == 0xfe) { /* keyboard ACK / RESEND, not a key */
         e0_prefix = 0;
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         return;
     }
     extended = e0_prefix;
@@ -187,7 +187,7 @@ void vkbd_bios_irq1(void)
     scan = code & 0x7f;
     release = (code & 0x80) != 0;
     if (extended && scan == 0x2a) { /* PrintScreen's fake left-shift bytes */
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         return;
     }
     was_down = bios_down[extended][scan] != 0;
@@ -201,21 +201,21 @@ void vkbd_bios_irq1(void)
     if (release || (!extended && (scan == 0x2a || scan == 0x36 || scan == 0x1d ||
                                   scan == 0x38 || scan == 0x3a || scan == 0x45 ||
                                   scan == 0x46))) {
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         return;
     }
     flags = ke_lowmem_shadow[BDA_KEYBOARD_FLAGS];
     ascii = bios_key_ascii(scan, extended, flags);
     bios_ring_push_locked((uint16_t)(((uint16_t)scan << 8) | (uint8_t)ascii));
-    LeaveCriticalSection(&kbd_lock);
+    ke_mutex_unlock(&kbd_lock);
 }
 
 int vkbd_bios_kbhit(void)
 {
     int ready;
-    EnterCriticalSection(&kbd_lock);
+    ke_mutex_lock(&kbd_lock);
     ready = bios_head != bios_tail;
-    LeaveCriticalSection(&kbd_lock);
+    ke_mutex_unlock(&kbd_lock);
     return ready;
 }
 
@@ -230,14 +230,14 @@ int vkbd_bios_getch(void)
         return r;
     }
     for (;;) {
-        EnterCriticalSection(&kbd_lock);
+        ke_mutex_lock(&kbd_lock);
         if (bios_head != bios_tail) {
             w = bios_ring[bios_head];
             bios_head = (bios_head + 1) % BIOS_RING_SIZE;
-            LeaveCriticalSection(&kbd_lock);
+            ke_mutex_unlock(&kbd_lock);
             break;
         }
-        LeaveCriticalSection(&kbd_lock);
+        ke_mutex_unlock(&kbd_lock);
         vhw_idle(5000000);
     }
     if ((w & 0xff) == 0) {      /* extended key: 0 then scan code, as Watcom getch() */
@@ -270,7 +270,7 @@ int getche(void) { return getch(); }
 
 void vkbd_init(void)
 {
-    InitializeCriticalSection(&kbd_lock);
+    ke_mutex_init(&kbd_lock);
     vhw_register_ports(0x60, 0x60, kbd_in, kbd_out, NULL, "kbd-data");
     vhw_register_ports(0x64, 0x64, kbd_in, kbd_out, NULL, "kbd-status");
 }
